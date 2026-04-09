@@ -206,7 +206,10 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div class="s">Claude Code Workflow</div>
   </div>
   <div style="flex:1;overflow-y:auto">
-    <div class="nav-group">Setup</div>
+    <div class="nav-group">Quick Cycles</div>
+    <a href="#t1">Tier 1 — Broad Scan <span class="nbadge nb-g">Light</span></a>
+    <a href="#t2">Tier 2 — Targeted <span class="nbadge nb-a">2 sessions</span></a>
+    <div class="nav-group">Full Cycle (Tier 3)</div>
     <a href="#flow">Session Flow</a>
     <a href="#s0">§0 — Systems Map</a>
     <div class="nav-group">Per-Session</div>
@@ -255,6 +258,76 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
     <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
   </div>
+
+  <!-- TIER 1 — BROAD SCAN -->
+  <section id="t1">
+    <div class="sh"><div class="snum">T1</div><div>
+      <div class="stitle">Tier 1 — Broad Scan</div>
+      <div class="spurp"><strong>Purpose:</strong> Fast, whole-codebase discovery. One session, audit-then-implement with your approval gate in between. Use when the project still has obvious issues, during rapid development, or for a quick pulse between formal cycles.</div>
+    </div></div>
+    <div class="inote"><div class="ic">📌</div><div><strong>When to use:</strong> Project is new or unaudited, rapid development phase, broad scans still produce real bugs. <strong>When to graduate:</strong> Broad scans start finding more speculative "improvements" than production bugs → move that subsystem to Tier 2.</div></div>
+    <div class="pb" id="block-t1">
+      <div class="pb-header">
+        <div class="pb-label">Tier 1 — Broad Scan Prompt</div>
+        <div class="pb-meta">
+          <span class="ptag">Single session</span>
+          <button class="fill-btn" onclick="toggleFill('t1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="copy-btn" id="copy-t1" onclick="doCopy('t1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+        </div>
+      </div>
+      <div class="fill-form" id="fill-t1"></div>
+      <pre id="t1"></pre>
+    </div>
+  </section>
+
+  <!-- TIER 2 — TARGETED CYCLE -->
+  <section id="t2">
+    <div class="sh"><div class="snum">T2</div><div>
+      <div class="stitle">Tier 2 — Targeted Subsystem Cycle</div>
+      <div class="spurp"><strong>Purpose:</strong> Deep audit of one subsystem across two sessions — audit+plan in Session 1, implement+check+reflect in Session 2. Keeps the audit/implement separation without the full Tier 3 ceremony.</div>
+    </div></div>
+    <div class="inote"><div class="ic">📌</div><div><strong>When to use:</strong> Broad scans stopped finding real bugs in a specific subsystem, a subsystem is causing pain, or you want depth without committing to 5+ sessions. <strong>When to graduate:</strong> Run Tier 3 quarterly, before releases, or when accumulated Tier 2 sessions need verification.</div></div>
+
+    <!-- Subsystem reference (reuses same table as §1) -->
+    <div class="sub-table-wrap">
+      <div class="sub-table-hdr">
+        <span id="t2SubsysTitle">Subsystem Groups</span>
+        <small>Click a row to pre-fill the scope field</small>
+      </div>
+      <table class="st" id="t2SubsysTable">
+        <tbody id="t2SubsysBody">
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Session 1 — Scoped Audit + Plan</div>
+    <div class="pb" id="block-t2a">
+      <div class="pb-header">
+        <div class="pb-label">Tier 2 — Audit + Plan Prompt</div>
+        <div class="pb-meta">
+          <span class="ptag">Session 1 of 2</span>
+          <button class="fill-btn" onclick="toggleFill('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="copy-btn" id="copy-t2a" onclick="doCopy('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+        </div>
+      </div>
+      <div class="fill-form" id="fill-t2a"></div>
+      <pre id="t2a"></pre>
+    </div>
+
+    <hr class="dv">
+    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Session 2 — Implement + Check + Reflect</div>
+    <div class="inote"><div class="ic">📌</div><div>Open a <strong>new session</strong>. Paste the <strong>Tier 2 Handoff Block</strong> from Session 1.</div></div>
+    <div class="pb" id="block-t2b">
+      <div class="pb-header">
+        <div class="pb-label">Tier 2 — Implement + Reflect Prompt</div>
+        <div class="pb-meta">
+          <span class="ptag">Session 2 of 2</span>
+          <button class="copy-btn" id="copy-t2b" onclick="doCopy('t2b')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+        </div>
+      </div>
+      <pre id="t2b"></pre>
+    </div>
+  </section>
 
   <!-- FLOW -->
   <div class="flow-box" id="flow">
@@ -1237,6 +1310,9 @@ function switchProject(id){
   renderProjectsTab();
   renderArchive();
   renderHealthDimsNote();
+  renderTier1();
+  renderTier2();
+  renderT2SubsysTable();
   renderP6a();
   renderP6b();
   renderSeams();
@@ -1995,6 +2071,216 @@ function deleteArchiveEntry(id){
   renderArchive();
 }
 
+// ─── TIER 1 & TIER 2 PROMPTS — dynamic per project ─────────
+function buildTier1Text(project){
+  const dimList=project.healthDimensions.split(',').map(d=>`- ${d.trim()}`).join('\n');
+  return `Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
+README, and the roadmap carefully before doing anything else.
+
+Do not make any changes to any files during the audit phase.
+
+Audit the codebase thoroughly. For each finding:
+- State the issue, cite the file and function/line area
+- Severity: Critical / High / Medium / Low
+- Confidence: High / Medium / Low (flag if you only skimmed this area)
+- Is this a bug that would actually fire in production this month,
+  or a defensive/structural improvement? Be honest about which.
+
+Focus on:
+- Bugs and logic errors in currently-reachable code paths
+- Security and compliance gaps (auth, sensitive data handling, audit logging)
+- Inconsistencies between CLAUDE.md/docs and actual implementation
+- Dead code, unused exports, stale TODOs only if they create confusion
+- Silent degradation paths: places where failure is swallowed and the
+  app continues with wrong results rather than surfacing an error
+
+DO NOT flag code for "simplification" or "cleanup" unless the current
+code is actively wrong or creates a maintenance trap. Working code
+that could be written differently is not a finding.
+
+After the audit, provide ratings out of 10 with reasoning:
+${dimList}
+
+For each rating include:
+- Your confidence level (did you deeply read this area or infer from partial context?)
+- The single finding most dragging the score down
+- The single highest-leverage improvement and its estimated effort (S/M/L)
+
+End with:
+- Top 5 findings by production impact (most likely to cause real breakage)
+- Any findings that contradict or are missing from CLAUDE.md Common Gotchas
+- One sentence: the single most important thing to fix before anything else
+
+After I review the audit, I will tell you which findings to implement.
+Do not implement anything until then.`;
+}
+
+function buildTier2AuditText(project){
+  return `Read CLAUDE.md (especially Common Gotchas and Key Design Decisions)
+before starting. Do not make any changes to any files during this session.
+
+[PASTE SYSTEMS MAP SUMMARY HERE]
+
+This session's scope: [SUBSYSTEM GROUP NAME]
+Relevant files: [LIST RELEVANT FILES AND DIRECTORIES]
+
+[OPTIONAL: PASTE FOLLOW-ON ITEMS FROM A PRIOR SESSION THAT FLAGGED THIS SUBSYSTEM]
+
+Audit this subsystem thoroughly. For each finding:
+- State the issue, cite file and function/line
+- Severity: Critical / High / Medium / Low
+- Confidence: High / Medium / Low
+- Would this bug actually fire in production this month? YES (describe
+  the trigger) or NO (explain why)
+- Effort to fix: S (< 2 hours) / M (half-day to 2 days) / L (3+ days)
+
+Focus on:
+- Bugs and logic errors in currently-reachable code paths
+- Security concerns specific to this module
+- Inconsistencies between CLAUDE.md and actual implementation
+- Cross-module dependencies this subsystem has — what would break
+  in OTHER modules if we change things here
+- Silent degradation paths: places where failure is swallowed and the
+  app continues with wrong results rather than surfacing an error
+
+DO NOT flag style preferences, speculative improvements, or "could be
+cleaner" refactoring unless the current code is actively wrong.
+
+After the audit, produce an implementation plan. For each action:
+- Action ID (A1, A2, A3...)
+- What specifically to do (concrete, not "improve error handling")
+- Which finding(s) it addresses
+- Effort: S / M / L
+- Cross-module risk: Low / High
+- Prerequisites: other actions that must complete first
+
+Organize into:
+1. Fix now — production bugs, security issues, blocking problems
+2. Fix this session — high-value, well-scoped, low cross-module risk
+3. Defer — needs more context, high risk, or dependencies outside scope
+
+End with a TIER 2 HANDOFF BLOCK:
+
+---TIER 2 HANDOFF BLOCK---
+Scope: [subsystem]
+Findings: [count] total — [critical/high/medium/low breakdown]
+Production bugs (would fire this month): [count of YES answers]
+
+ACTIONS (implement in this order):
+[ID] | [File: area] | [Effort] | [Risk] | [Description]
+
+CROSS-MODULE RISKS:
+- [what could break outside this scope and where to verify]
+(or "None identified")
+
+DO NOT TOUCH:
+- [any files/functions that are high-risk to modify without deeper
+  investigation — explain why]
+---END TIER 2 HANDOFF BLOCK---`;
+}
+
+function buildTier2ImplText(){
+  return `[PASTE TIER 2 HANDOFF BLOCK FROM AUDIT SESSION]
+
+You are implementing the actions listed above. Rules:
+
+- Implement ONLY the actions in the handoff block, in the order listed
+- Do not fix, refactor, or improve anything outside this scope even if
+  you notice issues — note them at the end instead
+- If an action is more complex than estimated, stop and describe what
+  you found before continuing
+- If an action requires touching files in the DO NOT TOUCH list or
+  outside the listed scope, stop and flag it
+- After each action, briefly note: what changed, files touched, anything
+  unexpected
+- Run tests after completing all actions if a test command is available
+
+After all actions are complete (or if you had to stop), do the following
+in order:
+
+1. REGRESSION CHECK
+Review every file you modified. For each change, answer:
+- Could this change break any caller or consumer of this function/export?
+- Did I change any interface, return type, or default value that other
+  modules depend on?
+- Is there any scenario where the old behavior was actually correct and
+  I've made it worse?
+List any risks found, even low-probability ones.
+
+2. REFLECT (answer honestly)
+For each action completed:
+a) Would this bug have actually fired in production this month?
+   YES (describe trigger) or NO (why not)
+b) Did this action introduce a new failure mode, documented or not?
+   YES (describe it) or NO
+
+Tally: [production fixes] − [new failure modes] = [net score]
+
+3. INVARIANT CANDIDATES
+What rules must now hold as a result of this session's changes that
+should be checked in the future? List as:
+- [one-sentence rule] | [file/function it applies to]
+
+4. FOLLOW-ON ITEMS
+Anything you noticed but didn't fix (out of scope), anything that
+needs deeper investigation, any other subsystem that should be
+checked next because of what you changed here.
+
+Format each as:
+- [File: area] — [what to check and why]`;
+}
+
+function renderTier1(){
+  const project=getProject();
+  const pre=document.getElementById('t1');
+  if(pre) pre.textContent=buildTier1Text(project);
+  const form=document.getElementById('fill-t1');
+  if(form){form.innerHTML='';form.classList.remove('open');}
+  const btn=document.querySelector('#block-t1 .fill-btn');
+  if(btn)btn.classList.remove('active');
+}
+
+function renderTier2(){
+  const project=getProject();
+  const preA=document.getElementById('t2a');
+  const preB=document.getElementById('t2b');
+  if(preA) preA.textContent=buildTier2AuditText(project);
+  if(preB) preB.textContent=buildTier2ImplText();
+  const formA=document.getElementById('fill-t2a');
+  if(formA){formA.innerHTML='';formA.classList.remove('open');}
+  const btnA=document.querySelector('#block-t2a .fill-btn');
+  if(btnA)btnA.classList.remove('active');
+}
+
+function renderT2SubsysTable(){
+  const project=getProject();
+  const tbody=document.getElementById('t2SubsysBody');
+  const title=document.getElementById('t2SubsysTitle');
+  if(!tbody)return;
+  if(title)title.textContent=`${project.name} — Subsystem Groups`;
+  tbody.innerHTML=project.subsystems.map(s=>{
+    const safeName=s.name.replace(/'/g,"\\'").replace(/&/g,'&amp;');
+    const safeFiles=s.files.replace(/'/g,"\\'");
+    const displayName=s.name.replace(/&/g,'&amp;');
+    const displayFiles=s.files.replace(/&/g,'&amp;');
+    return `<tr onclick="fillT2Subsystem('${safeName}','${safeFiles}')"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+  }).join('');
+}
+
+function fillT2Subsystem(name,files){
+  saveVal('t2a','SUBSYSTEM GROUP NAME',name);
+  saveVal('t2a','LIST RELEVANT FILES AND DIRECTORIES',files);
+  const form=document.getElementById('fill-t2a');
+  if(form&&form.classList.contains('open'))buildFillForm('t2a');
+  if(form&&!form.classList.contains('open')){
+    buildFillForm('t2a');form.classList.add('open');
+    const btn=document.querySelector('#block-t2a .fill-btn');
+    if(btn)btn.classList.add('active');
+  }
+  document.getElementById('t2').scrollIntoView({behavior:'smooth',block:'start'});
+  if(form){form.style.outline='1px solid var(--amber)';setTimeout(()=>form.style.outline='',800);}
+}
+
 // ─── SEAMS & INVARIANTS AUDIT (§1s) — dynamic per project ───
 function buildSeamsText(project){
   const invs=getProjectInvariants();
@@ -2308,6 +2594,9 @@ renderCycle();
 renderProjectsTab();
 renderArchive();
 renderHealthDimsNote();
+renderTier1();
+renderTier2();
+renderT2SubsysTable();
 renderP6a();
 renderP6b();
 renderSeams();
