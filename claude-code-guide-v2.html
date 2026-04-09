@@ -1054,7 +1054,7 @@ const PROJECTS = [
       {name:'UI/UX & Frontend',files:'client/src/App.tsx, client/src/pages/, client/src/components/'},
       {name:'Billing / Business Plan',files:'server/routes/billing.ts, server/services/stripe.ts, shared/schema/billing.ts, shared/schema/features.ts'},
     ],
-    healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Storage/DB Integrity, Security & HIPAA, Call Analysis, RAG, AI Output Quality / Analysis Accuracy, Integrations, UI/UX, Operational Integrity, Operational Readiness, Business Viability',
+    healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Storage/DB Integrity, Security & HIPAA, Call Analysis, RAG, Clinical Documentation, Integrations, UI/UX, Operational Integrity, Operational Readiness, Business Viability',
     invariants:[
       {id:'INV-01',text:'withTransaction uses AsyncLocalStorage — connections are never shared across concurrent transactions',subsystem:'Storage Layer / Database'},
       {id:'INV-02',text:'RLS policies are re-applied on every connection checkout from the pool',subsystem:'Storage Layer / Database'},
@@ -1355,7 +1355,7 @@ AXIS A — VERTICAL (Subsystem Health)
 
 For each dimension below, provide:
 - A score out of 10, OR "Not assessed this cycle" if no direct signal exists from the cycle inputs
-  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions like RAG, AI Output Quality / Analysis Accuracy, and Business Viability when no dedicated cycle has run against them.
+  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. RAG, Business Viability, or any domain-specific dimension without direct signal this cycle).
 - Coverage confidence: High (full cycle with verification block) / Medium (cycle summary only, no verification) / Low (inferred from adjacent signals)
 - 2–3 sentences of reasoning grounded in specific findings from the cycle inputs, not general impressions
 - The single most important finding or unresolved item driving the score
@@ -1465,21 +1465,31 @@ Read the following to orient yourself: CLAUDE.md, README, roadmap, and any recen
 
 [OPTIONAL: NOTE ANY AREAS THAT HAVE CHANGED SIGNIFICANTLY SINCE THE LAST AUDIT]
 
-Provide a Health Pulse — a directional snapshot of overall project standing.
+Provide a Health Pulse — a directional snapshot of overall project standing on both axes.
 
+AXIS A — VERTICAL (Subsystem Health):
 For each dimension, provide:
-- A score out of 10
+- A score out of 10 (or "Not assessed" if no signal)
 - Confidence: High / Medium / Low
 - One sentence of reasoning
 - Flag any dimension where confidence is Low and a proper audit session is overdue
 
 Dimensions: ${dims}
 
+AXIS B — HORIZONTAL (Bug-Shape Posture — lightweight scan):
+For each category below, provide a quick directional score (1–10) and one sentence of evidence based on what you can observe from CLAUDE.md, recent commits, and code structure. These are lower-confidence than synthesis scores — flag that explicitly.
+
+1. Silent Degradation — Are there .catch() blocks with default/fallback values in load-bearing paths? Does the app fail loudly or silently on missing state?
+2. Startup Ordering — Does startup validation exist for env vars listed in CLAUDE.md? Any obvious middleware-ordering risks?
+3. Operator-Only State Gaps — Are there manual setup steps in CLAUDE.md that have no automated validation?
+4. Parallel Source-of-Truth Drift — Are there config values, types, or constants defined in multiple places?
+5. Test Coverage Quality — Do recent fixes have corresponding regression tests, or are they untested?
+
 Then answer:
 - Has anything changed significantly since the last assessment (if provided)?
-- Is there any dimension that looks materially worse and warrants moving up in the audit queue?
+- Is there any dimension on either axis that looks materially worse and warrants moving up in the audit queue?
 - What is the one thing most likely to cause a problem before the next full audit cycle?
-- Are there any known or suspected cases of silent degradation — where the app starts and reports healthy but is operating with broken or missing state? List any suspected cases even if low confidence.`;
+- Which Axis B category would you investigate first if you had one hour?`;
 }
 
 function renderP6b(){
