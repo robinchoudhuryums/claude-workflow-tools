@@ -368,6 +368,8 @@ Relevant files/directories: [LIST RELEVANT FILES AND DIRECTORIES]
 
 [OPTIONAL: PASTE ANY FOLLOW-ON AUDIT ITEMS FROM A PRIOR REGRESSION CHECK THAT APPLY TO THIS SCOPE — check these first before running the full audit]
 
+[OPTIONAL: PASTE ANY POLICY RESPONSE TRIGGERED BLOCKS FROM THE LAST HEALTH SYNTHESIS — if a policy response was triggered for an Axis B category, the prescribed policy fixes are MANDATORY additions to this cycle's scope regardless of subsystem focus]
+
 Audit this scope thoroughly. Flag:
 - Bugs and logic errors
 - Dead or unused code (functions, variables, imports never called or referenced)
@@ -554,6 +556,9 @@ ACTIONS TO IMPLEMENT:
 
 HIGH/VERY HIGH RISK ACTIONS (require dependency check before implementation):
 [List action IDs and the specific exports/interfaces they touch]
+
+POLICY RESPONSE ACTIONS (mandatory if triggered — from last Health Synthesis):
+[List any policy fix actions from triggered Axis B categories, or "None triggered"]
 
 IMPLEMENT IN THIS ORDER: [ordered list of action IDs accounting for prerequisites]
 ORDERING RATIONALE: [1-2 sentences — why this order, which items must land together in the same commit/PR, and whether high-risk items depend on low-risk items being committed first]
@@ -988,6 +993,7 @@ Category D ratio: [X%]
 Key finding: [one sentence]
 Priority for next cycle: [one sentence]
 Delta from prior: [improved / declined / held — which dimensions on both axes]
+Policy responses triggered: [list categories, or "None"]
 
 ### Cycle N-1 — [date] — Synthesis
 ...
@@ -1012,6 +1018,7 @@ Delta from prior: [improved / declined / held — which dimensions on both axes]
       <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--green)"></div>Never compare Pulse to Synthesis</div><p>They're not on the same scale. Pulse is directional and shallow by design. Only compare Synthesis to Synthesis when tracking progress over time.</p></div>
       <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--text-sec)"></div>Fresh session for planning (large codebases)</div><p>For 110k+ line scopes, auditing a complex module consumes significant context. Start a fresh session for planning with the audit output pasted in.</p></div>
       <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--orange)"></div>Keep CLAUDE.md lean and current</div><p>Recommended sections: Project Overview · Architecture · Key Files &amp; Directories · Conventions &amp; Patterns · Project Health (pointer to PROJECT_HEALTH.md) · Known Issues / Active Work. Don't let it become a notes dump.</p></div>
+      <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--red)"></div>Policy responses are mandatory</div><p>When an Axis B category scores <strong>≤4/10 for two consecutive cycles</strong>, the synthesis outputs a POLICY RESPONSE TRIGGERED block. Those prescribed fixes are mandatory in the next cycle's scope — paste them into §1 and include them in the Implementation Handoff Block. This converts one-off bug fixing into systemic improvement.</p></div>
     </div>
   </section>
 
@@ -1492,14 +1499,46 @@ Reading the grid:
 - Vertical: the dimension most in need of attention before the next development cycle
 - Horizontal: the category most in need of policy intervention
 - Any subsystem where the Verification Block signals failed invariants or unresolved Critical/High findings
-- Any Axis B category at ≤4/10 for two consecutive cycles — flag for automatic policy response next cycle (see §4v policy-response protocol)
+- Any Axis B category at ≤4/10 for two consecutive cycles — this triggers an automatic policy response (see section 7 below)
 - The dimension closest to a meaningful threshold (nearly production-ready, or at risk of regression)
 
 5. PLAIN-LANGUAGE SUMMARY:
 One paragraph summarizing where the project stands, written for a technical stakeholder who hasn't read the full report.
 
 6. PROJECT_HEALTH.md UPDATE BLOCK:
-Produce a ready-to-paste block containing the Current Standing section and a new Cycle entry with both axes formatted for the score history.`;
+Produce a ready-to-paste block containing the Current Standing section and a new Cycle entry with both axes formatted for the score history.
+
+7. POLICY RESPONSE TRIGGERS:
+Check each Axis B category against its prior cycle score. If any category scored ≤4/10 in BOTH this cycle and the prior cycle, it triggers a mandatory policy response in the next cycle's scope.
+
+For each triggered category, produce a POLICY RESPONSE entry:
+
+---POLICY RESPONSE TRIGGERED---
+Category: [Axis B category name]
+Consecutive poor cycles: [N]
+Current score: [X/10] | Prior score: [X/10]
+Root pattern: [one-sentence description of the systemic pattern causing the persistent low score]
+
+Prescribed policy fix (include in next cycle scope):
+- [specific, concrete action — not "improve X" but "add ESLint rule for Y" or "write test for Z"]
+- [second action if needed]
+
+Scope addition: Add these policy fixes to the next subsystem cycle's Implementation Handoff Block as mandatory actions alongside the subsystem-specific findings.
+---END POLICY RESPONSE---
+
+Use these category-specific playbooks as starting points:
+
+Silent Degradation triggered → Ban .catch() with default/fallback values on load-bearing Zod schemas and critical data paths. Add an ESLint rule or code review checklist item. Convert silent fallbacks to explicit error propagation.
+
+Startup Ordering triggered → Write a middleware-ordering unit test that asserts the exact sequence. Add startup validation for every env var in CLAUDE.md. Make both required in CI.
+
+Operator-Only Gaps triggered → Pick the highest-risk item from the Operator State Checklist and automate its validation in the startup sequence. Reduce the checklist by one item per cycle until the gap is closed.
+
+Parallel Drift triggered → Identify the highest-risk duplicated definition and consolidate it to a single source of truth. One consolidation per cycle until the count reaches zero.
+
+Test Coverage Quality triggered → For every Category D fix from this cycle, write the missing regression test. Add a cycle gate: no cycle is complete until Category D ratio is below 25%.
+
+If no categories are triggered, output: "No policy responses triggered this cycle."`;
 }
 
 function renderP6a(){
