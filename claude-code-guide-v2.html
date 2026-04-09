@@ -211,6 +211,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <a href="#s0">§0 — Systems Map</a>
     <div class="nav-group">Per-Session</div>
     <a href="#s1">§1 — Layered Audit</a>
+    <a href="#s1s">§1s — Seams Audit <span class="nbadge nb-r">New</span></a>
     <a href="#s2">§2 — Planning</a>
     <a href="#s3">§3 — Implementation</a>
     <div class="nav-group">Risk / Quality</div>
@@ -266,8 +267,21 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-r">§4 Regression Check</div><div class="farr">→</div><div class="flbl">paste Summary Block, before merge</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-r" style="background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.4)">§4v Verification Pass</div><div class="farr">→</div><div class="flbl">fresh session — independent verification, no impl. context</div><div class="farr">→</div><div class="fn fn-a">Verification Block</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-p">§5 Roadmap</div><div class="farr">→</div><div class="flbl">after 2–3 audit cycles</div></div>
+    <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-t" style="background:rgba(20,184,166,.18);border-color:rgba(20,184,166,.4)">§1s Seams &amp; Invariants Audit</div><div class="farr">→</div><div class="flbl">every 3–4 subsystem cycles — no implementation phase</div><div class="farr">→</div><div class="fn fn-a">Updated Invariant Library</div></div>
     <div class="flow-row"><div class="fn fn-g">§6a Health Synthesis</div><div class="farr">→</div><div class="flbl">after full cycle — takes Handoff + Cycle Summary + Verification Block</div><div style="padding:0 8px;color:var(--text-muted)">|</div><div class="fn fn-g" style="opacity:.7">§6b Pulse</div><div class="farr">→</div><div class="flbl">anytime</div></div>
     <div class="flow-note"><strong>Your workflow:</strong> Session 1 = Systems Map (once). Session 2 per subsystem = Audit → Planning (same session). Session 3 per subsystem = Implementation (new session). Session 4 = Regression Check + Reflection (new session). <strong style="color:var(--red)">Session 5 = Verification Pass (fresh session, no implementation context — produces VERIFICATION BLOCK).</strong> <strong>Key habit:</strong> Paste the Systems Map summary at the top of every follow-on session. Paste any Follow-On Audit Items at the top of the next audit for the flagged module.</div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Cycle Rotation</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px">
+        <span class="fn fn-t" style="padding:3px 9px;font-size:11px">Cycle 1: Subsystem A</span><span class="farr" style="font-size:11px">→</span>
+        <span class="fn fn-t" style="padding:3px 9px;font-size:11px">Cycle 2: Subsystem B</span><span class="farr" style="font-size:11px">→</span>
+        <span class="fn fn-t" style="padding:3px 9px;font-size:11px">Cycle 3: Subsystem C</span><span class="farr" style="font-size:11px">→</span>
+        <span class="fn fn-t" style="padding:3px 9px;font-size:11px;background:rgba(20,184,166,.18);border-color:rgba(20,184,166,.4)">Cycle 4: Seams &amp; Invariants</span><span class="farr" style="font-size:11px">→</span>
+        <span class="fn fn-t" style="padding:3px 9px;font-size:11px">Cycle 5: Subsystem D</span><span class="farr" style="font-size:11px">→</span>
+        <span style="color:var(--text-muted);font-size:11px">…</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:7px;line-height:1.5">Each subsystem cycle = audit + implement + verify. The <strong style="color:var(--teal);font-weight:500">Seams &amp; Invariants</strong> cycle runs every 3–4 subsystem cycles, has <strong style="color:var(--amber);font-weight:500">no implementation phase</strong>, and produces an updated invariant library. It audits the seams between subsystems — the things no vertical audit can own.</div>
+    </div>
   </div>
 
   <!-- §0 SYSTEMS MAP -->
@@ -431,6 +445,41 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
 - Bottlenecks in the critical path under load</pre>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- §1s SEAMS & INVARIANTS AUDIT -->
+  <section id="s1s">
+    <div class="sh"><div class="snum">§1s</div><div>
+      <div class="stitle">Seams &amp; Invariants Audit</div>
+      <div class="spurp"><strong>Purpose:</strong> Audit the seams between subsystems and the invariants that must hold across them — the things no vertical subsystem audit can own. Runs every 3–4 subsystem cycles. <strong>No implementation phase.</strong> Produces an updated invariant library instead of code changes.</div>
+    </div></div>
+    <div class="wnote"><div class="ic">⚠</div><div><strong>This is an audit-only cycle.</strong> No code changes are made. The output is an updated invariant library and a set of cross-cutting observations that feed into the next subsystem audit's scope and the next Health Synthesis. Do not combine this with a subsystem implementation cycle.</div></div>
+    <div class="inote"><div class="ic">📌</div><div><strong>Inputs:</strong> Common Gotchas section of CLAUDE.md, Key Design Decisions list, accumulated Operator State Checklist, and the current invariant library (shown below). Paste the <strong>Systems Map summary</strong> at the top of this session as with any audit.</div></div>
+
+    <!-- Current Invariant Library (reuses the same table rendered in §4v) -->
+    <div class="sub-table-wrap">
+      <div class="sub-table-hdr">
+        <span id="seamsInvariantTitle">Current Invariant Library</span>
+        <small>Review, validate, and extend during this audit</small>
+      </div>
+      <table class="st" id="seamsInvariantTable">
+        <tbody id="seamsInvariantBody">
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pb" id="block-p1s">
+      <div class="pb-header">
+        <div class="pb-label">Seams &amp; Invariants Audit Prompt</div>
+        <div class="pb-meta">
+          <span class="ptag">Every 3–4 subsystem cycles</span>
+          <button class="fill-btn" onclick="toggleFill('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="copy-btn" id="copy-p1s" onclick="doCopy('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+        </div>
+      </div>
+      <div class="fill-form" id="fill-p1s"></div>
+      <pre id="p1s"></pre>
     </div>
   </section>
 
@@ -1122,6 +1171,8 @@ function switchProject(id){
   renderHealthDimsNote();
   renderP6a();
   renderP6b();
+  renderSeams();
+  renderSeamsInvariantTable();
   renderVerification();
   renderInvariantTable();
   renderSubsysTable();
@@ -1723,6 +1774,140 @@ function deleteArchiveEntry(id){
   renderArchive();
 }
 
+// ─── SEAMS & INVARIANTS AUDIT (§1s) — dynamic per project ───
+function buildSeamsText(project){
+  const invs=project.invariants||[];
+  const invLines=invs.length
+    ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}`).join('\n')
+    : '  (No invariants defined yet — this audit will create the initial library)';
+  const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
+  const subsysList=groups.map(g=>`  - ${g}`).join('\n');
+  return `Do not make any changes to any files during this session.
+
+[PASTE SYSTEMS MAP SUMMARY HERE]
+
+This is a Seams & Invariants Audit. It runs every 3–4 subsystem cycles and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
+
+Project subsystems for reference:
+${subsysList}
+
+INPUTS — read these before starting:
+1. CLAUDE.md — especially the Common Gotchas section and Key Design Decisions
+2. The Operator State Checklist (manual setup steps, env vars, one-time migrations)
+3. The current invariant library below
+
+CURRENT INVARIANT LIBRARY (${invs.length} invariants):
+${invLines}
+
+---
+
+Conduct the following audit in four parts:
+
+PART 1 — SEAM INVENTORY
+Identify every seam (boundary, interface, or handoff point) between the subsystems listed above. For each seam:
+- Which two subsystems does it connect?
+- What data or control crosses the boundary? (function calls, shared state, events, DB tables, config values)
+- What assumptions does each side make about the other?
+- Is the contract explicit (typed interface, schema, documented API) or implicit (convention, coincidence)?
+
+Focus especially on seams where:
+- One side was recently modified by a subsystem audit but the other side wasn't
+- The contract is implicit rather than explicit
+- Failure on one side would silently degrade the other (no error, just wrong results)
+
+PART 2 — INVARIANT VALIDATION
+For each invariant in the current library:
+- Probe it via code read and/or test execution. Result: PASS / FAIL / STALE / UNVERIFIABLE
+- STALE means the invariant references code that has been refactored or removed — it needs rewording or retirement
+- If FAIL: describe what broke and which subsystem cycle likely caused it
+- If UNVERIFIABLE: explain what would need to exist (test, assertion, monitoring) to make it verifiable
+
+PART 3 — INVARIANT DISCOVERY
+Based on Part 1 (seam inventory), identify new invariants that should be added to the library. These are rules that:
+- Must hold across subsystem boundaries (not internal to one subsystem)
+- Would cause silent degradation or data corruption if violated
+- Are not currently tested or asserted anywhere
+
+For each proposed invariant:
+- State the rule clearly in one sentence
+- Identify which seam it guards
+- Note whether it is currently testable or would need new infrastructure
+
+Also review the Common Gotchas section of CLAUDE.md and the Operator State Checklist for any rules that should be promoted to formal invariants.
+
+PART 4 — HORIZONTAL BUG-SHAPE OBSERVATIONS
+Provide cross-cutting observations relevant to the five Axis B categories from Health Synthesis. This is not a score — it is evidence for the next synthesis:
+- Silent Degradation: any new silent-failure paths discovered at seams
+- Startup Ordering: any ordering dependencies between subsystems that lack validation
+- Operator-Only State Gaps: any manual steps that affect multiple subsystems but have no automated check
+- Parallel Source-of-Truth Drift: any definitions, configs, or types duplicated across subsystem boundaries
+- Test Coverage Quality: any seams that have zero test coverage
+
+---
+
+Produce the following output:
+
+---SEAMS & INVARIANTS AUDIT BLOCK---
+Audit date: [today's date]
+Subsystem cycles since last seams audit: [N or "First audit"]
+
+SEAM INVENTORY:
+[seam-ID] | [Subsystem A] ↔ [Subsystem B] | [What crosses] | Contract: explicit/implicit | Risk: [High/Med/Low]
+(repeat for each seam identified)
+
+INVARIANT LIBRARY UPDATE:
+Validated (${invs.length} existing):
+[INV-XX] | [PASS/FAIL/STALE/UNVERIFIABLE] | [one-line evidence]
+(repeat for each existing invariant)
+
+Proposed additions:
+[INV-NEW-XX] | [invariant rule] | Guards seam: [seam-ID] | Testable: Yes/No
+(repeat for each proposed invariant)
+
+Proposed retirements:
+[INV-XX] | [reason — stale, subsumed, or no longer applicable]
+(or "None")
+
+HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring):
+Silent Degradation: [observations]
+Startup Ordering: [observations]
+Operator-Only Gaps: [observations]
+Parallel Drift: [observations]
+Test Coverage: [observations]
+
+RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
+[Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
+---END SEAMS & INVARIANTS AUDIT BLOCK---`;
+}
+
+function renderSeams(){
+  const project=getProject();
+  const pre=document.getElementById('p1s');
+  if(pre) pre.textContent=buildSeamsText(project);
+  const form=document.getElementById('fill-p1s');
+  if(form){form.innerHTML='';form.classList.remove('open');}
+  const btn=document.querySelector('#block-p1s .fill-btn');
+  if(btn)btn.classList.remove('active');
+}
+
+function renderSeamsInvariantTable(){
+  const project=getProject();
+  const tbody=document.getElementById('seamsInvariantBody');
+  const title=document.getElementById('seamsInvariantTitle');
+  if(!tbody)return;
+  const invs=project.invariants||[];
+  if(title)title.textContent=`${project.name} — Invariant Library (${invs.length})`;
+  if(!invs.length){
+    tbody.innerHTML='<tr><td colspan="2" style="color:var(--text-muted);text-align:center;padding:14px">No invariants defined yet. This audit will create the initial library.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=invs.map(inv=>{
+    const displayText=inv.text.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const displaySub=inv.subsystem.replace(/&/g,'&amp;');
+    return `<tr><td><span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-right:6px">${inv.id}</span>${displayText}</td><td>${displaySub}</td></tr>`;
+  }).join('');
+}
+
 // ─── VERIFICATION PASS (§4v) — dynamic per project ──────────
 function buildVerificationText(project){
   const invs=project.invariants||[];
@@ -1890,6 +2075,8 @@ renderArchive();
 renderHealthDimsNote();
 renderP6a();
 renderP6b();
+renderSeams();
+renderSeamsInvariantTable();
 renderVerification();
 renderInvariantTable();
 renderSubsysTable();
