@@ -370,6 +370,8 @@ Relevant files/directories: [LIST RELEVANT FILES AND DIRECTORIES]
 
 [OPTIONAL: PASTE ANY POLICY RESPONSE TRIGGERED BLOCKS FROM THE LAST HEALTH SYNTHESIS — if a policy response was triggered for an Axis B category, the prescribed policy fixes are MANDATORY additions to this cycle's scope regardless of subsystem focus]
 
+[OPTIONAL: PASTE THE "RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE" SECTION FROM THE LAST SEAMS & INVARIANTS AUDIT — if this subsystem was flagged, check the seam-related findings listed there before running the full audit]
+
 Audit this scope thoroughly. Flag:
 - Bugs and logic errors
 - Dead or unused code (functions, variables, imports never called or referenced)
@@ -775,13 +777,41 @@ End with:
       </table>
     </div>
 
+    <!-- Invariant Management -->
+    <div style="margin-bottom:16px">
+      <button onclick="toggleInvariantForm()" id="addInvariantBtn"
+        style="width:100%;padding:8px;border-radius:6px;background:rgba(20,184,166,.06);border:1px dashed rgba(20,184,166,.3);color:var(--teal);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">
+        + Add invariant
+      </button>
+      <div id="invariantForm" style="display:none;margin-top:8px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)">
+        <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:10px">Add Invariant</div>
+        <div style="margin-bottom:8px">
+          <div class="fill-label">Invariant rule <span style="color:var(--text-muted);font-weight:400;font-size:10px">(one sentence — what must always hold)</span></div>
+          <textarea id="inv-text" rows="2" placeholder="e.g. PHI redactor runs before any external API call that includes transcript text"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="fill-label">Subsystem / seam it guards</div>
+          <input id="inv-sub" type="text" placeholder="e.g. Security & Compliance"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="toggleInvariantForm()"
+            style="padding:4px 11px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:11px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onclick="saveInvariant()"
+            style="padding:4px 11px;border-radius:var(--r-sm);background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit">Save invariant</button>
+        </div>
+      </div>
+      <div id="customInvariantsList" style="margin-top:8px"></div>
+    </div>
+
     <div class="pb" id="block-p4v">
       <div class="pb-header">
         <div class="pb-label">Verification Pass Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Fresh session — no implementation context</span>
           <button class="fill-btn" onclick="toggleFill('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
-          <button class="copy-btn" id="copy-p4v" onclick="doCopy('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+          <button class="copy-btn" id="copy-p4v" onclick="doCopyVerification()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
       <div class="fill-form" id="fill-p4v"></div>
@@ -1059,6 +1089,23 @@ Policy responses triggered: [list categories, or "None"]
         </button>
         <div id="pf-subs-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
       </div>
+      <div style="margin-bottom:12px">
+        <div class="fill-label">Invariants <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(optional — one per line, format: rule text | subsystem)</span></div>
+        <textarea id="pf-invs" rows="4" placeholder="e.g. PHI redactor runs before any external API call | Security&#10;Rate limiter state survives restart | Core Architecture"
+          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
+      </div>
+      <div style="margin-bottom:8px;display:flex;gap:12px">
+        <div style="flex:1">
+          <div class="fill-label">Policy threshold <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(Axis B score ≤ N triggers policy)</span></div>
+          <input id="pf-thresh" type="number" min="1" max="10" value="4"
+            style="width:80px;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
+        </div>
+        <div style="flex:1">
+          <div class="fill-label">Consecutive cycles <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(before trigger)</span></div>
+          <input id="pf-consec" type="number" min="1" max="10" value="2"
+            style="width:80px;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
+        </div>
+      </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
         <button onclick="cancelProjectForm()"
           style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid #4e5e7a;color:#4e5e7a;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Cancel</button>
@@ -1121,6 +1168,8 @@ const PROJECTS = [
       {name:'Billing / Business Plan',files:'server/routes/billing.ts, server/services/stripe.ts, shared/schema/billing.ts, shared/schema/features.ts'},
     ],
     healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Storage/DB Integrity, Security & HIPAA, Call Analysis, RAG, Clinical Documentation, Integrations, UI/UX, Operational Integrity, Operational Readiness, Business Viability',
+    policyThreshold:4,
+    policyConsecutiveCycles:2,
     invariants:[
       {id:'INV-01',text:'withTransaction uses AsyncLocalStorage — connections are never shared across concurrent transactions',subsystem:'Storage Layer / Database'},
       {id:'INV-02',text:'RLS policies are re-applied on every connection checkout from the pool',subsystem:'Storage Layer / Database'},
@@ -1147,6 +1196,8 @@ const PROJECTS = [
       {name:'Frontend / UI',files:'client/src/App.tsx, client/src/pages/, client/src/components/, client/src/lib/queryClient.ts, client/src/lib/i18n.ts, client/src/hooks/'},
     ],
     healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Security & HIPAA Compliance, Audio Processing Pipeline, AI Analysis Reliability, AWS Integration Reliability, Data Integrity, Operational Integrity, Operational Readiness, Frontend & UX, Feature Completeness',
+    policyThreshold:4,
+    policyConsecutiveCycles:2,
     invariants:[
       {id:'INV-01',text:'LocalStrategy passes client IP to recordFailedAttempt on every failed login path',subsystem:'Security & Compliance'},
       {id:'INV-02',text:'requireMFASetup middleware is mounted before every /api/admin/* route',subsystem:'Security & Compliance'},
@@ -1192,9 +1243,77 @@ function switchProject(id){
   renderSeamsInvariantTable();
   renderVerification();
   renderInvariantTable();
+  renderCustomInvariantsList();
   renderSubsysTable();
   // Rebuild any open fill forms for subsystem dropdowns
   document.querySelectorAll('.fill-form.open').forEach(f=>{ buildFillForm(f.id.replace('fill-','')); });
+}
+
+// ─── INVARIANT STORAGE (per project) ─────────────────────────
+function invariantKey(){ return `ccg:${activeProjectId}:invariants`; }
+function loadCustomInvariants(){ try{return JSON.parse(localStorage.getItem(invariantKey())||'[]')}catch(e){return []} }
+function saveCustomInvariants(arr){ try{localStorage.setItem(invariantKey(),JSON.stringify(arr))}catch(e){} }
+function getProjectInvariants(){
+  const project=getProject();
+  const builtIn=project.invariants||[];
+  const custom=loadCustomInvariants();
+  return [...builtIn,...custom];
+}
+function getNextInvariantId(){
+  const all=getProjectInvariants();
+  let max=0;
+  all.forEach(inv=>{const m=inv.id.match(/INV-(\d+)/);if(m)max=Math.max(max,parseInt(m[1]));});
+  return `INV-${String(max+1).padStart(2,'0')}`;
+}
+
+function toggleInvariantForm(){
+  const form=document.getElementById('invariantForm');
+  const btn=document.getElementById('addInvariantBtn');
+  if(!form)return;
+  const show=form.style.display==='none';
+  form.style.display=show?'block':'none';
+  btn.style.display=show?'none':'';
+  if(!show){document.getElementById('inv-text').value='';document.getElementById('inv-sub').value='';}
+}
+
+function saveInvariant(){
+  const text=document.getElementById('inv-text').value.trim();
+  const sub=document.getElementById('inv-sub').value.trim();
+  if(!text)return;
+  const inv={id:getNextInvariantId(),text,subsystem:sub||'Unassigned'};
+  const custom=loadCustomInvariants();
+  custom.push(inv);
+  saveCustomInvariants(custom);
+  toggleInvariantForm();
+  renderInvariantTable();
+  renderSeamsInvariantTable();
+  renderCustomInvariantsList();
+  renderVerification();
+  renderSeams();
+}
+
+function deleteInvariant(id){
+  const custom=loadCustomInvariants().filter(inv=>inv.id!==id);
+  saveCustomInvariants(custom);
+  renderInvariantTable();
+  renderSeamsInvariantTable();
+  renderCustomInvariantsList();
+  renderVerification();
+  renderSeams();
+}
+
+function renderCustomInvariantsList(){
+  const el=document.getElementById('customInvariantsList');
+  if(!el)return;
+  const custom=loadCustomInvariants();
+  if(!custom.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:6px">Custom invariants (editable)</div>'+
+    custom.map(inv=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;background:var(--prompt-bg);border:1px solid var(--border-light);border-radius:var(--r-sm);margin-bottom:4px">
+      <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${inv.id}</span>
+      <span style="font-size:12px;color:var(--text-sec);flex:1">${inv.text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>
+      <span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0">${inv.subsystem.replace(/&/g,'&amp;')}</span>
+      <button onclick="deleteInvariant('${inv.id}')" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
+    </div>`).join('');
 }
 
 // ─── STORAGE KEYS (namespaced by project) ───────────────────
@@ -1358,6 +1477,11 @@ function cycleKey(){ return `ccg:${activeProjectId}:cycle`; }
 function loadCycle(){ try{return JSON.parse(localStorage.getItem(cycleKey())||'{}')}catch(e){return {}} }
 function saveCycle(d){ try{localStorage.setItem(cycleKey(),JSON.stringify(d))}catch(e){} }
 
+const CYCLE_PHASES=['audit','implement','verify'];
+const PHASE_LABELS={audit:'A',implement:'I',verify:'V'};
+const PHASE_COLORS={audit:'var(--teal)',implement:'var(--amber)',verify:'var(--green)'};
+const PHASE_TITLES={audit:'Audited',implement:'Implemented',verify:'Verified'};
+
 function renderCycle(){
   const project=getProject();
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
@@ -1366,23 +1490,49 @@ function renderCycle(){
   const bar=document.getElementById('ctBar');
   const complete=document.getElementById('ctComplete');
   if(!container)return;
-  let done=0;
+  let totalPhases=groups.length*3, donePhases=0;
   container.innerHTML=groups.map(g=>{
-    const checked=data[g]||false;
-    if(checked)done++;
-    return `<div class="ct-item${checked?' done':''}" onclick="toggleGroup('${g.replace(/'/g,"\\'")}')">
-      <div class="ct-check${checked?' done':''}"></div>
-      <span class="ct-label">${g}</span>
+    const phase=data[g]||null; // null, 'audit', 'implement', 'verify'
+    const phaseIdx=phase?CYCLE_PHASES.indexOf(phase):-1;
+    const isDone=phase==='verify';
+    if(isDone)donePhases+=3;
+    else if(phaseIdx>=0)donePhases+=phaseIdx+1;
+    const safeG=g.replace(/'/g,"\\'");
+    const phaseDots=CYCLE_PHASES.map((p,i)=>{
+      const active=i<=phaseIdx;
+      const color=active?PHASE_COLORS[p]:'var(--border)';
+      return `<span title="${PHASE_TITLES[p]}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'#fff':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase('${safeG}','${p}')">${PHASE_LABELS[p]}</span>`;
+    }).join('');
+    return `<div class="ct-item${isDone?' done':''}" onclick="advancePhase('${safeG}')" style="justify-content:space-between">
+      <span class="ct-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g}</span>
+      <div style="display:flex;gap:3px;flex-shrink:0;margin-left:6px">${phaseDots}</div>
     </div>`;
   }).join('');
-  const pct=Math.round(done/groups.length*100);
+  const pct=totalPhases?Math.round(donePhases/totalPhases*100):0;
   if(bar)bar.style.width=pct+'%';
-  if(complete)complete.style.display=done===groups.length?'block':'none';
+  if(complete)complete.style.display=donePhases===totalPhases?'block':'none';
 }
 
-function toggleGroup(name){
+function advancePhase(name){
   const data=loadCycle();
-  data[name]=!data[name];
+  const cur=data[name]||null;
+  const idx=cur?CYCLE_PHASES.indexOf(cur):-1;
+  if(idx<CYCLE_PHASES.length-1) data[name]=CYCLE_PHASES[idx+1];
+  else data[name]=null; // wrap around to reset
+  saveCycle(data);
+  renderCycle();
+}
+
+function setPhase(name,phase){
+  const data=loadCycle();
+  const cur=data[name]||null;
+  // clicking an active phase clears back to previous
+  if(cur===phase){
+    const idx=CYCLE_PHASES.indexOf(phase);
+    data[name]=idx>0?CYCLE_PHASES[idx-1]:null;
+  } else {
+    data[name]=phase;
+  }
   saveCycle(data);
   renderCycle();
 }
@@ -1402,8 +1552,10 @@ function renderProjectSelector(){
 // ─── HEALTH SYNTHESIS PROMPT (p6a) — dynamic per project ────
 function buildP6aText(project){
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
-  const subsystemLines=groups.map(g=>`- ${g}:\n  [PASTE SESSION HANDOFF BLOCK]\n  [PASTE CYCLE SUMMARY BLOCK]\n  [PASTE VERIFICATION BLOCK]`).join('\n\n');
+  const subsystemLines=groups.map(g=>`- ${g}:\n  [PASTE SESSION HANDOFF BLOCK]\n  [PASTE CYCLE SUMMARY BLOCK]\n  [PASTE VERIFICATION BLOCK — or note "Verification not run" if skipped]`).join('\n\n');
   const dims=project.healthDimensions;
+  const thresh=project.policyThreshold||4;
+  const consecCycles=project.policyConsecutiveCycles||2;
   return `Do not make any changes to any files during this session.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
@@ -1413,9 +1565,13 @@ ${subsystemLines}
 
 [OPTIONAL: PASTE PRIOR SYNTHESIS SCORE HERE FOR DELTA COMPARISON]
 
+[OPTIONAL: PASTE SEAMS & INVARIANTS AUDIT BLOCK — if a Seams audit ran this cycle, its horizontal observations feed directly into Axis B scoring and its invariant library updates should be reflected in invariant probe results]
+
 Using these inputs as your primary source of truth, produce a Project Health Report scored on two orthogonal axes.
 
 Important: The Verification Block is an independent check — its regression counts, invariant probe results, and coverage gap data take precedence over the cycle's self-reported results where they conflict.
+
+If a Verification Block is missing for a subsystem: mark Axis B confidence as "Low — no independent verification" for that subsystem's contributions. Score Axis B categories using only the Cycle Summary Block and Session Handoff Block, but note that these are self-reported and unverified. Do NOT skip Axis B scoring entirely — provide best-effort scores with the low-confidence flag.
 
 ═══════════════════════════════════════════════════
 AXIS A — VERTICAL (Subsystem Health)
@@ -1499,7 +1655,7 @@ Reading the grid:
 - Vertical: the dimension most in need of attention before the next development cycle
 - Horizontal: the category most in need of policy intervention
 - Any subsystem where the Verification Block signals failed invariants or unresolved Critical/High findings
-- Any Axis B category at ≤4/10 for two consecutive cycles — this triggers an automatic policy response (see section 7 below)
+- Any Axis B category at ≤${thresh}/10 for ${consecCycles} consecutive cycles — this triggers an automatic policy response (see section 7 below)
 - The dimension closest to a meaningful threshold (nearly production-ready, or at risk of regression)
 
 5. PLAIN-LANGUAGE SUMMARY:
@@ -1509,7 +1665,7 @@ One paragraph summarizing where the project stands, written for a technical stak
 Produce a ready-to-paste block containing the Current Standing section and a new Cycle entry with both axes formatted for the score history.
 
 7. POLICY RESPONSE TRIGGERS:
-Check each Axis B category against its prior cycle score. If any category scored ≤4/10 in BOTH this cycle and the prior cycle, it triggers a mandatory policy response in the next cycle's scope.
+Check each Axis B category against its prior cycle score. If any category scored ≤${thresh}/10 in BOTH this cycle and the prior cycle (${consecCycles} consecutive cycles), it triggers a mandatory policy response in the next cycle's scope.
 
 For each triggered category, produce a POLICY RESPONSE entry:
 
@@ -1659,6 +1815,9 @@ function openProjectForm(){
   pfSubRows=[{name:'',files:''}];
   document.getElementById('pf-name').value='';
   document.getElementById('pf-dims').value='Overall, Architecture & Code Quality (incl. test coverage), Security & Compliance, Operational Integrity, Operational Readiness';
+  document.getElementById('pf-invs').value='';
+  document.getElementById('pf-thresh').value='4';
+  document.getElementById('pf-consec').value='2';
   document.getElementById('pf-name-preview').textContent='';
   document.getElementById('projectFormTitle').textContent='New Project';
   document.getElementById('projectFormTitle').style.color='#22c55e';
@@ -1675,6 +1834,9 @@ function openEditProject(id){
   pfSubRows=p.subsystems.map(s=>({...s}));
   document.getElementById('pf-name').value=p.name;
   document.getElementById('pf-dims').value=p.healthDimensions;
+  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.text} | ${inv.subsystem}`).join('\n');
+  document.getElementById('pf-thresh').value=p.policyThreshold||4;
+  document.getElementById('pf-consec').value=p.policyConsecutiveCycles||2;
   document.getElementById('pf-name-preview').textContent=`ID: ${p.id} (locked)`;
   document.getElementById('projectFormTitle').textContent=`Editing: ${p.name}`;
   document.getElementById('projectFormTitle').style.color='#f59e0b';
@@ -1731,11 +1893,21 @@ function saveProjectForm(){
   if(!pfSubRows.length||pfSubRows.every(s=>!s.name.trim())){showPfErr('pf-subs-err','At least one subsystem is required');valid=false;}
   if(!valid)return;
 
+  const invsRaw=document.getElementById('pf-invs').value.trim();
+  const invsParsed=invsRaw?invsRaw.split('\n').filter(l=>l.trim()).map((l,i)=>{
+    const parts=l.split('|').map(s=>s.trim());
+    return {id:`INV-${String(i+1).padStart(2,'0')}`,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
+  }):[];
+  const thresh=parseInt(document.getElementById('pf-thresh').value)||4;
+  const consec=parseInt(document.getElementById('pf-consec').value)||2;
   const project={
     id,name,
     subsystems:pfSubRows.filter(s=>s.name.trim()).map(s=>({name:s.name.trim(),files:s.files.trim()})),
     cycleGroups:pfSubRows.filter(s=>s.name.trim()).map(s=>s.name.trim()),
     healthDimensions:dims,
+    invariants:invsParsed,
+    policyThreshold:thresh,
+    policyConsecutiveCycles:consec,
     seeds:[],
   };
   const custom=loadCustomProjects();
@@ -1825,7 +1997,7 @@ function deleteArchiveEntry(id){
 
 // ─── SEAMS & INVARIANTS AUDIT (§1s) — dynamic per project ───
 function buildSeamsText(project){
-  const invs=project.invariants||[];
+  const invs=getProjectInvariants();
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}`).join('\n')
     : '  (No invariants defined yet — this audit will create the initial library)';
@@ -1940,26 +2112,12 @@ function renderSeams(){
 }
 
 function renderSeamsInvariantTable(){
-  const project=getProject();
-  const tbody=document.getElementById('seamsInvariantBody');
-  const title=document.getElementById('seamsInvariantTitle');
-  if(!tbody)return;
-  const invs=project.invariants||[];
-  if(title)title.textContent=`${project.name} — Invariant Library (${invs.length})`;
-  if(!invs.length){
-    tbody.innerHTML='<tr><td colspan="2" style="color:var(--text-muted);text-align:center;padding:14px">No invariants defined yet. This audit will create the initial library.</td></tr>';
-    return;
-  }
-  tbody.innerHTML=invs.map(inv=>{
-    const displayText=inv.text.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    const displaySub=inv.subsystem.replace(/&/g,'&amp;');
-    return `<tr><td><span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-right:6px">${inv.id}</span>${displayText}</td><td>${displaySub}</td></tr>`;
-  }).join('');
+  renderInvariantTableInto('seamsInvariantBody','seamsInvariantTitle');
 }
 
 // ─── VERIFICATION PASS (§4v) — dynamic per project ──────────
 function buildVerificationText(project){
-  const invs=project.invariants||[];
+  const invs=getProjectInvariants();
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}`).join('\n')
     : '  (No invariants defined yet — add via Project Manager or grow organically via /reflect)';
@@ -1982,7 +2140,10 @@ ${invLines}
 Conduct the following verification in four parts. Use code reads and targeted test executions — not prose assessments or trust in the cycle's self-reported results.
 
 PART 1 — INVARIANT PROBE RESULTS
-Re-probe every invariant that the cycle claimed to fix or touch. Additionally, select 5 invariants from the library above at random and probe those.
+Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected at copy time — do NOT substitute your own picks):
+
+MANDATORY ROTATION PROBES:
+${invs.length>=5?selectRandomInvariants(invs,5).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
 
 For each invariant probed:
 - Read the relevant code directly (do not rely on the cycle's description of what changed)
@@ -2051,6 +2212,27 @@ Category D ratio: [X%]
 Finally, answer: "What invariants should be added to the library based on what this cycle revealed?" List any new invariants discovered during verification that should be probed in future cycles.`;
 }
 
+function selectRandomInvariants(invs,count){
+  const shuffled=[...invs];
+  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+  return shuffled.slice(0,count);
+}
+
+function doCopyVerification(){
+  // Regenerate prompt with fresh random picks, then copy with fill values applied
+  const project=getProject();
+  const pre=document.getElementById('p4v');
+  if(pre) pre.textContent=buildVerificationText(project);
+  const text=getFilledText('p4v');
+  const btn=document.getElementById('copy-p4v');
+  navigator.clipboard.writeText(text).then(()=>{
+    if(!btn)return;
+    btn.classList.add('ok');
+    btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><path d="M13.5 4.5l-7 7L3 8"/></svg>Copied`;
+    setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy`;},2000);
+  });
+}
+
 function renderVerification(){
   const project=getProject();
   const pre=document.getElementById('p4v');
@@ -2061,15 +2243,15 @@ function renderVerification(){
   if(btn)btn.classList.remove('active');
 }
 
-function renderInvariantTable(){
+function renderInvariantTableInto(tbodyId,titleId){
   const project=getProject();
-  const tbody=document.getElementById('invariantTableBody');
-  const title=document.getElementById('invariantTableTitle');
+  const invs=getProjectInvariants();
+  const tbody=document.getElementById(tbodyId);
+  const title=document.getElementById(titleId);
   if(!tbody)return;
-  const invs=project.invariants||[];
   if(title)title.textContent=`${project.name} — Invariant Library (${invs.length})`;
   if(!invs.length){
-    tbody.innerHTML='<tr><td colspan="2" style="color:var(--text-muted);text-align:center;padding:14px">No invariants defined for this project yet. They grow organically via /reflect.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="2" style="color:var(--text-muted);text-align:center;padding:14px">No invariants defined yet. Add via the form below, or grow organically via /reflect and Seams audits.</td></tr>';
     return;
   }
   tbody.innerHTML=invs.map(inv=>{
@@ -2077,6 +2259,10 @@ function renderInvariantTable(){
     const displaySub=inv.subsystem.replace(/&/g,'&amp;');
     return `<tr><td><span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-right:6px">${inv.id}</span>${displayText}</td><td>${displaySub}</td></tr>`;
   }).join('');
+}
+
+function renderInvariantTable(){
+  renderInvariantTableInto('invariantTableBody','invariantTableTitle');
 }
 
 // ─── VARIANT / TOGGLE HELPERS ────────────────────────────────
@@ -2128,6 +2314,7 @@ renderSeams();
 renderSeamsInvariantTable();
 renderVerification();
 renderInvariantTable();
+renderCustomInvariantsList();
 renderSubsysTable();
 </script>
 </body>
