@@ -2107,6 +2107,12 @@ README, and the roadmap carefully before doing anything else.
 
 Do not make any changes to any files during the audit phase.
 
+This audit runs in two stages within this session. Complete Stage 1 fully before starting Stage 2.
+
+═══════════════════════════════════════════
+STAGE 1 — BROAD PASS
+═══════════════════════════════════════════
+
 Audit the codebase thoroughly. For each finding:
 - State the issue, cite the file and function/line area
 - Severity: Critical / High / Medium / Low
@@ -2126,7 +2132,7 @@ DO NOT flag code for "simplification" or "cleanup" unless the current
 code is actively wrong or creates a maintenance trap. Working code
 that could be written differently is not a finding.
 
-After the audit, provide ratings out of 10 with reasoning:
+After the broad pass, provide ratings out of 10 with reasoning:
 ${dimList}
 
 For each rating include:
@@ -2134,10 +2140,45 @@ For each rating include:
 - The single finding most dragging the score down
 - The single highest-leverage improvement and its estimated effort (S/M/L)
 
-End with:
+End Stage 1 with:
 - Top 5 findings by production impact (most likely to cause real breakage)
 - Any findings that contradict or are missing from CLAUDE.md Common Gotchas
-- One sentence: the single most important thing to fix before anything else
+- CONFIDENCE GAP LIST: For every dimension you rated Medium or Low
+  confidence, list the specific files and areas you did not read deeply.
+  Format: [Dimension] — [files/areas not read] — [what you inferred
+  vs. what you'd need to verify]
+
+═══════════════════════════════════════════
+STAGE 2 — DEEP DIVE ON LOW-CONFIDENCE AREAS
+═══════════════════════════════════════════
+
+Now go deeper on every area in your Confidence Gap List from Stage 1.
+For each Low or Medium confidence dimension:
+
+1. Read the specific files you listed as not deeply read
+2. Look for findings you missed in Stage 1 — especially silent
+   degradation, cross-module dependency issues, and security gaps
+   that only appear on close reading
+3. Update your findings list: add new findings, revise or remove
+   any Stage 1 findings that were wrong on closer inspection
+4. Revise your confidence level and score for each dimension you
+   re-examined. For each revision, note what changed and why.
+
+After completing the deep dives, produce a FINAL REPORT:
+
+REVISED RATINGS (only dimensions that changed):
+- [Dimension]: [old score] → [new score] | Confidence: [old] → [new]
+  Reason: [what the deep dive revealed]
+
+NEW FINDINGS (discovered in Stage 2):
+[same format as Stage 1 findings]
+
+RETRACTED FINDINGS (Stage 1 findings that were wrong on closer read):
+[finding ID] — [why it was wrong]
+
+FINAL TOP 5 by production impact (updated if Stage 2 changed the ranking)
+
+One sentence: the single most important thing to fix before anything else.
 
 After I review the audit, I will tell you which findings to implement.
 Do not implement anything until then.`;
