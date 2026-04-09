@@ -839,9 +839,9 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
   <section id="s6a">
     <div class="sh"><div class="snum">§6a</div><div>
       <div class="stitle">Project Health Synthesis</div>
-      <div class="spurp"><strong>Purpose:</strong> The accurate, benchmarkable holistic score. Aggregates all prior audit outputs. Run only after a full audit cycle — this is your progress benchmark. Never compare Pulse scores to Synthesis scores.</div>
+      <div class="spurp"><strong>Purpose:</strong> The accurate, benchmarkable holistic score on two axes. <strong>Axis A (Vertical)</strong> scores subsystem health. <strong>Axis B (Horizontal)</strong> scores cross-cutting bug-shape posture. Takes three inputs per subsystem: Session Handoff + Cycle Summary + Verification Block. Run only after a full audit cycle — this is your progress benchmark. Never compare Pulse scores to Synthesis scores.</div>
     </div></div>
-    <div class="wnote"><div class="ic">⚠</div><div><strong>Requires:</strong> Completed audit outputs from all subsystem sessions. Do not run mid-cycle or without these inputs — the score will be unreliable and not comparable to future cycles.</div></div>
+    <div class="wnote"><div class="ic">⚠</div><div><strong>Requires three blocks per subsystem:</strong> Session Handoff Block (§1), Cycle Summary Block (/reflect), and Verification Block (§4v). Do not run mid-cycle or without these inputs — the score will be unreliable and not comparable to future cycles. The Verification Block is critical for accurate Axis B scoring.</div></div>
     <div class="pb" id="block-p6a">
       <div class="pb-header">
         <div class="pb-label">Health Synthesis Prompt</div>
@@ -852,7 +852,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
         </div>
       </div>
       <div id="p6a-dims-note" style="font-size:12px;color:#4e5e7a;padding:8px 12px;background:#1e2435;border:1px solid #2a3142;border-radius:6px;margin-bottom:14px;line-height:1.6">
-        <strong style="color:#8899b3;font-weight:500">Active project — subsystems &amp; dimensions:</strong>
+        <strong style="color:#8899b3;font-weight:500">Active project — two-axis dimensions:</strong>
         <span id="p6a-dims-text" style="font-family:monospace;font-size:11px;margin-left:4px"></span>
       </div>
       <div class="fill-form" id="fill-p6a"></div>
@@ -904,19 +904,31 @@ and compare against prior scores.</pre>
 
 ## Current Standing
 Last synthesis: [date]
-Overall: X/10
+Overall (weighted avg): X/10
 One-line summary: [plain-language status]
-Top priority this cycle: [one sentence]
+Top vertical priority: [subsystem dimension most in need]
+Top horizontal priority: [bug-shape category most in need of policy intervention]
 
 ## Score History
 
 ### Cycle N — [date] — Synthesis
-Overall: X/10
-Architecture: X/10 | Security: X/10 | Call Analysis: X/10 | RAG: X/10
-Clinical Docs: X/10 | Integrations: X/10 | UI/UX: X/10 | Ops: X/10 | Viability: X/10
+
+AXIS A — VERTICAL (Subsystem Health):
+Architecture: X/10 | Security: X/10 | Call Analysis: X/10 | RAG: X/10 or N/A
+AI Output Quality: X/10 or N/A | Integrations: X/10 | UI/UX: X/10
+Ops Integrity: X/10 | Ops Readiness: X/10 | Viability: X/10 or N/A
+
+AXIS B — HORIZONTAL (Bug-Shape Posture):
+Silent Degradation: X/10 [trend] | Startup Ordering: X/10 [trend]
+Operator-Only Gaps: X/10 [trend] | Parallel Drift: X/10 [trend]
+Test Coverage Quality: X/10 [trend]
+
+Overall (weighted avg): X/10
+Verification: [N] invariants probed, [N] passed | Net score: [fixed] − [regressions] = [net]
+Category D ratio: [X%]
 Key finding: [one sentence]
 Priority for next cycle: [one sentence]
-Delta from prior cycle: [improved / declined / held — and which dimensions]
+Delta from prior: [improved / declined / held — which dimensions on both axes]
 
 ### Cycle N-1 — [date] — Synthesis
 ...
@@ -1042,7 +1054,7 @@ const PROJECTS = [
       {name:'UI/UX & Frontend',files:'client/src/App.tsx, client/src/pages/, client/src/components/'},
       {name:'Billing / Business Plan',files:'server/routes/billing.ts, server/services/stripe.ts, shared/schema/billing.ts, shared/schema/features.ts'},
     ],
-    healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Storage/DB Integrity, Security & HIPAA, Call Analysis, RAG, Clinical Documentation, Integrations, UI/UX, Operational Integrity, Operational Readiness, Business Viability',
+    healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Storage/DB Integrity, Security & HIPAA, Call Analysis, RAG, AI Output Quality / Analysis Accuracy, Integrations, UI/UX, Operational Integrity, Operational Readiness, Business Viability',
     invariants:[
       {id:'INV-01',text:'withTransaction uses AsyncLocalStorage — connections are never shared across concurrent transactions',subsystem:'Storage Layer / Database'},
       {id:'INV-02',text:'RLS policies are re-applied on every connection checkout from the pool',subsystem:'Storage Layer / Database'},
@@ -1322,39 +1334,111 @@ function renderProjectSelector(){
 // ─── HEALTH SYNTHESIS PROMPT (p6a) — dynamic per project ────
 function buildP6aText(project){
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
-  const subsystemLines=groups.map(g=>`- ${g}:\n[PASTE CYCLE SUMMARY BLOCK]`).join('\n\n');
+  const subsystemLines=groups.map(g=>`- ${g}:\n  [PASTE SESSION HANDOFF BLOCK]\n  [PASTE CYCLE SUMMARY BLOCK]\n  [PASTE VERIFICATION BLOCK]`).join('\n\n');
   const dims=project.healthDimensions;
   return `Do not make any changes to any files during this session.
 
-PRIMARY INPUT — Paste one CYCLE SUMMARY BLOCK per subsystem completed this cycle:
-(Produced by /reflect at the end of each subsystem's implementation cycle)
+PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
+(Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
 
 ${subsystemLines}
 
-[OPTIONAL: For any subsystem where you want higher-confidence scoring, paste the original SESSION HANDOFF BLOCK below its CYCLE SUMMARY BLOCK]
-
 [OPTIONAL: PASTE PRIOR SYNTHESIS SCORE HERE FOR DELTA COMPARISON]
 
-Using these inputs as your primary source of truth, produce a Project Health Report.
+Using these inputs as your primary source of truth, produce a Project Health Report scored on two orthogonal axes.
+
+Important: The Verification Block is an independent check — its regression counts, invariant probe results, and coverage gap data take precedence over the cycle's self-reported results where they conflict.
+
+═══════════════════════════════════════════════════
+AXIS A — VERTICAL (Subsystem Health)
+═══════════════════════════════════════════════════
 
 For each dimension below, provide:
-- A score out of 10
-- Coverage confidence: High (full cycle summary available) / Medium (partial or summary only) / Low (inferred)
-- 2–3 sentences of reasoning grounded in specific findings from the cycle summaries, not general impressions
+- A score out of 10, OR "Not assessed this cycle" if no direct signal exists from the cycle inputs
+  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions like RAG, AI Output Quality / Analysis Accuracy, and Business Viability when no dedicated cycle has run against them.
+- Coverage confidence: High (full cycle with verification block) / Medium (cycle summary only, no verification) / Low (inferred from adjacent signals)
+- 2–3 sentences of reasoning grounded in specific findings from the cycle inputs, not general impressions
 - The single most important finding or unresolved item driving the score
 - One concrete action that would most improve this score
 
-Dimensions:
+Vertical dimensions:
 ${dims}
 
-Then provide:
-- A delta summary if a prior score was provided: which dimensions improved, declined, or held steady, and why
-- The single dimension most in need of attention before the next development cycle
-- The single dimension closest to a meaningful threshold (nearly production-ready, or at risk of regression)
-- Any subsystem where the CYCLE SUMMARY BLOCK signals unresolved Critical/High findings — these should be prioritized in the next cycle regardless of overall score
+═══════════════════════════════════════════════════
+AXIS B — HORIZONTAL (Bug-Shape Posture)
+═══════════════════════════════════════════════════
 
-End with a one-paragraph plain-language summary of where the project stands — written as if you were briefing a technical stakeholder who hasn't read the full report.
-At the end of your output, produce a PROJECT_HEALTH.md update block containing the Current Standing section and a new Cycle entry formatted for the score history, ready to paste into the file.`;
+Score each of the following cross-cutting categories. These measure systemic bug patterns that span subsystems — no single vertical audit owns them. Evidence comes from all subsystem inputs combined, especially the Verification Blocks.
+
+1. Silent Degradation Posture (score 1–10)
+   Measured by: count of silent-degradation findings this cycle vs. prior (trend direction), count of .catch() blocks with default/fallback values in load-bearing code paths, presence of a failing-loud policy (errors surface visibly rather than being swallowed).
+   Evidence sources: Verification Block regression count, audit findings where the failure mode is "app continues running but produces wrong results."
+
+2. Startup Ordering Guarantees (score 1–10)
+   Measured by: whether startup validation exists for every env var documented in CLAUDE.md, presence of middleware-ordering tests, count of ordering-dependent bugs found this cycle.
+   Evidence sources: Cycle Summary Block, Common Gotchas cross-check result from Verification Block.
+
+3. Operator-Only State Gaps (score 1–10)
+   Measured by: gap between what the Operator State Checklist requires (manual steps, env vars, one-time migrations) and what automated startup validation actually checks, count of accumulating one-time backfill items that haven't been automated.
+   Evidence sources: New Common Gotchas entries (lagging indicator), Verification Block execution quality section.
+
+4. Parallel Source-of-Truth Drift (score 1–10)
+   Measured by: count of known duplicated definitions (config values, type definitions, constants defined in multiple places), trend direction (growing / shrinking / stable).
+   Evidence sources: Audit findings that reference duplicated or inconsistent definitions, implementation changes that touched the same logical value in multiple files.
+
+5. Test Coverage Quality (score 1–10)
+   Measured by: Category D count from Verification Block (fixes without regression tests), ratio of fixes-with-regression-tests to fixes-without, whether new tests probe the actual regression shape or just assert happy paths.
+   Evidence sources: Verification Block Coverage Gap Report, Category D ratio.
+
+For each Axis B category provide:
+- Score 1–10
+- Trend vs. prior cycle: Improving / Stable / Degrading (or "First measurement" if no prior data)
+- 1–2 sentences of key evidence from this cycle's inputs
+- One specific action that would improve this category
+
+═══════════════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════════════
+
+Produce the following sections in order:
+
+1. TWO-AXIS GRID (this is the primary output):
+
+AXIS A — VERTICAL              Score     Confidence
+────────────────────────────────────────────────────
+[each dimension]                X/10      High/Med/Low
+                                ...or "Not assessed"
+
+AXIS B — HORIZONTAL             Score     Trend
+────────────────────────────────────────────────────
+Silent Degradation Posture      X/10      Improving/Stable/Degrading
+Startup Ordering Guarantees     X/10      Improving/Stable/Degrading
+Operator-Only State Gaps        X/10      Improving/Stable/Degrading
+Parallel Source-of-Truth Drift  X/10      Improving/Stable/Degrading
+Test Coverage Quality           X/10      Improving/Stable/Degrading
+
+Reading the grid:
+- Vertical axis tells you which subsystem to audit next (lowest-scoring assessed dimension).
+- Horizontal axis tells you which bug class needs policy intervention (lowest-scoring category, especially if trending down).
+
+2. OVERALL WEIGHTED AVERAGE (secondary signal only — do not use as the primary assessment):
+   A single X/10 score. State the weights used. This exists for quick comparison across cycles, not for decision-making.
+
+3. DELTA SUMMARY (if prior score provided):
+   Which dimensions improved, declined, or held steady on BOTH axes, and why.
+
+4. PRIORITY CALLS:
+- Vertical: the dimension most in need of attention before the next development cycle
+- Horizontal: the category most in need of policy intervention
+- Any subsystem where the Verification Block signals failed invariants or unresolved Critical/High findings
+- Any Axis B category at ≤4/10 for two consecutive cycles — flag for automatic policy response next cycle (see §4v policy-response protocol)
+- The dimension closest to a meaningful threshold (nearly production-ready, or at risk of regression)
+
+5. PLAIN-LANGUAGE SUMMARY:
+One paragraph summarizing where the project stands, written for a technical stakeholder who hasn't read the full report.
+
+6. PROJECT_HEALTH.md UPDATE BLOCK:
+Produce a ready-to-paste block containing the Current Standing section and a new Cycle entry with both axes formatted for the score history.`;
 }
 
 function renderP6a(){
@@ -1362,7 +1446,7 @@ function renderP6a(){
   const pre=document.getElementById('p6a');
   const note=document.getElementById('p6a-dims-text');
   if(pre) pre.textContent=buildP6aText(project);
-  if(note) note.textContent=`${project.name} · ${(project.cycleGroups||project.subsystems.map(s=>s.name)).length} subsystems · ${project.healthDimensions}`;
+  if(note) note.textContent=`${project.name} · ${(project.cycleGroups||project.subsystems.map(s=>s.name)).length} subsystems · Axis A: ${project.healthDimensions} · Axis B: Silent Degradation, Startup Ordering, Operator-Only Gaps, Parallel Drift, Test Coverage Quality`;
   const form=document.getElementById('fill-p6a');
   if(form){form.innerHTML='';form.classList.remove('open');}
   const btn=document.querySelector('#block-p6a .fill-btn');
