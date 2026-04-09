@@ -215,6 +215,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <a href="#s3">§3 — Implementation</a>
     <div class="nav-group">Risk / Quality</div>
     <a href="#s4">§4 — Dep. Check</a>
+    <a href="#s4v">§4v — Verify <span class="nbadge nb-r">New</span></a>
     <a href="#s5">§5 — Roadmap</a>
     <div class="nav-group">Health</div>
     <a href="#s6a">§6a — Synthesis <span class="nbadge nb-p">Full</span></a>
@@ -241,7 +242,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
       </div>
       <div class="ct-progress"><div class="ct-bar" id="ctBar" style="width:0%"></div></div>
       <div id="ctItems"></div>
-      <div class="ct-complete" id="ctComplete">✓ Cycle complete — run Health Synthesis</div>
+      <div class="ct-complete" id="ctComplete">✓ Cycle complete — run Verification Pass → Health Synthesis</div>
     </div>
   </div>
 </nav>
@@ -263,9 +264,10 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-r">§4 Dep. Check</div><div class="farr">→</div><div class="flbl">required before High/Very High risk changes</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-t">§3 Implementation</div><div class="farr">→</div><div class="flbl">paste Impl. Handoff Block</div><div class="farr">→</div><div class="fn fn-a">Summary Block</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-r">§4 Regression Check</div><div class="farr">→</div><div class="flbl">paste Summary Block, before merge</div></div>
+    <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-r" style="background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.4)">§4v Verification Pass</div><div class="farr">→</div><div class="flbl">fresh session — independent verification, no impl. context</div><div class="farr">→</div><div class="fn fn-a">Verification Block</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-p">§5 Roadmap</div><div class="farr">→</div><div class="flbl">after 2–3 audit cycles</div></div>
-    <div class="flow-row"><div class="fn fn-g">§6a Health Synthesis</div><div class="farr">→</div><div class="flbl">after full cycle</div><div style="padding:0 8px;color:var(--text-muted)">|</div><div class="fn fn-g" style="opacity:.7">§6b Pulse</div><div class="farr">→</div><div class="flbl">anytime</div></div>
-    <div class="flow-note"><strong>Your workflow:</strong> Session 1 = Systems Map (once). Session 2 per subsystem = Audit → Planning (same session). Session 3 per subsystem = Implementation (new session). Session 4 = Regression Check + Reflection (new session, produces Follow-On Audit Items for the next cycle). <strong>Key habit:</strong> Paste the Systems Map summary at the top of every follow-on session. Paste any Follow-On Audit Items at the top of the next audit for the flagged module.</div>
+    <div class="flow-row"><div class="fn fn-g">§6a Health Synthesis</div><div class="farr">→</div><div class="flbl">after full cycle — takes Handoff + Cycle Summary + Verification Block</div><div style="padding:0 8px;color:var(--text-muted)">|</div><div class="fn fn-g" style="opacity:.7">§6b Pulse</div><div class="farr">→</div><div class="flbl">anytime</div></div>
+    <div class="flow-note"><strong>Your workflow:</strong> Session 1 = Systems Map (once). Session 2 per subsystem = Audit → Planning (same session). Session 3 per subsystem = Implementation (new session). Session 4 = Regression Check + Reflection (new session). <strong style="color:var(--red)">Session 5 = Verification Pass (fresh session, no implementation context — produces VERIFICATION BLOCK).</strong> <strong>Key habit:</strong> Paste the Systems Map summary at the top of every follow-on session. Paste any Follow-On Audit Items at the top of the next audit for the flagged module.</div>
   </div>
 
   <!-- §0 SYSTEMS MAP -->
@@ -688,6 +690,79 @@ End with:
     </div>
   </section>
 
+  <!-- §4v VERIFICATION PASS -->
+  <section id="s4v">
+    <div class="sh"><div class="snum">§4v</div><div>
+      <div class="stitle">Independent Verification Pass</div>
+      <div class="spurp"><strong>Purpose:</strong> Independent verification of the cycle's work in a <strong>fresh session with no memory of the implementation</strong>. Probes invariants, counts regressions with a hard definition, checks test coverage quality, and produces a <strong>VERIFICATION BLOCK</strong> used as input for §6a Health Synthesis.</div>
+    </div></div>
+    <div class="wnote"><div class="ic">⚠</div><div><strong>Must run in a completely fresh session.</strong> The verifier must have zero context from the implementation session. If you participated in the implementation, start a new session with no prior conversation. This prevents the implementer from grading its own work — the core problem this phase solves.</div></div>
+    <div class="inote"><div class="ic">📌</div><div><strong>Inputs:</strong> Paste the <strong>Implementation Summary Block</strong> from §3 and the <strong>Cycle Summary Block</strong> from /reflect. The verifier re-probes invariants via code reads and targeted test runs — not prose assessments.</div></div>
+
+    <!-- Invariant Library Reference -->
+    <div class="sub-table-wrap">
+      <div class="sub-table-hdr">
+        <span id="invariantTableTitle">Invariant Library</span>
+        <small>Project-specific rules that must always hold — grows via /reflect</small>
+      </div>
+      <table class="st" id="invariantTable">
+        <tbody id="invariantTableBody">
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pb" id="block-p4v">
+      <div class="pb-header">
+        <div class="pb-label">Verification Pass Prompt</div>
+        <div class="pb-meta">
+          <span class="ptag">Fresh session — no implementation context</span>
+          <button class="fill-btn" onclick="toggleFill('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="copy-btn" id="copy-p4v" onclick="doCopy('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+        </div>
+      </div>
+      <div class="fill-form" id="fill-p4v"></div>
+      <pre id="p4v"></pre>
+    </div>
+
+    <div class="inote"><div class="ic">📌</div><div>The VERIFICATION BLOCK produced here becomes a <strong>required input</strong> for §6a Health Synthesis alongside the SESSION HANDOFF BLOCK and CYCLE SUMMARY BLOCK. All three are needed for accurate scoring.</div></div>
+
+    <!-- VERIFICATION BLOCK format reference -->
+    <div class="vt" onclick="toggleVariant('v-vblock-ref',this)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
+    <div class="vb" id="v-vblock-ref">
+      <div class="pb" id="block-vblockref">
+        <div class="pb-header"><div class="pb-label">VERIFICATION BLOCK — Output Format</div><div class="pb-meta"><span class="ptag">Reference only</span><button class="copy-btn" id="copy-vblockref" onclick="doCopy('vblockref')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
+        <pre id="vblockref">---VERIFICATION BLOCK---
+Verified scope: [subsystem group name]
+Verification date: [date]
+Cycle being verified: [subsystem + cycle identifier from implementation summary]
+
+INVARIANT PROBE RESULTS:
+INV-XX | [invariant description] | PASS / FAIL / UNVERIFIED | [evidence summary]
+(repeat for each probed invariant)
+Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
+
+REGRESSION COUNT:
+Regressions found: [N]
+R1 | [description] | [severity] | Documented by cycle: Y/N | [code location]
+(repeat for each regression, or "None found")
+Net score: [findings fixed] − [regressions] = [net]
+
+CYCLE EXECUTION QUALITY:
+Tests run to completion: YES/NO — [evidence]
+Common Gotchas cross-checked: YES/NO — [evidence]
+New Common Gotchas added: YES/NO — [what was added, or N/A]
+
+COVERAGE GAP REPORT:
+Fixes with regression tests: [N of M]
+Category D candidates (fixes without regression tests):
+[action ID] | [fix description] | [what test is needed]
+(repeat for each, or "None — all fixes have regression tests")
+Category D ratio: [X%]
+---END VERIFICATION BLOCK---</pre>
+      </div>
+    </div>
+  </section>
+
   <!-- §5 ROADMAP -->
   <section id="s5">
     <div class="sh"><div class="snum">§5</div><div>
@@ -968,6 +1043,18 @@ const PROJECTS = [
       {name:'Billing / Business Plan',files:'server/routes/billing.ts, server/services/stripe.ts, shared/schema/billing.ts, shared/schema/features.ts'},
     ],
     healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Storage/DB Integrity, Security & HIPAA, Call Analysis, RAG, Clinical Documentation, Integrations, UI/UX, Operational Integrity, Operational Readiness, Business Viability',
+    invariants:[
+      {id:'INV-01',text:'withTransaction uses AsyncLocalStorage — connections are never shared across concurrent transactions',subsystem:'Storage Layer / Database'},
+      {id:'INV-02',text:'RLS policies are re-applied on every connection checkout from the pool',subsystem:'Storage Layer / Database'},
+      {id:'INV-03',text:'PHI encryption key rotation does not invalidate existing encrypted records',subsystem:'Security & HIPAA Compliance'},
+      {id:'INV-04',text:'WebSocket reconnection restores subscription state without data loss or duplicate messages',subsystem:'Core Architecture & Data Pipeline'},
+      {id:'INV-05',text:'Queue processing is idempotent — reprocessing a message never creates duplicates',subsystem:'Core Architecture & Data Pipeline'},
+      {id:'INV-06',text:'Audit log entries are immutable once written — no UPDATE or DELETE paths exist',subsystem:'Security & HIPAA Compliance'},
+      {id:'INV-07',text:'AssemblyAI webhook handler validates request signature before processing payload',subsystem:'Call Analysis Pipeline'},
+      {id:'INV-08',text:'Content hash is computed before encryption, not after',subsystem:'Storage Layer / Database'},
+      {id:'INV-09',text:'Organization-scoped queries never return data belonging to a different org',subsystem:'Storage Layer / Database'},
+      {id:'INV-10',text:'Redis session store handles Redis restart without creating orphaned or duplicate sessions',subsystem:'Core Architecture & Data Pipeline'},
+    ],
     seeds:[{id:'seed-obs-1',title:'Observatory — Storage Layer / Database Audit',date:'04/05/26',content:'Scope: Storage Layer / Database\nFindings: 25 total (F01-F25) — 2 Critical, 3 High, 10 Medium, 10 Low\nKey: F01 withTransaction concurrency bug (CRITICAL) — fixed via ALS pattern. F02 RLS bypass across pooled connections (CRITICAL) — fixed. F21 encrypted search broken (MEDIUM) — deferred, arch decision pending.\nAll 12 actions completed (A1-A10, A14, A15).'}],
   },
   {
@@ -982,6 +1069,22 @@ const PROJECTS = [
       {name:'Frontend / UI',files:'client/src/App.tsx, client/src/pages/, client/src/components/, client/src/lib/queryClient.ts, client/src/lib/i18n.ts, client/src/hooks/'},
     ],
     healthDimensions:'Overall, Architecture & Code Quality (incl. test coverage), Security & HIPAA Compliance, Audio Processing Pipeline, AI Analysis Reliability, AWS Integration Reliability, Data Integrity, Operational Integrity, Operational Readiness, Frontend & UX, Feature Completeness',
+    invariants:[
+      {id:'INV-01',text:'LocalStrategy passes client IP to recordFailedAttempt on every failed login path',subsystem:'Security & Compliance'},
+      {id:'INV-02',text:'requireMFASetup middleware is mounted before every /api/admin/* route',subsystem:'Security & Compliance'},
+      {id:'INV-03',text:'content_hash persists across updateCall — never nullified by partial updates',subsystem:'Storage Layer / Database'},
+      {id:'INV-04',text:'Audit HMAC chain head survives process restart without gaps',subsystem:'Security & Compliance'},
+      {id:'INV-05',text:'Confidence score calculation scales with call length past 10 seconds',subsystem:'AI Processing & Analysis'},
+      {id:'INV-06',text:'bedrockProvider.isAvailable returns true only when IMDS credentials are actually resolvable',subsystem:'AI Processing & Analysis'},
+      {id:'INV-07',text:'PHI redactor runs before any external API call that includes transcript text',subsystem:'Security & Compliance'},
+      {id:'INV-08',text:'Rate limiter state is Redis-backed and survives worker restart',subsystem:'Core Architecture & Pipeline'},
+      {id:'INV-09',text:'Webhook retry queue drains completely before graceful process shutdown',subsystem:'AWS & External Integrations'},
+      {id:'INV-10',text:'S3 presigned URLs expire before the session token that generated them',subsystem:'AWS & External Integrations'},
+      {id:'INV-11',text:'Batch scheduler never double-schedules a call already in processing state',subsystem:'AI Processing & Analysis'},
+      {id:'INV-12',text:'WAF middleware executes before authentication middleware in the request chain',subsystem:'Core Architecture & Pipeline'},
+      {id:'INV-13',text:'Scoring calibration thresholds load from database, not hardcoded defaults',subsystem:'AI Processing & Analysis'},
+      {id:'INV-14',text:'Auto-calibration never overwrites manual calibration entries',subsystem:'AI Processing & Analysis'},
+    ],
     seeds:[],
   },
 ];
@@ -1007,6 +1110,8 @@ function switchProject(id){
   renderHealthDimsNote();
   renderP6a();
   renderP6b();
+  renderVerification();
+  renderInvariantTable();
   renderSubsysTable();
   // Rebuild any open fill forms for subsystem dropdowns
   document.querySelectorAll('.fill-form.open').forEach(f=>{ buildFillForm(f.id.replace('fill-','')); });
@@ -1524,6 +1629,128 @@ function deleteArchiveEntry(id){
   renderArchive();
 }
 
+// ─── VERIFICATION PASS (§4v) — dynamic per project ──────────
+function buildVerificationText(project){
+  const invs=project.invariants||[];
+  const invLines=invs.length
+    ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}`).join('\n')
+    : '  (No invariants defined yet — add via Project Manager or grow organically via /reflect)';
+  return `Do not make any changes to any files during this session.
+
+IMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.
+
+You are verifying the output of a complete audit-implement cycle.
+
+INPUTS — paste these from the completed cycle:
+[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]
+
+[PASTE CYCLE SUMMARY BLOCK FROM /REFLECT HERE]
+
+INVARIANT LIBRARY (current — ${invs.length} invariants):
+${invLines}
+
+---
+
+Conduct the following verification in four parts. Use code reads and targeted test executions — not prose assessments or trust in the cycle's self-reported results.
+
+PART 1 — INVARIANT PROBE RESULTS
+Re-probe every invariant that the cycle claimed to fix or touch. Additionally, select 5 invariants from the library above at random and probe those.
+
+For each invariant probed:
+- Read the relevant code directly (do not rely on the cycle's description of what changed)
+- If a test exists for this invariant, run it and report the result
+- If no test exists, verify by code inspection and explain what you checked
+- Result: PASS / FAIL / UNVERIFIED (with reason for each)
+
+PART 2 — REGRESSION COUNT
+Count regressions using this hard definition: any behavior change where the post-cycle state is worse under any realistic load than the pre-cycle state — whether the cycle documented it as a "tradeoff" or not. A tradeoff that makes things worse in a realistic scenario IS a regression.
+
+For each regression found:
+- Describe the behavior that is now worse
+- Cite the specific code change that caused it
+- Note whether the cycle documented it (as a tradeoff or otherwise)
+- Rate severity: Critical / High / Medium / Low
+
+Calculate: Net score = (findings fixed) − (regressions introduced)
+
+PART 3 — CYCLE EXECUTION QUALITY
+Answer three yes/no questions with concrete evidence (not just the cycle's claims):
+1. Did the cycle run tests to completion? (Check for test output artifacts, not just assertions that tests passed)
+2. Did the cycle cross-check against the Common Gotchas section of CLAUDE.md? (Look for evidence in implementation decisions)
+3. Did the cycle introduce new entries to Common Gotchas? (Check CLAUDE.md for recent additions — this is a lagging indicator of operator-only state gaps)
+
+PART 4 — COVERAGE GAP REPORT
+For every fix claimed in the Implementation Summary Block:
+- Does a test exist that would fail if the bug came back?
+- If yes: cite the test file and what it asserts
+- If no: flag as a Category D candidate (fix without regression test)
+
+Calculate: Category D ratio = (fixes without regression tests) / (total fixes)
+
+---
+
+Produce a VERIFICATION BLOCK formatted exactly as shown below:
+
+---VERIFICATION BLOCK---
+Verified scope: [subsystem group name from implementation summary]
+Verification date: [today's date]
+Cycle being verified: [subsystem + cycle reference]
+
+INVARIANT PROBE RESULTS:
+INV-XX | [invariant description] | PASS / FAIL / UNVERIFIED | [evidence summary]
+(repeat for each probed invariant)
+Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
+
+REGRESSION COUNT:
+Regressions found: [N]
+R1 | [description] | [severity] | Documented by cycle: Y/N | [code location]
+(repeat for each regression, or "None found")
+Net score: [findings fixed] − [regressions] = [net]
+
+CYCLE EXECUTION QUALITY:
+Tests run to completion: YES/NO — [evidence]
+Common Gotchas cross-checked: YES/NO — [evidence]
+New Common Gotchas added: YES/NO — [what was added, or N/A]
+
+COVERAGE GAP REPORT:
+Fixes with regression tests: [N of M]
+Category D candidates (fixes without regression tests):
+[action ID] | [fix description] | [what test is needed]
+(repeat for each, or "None — all fixes have regression tests")
+Category D ratio: [X%]
+---END VERIFICATION BLOCK---
+
+Finally, answer: "What invariants should be added to the library based on what this cycle revealed?" List any new invariants discovered during verification that should be probed in future cycles.`;
+}
+
+function renderVerification(){
+  const project=getProject();
+  const pre=document.getElementById('p4v');
+  if(pre) pre.textContent=buildVerificationText(project);
+  const form=document.getElementById('fill-p4v');
+  if(form){form.innerHTML='';form.classList.remove('open');}
+  const btn=document.querySelector('#block-p4v .fill-btn');
+  if(btn)btn.classList.remove('active');
+}
+
+function renderInvariantTable(){
+  const project=getProject();
+  const tbody=document.getElementById('invariantTableBody');
+  const title=document.getElementById('invariantTableTitle');
+  if(!tbody)return;
+  const invs=project.invariants||[];
+  if(title)title.textContent=`${project.name} — Invariant Library (${invs.length})`;
+  if(!invs.length){
+    tbody.innerHTML='<tr><td colspan="2" style="color:var(--text-muted);text-align:center;padding:14px">No invariants defined for this project yet. They grow organically via /reflect.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=invs.map(inv=>{
+    const displayText=inv.text.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const displaySub=inv.subsystem.replace(/&/g,'&amp;');
+    return `<tr><td><span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-right:6px">${inv.id}</span>${displayText}</td><td>${displaySub}</td></tr>`;
+  }).join('');
+}
+
 // ─── VARIANT / TOGGLE HELPERS ────────────────────────────────
 function toggleVariant(id,toggle){
   const body=document.getElementById(id);
@@ -1569,6 +1796,8 @@ renderArchive();
 renderHealthDimsNote();
 renderP6a();
 renderP6b();
+renderVerification();
+renderInvariantTable();
 renderSubsysTable();
 </script>
 </body>
