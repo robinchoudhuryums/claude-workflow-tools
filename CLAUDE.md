@@ -4,11 +4,42 @@ Project-agnostic template versions of all slash command prompts. Copy and adapt 
 
 ## Adaptation Checklist
 
-When setting up a new project, replace these placeholders throughout:
+When setting up a new project:
 
-- `[PROJECT_SUBSYSTEMS]` — your subsystem names and file lists
-- `[HEALTH_DIMENSIONS]` — your project's scoring dimensions (typically 10-15)
-- `[TEST_COMMAND]` — your test runner (e.g., `npm test`, `pytest`, `cargo test`)
+1. Run `/setup-cycle` to generate the Cycle Workflow Config
+2. Add the config to your project's CLAUDE.md (see format below)
+3. Copy the command files from this repo's CLAUDE.md into `.claude/commands/` — they are project-agnostic and reference the config in CLAUDE.md, no placeholder replacement needed
+4. Run `/sync-commands` periodically to check for template updates
+
+## Cycle Workflow Config (add to each project's CLAUDE.md)
+
+This section is produced by `/setup-cycle` and consumed by all command files. Commands reference it by reading CLAUDE.md at the start of each session.
+
+```
+## Cycle Workflow Config
+
+### Test Command
+npm test
+
+### Health Dimensions
+Overall, Architecture & Code Quality, Security & Compliance, ...
+
+### Subsystems
+Core Architecture & Pipeline:
+  server/index.ts, server/routes.ts, server/middleware/
+Storage Layer / Database:
+  server/storage.ts, server/db/
+(repeat for each subsystem)
+
+### Invariant Library
+INV-01 | Rule text here | Subsystem: Core Architecture
+INV-02 | Rule text here | Subsystem: Security
+(repeat for each invariant)
+
+### Policy Configuration
+Policy threshold: 4/10
+Consecutive cycles: 2
+```
 
 ## Canonical Definitions
 
@@ -160,26 +191,38 @@ Aim for 15-25 invariants.
 OUTPUT — PROJECT CONFIGURATION
 ═══════════════════════════════════════════
 
-1. SUBSYSTEM REFERENCE (for audit command files):
-[Subsystem Name]:
-  [comma-separated file list]
+Produce two outputs:
 
-2. HEALTH DIMENSIONS (comma-separated):
+OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
+
+## Cycle Workflow Config
+
+### Test Command
+[test runner command, e.g. npm test]
+
+### Health Dimensions
 [dim1], [dim2], [dim3], ...
 
-3. INVARIANT LIBRARY:
-INV-XX | [rule text] | Subsystem: [name]
+### Subsystems
+[Subsystem Name]:
+  [comma-separated file list]
+(repeat for each subsystem)
 
-4. POLICY CONFIGURATION:
+### Invariant Library
+INV-XX | [rule text] | Subsystem: [name]
+(repeat for each invariant)
+
+### Policy Configuration
 Policy threshold: [N]/10
 Consecutive cycles: [N]
 
-5. CYCLE ROTATION SUGGESTION:
+OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
+
 Recommended first subsystem to audit: [name — why]
 Recommended cycle order: [ordered list with rationale]
 Seams audit frequency: every [N] subsystem cycles
 
-6. CONFIDENCE ASSESSMENT:
+CONFIDENCE ASSESSMENT:
 For each subsystem, rate confidence that file list is complete
 and boundary is correct: High / Medium / Low.
 ```
@@ -221,8 +264,9 @@ DO NOT flag code for "simplification" or "cleanup" unless the current
 code is actively wrong or creates a maintenance trap. Working code
 that could be written differently is not a finding.
 
-After the broad pass, provide ratings out of 10 with reasoning:
-[HEALTH_DIMENSIONS — one bullet per dimension]
+After the broad pass, provide ratings out of 10 with reasoning for
+each dimension listed in the "Health Dimensions" section of CLAUDE.md's
+Cycle Workflow Config. One bullet per dimension.
 
 For each rating include:
 - Your confidence level (did you deeply read this area or infer from partial context?)
@@ -340,7 +384,8 @@ Rules:
 After all fixes are complete, do the following in order:
 
 1. RUN TESTS
-Run the test suite ([TEST_COMMAND]). Note the result. If tests fail, classify:
+Run the test suite (use the test command from CLAUDE.md's Cycle Workflow
+Config, or `npm test` if not specified). Note the result. If tests fail, classify:
 - Caused by this session's changes (fix now)
 - Pre-existing (note but don't fix)
 - Real production bug exposed by correct test (flag as follow-on, don't fix here)
@@ -402,21 +447,20 @@ If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
 Usage: /targeted-audit <subsystem-name>
 
-Available subsystems:
-[PROJECT_SUBSYSTEMS — list names only]
+Available subsystems: See the "Subsystems" section in CLAUDE.md's
+Cycle Workflow Config for the full list.
 
 Example: /targeted-audit Security & Compliance
 
 ---
 
-Read CLAUDE.md (especially Common Gotchas and Key Design Decisions)
-before starting. Do not make any changes to any files during this session.
-
-SUBSYSTEM FILE REFERENCE:
-[PROJECT_SUBSYSTEMS — each name followed by its file list]
+Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
+the Cycle Workflow Config) before starting. Do not make any changes
+to any files during this session.
 
 This session's scope: $ARGUMENTS
-Use the file reference above to identify relevant files.
+Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
+identify the relevant files for this subsystem.
 
 [OPTIONAL: PASTE ANY FOLLOW-ON ITEMS FROM A PRIOR SESSION]
 
@@ -663,6 +707,50 @@ Full benchmarkable assessment after a complete cycle. Takes 3 inputs per subsyst
 - Weighted average (secondary signal)
 - Delta summary vs prior cycle
 - Policy response triggers (Axis B category at threshold for consecutive cycles)
+
+---
+
+### /sync-commands
+
+```
+If $ARGUMENTS is empty or missing, respond with exactly this and stop:
+
+Usage: /sync-commands <path-to-workflow-tools-repo>
+Example: /sync-commands ../claude-workflow-tools
+Example: /sync-commands ~/projects/claude-workflow-tools
+
+This command syncs your project's .claude/commands/ files with the
+latest templates from the workflow tools repo.
+
+---
+
+Do not make any changes to any files until the comparison is complete.
+
+You are syncing this project's command files with the latest templates.
+
+Step 1: Read the template CLAUDE.md from: $ARGUMENTS/CLAUDE.md
+Step 2: Read all command files in this project's .claude/commands/
+Step 3: For each command file, compare against the corresponding
+template in the workflow tools CLAUDE.md.
+
+For each command, report:
+- CURRENT: matches template (no action needed)
+- OUTDATED: template has structural changes not in this version
+  [list specific differences — new steps, changed instructions,
+  added output sections, modified classification categories]
+- MISSING: template exists but this project has no command file for it
+
+Step 4: Verify this project's CLAUDE.md has a "Cycle Workflow Config"
+section with: Test Command, Health Dimensions, Subsystems, Invariant
+Library, and Policy Configuration. Flag any missing sections.
+
+Step 5: For each OUTDATED command, produce the updated file content.
+The commands are project-agnostic (they reference CLAUDE.md config,
+not inline project-specific content), so the update is a direct copy
+from the template — no merging needed.
+
+After the comparison, ask for approval before writing any files.
+```
 
 ---
 

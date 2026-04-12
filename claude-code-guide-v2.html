@@ -421,31 +421,40 @@ many vague ones.
 OUTPUT — PROJECT CONFIGURATION
 ═══════════════════════════════════════════
 
-Produce the following structured output for pasting into the cycle
-workflow tool:
+Produce two outputs:
 
-1. SUBSYSTEM REFERENCE (for audit command files):
+OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
+This section is consumed by all slash commands — they reference it
+instead of inlining project-specific content.
+
+## Cycle Workflow Config
+
+### Test Command
+[test runner command, e.g. npm test]
+
+### Health Dimensions
+[dim1], [dim2], [dim3], ...
+
+### Subsystems
 [Subsystem Name]:
   [comma-separated file list]
 (repeat for each subsystem)
 
-2. HEALTH DIMENSIONS (comma-separated, for the project config):
-[dim1], [dim2], [dim3], ...
-
-3. INVARIANT LIBRARY (for the project config):
+### Invariant Library
 INV-XX | [rule text] | Subsystem: [name]
 (repeat for each invariant)
 
-4. POLICY CONFIGURATION:
+### Policy Configuration
 Policy threshold: [N]/10
 Consecutive cycles: [N]
 
-5. CYCLE ROTATION SUGGESTION:
+OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
+
 Recommended first subsystem to audit: [name — why]
 Recommended cycle order: [ordered list with rationale]
 Seams audit frequency: every [N] subsystem cycles
 
-6. CONFIDENCE ASSESSMENT:
+CONFIDENCE ASSESSMENT:
 For each subsystem proposed, rate your confidence that the file list
 is complete and the boundary is correct: High / Medium / Low.
 For any Medium or Low, explain what you'd need to verify.</pre>

@@ -66,9 +66,14 @@ A fresh session with no implementation context re-probes invariants, counts regr
 
 ## Adapting for a New Project
 
-1. **Run `/setup-cycle`** in a Claude Code session connected to the project — produces subsystem groupings, health dimensions, initial invariants, and policy configuration
-2. **Open `claude-code-guide-v2.html`** in a browser → "Projects" → "+ Add custom project" → paste the setup output
-3. **For slash commands:** Copy the template prompts from `CLAUDE.md`, replace `[PLACEHOLDER]` values with your project's config, and place in `.claude/commands/`
+1. **Run `/setup-cycle`** in a Claude Code session connected to the project — produces a Cycle Workflow Config section and rotation plan
+2. **Paste the Cycle Workflow Config** into your project's CLAUDE.md — all commands reference this section, so it's the single source of truth for subsystems, dimensions, invariants, and policy config
+3. **Copy command files** from this repo's CLAUDE.md templates into `.claude/commands/` — they are project-agnostic (they reference CLAUDE.md config, not inline project-specific content), so no placeholder replacement is needed
+4. **Optionally, add to the HTML tool:** Open `claude-code-guide-v2.html` → "Projects" → "+ Add custom project" → enter the same config
+
+### Keeping Commands in Sync
+
+Command files are identical across projects because they reference CLAUDE.md config instead of inlining project-specific content. When the templates are updated in this repo, run `/sync-commands <path-to-this-repo>` in your project to check for updates and overwrite outdated command files.
 
 ## Operational Guidance
 
@@ -105,6 +110,7 @@ If the test suite requires infrastructure that isn't available (database, API ke
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
 | `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
+| `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
 
 ## Handoff Block Types
 
