@@ -12,6 +12,167 @@ When setting up a new project, replace these placeholders throughout:
 
 ---
 
+## Setup
+
+### /setup-cycle
+
+```
+Do not make any changes to any files during this session.
+
+You are setting up the cycle workflow configuration for this project.
+This is the foundation for all future audit, implementation, and
+verification work — accuracy here compounds across every cycle.
+
+Run the following five phases in order. Complete each fully before
+starting the next.
+
+═══════════════════════════════════════════
+PHASE 1 — FOUNDATION READ
+═══════════════════════════════════════════
+
+Read these files carefully in this order:
+1. CLAUDE.md (entire file — especially Common Gotchas, Key Design
+   Decisions, Systems Map if present, Operator State Checklist if present)
+2. README
+3. Package manifest (package.json, pyproject.toml, Cargo.toml, etc.)
+4. All entry points (server/index.ts, client main, route registration)
+5. Database schema files
+6. Test configuration and existing test files (scan for patterns)
+
+Produce a PROJECT PROFILE:
+- Project type and domain: [what this application does, who uses it]
+- Tech stack: [languages, frameworks, databases, external services]
+- Approximate size: [file count, estimated lines]
+- Maturity indicators: [test coverage breadth, CI config, documentation quality,
+  error handling patterns, logging patterns]
+- External dependencies: [APIs, databases, cloud services, SDKs]
+- Multi-tenant: [yes/no — how is data isolated?]
+- Key architectural patterns: [monolith/microservices, storage abstraction,
+  auth model, job queue, real-time, etc.]
+
+═══════════════════════════════════════════
+PHASE 2 — MODULE & DEPENDENCY ANALYSIS
+═══════════════════════════════════════════
+
+For every directory that contains source code:
+1. List all files with a one-line description of each file's responsibility
+2. For the 10-15 most important files (entry points, high-fan-out modules,
+   core business logic): trace their imports and identify which other
+   files depend on them
+
+Produce:
+HIGH-FAN-OUT MODULES (most imported — changes here have widest blast radius):
+[Module] | [Key exports] | [Consumer count] | [Notes]
+
+NATURAL COUPLING CLUSTERS:
+Identify groups of files that import heavily from each other but have
+fewer connections to files outside the group. These are candidate
+subsystem boundaries. For each cluster:
+- [Cluster name] | [Files] | [Internal coupling evidence] | [External connections]
+
+═══════════════════════════════════════════
+PHASE 3 — SUBSYSTEM BOUNDARY PROPOSAL
+═══════════════════════════════════════════
+
+Using the coupling clusters from Phase 2, propose subsystem groupings.
+
+For each proposed subsystem:
+- Name: [clear, descriptive name]
+- Files: [complete comma-separated file list]
+- Responsibility: [one sentence — what this subsystem does]
+- Session feasibility: [estimated file count and total lines — can this
+  be deeply audited in one Claude Code session?]
+- Key risk: [what's the worst thing that can go wrong in this subsystem?]
+
+Quality checks — verify all of these before proceeding:
+□ Every source file in the project is assigned to exactly one subsystem
+□ No subsystem has so many files that it can't be audited in one session
+  (rough guide: <20 files or <5000 lines for deep reading)
+□ Files within each subsystem are more tightly coupled to each other
+  than to files in other subsystems
+□ The boundaries correspond to natural seams, not arbitrary directory splits
+□ High-fan-out modules are in the subsystem that owns their primary concern
+
+If any check fails, adjust the groupings and explain the tradeoff.
+
+Flag SEAM FILES — files that sit at the boundary between subsystems
+and could reasonably belong to either.
+
+═══════════════════════════════════════════
+PHASE 4 — HEALTH DIMENSIONS & POLICY
+═══════════════════════════════════════════
+
+Propose health dimensions for this project's scoring. These should:
+- Reflect what actually matters for THIS project's domain and users
+- Be scorable with evidence from code reads
+- Cover both technical health and feature/product effectiveness
+- Include domain-specific dimensions
+- Be between 10-15 dimensions total
+
+For each dimension:
+- Name
+- What it measures (one sentence)
+- Which subsystem(s) primarily feed evidence into this score
+
+Also recommend:
+- Policy threshold: [score ≤ N triggers policy response]
+- Consecutive cycles before trigger: [typically 2]
+
+═══════════════════════════════════════════
+PHASE 5 — INVARIANT EXTRACTION
+═══════════════════════════════════════════
+
+Extract initial invariants from the project's documentation and code.
+Each invariant must be:
+- Specific enough to be pass/fail (not "auth should be secure")
+- Verifiable by code read or targeted test execution
+- High-consequence if violated
+
+Sources to mine (in priority order):
+1. Common Gotchas section of CLAUDE.md
+2. Key Design Decisions — each implies a contract
+3. Operator State Checklist (if present)
+4. Critical code patterns observed in Phase 2
+
+For each invariant:
+- ID: INV-XX
+- Rule: [one clear sentence]
+- Subsystem: [which subsystem]
+- How to verify: [code read / specific test / assertion]
+- Source: [which gotcha, decision, or pattern]
+
+Aim for 15-25 invariants.
+
+═══════════════════════════════════════════
+OUTPUT — PROJECT CONFIGURATION
+═══════════════════════════════════════════
+
+1. SUBSYSTEM REFERENCE (for audit command files):
+[Subsystem Name]:
+  [comma-separated file list]
+
+2. HEALTH DIMENSIONS (comma-separated):
+[dim1], [dim2], [dim3], ...
+
+3. INVARIANT LIBRARY:
+INV-XX | [rule text] | Subsystem: [name]
+
+4. POLICY CONFIGURATION:
+Policy threshold: [N]/10
+Consecutive cycles: [N]
+
+5. CYCLE ROTATION SUGGESTION:
+Recommended first subsystem to audit: [name — why]
+Recommended cycle order: [ordered list with rationale]
+Seams audit frequency: every [N] subsystem cycles
+
+6. CONFIDENCE ASSESSMENT:
+For each subsystem, rate confidence that file list is complete
+and boundary is correct: High / Medium / Low.
+```
+
+---
+
 ## Tier 1 Commands
 
 ### /broad-scan
@@ -429,13 +590,29 @@ Four-tier strategic planning:
 
 ### /test-sync
 
-Post-implementation test failure resolution:
+Post-implementation test quality assessment and failure resolution. Leads with coverage and quality analysis, not just failure fixing:
+
+**Step 1: Run tests and classify failures** into 5 categories:
 - Category A: outdated assertions (fix)
-- Category B: tests with local redefinitions (rewrite)
+- Category B: tests with local redefinitions (rewrite to import production values)
 - Category C: pre-existing failures (fix if scoped)
-- Category D: real production bugs (flag only, defer)
+- Category D: real production bugs caught by correct tests (flag only, defer)
 - Category E: infrastructure issues (fix)
-- Coverage gap analysis for recent changes
+
+**Step 2: Fix categories A, B, C, E** in priority order
+
+**Step 3: Coverage gap analysis** (primary value — runs even if all tests pass):
+- For every change in the implementation summary: does a test exist that would fail if the change regressed?
+- For each gap: describe what's untested, classify as simple (<30 min) or complex, implement simple ones immediately
+- Category D ratio: what percentage of fixes have no regression test?
+
+**Step 4: Test quality check** (new):
+- Flag tests that pass both before and after a fix — they don't guard against regression
+- Flag tests that assert on mock/stub behavior rather than production behavior
+- Flag tests with assertions so broad they'd pass regardless of the code under test
+- For each quality issue: is the test salvageable (tighten assertion) or should it be rewritten?
+
+**Step 5: CI configuration check** (TypeScript, ESLint, build)
 
 ### /sync-docs
 

@@ -81,7 +81,8 @@ A fresh session with no implementation context re-probes invariants, counts regr
 | `/implement` | 3 | 1 | Execute implementation plan |
 | `/regression` | 3 | 1 | Post-implementation regression check |
 | `/reflect` | 3 | 1 | Post-cycle honest assessment |
-| `/test-sync` | 1,2,3 | 1 | Resolve test failures after implementation |
+| `/setup-cycle` | setup | 1 | Define subsystems, dimensions, invariants for a new project |
+| `/test-sync` | 1,2,3 | 1 | Test quality assessment + failure resolution |
 | `/sync-docs` | 1,2,3 | 1 | Detect and fix documentation drift |
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
