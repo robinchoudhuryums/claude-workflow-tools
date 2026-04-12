@@ -292,6 +292,9 @@ PHASE 1 — FOUNDATION READ
 Read these files carefully in this order:
 1. CLAUDE.md (entire file — especially Common Gotchas, Key Design
    Decisions, Systems Map if present, Operator State Checklist if present)
+   If CLAUDE.md does not exist yet (greenfield project), skip this step
+   and note that Common Gotchas and invariants will be populated after
+   the first audit cycle.
 2. README
 3. Package manifest (package.json, pyproject.toml, Cargo.toml, etc.)
 4. All entry points (server/index.ts, client main, route registration)
@@ -631,7 +634,7 @@ Relevant files/directories: [LIST RELEVANT FILES AND DIRECTORIES]
 
 [OPTIONAL: PASTE ANY FOLLOW-ON AUDIT ITEMS FROM A PRIOR REGRESSION CHECK THAT APPLY TO THIS SCOPE — check these first before running the full audit]
 
-[OPTIONAL: PASTE ANY POLICY RESPONSE TRIGGERED BLOCKS FROM THE LAST HEALTH SYNTHESIS — if a policy response was triggered for an Axis B category, the prescribed policy fixes are MANDATORY additions to this cycle's scope regardless of subsystem focus]
+[IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS FROM THE LAST HEALTH SYNTHESIS — these are MANDATORY scope additions for this cycle regardless of subsystem focus]
 
 [OPTIONAL: PASTE THE "RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE" SECTION FROM THE LAST SEAMS & INVARIANTS AUDIT — if this subsystem was flagged, check the seam-related findings listed there before running the full audit]
 
@@ -996,10 +999,12 @@ For each action completed this cycle, answer two questions:
    Answer YES or NO. If YES: describe the new failure mode, whether it is better or worse than what it replaced, and under what conditions it would fire. Do not bury this in a "tradeoffs" section — if the post-cycle state is worse under any realistic scenario, that is a regression and must be counted as one.
 
 Tally:
-- Production bug fixes (YES to question 1): [count]
-- Speculative/defensive fixes (NO to question 1): [count]
-- Actions that introduced new failure modes (YES to question 2): [count]
+- Production bug fixes (YES to question 1): [count] — severity breakdown: [Critical/High/Medium/Low]
+- New capabilities / feature work: [count]
+- Defensive/structural improvements (NO to question 1, not new capability): [count]
+- Actions that introduced new failure modes (YES to question 2): [count] — severity: [Critical/High/Medium/Low]
 - Net score: [production fixes] − [new failure modes] = [net]
+  Note: a net-positive score with a Critical new failure mode is still a problem — severity matters, not just count.
 
 Honest impact summary — answer each directly:
 - What actually changed for a user of this application right now?

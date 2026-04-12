@@ -1,6 +1,6 @@
 # Claude Workflow Tools
 
-A structured workflow system for managing audit-implement-verify cycles on large codebases (70k-100k+ lines) using Claude Code. Designed as a reusable HTML tool with project-agnostic prompt templates that can be adapted to any project.
+A structured workflow system for managing audit-implement-verify cycles on large codebases (70k-100k+ lines) using Claude Code. Serves both quality improvement AND feature development — audits surface what to build next, not just what to fix. Designed as a reusable HTML tool with project-agnostic prompt templates that can be adapted to any project.
 
 ## What's in this repo
 
@@ -12,18 +12,18 @@ A structured workflow system for managing audit-implement-verify cycles on large
 The system supports three levels of ceremony depending on project maturity and the type of work:
 
 ### Tier 1 — Broad Scan (single session)
-Two-stage whole-codebase audit: broad pass first, then deep dive on areas where confidence was low. Produces findings with severity, confidence, and a "would this fire in production?" filter. Operator approves which findings to implement before any code changes.
+Three-stage whole-codebase audit: broad pass, deep dive on low-confidence areas, then effectiveness and strategic review. Produces findings across code quality, feature effectiveness, and completeness gaps. Operator approves which findings to implement before any code changes.
 
 **Command chain:** `/broad-scan` → review → `/broad-implement F03, F07` → `/test-sync` → `/sync-docs`
 
-**When to use:** Project is new, rapid development phase, broad scans still find real bugs.
+**When to use:** Project is new, rapid development phase, broad scans still find real bugs or meaningful feature gaps.
 
 ### Tier 2 — Targeted Subsystem Cycle (2 sessions)
 Deep audit of one subsystem with audit+plan in Session 1 and implement+check+reflect in Session 2. Produces a Tier 2 Handoff Block with cross-module risks and a DO NOT TOUCH list.
 
 **Command chain:** `/targeted-audit <subsystem>` → `/targeted-implement` → `/test-sync` → `/sync-docs`
 
-**When to use:** Broad scans stopped finding real bugs in a specific area, a subsystem is causing pain, or you want depth without the full Tier 3 ceremony.
+**When to use:** Broad scans stopped finding significant issues in a specific area, a subsystem is causing pain, or you want depth without the full Tier 3 ceremony.
 
 ### Tier 3 — Full Cycle (5-6 sessions per subsystem)
 Complete audit → plan → implement → regression check → independent verification → synthesis cycle. Two-axis scoring (vertical subsystem health + horizontal bug-shape posture), invariant library, policy-response feedback loop.
@@ -32,8 +32,11 @@ Complete audit → plan → implement → regression check → independent verif
 
 **When to use:** Quarterly, before releases, when accumulated Tier 1/2 sessions need verification, or when you want benchmarkable progress tracking.
 
-### Graduation Rule
-Use Tier 1 until it stops producing real bugs consistently. Graduate that subsystem to Tier 2. Run Tier 3 quarterly or before major milestones. Different subsystems can be at different tiers simultaneously.
+### Tier Graduation
+
+- **Tier 1 → Tier 2:** When the last 2 broad scans found fewer than 5 production bugs in a subsystem, or when findings are mostly feature gaps rather than code issues.
+- **Tier 2 → Tier 3:** When you want benchmarkable scoring, when Tier 2 sessions surface cross-module issues that need independent verification, or quarterly/before releases.
+- **Shifting balance:** The cycle workflow serves both quality improvement and feature development. When a subsystem reaches stability (no Critical/High findings open, positive net score, no Axis B policy triggers), shift effort from fixing to building — use Stage 3 effectiveness gaps and strategic suggestions to guide feature work.
 
 ## Cycle Rotation (Tier 3)
 
@@ -50,29 +53,45 @@ Cycle 5: Subsystem D (audit + implement + verify)
 
 ### Two-Axis Scoring (Tier 3)
 - **Axis A (Vertical):** Per-subsystem health scores. Tells you which subsystem to audit next.
-- **Axis B (Horizontal):** Cross-cutting bug-shape posture (Silent Degradation, Startup Ordering, Operator-Only Gaps, Parallel Drift, Test Coverage Quality). Tells you which bug class needs policy intervention.
+- **Axis B (Horizontal):** Cross-cutting bug-shape posture (Silent Degradation, Startup Ordering, Operator-Only Gaps, Parallel Drift, Test Coverage Quality). Tells you which bug class needs policy intervention. Rough rubric: 8-10 = strong evidence of mitigation, 5-7 = mixed signals, 1-4 = active evidence of the problem pattern.
 
 ### Invariant Library
-Project-specific rules that must always hold (e.g., "WAF ordering is wafPreBody → express.json → wafPostBody"). Probed during verification, validated during seams audits, grown organically via `/reflect`. Stored per-project in the HTML tool and in CLAUDE.md for each project.
+Project-specific rules that must always hold (e.g., "WAF ordering is wafPreBody → express.json → wafPostBody"). Probed during verification, validated during seams audits, grown organically via `/reflect`. Stored per-project in the HTML tool and in CLAUDE.md for each project. Invariants marked STALE or UNVERIFIABLE for 2+ consecutive seams audits should be retired. Target library size: 15-40 invariants.
 
 ### Policy Response Feedback Loop
-When an Axis B category scores poorly for consecutive cycles, the synthesis outputs a mandatory policy fix for the next cycle's scope. Converts one-off bug fixing into systemic improvement.
+When an Axis B category scores at or below the policy threshold for consecutive cycles, the synthesis outputs a mandatory policy fix for the next cycle's scope. Converts one-off bug fixing into systemic improvement.
 
 ### Independent Verification
 A fresh session with no implementation context re-probes invariants, counts regressions with a hard definition (any behavior worse under realistic load = regression, regardless of "tradeoff" label), and checks whether fixes have corresponding regression tests.
 
 ## Adapting for a New Project
 
-1. **Open `claude-code-guide-v2.html`** in a browser
-2. **Click "Projects" → "+ Add custom project"**
-3. **Fill in:** project name, subsystem names + file lists, health dimensions, invariants (can start empty), policy threshold
-4. **For slash commands:** Copy the template prompts from `CLAUDE.md` and adapt the subsystem lists and health dimensions for your project. Place them in your project's `.claude/commands/` directory.
+1. **Run `/setup-cycle`** in a Claude Code session connected to the project — produces subsystem groupings, health dimensions, initial invariants, and policy configuration
+2. **Open `claude-code-guide-v2.html`** in a browser → "Projects" → "+ Add custom project" → paste the setup output
+3. **For slash commands:** Copy the template prompts from `CLAUDE.md`, replace `[PLACEHOLDER]` values with your project's config, and place in `.claude/commands/`
+
+## Operational Guidance
+
+### Emergency Hotfixes
+For urgent production fixes, use `/broad-implement <describe the bug>` directly without running `/broad-scan` first. It includes regression check and reflect steps. Follow up with `/test-sync` and `/sync-docs`.
+
+### Context Window Overflow
+If a session runs out of context mid-audit (typically 100k+ line codebases with deep subsystems), produce a partial handoff block with what you've covered and a "NOT COVERED" section listing remaining files. Run a second session on the uncovered scope. The `/setup-cycle` command sizes subsystems to fit in one session, but broad-scan covers the entire codebase and may overflow.
+
+### When Tests Can't Run
+If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
+
+### Known Limitations
+- **Single-operator design.** The workflow assumes one developer + Claude Code. Multi-developer usage would need shared state (shared Archive, coordination on which subsystems are in-progress).
+- **Axis B scoring is qualitative.** Claude reads code but can't run load tests or collect runtime metrics. Axis B scores are based on code structure evidence, not measured performance.
+- **Handoff blocks require manual copy-paste between sessions.** Save blocks to the Archive immediately after each session to prevent loss.
 
 ## Slash Commands Reference
 
 | Command | Tier | Sessions | Purpose |
 |---|---|---|---|
-| `/broad-scan` | 1 | 1 | Two-stage whole-codebase audit |
+| `/setup-cycle` | setup | 1 | Define subsystems, dimensions, invariants for a new project |
+| `/broad-scan` | 1 | 1 | Three-stage whole-codebase audit (broad + deep dive + effectiveness) |
 | `/broad-implement` | 1 | 1 | Implement selected findings from broad scan |
 | `/targeted-audit` | 2 | 1 of 2 | Scoped subsystem audit + plan |
 | `/targeted-implement` | 2 | 2 of 2 | Implement from Tier 2 handoff block |
@@ -81,7 +100,6 @@ A fresh session with no implementation context re-probes invariants, counts regr
 | `/implement` | 3 | 1 | Execute implementation plan |
 | `/regression` | 3 | 1 | Post-implementation regression check |
 | `/reflect` | 3 | 1 | Post-cycle honest assessment |
-| `/setup-cycle` | setup | 1 | Define subsystems, dimensions, invariants for a new project |
 | `/test-sync` | 1,2,3 | 1 | Test quality assessment + failure resolution |
 | `/sync-docs` | 1,2,3 | 1 | Detect and fix documentation drift |
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |

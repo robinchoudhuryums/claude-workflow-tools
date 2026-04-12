@@ -10,6 +10,16 @@ When setting up a new project, replace these placeholders throughout:
 - `[HEALTH_DIMENSIONS]` — your project's scoring dimensions (typically 10-15)
 - `[TEST_COMMAND]` — your test runner (e.g., `npm test`, `pytest`, `cargo test`)
 
+## Canonical Definitions
+
+These definitions are used consistently across all commands:
+
+**Production bug:** A behavior that would cause incorrect results, data loss, security exposure, or user-visible failure under current usage patterns OR reasonably anticipated growth. Scale-related findings should note the threshold at which they'd fire — the effort to fix should be proportionate to how soon that threshold is realistic.
+
+**Regression:** Any behavior change where the post-cycle state is worse under any realistic load than the pre-cycle state, whether documented as a "tradeoff" or not.
+
+**Test fallback:** If the test suite cannot run (missing DB, API keys, dependencies), note why and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
+
 ---
 
 ## Setup
@@ -33,6 +43,9 @@ PHASE 1 — FOUNDATION READ
 Read these files carefully in this order:
 1. CLAUDE.md (entire file — especially Common Gotchas, Key Design
    Decisions, Systems Map if present, Operator State Checklist if present)
+   If CLAUDE.md does not exist yet (greenfield project), skip this step
+   and note that Common Gotchas and invariants will be populated after
+   the first audit cycle.
 2. README
 3. Package manifest (package.json, pyproject.toml, Cargo.toml, etc.)
 4. All entry points (server/index.ts, client main, route registration)
@@ -407,8 +420,8 @@ Use the file reference above to identify relevant files.
 
 [OPTIONAL: PASTE ANY FOLLOW-ON ITEMS FROM A PRIOR SESSION]
 
-[OPTIONAL: PASTE ANY POLICY RESPONSE TRIGGERED BLOCKS — if triggered,
-these are MANDATORY scope additions]
+[IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS FROM THE LAST HEALTH
+SYNTHESIS — these are MANDATORY scope additions for this cycle]
 
 Audit this subsystem thoroughly. For each finding:
 - State the issue, cite file and function/line
@@ -559,7 +572,8 @@ Takes an IMPLEMENTATION SUMMARY BLOCK and:
 
 Post-cycle assessment with:
 - Two binary questions per action (production bug? new failure mode?)
-- Net score tally
+- Three-way classification: production fix / new capability or feature / defensive improvement
+- Net score tally with severity breakdown
 - Invariant growth (new rules for the library)
 - Honest impact summary
 - CYCLE SUMMARY BLOCK output (consumed by Health Synthesis)
