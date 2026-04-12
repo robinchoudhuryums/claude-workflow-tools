@@ -206,6 +206,8 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div class="s">Claude Code Workflow</div>
   </div>
   <div style="flex:1;overflow-y:auto">
+    <div class="nav-group">Setup</div>
+    <a href="#setup">Setup Cycle <span class="nbadge nb-g">Once</span></a>
     <div class="nav-group">Quick Cycles</div>
     <a href="#t1">Tier 1 — Broad Scan <span class="nbadge nb-g">Light</span></a>
     <a href="#t2">Tier 2 — Targeted <span class="nbadge nb-a">2 sessions</span></a>
@@ -258,6 +260,206 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
     <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
   </div>
+
+  <!-- SETUP-CYCLE -->
+  <section id="setup">
+    <div class="sh"><div class="snum">Setup</div><div>
+      <div class="stitle">Setup Cycle — Project Configuration</div>
+      <div class="spurp"><strong>Purpose:</strong> Thorough, multi-phase analysis that defines the foundation for the entire cycle workflow: subsystem boundaries, file lists, health dimensions, invariant library seed, and policy thresholds. Run once when onboarding a new project, or re-run after major restructures.</div>
+    </div></div>
+    <div class="wnote"><div class="ic">⚠</div><div><strong>This command's output is the foundation for everything else.</strong> Bad subsystem boundaries = shallow audits. Missing files = blind spots. Wrong dimensions = misleading scores. Take time to review the output and adjust before using the other commands.</div></div>
+    <div class="pb" id="block-setup">
+      <div class="pb-header">
+        <div class="pb-label">Setup Cycle Prompt</div>
+        <div class="pb-meta">
+          <span class="ptag">Run once per project</span>
+          <button class="copy-btn" id="copy-setup" onclick="doCopy('setup')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+        </div>
+      </div>
+      <pre id="setup">Do not make any changes to any files during this session.
+
+You are setting up the cycle workflow configuration for this project.
+This is the foundation for all future audit, implementation, and
+verification work — accuracy here compounds across every cycle.
+
+Run the following five phases in order. Complete each fully before
+starting the next.
+
+═══════════════════════════════════════════
+PHASE 1 — FOUNDATION READ
+═══════════════════════════════════════════
+
+Read these files carefully in this order:
+1. CLAUDE.md (entire file — especially Common Gotchas, Key Design
+   Decisions, Systems Map if present, Operator State Checklist if present)
+   If CLAUDE.md does not exist yet (greenfield project), skip this step
+   and note that Common Gotchas and invariants will be populated after
+   the first audit cycle.
+2. README
+3. Package manifest (package.json, pyproject.toml, Cargo.toml, etc.)
+4. All entry points (server/index.ts, client main, route registration)
+5. Database schema files
+6. Test configuration and existing test files (scan for patterns)
+
+Produce a PROJECT PROFILE:
+- Project type and domain: [what this application does, who uses it]
+- Tech stack: [languages, frameworks, databases, external services]
+- Approximate size: [file count, estimated lines]
+- Maturity indicators: [test coverage breadth, CI config, documentation quality,
+  error handling patterns, logging patterns]
+- External dependencies: [APIs, databases, cloud services, SDKs]
+- Multi-tenant: [yes/no — how is data isolated?]
+- Key architectural patterns: [monolith/microservices, storage abstraction,
+  auth model, job queue, real-time, etc.]
+
+═══════════════════════════════════════════
+PHASE 2 — MODULE & DEPENDENCY ANALYSIS
+═══════════════════════════════════════════
+
+For every directory that contains source code:
+1. List all files with a one-line description of each file's responsibility
+2. For the 10-15 most important files (entry points, high-fan-out modules,
+   core business logic): trace their imports and identify which other
+   files depend on them
+
+Produce:
+HIGH-FAN-OUT MODULES (most imported — changes here have widest blast radius):
+[Module] | [Key exports] | [Consumer count] | [Notes]
+
+NATURAL COUPLING CLUSTERS:
+Identify groups of files that import heavily from each other but have
+fewer connections to files outside the group. These are candidate
+subsystem boundaries. For each cluster:
+- [Cluster name] | [Files] | [Internal coupling evidence] | [External connections]
+
+═══════════════════════════════════════════
+PHASE 3 — SUBSYSTEM BOUNDARY PROPOSAL
+═══════════════════════════════════════════
+
+Using the coupling clusters from Phase 2, propose subsystem groupings.
+
+For each proposed subsystem:
+- Name: [clear, descriptive name]
+- Files: [complete comma-separated file list]
+- Responsibility: [one sentence — what this subsystem does]
+- Session feasibility: [estimated file count and total lines — can this
+  be deeply audited in one Claude Code session?]
+- Key risk: [what's the worst thing that can go wrong in this subsystem?]
+
+Quality checks — verify all of these before proceeding:
+□ Every source file in the project is assigned to exactly one subsystem
+□ No subsystem has so many files that it can't be audited in one session
+  (rough guide: <20 files or <5000 lines for deep reading)
+□ Files within each subsystem are more tightly coupled to each other
+  than to files in other subsystems
+□ The boundaries correspond to natural seams, not arbitrary directory splits
+□ High-fan-out modules are in the subsystem that owns their primary concern
+  (e.g., storage abstraction in the Storage subsystem even though 30+ files import it)
+
+If any check fails, adjust the groupings and explain the tradeoff.
+
+Flag SEAM FILES — files that sit at the boundary between subsystems
+and could reasonably belong to either. These are important for the
+Seams & Invariants audit.
+
+═══════════════════════════════════════════
+PHASE 4 — HEALTH DIMENSIONS & POLICY
+═══════════════════════════════════════════
+
+Propose health dimensions for this project's scoring. These should:
+- Reflect what actually matters for THIS project's domain and users
+  (not generic "code quality" dimensions)
+- Be scorable with evidence from code reads (not aspirational)
+- Cover both technical health and feature/product effectiveness
+- Include domain-specific dimensions (e.g., "Clinical Documentation"
+  for a healthcare app, "AI Analysis Reliability" for an ML pipeline)
+- Be between 10-15 dimensions total
+
+For each dimension:
+- Name
+- What it measures (one sentence)
+- Which subsystem(s) primarily feed evidence into this score
+
+Also recommend:
+- Policy threshold: [score ≤ N triggers policy response — recommend
+  a value based on project maturity. 4/10 for mature projects,
+  5/10 for early-stage projects that need faster feedback loops]
+- Consecutive cycles before trigger: [typically 2, but 1 for
+  safety-critical projects]
+
+═══════════════════════════════════════════
+PHASE 5 — INVARIANT EXTRACTION
+═══════════════════════════════════════════
+
+Extract initial invariants from the project's documentation and code.
+Each invariant must be:
+- Specific enough to be pass/fail (not "auth should be secure")
+- Verifiable by code read or targeted test execution
+- High-consequence if violated (not style preferences)
+
+Sources to mine (in priority order):
+1. Common Gotchas section of CLAUDE.md — these are documented foot-guns
+   that developers have already tripped over. Each one is a candidate.
+2. Key Design Decisions — each decision implies a contract that must hold
+3. Operator State Checklist (if present) — each item implies a startup
+   invariant
+4. Critical code patterns observed in Phase 2 — middleware ordering,
+   singleton initialization, encryption/decryption symmetry, auth
+   enforcement, data isolation
+
+For each invariant:
+- ID: INV-XX
+- Rule: [one clear sentence]
+- Subsystem: [which subsystem this invariant belongs to]
+- How to verify: [code read / specific test / assertion to check]
+- Source: [which gotcha, design decision, or code pattern this came from]
+
+Aim for 15-25 invariants. Prefer fewer high-quality invariants over
+many vague ones.
+
+═══════════════════════════════════════════
+OUTPUT — PROJECT CONFIGURATION
+═══════════════════════════════════════════
+
+Produce two outputs:
+
+OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
+This section is consumed by all slash commands — they reference it
+instead of inlining project-specific content.
+
+## Cycle Workflow Config
+
+### Test Command
+[test runner command, e.g. npm test]
+
+### Health Dimensions
+[dim1], [dim2], [dim3], ...
+
+### Subsystems
+[Subsystem Name]:
+  [comma-separated file list]
+(repeat for each subsystem)
+
+### Invariant Library
+INV-XX | [rule text] | Subsystem: [name]
+(repeat for each invariant)
+
+### Policy Configuration
+Policy threshold: [N]/10
+Consecutive cycles: [N]
+
+OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
+
+Recommended first subsystem to audit: [name — why]
+Recommended cycle order: [ordered list with rationale]
+Seams audit frequency: every [N] subsystem cycles
+
+CONFIDENCE ASSESSMENT:
+For each subsystem proposed, rate your confidence that the file list
+is complete and the boundary is correct: High / Medium / Low.
+For any Medium or Low, explain what you'd need to verify.</pre>
+    </div>
+  </section>
 
   <!-- TIER 1 — BROAD SCAN -->
   <section id="t1">
@@ -441,7 +643,7 @@ Relevant files/directories: [LIST RELEVANT FILES AND DIRECTORIES]
 
 [OPTIONAL: PASTE ANY FOLLOW-ON AUDIT ITEMS FROM A PRIOR REGRESSION CHECK THAT APPLY TO THIS SCOPE — check these first before running the full audit]
 
-[OPTIONAL: PASTE ANY POLICY RESPONSE TRIGGERED BLOCKS FROM THE LAST HEALTH SYNTHESIS — if a policy response was triggered for an Axis B category, the prescribed policy fixes are MANDATORY additions to this cycle's scope regardless of subsystem focus]
+[IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS FROM THE LAST HEALTH SYNTHESIS — these are MANDATORY scope additions for this cycle regardless of subsystem focus]
 
 [OPTIONAL: PASTE THE "RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE" SECTION FROM THE LAST SEAMS & INVARIANTS AUDIT — if this subsystem was flagged, check the seam-related findings listed there before running the full audit]
 
@@ -806,10 +1008,12 @@ For each action completed this cycle, answer two questions:
    Answer YES or NO. If YES: describe the new failure mode, whether it is better or worse than what it replaced, and under what conditions it would fire. Do not bury this in a "tradeoffs" section — if the post-cycle state is worse under any realistic scenario, that is a regression and must be counted as one.
 
 Tally:
-- Production bug fixes (YES to question 1): [count]
-- Speculative/defensive fixes (NO to question 1): [count]
-- Actions that introduced new failure modes (YES to question 2): [count]
+- Production bug fixes (YES to question 1): [count] — severity breakdown: [Critical/High/Medium/Low]
+- New capabilities / feature work: [count]
+- Defensive/structural improvements (NO to question 1, not new capability): [count]
+- Actions that introduced new failure modes (YES to question 2): [count] — severity: [Critical/High/Medium/Low]
 - Net score: [production fixes] − [new failure modes] = [net]
+  Note: a net-positive score with a Critical new failure mode is still a problem — severity matters, not just count.
 
 Honest impact summary — answer each directly:
 - What actually changed for a user of this application right now?

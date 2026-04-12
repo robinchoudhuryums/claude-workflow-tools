@@ -4,11 +4,228 @@ Project-agnostic template versions of all slash command prompts. Copy and adapt 
 
 ## Adaptation Checklist
 
-When setting up a new project, replace these placeholders throughout:
+When setting up a new project:
 
-- `[PROJECT_SUBSYSTEMS]` — your subsystem names and file lists
-- `[HEALTH_DIMENSIONS]` — your project's scoring dimensions (typically 10-15)
-- `[TEST_COMMAND]` — your test runner (e.g., `npm test`, `pytest`, `cargo test`)
+1. Run `/setup-cycle` to generate the Cycle Workflow Config
+2. Add the config to your project's CLAUDE.md (see format below)
+3. Copy the command files from this repo's CLAUDE.md into `.claude/commands/` — they are project-agnostic and reference the config in CLAUDE.md, no placeholder replacement needed
+4. Run `/sync-commands` periodically to check for template updates
+
+## Cycle Workflow Config (add to each project's CLAUDE.md)
+
+This section is produced by `/setup-cycle` and consumed by all command files. Commands reference it by reading CLAUDE.md at the start of each session.
+
+```
+## Cycle Workflow Config
+
+### Test Command
+npm test
+
+### Health Dimensions
+Overall, Architecture & Code Quality, Security & Compliance, ...
+
+### Subsystems
+Core Architecture & Pipeline:
+  server/index.ts, server/routes.ts, server/middleware/
+Storage Layer / Database:
+  server/storage.ts, server/db/
+(repeat for each subsystem)
+
+### Invariant Library
+INV-01 | Rule text here | Subsystem: Core Architecture
+INV-02 | Rule text here | Subsystem: Security
+(repeat for each invariant)
+
+### Policy Configuration
+Policy threshold: 4/10
+Consecutive cycles: 2
+```
+
+## Canonical Definitions
+
+These definitions are used consistently across all commands:
+
+**Production bug:** A behavior that would cause incorrect results, data loss, security exposure, or user-visible failure under current usage patterns OR reasonably anticipated growth. Scale-related findings should note the threshold at which they'd fire — the effort to fix should be proportionate to how soon that threshold is realistic.
+
+**Regression:** Any behavior change where the post-cycle state is worse under any realistic load than the pre-cycle state, whether documented as a "tradeoff" or not.
+
+**Test fallback:** If the test suite cannot run (missing DB, API keys, dependencies), note why and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
+
+---
+
+## Setup
+
+### /setup-cycle
+
+```
+Do not make any changes to any files during this session.
+
+You are setting up the cycle workflow configuration for this project.
+This is the foundation for all future audit, implementation, and
+verification work — accuracy here compounds across every cycle.
+
+Run the following five phases in order. Complete each fully before
+starting the next.
+
+═══════════════════════════════════════════
+PHASE 1 — FOUNDATION READ
+═══════════════════════════════════════════
+
+Read these files carefully in this order:
+1. CLAUDE.md (entire file — especially Common Gotchas, Key Design
+   Decisions, Systems Map if present, Operator State Checklist if present)
+   If CLAUDE.md does not exist yet (greenfield project), skip this step
+   and note that Common Gotchas and invariants will be populated after
+   the first audit cycle.
+2. README
+3. Package manifest (package.json, pyproject.toml, Cargo.toml, etc.)
+4. All entry points (server/index.ts, client main, route registration)
+5. Database schema files
+6. Test configuration and existing test files (scan for patterns)
+
+Produce a PROJECT PROFILE:
+- Project type and domain: [what this application does, who uses it]
+- Tech stack: [languages, frameworks, databases, external services]
+- Approximate size: [file count, estimated lines]
+- Maturity indicators: [test coverage breadth, CI config, documentation quality,
+  error handling patterns, logging patterns]
+- External dependencies: [APIs, databases, cloud services, SDKs]
+- Multi-tenant: [yes/no — how is data isolated?]
+- Key architectural patterns: [monolith/microservices, storage abstraction,
+  auth model, job queue, real-time, etc.]
+
+═══════════════════════════════════════════
+PHASE 2 — MODULE & DEPENDENCY ANALYSIS
+═══════════════════════════════════════════
+
+For every directory that contains source code:
+1. List all files with a one-line description of each file's responsibility
+2. For the 10-15 most important files (entry points, high-fan-out modules,
+   core business logic): trace their imports and identify which other
+   files depend on them
+
+Produce:
+HIGH-FAN-OUT MODULES (most imported — changes here have widest blast radius):
+[Module] | [Key exports] | [Consumer count] | [Notes]
+
+NATURAL COUPLING CLUSTERS:
+Identify groups of files that import heavily from each other but have
+fewer connections to files outside the group. These are candidate
+subsystem boundaries. For each cluster:
+- [Cluster name] | [Files] | [Internal coupling evidence] | [External connections]
+
+═══════════════════════════════════════════
+PHASE 3 — SUBSYSTEM BOUNDARY PROPOSAL
+═══════════════════════════════════════════
+
+Using the coupling clusters from Phase 2, propose subsystem groupings.
+
+For each proposed subsystem:
+- Name: [clear, descriptive name]
+- Files: [complete comma-separated file list]
+- Responsibility: [one sentence — what this subsystem does]
+- Session feasibility: [estimated file count and total lines — can this
+  be deeply audited in one Claude Code session?]
+- Key risk: [what's the worst thing that can go wrong in this subsystem?]
+
+Quality checks — verify all of these before proceeding:
+□ Every source file in the project is assigned to exactly one subsystem
+□ No subsystem has so many files that it can't be audited in one session
+  (rough guide: <20 files or <5000 lines for deep reading)
+□ Files within each subsystem are more tightly coupled to each other
+  than to files in other subsystems
+□ The boundaries correspond to natural seams, not arbitrary directory splits
+□ High-fan-out modules are in the subsystem that owns their primary concern
+
+If any check fails, adjust the groupings and explain the tradeoff.
+
+Flag SEAM FILES — files that sit at the boundary between subsystems
+and could reasonably belong to either.
+
+═══════════════════════════════════════════
+PHASE 4 — HEALTH DIMENSIONS & POLICY
+═══════════════════════════════════════════
+
+Propose health dimensions for this project's scoring. These should:
+- Reflect what actually matters for THIS project's domain and users
+- Be scorable with evidence from code reads
+- Cover both technical health and feature/product effectiveness
+- Include domain-specific dimensions
+- Be between 10-15 dimensions total
+
+For each dimension:
+- Name
+- What it measures (one sentence)
+- Which subsystem(s) primarily feed evidence into this score
+
+Also recommend:
+- Policy threshold: [score ≤ N triggers policy response]
+- Consecutive cycles before trigger: [typically 2]
+
+═══════════════════════════════════════════
+PHASE 5 — INVARIANT EXTRACTION
+═══════════════════════════════════════════
+
+Extract initial invariants from the project's documentation and code.
+Each invariant must be:
+- Specific enough to be pass/fail (not "auth should be secure")
+- Verifiable by code read or targeted test execution
+- High-consequence if violated
+
+Sources to mine (in priority order):
+1. Common Gotchas section of CLAUDE.md
+2. Key Design Decisions — each implies a contract
+3. Operator State Checklist (if present)
+4. Critical code patterns observed in Phase 2
+
+For each invariant:
+- ID: INV-XX
+- Rule: [one clear sentence]
+- Subsystem: [which subsystem]
+- How to verify: [code read / specific test / assertion]
+- Source: [which gotcha, decision, or pattern]
+
+Aim for 15-25 invariants.
+
+═══════════════════════════════════════════
+OUTPUT — PROJECT CONFIGURATION
+═══════════════════════════════════════════
+
+Produce two outputs:
+
+OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
+
+## Cycle Workflow Config
+
+### Test Command
+[test runner command, e.g. npm test]
+
+### Health Dimensions
+[dim1], [dim2], [dim3], ...
+
+### Subsystems
+[Subsystem Name]:
+  [comma-separated file list]
+(repeat for each subsystem)
+
+### Invariant Library
+INV-XX | [rule text] | Subsystem: [name]
+(repeat for each invariant)
+
+### Policy Configuration
+Policy threshold: [N]/10
+Consecutive cycles: [N]
+
+OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
+
+Recommended first subsystem to audit: [name — why]
+Recommended cycle order: [ordered list with rationale]
+Seams audit frequency: every [N] subsystem cycles
+
+CONFIDENCE ASSESSMENT:
+For each subsystem, rate confidence that file list is complete
+and boundary is correct: High / Medium / Low.
+```
 
 ---
 
@@ -47,8 +264,9 @@ DO NOT flag code for "simplification" or "cleanup" unless the current
 code is actively wrong or creates a maintenance trap. Working code
 that could be written differently is not a finding.
 
-After the broad pass, provide ratings out of 10 with reasoning:
-[HEALTH_DIMENSIONS — one bullet per dimension]
+After the broad pass, provide ratings out of 10 with reasoning for
+each dimension listed in the "Health Dimensions" section of CLAUDE.md's
+Cycle Workflow Config. One bullet per dimension.
 
 For each rating include:
 - Your confidence level (did you deeply read this area or infer from partial context?)
@@ -166,7 +384,8 @@ Rules:
 After all fixes are complete, do the following in order:
 
 1. RUN TESTS
-Run the test suite ([TEST_COMMAND]). Note the result. If tests fail, classify:
+Run the test suite (use the test command from CLAUDE.md's Cycle Workflow
+Config, or `npm test` if not specified). Note the result. If tests fail, classify:
 - Caused by this session's changes (fix now)
 - Pre-existing (note but don't fix)
 - Real production bug exposed by correct test (flag as follow-on, don't fix here)
@@ -228,26 +447,25 @@ If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
 Usage: /targeted-audit <subsystem-name>
 
-Available subsystems:
-[PROJECT_SUBSYSTEMS — list names only]
+Available subsystems: See the "Subsystems" section in CLAUDE.md's
+Cycle Workflow Config for the full list.
 
 Example: /targeted-audit Security & Compliance
 
 ---
 
-Read CLAUDE.md (especially Common Gotchas and Key Design Decisions)
-before starting. Do not make any changes to any files during this session.
-
-SUBSYSTEM FILE REFERENCE:
-[PROJECT_SUBSYSTEMS — each name followed by its file list]
+Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
+the Cycle Workflow Config) before starting. Do not make any changes
+to any files during this session.
 
 This session's scope: $ARGUMENTS
-Use the file reference above to identify relevant files.
+Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
+identify the relevant files for this subsystem.
 
 [OPTIONAL: PASTE ANY FOLLOW-ON ITEMS FROM A PRIOR SESSION]
 
-[OPTIONAL: PASTE ANY POLICY RESPONSE TRIGGERED BLOCKS — if triggered,
-these are MANDATORY scope additions]
+[IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS FROM THE LAST HEALTH
+SYNTHESIS — these are MANDATORY scope additions for this cycle]
 
 Audit this subsystem thoroughly. For each finding:
 - State the issue, cite file and function/line
@@ -398,7 +616,8 @@ Takes an IMPLEMENTATION SUMMARY BLOCK and:
 
 Post-cycle assessment with:
 - Two binary questions per action (production bug? new failure mode?)
-- Net score tally
+- Three-way classification: production fix / new capability or feature / defensive improvement
+- Net score tally with severity breakdown
 - Invariant growth (new rules for the library)
 - Honest impact summary
 - CYCLE SUMMARY BLOCK output (consumed by Health Synthesis)
@@ -429,13 +648,29 @@ Four-tier strategic planning:
 
 ### /test-sync
 
-Post-implementation test failure resolution:
+Post-implementation test quality assessment and failure resolution. Leads with coverage and quality analysis, not just failure fixing:
+
+**Step 1: Run tests and classify failures** into 5 categories:
 - Category A: outdated assertions (fix)
-- Category B: tests with local redefinitions (rewrite)
+- Category B: tests with local redefinitions (rewrite to import production values)
 - Category C: pre-existing failures (fix if scoped)
-- Category D: real production bugs (flag only, defer)
+- Category D: real production bugs caught by correct tests (flag only, defer)
 - Category E: infrastructure issues (fix)
-- Coverage gap analysis for recent changes
+
+**Step 2: Fix categories A, B, C, E** in priority order
+
+**Step 3: Coverage gap analysis** (primary value — runs even if all tests pass):
+- For every change in the implementation summary: does a test exist that would fail if the change regressed?
+- For each gap: describe what's untested, classify as simple (<30 min) or complex, implement simple ones immediately
+- Category D ratio: what percentage of fixes have no regression test?
+
+**Step 4: Test quality check** (new):
+- Flag tests that pass both before and after a fix — they don't guard against regression
+- Flag tests that assert on mock/stub behavior rather than production behavior
+- Flag tests with assertions so broad they'd pass regardless of the code under test
+- For each quality issue: is the test salvageable (tighten assertion) or should it be rewritten?
+
+**Step 5: CI configuration check** (TypeScript, ESLint, build)
 
 ### /sync-docs
 
@@ -472,6 +707,57 @@ Full benchmarkable assessment after a complete cycle. Takes 3 inputs per subsyst
 - Weighted average (secondary signal)
 - Delta summary vs prior cycle
 - Policy response triggers (Axis B category at threshold for consecutive cycles)
+
+---
+
+### /sync-commands
+
+```
+If $ARGUMENTS is empty or missing, respond with exactly this and stop:
+
+Usage: /sync-commands <path-or-url-to-workflow-tools-repo>
+Example: /sync-commands ../claude-workflow-tools
+Example: /sync-commands ~/projects/claude-workflow-tools
+Example: /sync-commands https://github.com/user/claude-workflow-tools
+
+Accepts either a local filesystem path or a GitHub repository URL.
+
+This command syncs your project's .claude/commands/ files with the
+latest templates from the workflow tools repo.
+
+---
+
+Do not make any changes to any files until the comparison is complete.
+
+You are syncing this project's command files with the latest templates.
+
+Step 1: Read the template CLAUDE.md.
+If $ARGUMENTS is a local path: read $ARGUMENTS/CLAUDE.md directly.
+If $ARGUMENTS is a URL: fetch the raw CLAUDE.md from the repository
+  (e.g. https://raw.githubusercontent.com/.../main/CLAUDE.md).
+If neither works, stop and report the error.
+Step 2: Read all command files in this project's .claude/commands/
+Step 3: For each command file, compare against the corresponding
+template in the workflow tools CLAUDE.md.
+
+For each command, report:
+- CURRENT: matches template (no action needed)
+- OUTDATED: template has structural changes not in this version
+  [list specific differences — new steps, changed instructions,
+  added output sections, modified classification categories]
+- MISSING: template exists but this project has no command file for it
+
+Step 4: Verify this project's CLAUDE.md has a "Cycle Workflow Config"
+section with: Test Command, Health Dimensions, Subsystems, Invariant
+Library, and Policy Configuration. Flag any missing sections.
+
+Step 5: For each OUTDATED command, produce the updated file content.
+The commands are project-agnostic (they reference CLAUDE.md config,
+not inline project-specific content), so the update is a direct copy
+from the template — no merging needed.
+
+After the comparison, ask for approval before writing any files.
+```
 
 ---
 
