@@ -51,6 +51,11 @@ S1 | [short scenario name] | Subsystem: [name]
 ### Frozen Subsystems   ← optional
 - [subsystem name] — [reason, one line, e.g. "being retired; do not audit unless code is being migrated out"]
 (absent or empty = no frozen subsystems)
+
+### Deploy Command   ← optional; per-subsystem mapping
+[subsystem name]: [command + any context the operator needs, e.g. "clasp push -f, then Apps Script editor → Deploy → New version"]
+[subsystem name]: [command + any context]
+(absent = no deploy step printed in implementation summaries)
 ```
 
 ## Canonical Definitions
@@ -98,6 +103,11 @@ Read these files carefully in this order:
    manifest, no test framework dependency, no test files), note this —
    OUTPUT 1 will use `Test Command: manual` and require a
    `Regression Scenarios` block.
+7. Deployment mechanism (look for clasp config, terraform/ directory,
+   .github/workflows/deploy.*, fly.toml, vercel.json, Dockerfile +
+   deploy script, fastlane config, etc.). For each detected deployable,
+   identify the command and the subsystem it deploys. If found, OUTPUT 1
+   will include a `Deploy Command` section.
 
 Produce a PROJECT PROFILE:
 - Project type and domain: [what this application does, who uses it]
@@ -251,6 +261,11 @@ S1 | [short scenario name] | Subsystem: [name]
 ### Frozen Subsystems   ← optional; omit if no subsystems are frozen
 - [subsystem name] — [reason: why frozen, what's replacing it, what would unfreeze it]
 (repeat for each frozen subsystem)
+
+### Deploy Command   ← optional; per-subsystem mapping; omit if project has no deploy step
+[subsystem name]: [command + any context, e.g. "clasp push -f then Apps Script editor → Deploy → New version"]
+[subsystem name]: [command + any context]
+(repeat for each subsystem with a deploy command)
 
 OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
 
@@ -479,6 +494,17 @@ REGRESSION RISKS: [any risks identified, or "None"]
 INVARIANTS AT RISK: [any invariants potentially affected, or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
 
+DEPLOY STEP:
+[If Deploy Command is configured in CLAUDE.md for any modified
+subsystem, list the deploy command(s) the operator must run for the
+change to be live, one line per subsystem:]
+- [subsystem]: [command]
+[Otherwise:]
+N/A — no Deploy Command configured
+
+(Implementation is not considered complete in production until the
+operator confirms the deploy step.)
+
 FOLLOW-ON ITEMS:
 - [anything noticed but not fixed, out of scope]
 (or "None")
@@ -631,6 +657,16 @@ REGRESSION RISKS: [risks or "None"]
 INVARIANTS AT RISK: [any or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
 INVARIANT CANDIDATES: [new rules or "None"]
+
+DEPLOY STEP:
+[If Deploy Command is configured in CLAUDE.md for the touched
+subsystem, list the deploy command:]
+- [subsystem]: [command]
+[Otherwise:]
+N/A — no Deploy Command configured
+
+(Implementation is not considered complete in production until the
+operator confirms the deploy step.)
 
 FOLLOW-ON ITEMS:
 - [File: area] — [what to check and why]
@@ -828,6 +864,9 @@ Additionally:
 - If a `Frozen Subsystems` section exists, verify each listed name
   matches a subsystem in the `Subsystems` section. Flag any mismatches
   as warnings (the reference is broken).
+- If a `Deploy Command` section exists, verify each subsystem name
+  on the left side of the mapping matches a subsystem in the
+  `Subsystems` section. Flag any mismatches as warnings.
 
 Step 5: For each OUTDATED command, produce the updated file content.
 The commands are project-agnostic (they reference CLAUDE.md config,
