@@ -47,6 +47,10 @@ S1 | [short scenario name] | Subsystem: [name]
     - [step]
   Expected: [outcome]
 (repeat for each scenario)
+
+### Frozen Subsystems   ← optional
+- [subsystem name] — [reason, one line, e.g. "being retired; do not audit unless code is being migrated out"]
+(absent or empty = no frozen subsystems)
 ```
 
 ## Canonical Definitions
@@ -154,6 +158,13 @@ If any check fails, adjust the groupings and explain the tradeoff.
 Flag SEAM FILES — files that sit at the boundary between subsystems
 and could reasonably belong to either.
 
+Flag FROZEN SUBSYSTEM CANDIDATES — subsystems that are explicitly
+legacy / being retired / being migrated out (e.g., a deprecated
+module kept only until a successor is fully built). For each
+candidate, note: (a) why it's frozen, (b) what's replacing it,
+(c) what conditions would unfreeze it. These appear in OUTPUT 1's
+Frozen Subsystems section.
+
 ═══════════════════════════════════════════
 PHASE 4 — HEALTH DIMENSIONS & POLICY
 ═══════════════════════════════════════════
@@ -237,10 +248,16 @@ S1 | [short scenario name] | Subsystem: [name]
   Expected: [outcome]
 (repeat for each scenario; aim for 5–15 covering golden paths and known regression hotspots)
 
+### Frozen Subsystems   ← optional; omit if no subsystems are frozen
+- [subsystem name] — [reason: why frozen, what's replacing it, what would unfreeze it]
+(repeat for each frozen subsystem)
+
 OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
 
 Recommended first subsystem to audit: [name — why]
-Recommended cycle order: [ordered list with rationale]
+Recommended cycle order: [ordered list with rationale — exclude
+  any subsystems marked frozen; note that they are skipped by
+  default but can be explicitly named to override]
 Seams audit frequency: every [N] subsystem cycles
 
 CONFIDENCE ASSESSMENT:
@@ -280,6 +297,12 @@ Flag:
 - Dead code, unused exports, stale TODOs only if they create confusion
 - Silent degradation paths: places where failure is swallowed and the
   app continues with wrong results rather than surfacing an error
+
+For findings in any Frozen Subsystem (see CLAUDE.md Cycle Workflow Config):
+- Prefix the finding with [FROZEN: subsystem-name]
+- Consider whether the finding is worth fixing given retirement —
+  Critical/High findings still warrant a fix; Medium/Low findings
+  may be deferred or skipped depending on the retirement timeline
 
 DO NOT flag code for "simplification" or "cleanup" unless the current
 code is actively wrong or creates a maintenance trap. Working code
@@ -494,6 +517,15 @@ to any files during this session.
 This session's scope: $ARGUMENTS
 Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
+
+If $ARGUMENTS names a subsystem listed in `Frozen Subsystems`:
+print this banner at the top of your output before continuing, then
+proceed with the audit as normal:
+
+  ╔══════════════════════════════════════════════════════════════╗
+  ║ FROZEN SUBSYSTEM — proceeding because explicitly named.      ║
+  ║ Reason: [reason from Frozen Subsystems config]               ║
+  ╚══════════════════════════════════════════════════════════════╝
 
 [OPTIONAL: PASTE ANY FOLLOW-ON ITEMS FROM A PRIOR SESSION]
 
@@ -793,6 +825,9 @@ Additionally:
 - If Test Command is a real command (e.g., `npm test`), `Regression
   Scenarios` is optional. If present, note that it augments
   programmatic test runs — commands walk scenarios after tests pass.
+- If a `Frozen Subsystems` section exists, verify each listed name
+  matches a subsystem in the `Subsystems` section. Flag any mismatches
+  as warnings (the reference is broken).
 
 Step 5: For each OUTDATED command, produce the updated file content.
 The commands are project-agnostic (they reference CLAUDE.md config,
@@ -850,6 +885,10 @@ DO NOT TOUCH:
 ---VERIFICATION BLOCK---
 Verified scope: [subsystem]
 Verification date: [date]
+
+INVARIANT PROBE RESULTS:
+INV-XX | [description] | PASS/FAIL/UNVERIFIED | [evidence]
+Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
 
 INVARIANT PROBE RESULTS:
 INV-XX | [description] | PASS/FAIL/UNVERIFIED | [evidence]
