@@ -39,6 +39,14 @@ INV-02 | Rule text here | Subsystem: Security
 ### Policy Configuration
 Policy threshold: 4/10
 Consecutive cycles: 2
+
+### Regression Scenarios   ← optional; required when Test Command is `manual`
+S1 | [short scenario name] | Subsystem: [name]
+  Steps:
+    - [step]
+    - [step]
+  Expected: [outcome]
+(repeat for each scenario)
 ```
 
 ## Canonical Definitions
@@ -49,7 +57,7 @@ These definitions are used consistently across all commands:
 
 **Regression:** Any behavior change where the post-cycle state is worse under any realistic load than the pre-cycle state, whether documented as a "tradeoff" or not.
 
-**Test fallback:** If the test suite cannot run (missing DB, API keys, dependencies), note why and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
+**Test fallback:** If the test suite cannot run (missing DB, API keys, dependencies), note why and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item. *For projects with no programmatic test runner at all, set `Test Command: manual` in the Cycle Workflow Config and define a `Regression Scenarios` block — manual scenario walks become the canonical verification path, not a fallback.*
 
 ---
 
@@ -81,7 +89,11 @@ Read these files carefully in this order:
 3. Package manifest (package.json, pyproject.toml, Cargo.toml, etc.)
 4. All entry points (server/index.ts, client main, route registration)
 5. Database schema files
-6. Test configuration and existing test files (scan for patterns)
+6. Test configuration and existing test files (scan for patterns).
+   If no programmatic test runner exists (no test command in the
+   manifest, no test framework dependency, no test files), note this —
+   OUTPUT 1 will use `Test Command: manual` and require a
+   `Regression Scenarios` block.
 
 Produce a PROJECT PROFILE:
 - Project type and domain: [what this application does, who uses it]
@@ -198,7 +210,8 @@ OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
 ## Cycle Workflow Config
 
 ### Test Command
-[test runner command, e.g. npm test]
+[test runner command, e.g. npm test — OR the literal word `manual`
+ for projects with no programmatic test runner]
 
 ### Health Dimensions
 [dim1], [dim2], [dim3], ...
@@ -215,6 +228,14 @@ INV-XX | [rule text] | Subsystem: [name]
 ### Policy Configuration
 Policy threshold: [N]/10
 Consecutive cycles: [N]
+
+### Regression Scenarios   ← required iff Test Command is `manual`; otherwise optional
+S1 | [short scenario name] | Subsystem: [name]
+  Steps:
+    - [step]
+    - [step]
+  Expected: [outcome]
+(repeat for each scenario; aim for 5–15 covering golden paths and known regression hotspots)
 
 OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
 
@@ -384,11 +405,23 @@ Rules:
 After all fixes are complete, do the following in order:
 
 1. RUN TESTS
-Run the test suite (use the test command from CLAUDE.md's Cycle Workflow
-Config, or `npm test` if not specified). Note the result. If tests fail, classify:
+Read the Test Command from CLAUDE.md's Cycle Workflow Config.
+
+  - If Test Command is `manual`: skip programmatic test execution.
+    Walk every Regression Scenario whose Subsystem overlaps a file
+    you modified. Record per-scenario outcome (PASS / FAIL /
+    NOT APPLICABLE — with reason for NOT APPLICABLE). A FAIL is
+    classified the same as a test failure below.
+
+  - Otherwise: run the test suite (use the Test Command, or
+    `npm test` if not specified). If Regression Scenarios is also
+    configured, walk them after tests pass.
+
+Note the result. If tests fail (or any scenario FAILs), classify:
 - Caused by this session's changes (fix now)
 - Pre-existing (note but don't fix)
-- Real production bug exposed by correct test (flag as follow-on, don't fix here)
+- Real production bug exposed by correct test/scenario (flag as
+  follow-on, don't fix here)
 
 2. REGRESSION CHECK
 For each file you modified:
@@ -540,7 +573,10 @@ Rules:
 
 After all actions complete:
 
-1. RUN TESTS — classify failures (this session / pre-existing / real bug)
+1. RUN TESTS — read Test Command from CLAUDE.md. If `manual`, walk
+   Regression Scenarios for the touched subsystem(s) instead. Classify
+   failures (this session / pre-existing / real bug). See
+   `/broad-implement` Step 1 for the full branching detail.
 2. REGRESSION CHECK — review each modified file for breakage risk,
    cross-reference CROSS-MODULE RISKS from handoff block
 3. REFLECT — for each action: production bug? (YES/NO) New failure
@@ -750,6 +786,13 @@ For each command, report:
 Step 4: Verify this project's CLAUDE.md has a "Cycle Workflow Config"
 section with: Test Command, Health Dimensions, Subsystems, Invariant
 Library, and Policy Configuration. Flag any missing sections.
+
+Additionally:
+- If Test Command is `manual`, verify a `Regression Scenarios`
+  section exists and is non-empty. Flag as a config error if missing.
+- If Test Command is a real command (e.g., `npm test`), `Regression
+  Scenarios` is optional. If present, note that it augments
+  programmatic test runs — commands walk scenarios after tests pass.
 
 Step 5: For each OUTDATED command, produce the updated file content.
 The commands are project-agnostic (they reference CLAUDE.md config,
