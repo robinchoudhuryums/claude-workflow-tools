@@ -39,6 +39,23 @@ INV-02 | Rule text here | Subsystem: Security
 ### Policy Configuration
 Policy threshold: 4/10
 Consecutive cycles: 2
+
+### Regression Scenarios   ← optional; required when Test Command is `manual`
+S1 | [short scenario name] | Subsystem: [name]
+  Steps:
+    - [step]
+    - [step]
+  Expected: [outcome]
+(repeat for each scenario)
+
+### Frozen Subsystems   ← optional
+- [subsystem name] — [reason, one line, e.g. "being retired; do not audit unless code is being migrated out"]
+(absent or empty = no frozen subsystems)
+
+### Deploy Command   ← optional; per-subsystem mapping
+[subsystem name]: [command + any context the operator needs, e.g. "clasp push -f, then Apps Script editor → Deploy → New version"]
+[subsystem name]: [command + any context]
+(absent = no deploy step printed in implementation summaries)
 ```
 
 ## Canonical Definitions
@@ -49,7 +66,7 @@ These definitions are used consistently across all commands:
 
 **Regression:** Any behavior change where the post-cycle state is worse under any realistic load than the pre-cycle state, whether documented as a "tradeoff" or not.
 
-**Test fallback:** If the test suite cannot run (missing DB, API keys, dependencies), note why and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
+**Test fallback:** If the test suite cannot run (missing DB, API keys, dependencies), note why and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item. *For projects with no programmatic test runner at all, set `Test Command: manual` in the Cycle Workflow Config and define a `Regression Scenarios` block — manual scenario walks become the canonical verification path, not a fallback.*
 
 ---
 
@@ -81,7 +98,16 @@ Read these files carefully in this order:
 3. Package manifest (package.json, pyproject.toml, Cargo.toml, etc.)
 4. All entry points (server/index.ts, client main, route registration)
 5. Database schema files
-6. Test configuration and existing test files (scan for patterns)
+6. Test configuration and existing test files (scan for patterns).
+   If no programmatic test runner exists (no test command in the
+   manifest, no test framework dependency, no test files), note this —
+   OUTPUT 1 will use `Test Command: manual` and require a
+   `Regression Scenarios` block.
+7. Deployment mechanism (look for clasp config, terraform/ directory,
+   .github/workflows/deploy.*, fly.toml, vercel.json, Dockerfile +
+   deploy script, fastlane config, etc.). For each detected deployable,
+   identify the command and the subsystem it deploys. If found, OUTPUT 1
+   will include a `Deploy Command` section.
 
 Produce a PROJECT PROFILE:
 - Project type and domain: [what this application does, who uses it]
@@ -142,6 +168,13 @@ If any check fails, adjust the groupings and explain the tradeoff.
 Flag SEAM FILES — files that sit at the boundary between subsystems
 and could reasonably belong to either.
 
+Flag FROZEN SUBSYSTEM CANDIDATES — subsystems that are explicitly
+legacy / being retired / being migrated out (e.g., a deprecated
+module kept only until a successor is fully built). For each
+candidate, note: (a) why it's frozen, (b) what's replacing it,
+(c) what conditions would unfreeze it. These appear in OUTPUT 1's
+Frozen Subsystems section.
+
 ═══════════════════════════════════════════
 PHASE 4 — HEALTH DIMENSIONS & POLICY
 ═══════════════════════════════════════════
@@ -198,7 +231,8 @@ OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
 ## Cycle Workflow Config
 
 ### Test Command
-[test runner command, e.g. npm test]
+[test runner command, e.g. npm test — OR the literal word `manual`
+ for projects with no programmatic test runner]
 
 ### Health Dimensions
 [dim1], [dim2], [dim3], ...
@@ -216,10 +250,29 @@ INV-XX | [rule text] | Subsystem: [name]
 Policy threshold: [N]/10
 Consecutive cycles: [N]
 
+### Regression Scenarios   ← required iff Test Command is `manual`; otherwise optional
+S1 | [short scenario name] | Subsystem: [name]
+  Steps:
+    - [step]
+    - [step]
+  Expected: [outcome]
+(repeat for each scenario; aim for 5–15 covering golden paths and known regression hotspots)
+
+### Frozen Subsystems   ← optional; omit if no subsystems are frozen
+- [subsystem name] — [reason: why frozen, what's replacing it, what would unfreeze it]
+(repeat for each frozen subsystem)
+
+### Deploy Command   ← optional; per-subsystem mapping; omit if project has no deploy step
+[subsystem name]: [command + any context, e.g. "clasp push -f then Apps Script editor → Deploy → New version"]
+[subsystem name]: [command + any context]
+(repeat for each subsystem with a deploy command)
+
 OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
 
 Recommended first subsystem to audit: [name — why]
-Recommended cycle order: [ordered list with rationale]
+Recommended cycle order: [ordered list with rationale — exclude
+  any subsystems marked frozen; note that they are skipped by
+  default but can be explicitly named to override]
 Seams audit frequency: every [N] subsystem cycles
 
 CONFIDENCE ASSESSMENT:
@@ -259,6 +312,12 @@ Flag:
 - Dead code, unused exports, stale TODOs only if they create confusion
 - Silent degradation paths: places where failure is swallowed and the
   app continues with wrong results rather than surfacing an error
+
+For findings in any Frozen Subsystem (see CLAUDE.md Cycle Workflow Config):
+- Prefix the finding with [FROZEN: subsystem-name]
+- Consider whether the finding is worth fixing given retirement —
+  Critical/High findings still warrant a fix; Medium/Low findings
+  may be deferred or skipped depending on the retirement timeline
 
 DO NOT flag code for "simplification" or "cleanup" unless the current
 code is actively wrong or creates a maintenance trap. Working code
@@ -384,11 +443,23 @@ Rules:
 After all fixes are complete, do the following in order:
 
 1. RUN TESTS
-Run the test suite (use the test command from CLAUDE.md's Cycle Workflow
-Config, or `npm test` if not specified). Note the result. If tests fail, classify:
+Read the Test Command from CLAUDE.md's Cycle Workflow Config.
+
+  - If Test Command is `manual`: skip programmatic test execution.
+    Walk every Regression Scenario whose Subsystem overlaps a file
+    you modified. Record per-scenario outcome (PASS / FAIL /
+    NOT APPLICABLE — with reason for NOT APPLICABLE). A FAIL is
+    classified the same as a test failure below.
+
+  - Otherwise: run the test suite (use the Test Command, or
+    `npm test` if not specified). If Regression Scenarios is also
+    configured, walk them after tests pass.
+
+Note the result. If tests fail (or any scenario FAILs), classify:
 - Caused by this session's changes (fix now)
 - Pre-existing (note but don't fix)
-- Real production bug exposed by correct test (flag as follow-on, don't fix here)
+- Real production bug exposed by correct test/scenario (flag as
+  follow-on, don't fix here)
 
 2. REGRESSION CHECK
 For each file you modified:
@@ -422,6 +493,17 @@ TEST RESULTS: [passed/failed — details if failed]
 REGRESSION RISKS: [any risks identified, or "None"]
 INVARIANTS AT RISK: [any invariants potentially affected, or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
+
+DEPLOY STEP:
+[If Deploy Command is configured in CLAUDE.md for any modified
+subsystem, list the deploy command(s) the operator must run for the
+change to be live, one line per subsystem:]
+- [subsystem]: [command]
+[Otherwise:]
+N/A — no Deploy Command configured
+
+(Implementation is not considered complete in production until the
+operator confirms the deploy step.)
 
 FOLLOW-ON ITEMS:
 - [anything noticed but not fixed, out of scope]
@@ -461,6 +543,15 @@ to any files during this session.
 This session's scope: $ARGUMENTS
 Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
+
+If $ARGUMENTS names a subsystem listed in `Frozen Subsystems`:
+print this banner at the top of your output before continuing, then
+proceed with the audit as normal:
+
+  ╔══════════════════════════════════════════════════════════════╗
+  ║ FROZEN SUBSYSTEM — proceeding because explicitly named.      ║
+  ║ Reason: [reason from Frozen Subsystems config]               ║
+  ╚══════════════════════════════════════════════════════════════╝
 
 [OPTIONAL: PASTE ANY FOLLOW-ON ITEMS FROM A PRIOR SESSION]
 
@@ -540,7 +631,10 @@ Rules:
 
 After all actions complete:
 
-1. RUN TESTS — classify failures (this session / pre-existing / real bug)
+1. RUN TESTS — read Test Command from CLAUDE.md. If `manual`, walk
+   Regression Scenarios for the touched subsystem(s) instead. Classify
+   failures (this session / pre-existing / real bug). See
+   `/broad-implement` Step 1 for the full branching detail.
 2. REGRESSION CHECK — review each modified file for breakage risk,
    cross-reference CROSS-MODULE RISKS from handoff block
 3. REFLECT — for each action: production bug? (YES/NO) New failure
@@ -563,6 +657,16 @@ REGRESSION RISKS: [risks or "None"]
 INVARIANTS AT RISK: [any or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
 INVARIANT CANDIDATES: [new rules or "None"]
+
+DEPLOY STEP:
+[If Deploy Command is configured in CLAUDE.md for the touched
+subsystem, list the deploy command:]
+- [subsystem]: [command]
+[Otherwise:]
+N/A — no Deploy Command configured
+
+(Implementation is not considered complete in production until the
+operator confirms the deploy step.)
 
 FOLLOW-ON ITEMS:
 - [File: area] — [what to check and why]
@@ -750,6 +854,19 @@ For each command, report:
 Step 4: Verify this project's CLAUDE.md has a "Cycle Workflow Config"
 section with: Test Command, Health Dimensions, Subsystems, Invariant
 Library, and Policy Configuration. Flag any missing sections.
+
+Additionally:
+- If Test Command is `manual`, verify a `Regression Scenarios`
+  section exists and is non-empty. Flag as a config error if missing.
+- If Test Command is a real command (e.g., `npm test`), `Regression
+  Scenarios` is optional. If present, note that it augments
+  programmatic test runs — commands walk scenarios after tests pass.
+- If a `Frozen Subsystems` section exists, verify each listed name
+  matches a subsystem in the `Subsystems` section. Flag any mismatches
+  as warnings (the reference is broken).
+- If a `Deploy Command` section exists, verify each subsystem name
+  on the left side of the mapping matches a subsystem in the
+  `Subsystems` section. Flag any mismatches as warnings.
 
 Step 5: For each OUTDATED command, produce the updated file content.
 The commands are project-agnostic (they reference CLAUDE.md config,
