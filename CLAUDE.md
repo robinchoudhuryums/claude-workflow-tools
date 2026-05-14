@@ -890,10 +890,6 @@ INVARIANT PROBE RESULTS:
 INV-XX | [description] | PASS/FAIL/UNVERIFIED | [evidence]
 Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
 
-INVARIANT PROBE RESULTS:
-INV-XX | [description] | PASS/FAIL/UNVERIFIED | [evidence]
-Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
-
 REGRESSION COUNT:
 Regressions found: [N]
 Net score: [fixed] − [regressions] = [net]
