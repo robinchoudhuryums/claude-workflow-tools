@@ -36,6 +36,7 @@ Complete audit → plan → implement → regression check → independent verif
 
 - **Tier 1 → Tier 2:** When the last 2 broad scans found fewer than 5 production bugs in a subsystem, or when findings are mostly feature gaps rather than code issues.
 - **Tier 2 → Tier 3:** When you want benchmarkable scoring, when Tier 2 sessions surface cross-module issues that need independent verification, or quarterly/before releases.
+- **Project size and focus:** For small (< ~30k LOC) or correctness-focused projects (low traffic, known user set, deterministic data flows), Tier 1 may be sufficient indefinitely. Tier 3 ceremony often outweighs its benefits below this threshold; the optional config sections (`Test Command: manual` + Regression Scenarios, Frozen Subsystems, Deploy Command) make Tier 1 work well even without a traditional test runner or single-deployable.
 - **Shifting balance:** The cycle workflow serves both quality improvement and feature development. When a subsystem reaches stability (no Critical/High findings open, positive net score, no Axis B policy triggers), shift effort from fixing to building — use Stage 3 effectiveness gaps and strategic suggestions to guide feature work.
 
 ## Cycle Rotation (Tier 3)
@@ -67,9 +68,19 @@ A fresh session with no implementation context re-probes invariants, counts regr
 ## Adapting for a New Project
 
 1. **Run `/setup-cycle`** in a Claude Code session connected to the project — produces a Cycle Workflow Config section and rotation plan
-2. **Paste the Cycle Workflow Config** into your project's CLAUDE.md — all commands reference this section, so it's the single source of truth for subsystems, dimensions, invariants, and policy config
+2. **Paste the Cycle Workflow Config** into your project's CLAUDE.md — all commands reference this section, so it's the single source of truth for subsystems, dimensions, invariants, policy config, and (optionally) regression scenarios, frozen subsystems, and deploy commands
 3. **Copy command files** from this repo's CLAUDE.md templates into `.claude/commands/` — they are project-agnostic (they reference CLAUDE.md config, not inline project-specific content), so no placeholder replacement is needed
 4. **Optionally, add to the HTML tool:** Open `claude-code-guide-v2.html` → "Projects" → "+ Add custom project" → enter the same config
+
+### Adapting for a small / correctness-focused project
+
+For small projects (< ~30k LOC), single-organization tools, or projects where correctness matters more than scale (internal dashboards, admin tools, Apps Script, Salesforce, similar), three optional Cycle Workflow Config sections make the workflow fit better:
+
+1. **`Test Command: manual`** + `Regression Scenarios` — for projects with no programmatic test runner. Manual walks of named scenarios replace test runs in `/broad-implement`, `/targeted-implement`, `/implement`, `/test-sync`, and Verification Pass.
+2. **`Deploy Command`** — for projects where merge ≠ live (clasp, terraform, manual deploys). Implementation summaries gain a `DEPLOY STEP:` footer; `/regression` distinguishes git-verified vs. deploy-verified state.
+3. **`Frozen Subsystems`** — for projects with legacy code being migrated out. Frozen subsystems are excluded from rotation and default audit scope; explicit targeting still works (with a banner).
+
+Tier 1 (broad scan) is usually the right starting point at this scale. Tier 3 ceremony often outweighs its benefits below ~30k LOC; revisit if the project grows or you want benchmarkable scoring.
 
 ### Keeping Commands in Sync
 
@@ -86,6 +97,8 @@ If a session runs out of context mid-audit (typically 100k+ line codebases with 
 ### When Tests Can't Run
 If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
 
+For projects with no programmatic test runner at all, set `Test Command: manual` + define a `Regression Scenarios` block. Manual scenario walks become the canonical verification path, not a fallback. See "Adapting for a small / correctness-focused project" above.
+
 ### Known Limitations
 - **Single-operator design.** The workflow assumes one developer + Claude Code. Multi-developer usage would need shared state (shared Archive, coordination on which subsystems are in-progress).
 - **Axis B scoring is qualitative.** Claude reads code but can't run load tests or collect runtime metrics. Axis B scores are based on code structure evidence, not measured performance.
@@ -95,7 +108,7 @@ If the test suite requires infrastructure that isn't available (database, API ke
 
 | Command | Tier | Sessions | Purpose |
 |---|---|---|---|
-| `/setup-cycle` | setup | 1 | Define subsystems, dimensions, invariants for a new project |
+| `/setup-cycle` | setup | 1 | Define subsystems, dimensions, invariants — plus optional regression scenarios, frozen subsystems, and deploy commands |
 | `/broad-scan` | 1 | 1 | Three-stage whole-codebase audit (broad + deep dive + effectiveness) |
 | `/broad-implement` | 1 | 1 | Implement selected findings from broad scan |
 | `/targeted-audit` | 2 | 1 of 2 | Scoped subsystem audit + plan |
