@@ -1,6 +1,6 @@
 # Claude Workflow Tools — Prompt Templates
 
-Project-agnostic template versions of all slash command prompts. Copy and adapt for new projects by replacing `[PLACEHOLDER]` values with project-specific subsystems, dimensions, and file lists.
+Project-agnostic prompt templates for every slash command, and the canonical source from which this repo's `.claude/commands/` are generated. The commands are project-agnostic: they reference a per-project **Cycle Workflow Config** rather than inlining specifics, so adapting to a new project means writing that config (via `/setup-cycle`) and copying the `.claude/commands/` directory — not replacing placeholders.
 
 > **Dogfooding note (this repo runs the workflow on itself):** the
 > `## Cycle Workflow Config` sections in this file are the *template /
