@@ -1394,6 +1394,7 @@ Policy responses triggered: [list categories, or "None"]
       <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--text-sec)"></div>Fresh session for planning (large codebases)</div><p>For 110k+ line scopes, auditing a complex module consumes significant context. Start a fresh session for planning with the audit output pasted in.</p></div>
       <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--orange)"></div>Keep CLAUDE.md lean and current</div><p>Recommended sections: Project Overview · Architecture · Key Files &amp; Directories · Conventions &amp; Patterns · Project Health (pointer to PROJECT_HEALTH.md) · Known Issues / Active Work. Don't let it become a notes dump.</p></div>
       <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--red)"></div>Policy responses are mandatory</div><p>When an Axis B category scores <strong>≤4/10 for two consecutive cycles</strong>, the synthesis outputs a POLICY RESPONSE TRIGGERED block. Those prescribed fixes are mandatory in the next cycle's scope — paste them into §1 and include them in the Implementation Handoff Block. This converts one-off bug fixing into systemic improvement.</p></div>
+      <div class="tip"><div class="tip-ttl"><div class="td" style="background:var(--teal)"></div>Dynamic Workflows is optional</div><p>On Opus 4.8+ you can orchestrate these prompts as parallel subagents — but only when the project has a real test suite and the work is genuinely parallel (broad scans, migrations). Keep the human gates (finding approval, dependency check, policy responses) manual. The workflow runs fully without it. See "Optional: Dynamic Workflows acceleration" in the README.</p></div>
     </div>
   </section>
 
@@ -1404,6 +1405,20 @@ Policy responses triggered: [list categories, or "None"]
       <div class="stitle">Project Manager</div>
       <div class="spurp">Manage projects available in the selector. Built-in projects are read-only. Custom projects can be added, edited, and deleted.</div>
     </div></div>
+    <div style="background:#161b27;border:1px solid #2a3142;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#dde4f0">Backup &amp; Restore</div>
+          <div style="font-size:11px;color:#4e5e7a;margin-top:2px">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
+          <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
+          <input id="importStateFile" type="file" accept="application/json,.json" style="display:none" onchange="importStateFile(this)">
+        </div>
+      </div>
+      <div id="stateIoMsg" style="font-size:11px;margin-top:8px;display:none"></div>
+    </div>
     <div id="projectsBuiltIn"></div>
     <div id="projectsCustom"></div>
     <button onclick="openProjectForm()" id="addProjectBtn"
@@ -2317,6 +2332,73 @@ function deleteProject(id){
   if(activeProjectId===id)switchProject(PROJECTS[0].id);
   renderProjectsTab();
   renderProjectSelector();
+}
+
+// ─── STATE EXPORT / IMPORT ───────────────────────────────────
+function setStateIoMsg(msg,kind){
+  const el=document.getElementById('stateIoMsg');
+  if(!el)return;
+  el.textContent=msg;
+  el.style.display='block';
+  el.style.color=kind==='error'?'#ef4444':(kind==='ok'?'#22c55e':'#8899b3');
+}
+
+function collectState(){
+  const data={};
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.indexOf('ccg:')===0) data[k]=localStorage.getItem(k);
+    }
+  }catch(e){}
+  return data;
+}
+
+function exportState(){
+  try{
+    const payload={app:'claude-workflow-tools',kind:'state-backup',version:1,exportedAt:new Date().toISOString(),data:collectState()};
+    const n=Object.keys(payload.data).length;
+    if(!n){ setStateIoMsg('Nothing to export yet — no custom projects, invariants, or archive entries saved.','info'); return; }
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`claude-workflow-state-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setStateIoMsg(`Exported ${n} stored item${n===1?'':'s'}.`,'ok');
+  }catch(e){
+    setStateIoMsg('Export failed: '+(e&&e.message?e.message:'unknown error'),'error');
+  }
+}
+
+function importStateFile(input){
+  const file=input&&input.files&&input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    let parsed;
+    try{ parsed=JSON.parse(ev.target.result); }
+    catch(e){ setStateIoMsg('Import failed: file is not valid JSON.','error'); input.value=''; return; }
+    const data=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:null;
+    if(!data){ setStateIoMsg('Import failed: not a recognized state backup (missing "data").','error'); input.value=''; return; }
+    const keys=Object.keys(data).filter(k=>k.indexOf('ccg:')===0);
+    if(!keys.length){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
+    if(!confirm(`Import ${keys.length} stored item(s)? This OVERWRITES matching projects, invariants, archive entries, and tracker state in this browser.`)){ input.value=''; return; }
+    try{
+      keys.forEach(k=>localStorage.setItem(k,data[k]));
+      activeProjectId=loadActiveProjectId();
+      if(!getAllProjects().map(p=>p.id).includes(activeProjectId)){ activeProjectId=PROJECTS[0].id; saveActiveProjectId(activeProjectId); }
+      switchProject(activeProjectId);
+      renderProjectsTab();
+      setStateIoMsg(`Imported ${keys.length} stored item${keys.length===1?'':'s'}.`,'ok');
+    }catch(e){
+      setStateIoMsg('Import failed while writing: '+(e&&e.message?e.message:'unknown error'),'error');
+    }
+    input.value='';
+  };
+  reader.onerror=function(){ setStateIoMsg('Import failed: could not read file.','error'); input.value=''; };
+  reader.readAsText(file);
 }
 
 // ─── ARCHIVE ─────────────────────────────────────────────────

@@ -901,6 +901,45 @@ After the comparison, ask for approval before writing any files.
 
 ---
 
+## Optional: Dynamic Workflows Acceleration (Opus 4.8+)
+
+An **optional accelerator, not a dependency.** Every command above runs
+unchanged on a single session per phase; if Dynamic Workflows isn't
+available or the project doesn't fit, ignore this section.
+
+Dynamic Workflows (research preview) lets one orchestrator plan a task
+and fan out parallel subagents (≤16 concurrent, 1,000 total), verifying
+their output against the test suite. It is the automated form of the
+audit → plan → implement → verify chain these commands drive by hand.
+
+Use it ONLY when all hold:
+- The project has a real test suite (`Test Command` ≠ `manual`) — it is
+  the verification bar; with no programmatic bar, don't use it to implement.
+- The work is genuinely parallel (broad scan across many independent
+  subsystems, or a codebase-scale migration), not judgment-bound.
+- Throughput is the goal and a wrong autonomous change is bounded by
+  tests + review.
+
+Do NOT use it when `Test Command: manual`, the project is small, the
+cycle's value is the human judgment gates, or subsystem boundaries /
+invariants are still being calibrated.
+
+Mapping: per-subsystem audit subagents fan out `/broad-scan` or `/audit`
+(`/setup-cycle` already lists them); a verifier subagent with no
+implementation context IS the §4v Independent Verification (refute →
+converge); handoff blocks become the orchestrator's state instead of
+copy-paste between sessions.
+
+Non-negotiable human gates that stay manual even when orchestrated:
+(1) operator approves which findings to implement, (2) the
+pre-implementation dependency check runs before High/Very High risk
+changes, (3) triggered policy responses are mandatory next-cycle scope.
+
+Treat Dynamic Workflows as a delivery mechanism for these prompts, not a
+replacement for them. Research preview — expect semantics to shift.
+
+---
+
 ## Handoff Block Formats
 
 ### SESSION HANDOFF BLOCK

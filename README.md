@@ -104,6 +104,35 @@ For projects with no programmatic test runner at all, set `Test Command: manual`
 - **Axis B scoring is qualitative.** Claude reads code but can't run load tests or collect runtime metrics. Axis B scores are based on code structure evidence, not measured performance.
 - **Handoff blocks require manual copy-paste between sessions.** Save blocks to the Archive immediately after each session to prevent loss.
 
+## Optional: Dynamic Workflows acceleration (Opus 4.8+)
+
+This is an **optional accelerator, not a dependency**. The entire workflow runs exactly as documented on a single Claude Code session per phase. If Dynamic Workflows isn't available to you, or the project doesn't fit the criteria below, ignore this section — nothing else changes.
+
+[Dynamic Workflows](https://www.anthropic.com/news/claude-opus-4-8) (research preview; Enterprise/Team/Max) lets one orchestrator plan a task and fan out parallel subagents — up to 16 concurrent, 1,000 total per run — each with its own context, with the plan held outside the orchestrator's context window. It's essentially the *automated* form of the audit→plan→implement→verify chain this tool drives by hand.
+
+### Use it only when ALL of these hold
+- **The project has a real test suite** (`Test Command` ≠ `manual`). Dynamic Workflows verifies subagent output against your tests; with no programmatic bar, don't use it for implementation.
+- **The work is genuinely parallel** — e.g. a broad scan across many independent subsystems, or a codebase-scale migration — where serial sessions are the bottleneck, not the thinking.
+- **You want throughput**, and the cost of a wrong autonomous change is bounded by tests + review.
+
+### Do NOT use it when
+- `Test Command: manual`, or the project is small enough that one session already covers it.
+- The value of the cycle is the **human judgment gates** (approving which findings to fix, the pre-implementation dependency check, mandatory policy responses) more than raw speed.
+- You're early in a project and still calibrating subsystem boundaries or invariants.
+
+### How the existing pieces map
+- **Per-subsystem audit subagents** — fan out `/broad-scan` or `/audit` across subsystems in one run (`/setup-cycle` already sizes and lists them). Each returns its handoff block; the orchestrator merges them.
+- **Verifier subagent = §4v Independent Verification.** Spawn a verifier with no implementation context to re-probe the invariant library — the native "refute then converge" pattern is exactly the "don't let the implementer grade its own work" rule.
+- **Handoff blocks become orchestrator state.** The block formats are already structured contracts; keep them as the data passed between subagents rather than copy-pasted between sessions.
+
+### Non-negotiable: keep the human gates
+Even when orchestrated, these stay manual checkpoints between phases — do not let autonomy dissolve them:
+1. Operator approves which findings to implement before any code changes.
+2. The pre-implementation dependency check runs before High/Very High risk changes.
+3. Triggered policy responses are mandatory scope in the next cycle.
+
+Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a replacement for them — the prompts (severity/confidence rubrics, the "would it fire in production this month" test, the hard regression definition) are the durable part. It's a research preview; expect orchestration semantics to shift.
+
 ## Slash Commands Reference
 
 | Command | Tier | Sessions | Purpose |
