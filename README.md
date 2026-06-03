@@ -4,8 +4,10 @@ A structured workflow system for managing audit-implement-verify cycles on large
 
 ## What's in this repo
 
-- **`claude-code-guide-v2.html`** — Interactive HTML tool with all prompts, project selector, invariant library, cycle tracker, and archive. Open in a browser to use.
-- **`CLAUDE.md`** — Project-agnostic template versions of all prompts for quick reference and adaptation to new projects.
+- **`CLAUDE.md`** — The **canonical source** for every command's prompt text (project-agnostic; commands reference the Cycle Workflow Config rather than inlining project specifics).
+- **`.claude/commands/`** — Ready-to-copy slash-command files, one per command, **generated from `CLAUDE.md`** by `scripts/gen-commands.mjs`. Copy the whole directory into a project.
+- **`claude-code-guide-v2.html`** — Interactive HTML console with all prompts, project selector, invariant library, cycle tracker, and archive. Open in a browser to use.
+- **`scripts/`** — `gen-commands.mjs` (regenerate the command files) and `check-template-sync.mjs` (drift guard, run in CI).
 
 ## Three-Tier Workflow
 
@@ -69,7 +71,7 @@ A fresh session with no implementation context re-probes invariants, counts regr
 
 1. **Run `/setup-cycle`** in a Claude Code session connected to the project — produces a Cycle Workflow Config section and rotation plan
 2. **Paste the Cycle Workflow Config** into your project's CLAUDE.md — all commands reference this section, so it's the single source of truth for subsystems, dimensions, invariants, policy config, and (optionally) regression scenarios, frozen subsystems, and deploy commands
-3. **Copy command files** from this repo's CLAUDE.md templates into `.claude/commands/` — they are project-agnostic (they reference CLAUDE.md config, not inline project-specific content), so no placeholder replacement is needed
+3. **Copy the `.claude/commands/` directory** from this repo into your project — the files are project-agnostic (they reference CLAUDE.md config, not inline project-specific content), so no placeholder replacement is needed. (These are generated from CLAUDE.md by `scripts/gen-commands.mjs`.)
 4. **Optionally, add to the HTML tool:** Open `claude-code-guide-v2.html` → "Projects" → "+ Add custom project" → enter the same config
 
 ### Adapting for a small / correctness-focused project
@@ -94,6 +96,19 @@ For urgent production fixes, use `/broad-implement <describe the bug>` directly 
 ### Context Window Overflow
 If a session runs out of context mid-audit (typically 100k+ line codebases with deep subsystems), produce a partial handoff block with what you've covered and a "NOT COVERED" section listing remaining files. Run a second session on the uncovered scope. The `/setup-cycle` command sizes subsystems to fit in one session, but broad-scan covers the entire codebase and may overflow.
 
+If context fills mid-implementation (work unfinished), the optional `.cycle/` state directory makes resumption lossless — see "Cycle State & Resuming" below.
+
+### Cycle State & Resuming
+For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
+- `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it.
+- `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
+
+Two commands navigate it:
+- **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
+- **`/cycle-resume`** — continues an in-progress *implementation* thread. It carries forward **substrate + facts** (systems map, invariants, what's done/pending) but **never inherits the prior session's findings as authoritative** — a new audit always uses fresh eyes. Resume is for continuation, not re-auditing.
+
+This is **fully additive**: with no `.cycle/` directory every command behaves exactly as before (emit the block in chat, copy-paste into the next session). Deleting `.cycle/` returns you to the pure copy-paste workflow with no loss. See "Cycle State & Memory" in `CLAUDE.md` for the `STATE.md` template and the two-memory-channels rationale.
+
 ### When Tests Can't Run
 If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
 
@@ -102,7 +117,36 @@ For projects with no programmatic test runner at all, set `Test Command: manual`
 ### Known Limitations
 - **Single-operator design.** The workflow assumes one developer + Claude Code. Multi-developer usage would need shared state (shared Archive, coordination on which subsystems are in-progress).
 - **Axis B scoring is qualitative.** Claude reads code but can't run load tests or collect runtime metrics. Axis B scores are based on code structure evidence, not measured performance.
-- **Handoff blocks require manual copy-paste between sessions.** Save blocks to the Archive immediately after each session to prevent loss.
+- **Handoff blocks require manual copy-paste between sessions** by default. Save blocks to the Archive immediately after each session to prevent loss — or opt into the `.cycle/` state directory (see "Cycle State & Resuming") to persist them to files and resume with `/cycle-resume`.
+
+## Optional: Dynamic Workflows acceleration (Opus 4.8+)
+
+This is an **optional accelerator, not a dependency**. The entire workflow runs exactly as documented on a single Claude Code session per phase. If Dynamic Workflows isn't available to you, or the project doesn't fit the criteria below, ignore this section — nothing else changes.
+
+[Dynamic Workflows](https://www.anthropic.com/news/claude-opus-4-8) (research preview; Enterprise/Team/Max) lets one orchestrator plan a task and fan out parallel subagents — up to 16 concurrent, 1,000 total per run — each with its own context, with the plan held outside the orchestrator's context window. It's essentially the *automated* form of the audit→plan→implement→verify chain this tool drives by hand.
+
+### Use it only when ALL of these hold
+- **The project has a real test suite** (`Test Command` ≠ `manual`). Dynamic Workflows verifies subagent output against your tests; with no programmatic bar, don't use it for implementation.
+- **The work is genuinely parallel** — e.g. a broad scan across many independent subsystems, or a codebase-scale migration — where serial sessions are the bottleneck, not the thinking.
+- **You want throughput**, and the cost of a wrong autonomous change is bounded by tests + review.
+
+### Do NOT use it when
+- `Test Command: manual`, or the project is small enough that one session already covers it.
+- The value of the cycle is the **human judgment gates** (approving which findings to fix, the pre-implementation dependency check, mandatory policy responses) more than raw speed.
+- You're early in a project and still calibrating subsystem boundaries or invariants.
+
+### How the existing pieces map
+- **Per-subsystem audit subagents** — fan out `/broad-scan` or `/audit` across subsystems in one run (`/setup-cycle` already sizes and lists them). Each returns its handoff block; the orchestrator merges them.
+- **Verifier subagent = §4v Independent Verification.** Spawn a verifier with no implementation context to re-probe the invariant library — the native "refute then converge" pattern is exactly the "don't let the implementer grade its own work" rule.
+- **Handoff blocks become orchestrator state.** The block formats are already structured contracts; keep them as the data passed between subagents rather than copy-pasted between sessions.
+
+### Non-negotiable: keep the human gates
+Even when orchestrated, these stay manual checkpoints between phases — do not let autonomy dissolve them:
+1. Operator approves which findings to implement before any code changes.
+2. The pre-implementation dependency check runs before High/Very High risk changes.
+3. Triggered policy responses are mandatory scope in the next cycle.
+
+Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a replacement for them — the prompts (severity/confidence rubrics, the "would it fire in production this month" test, the hard regression definition) are the durable part. It's a research preview; expect orchestration semantics to shift.
 
 ## Slash Commands Reference
 
@@ -123,6 +167,8 @@ For projects with no programmatic test runner at all, set `Test Command: manual`
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
 | `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
+| `/cycle-status` | any | 1 | Read-only: report standing + whether to resume or start fresh |
+| `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |
 | `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
 
 ## Handoff Block Types
@@ -138,3 +184,19 @@ For projects with no programmatic test runner at all, set `Test Command: manual`
 | VERIFICATION BLOCK | Verification Pass | Health Synthesis |
 | SEAMS & INVARIANTS AUDIT BLOCK | Seams Audit | Next subsystem audit, Synthesis |
 | CYCLE SUMMARY BLOCK | `/reflect` | Health Synthesis |
+
+## Maintaining this repo
+
+This repo has three presentations of the same workflow that must stay aligned:
+
+- **`CLAUDE.md`** is the **canonical source** for command semantics. Every command is a `### /<name>` heading followed by a fenced prompt body.
+- **`.claude/commands/`** is **generated** from CLAUDE.md (`node scripts/gen-commands.mjs`) — never edit these by hand; edit CLAUDE.md and regenerate.
+- **`claude-code-guide-v2.html`** is a **self-contained prompt console** that inlines config from its own project store. Its prompt builders should produce the *same behavior* as the CLAUDE.md commands — they are deliberately not byte-identical.
+
+When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), run `node scripts/gen-commands.mjs`, then run the guard:
+
+```
+node scripts/check-template-sync.mjs
+```
+
+The guard exits non-zero if any tracked capability (manual test mode, Regression Scenarios, Frozen Subsystems, Deploy Command/Step, configurable Axis B, Dynamic Workflows, `.cycle/` state, `/cycle-resume`/`/cycle-status`, executable invariants, per-cycle metrics) is present in one artifact but missing from another, if a README-referenced command lacks a CLAUDE.md template, or if `.claude/commands/` is stale. If you intentionally rename a marker, update `CHECKS` in that script. CI runs the guard on every push and pull request.
