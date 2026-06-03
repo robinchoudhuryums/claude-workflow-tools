@@ -8,7 +8,7 @@ When setting up a new project:
 
 1. Run `/setup-cycle` to generate the Cycle Workflow Config
 2. Add the config to your project's CLAUDE.md (see format below)
-3. Copy the command files from this repo's CLAUDE.md into `.claude/commands/` — they are project-agnostic and reference the config in CLAUDE.md, no placeholder replacement needed
+3. Copy this repo's `.claude/commands/` directory into your project (generated from these CLAUDE.md templates by `scripts/gen-commands.mjs`) — they are project-agnostic and reference the config in CLAUDE.md, no placeholder replacement needed
 4. Run `/sync-commands` periodically to check for template updates
 
 ## Cycle Workflow Config (add to each project's CLAUDE.md)
@@ -801,104 +801,445 @@ Suggest /test-sync and /sync-docs if applicable.
 
 ### /audit
 
-See the HTML tool (Section 1 — Layered Audit) for the full prompt. The key differences from `/targeted-audit`:
-- Produces a SESSION HANDOFF BLOCK (not a Tier 2 Handoff Block)
-- Does NOT include an implementation plan (that's `/plan`)
-- Includes optional inputs for policy response triggers and seams audit focus
-- Includes 12 audit focus areas (bugs, dead code, test gaps, stale artifacts, hardcoded values, security, docs drift, code quality, parallel truth sources, startup assumptions, silent degradation, operator-only state)
+```
+If $ARGUMENTS is empty or missing, respond with exactly this and stop:
+
+Usage: /audit <subsystem-name>
+Available subsystems: see the Subsystems section in CLAUDE.md's Cycle
+Workflow Config.
+
+---
+
+Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
+Cycle Workflow Config) before starting. Do not make any changes to any
+files during this session.
+
+This session's scope: $ARGUMENTS
+
+[PASTE SYSTEMS MAP SUMMARY HERE — 3–5 bullets]
+[OPTIONAL: PASTE FOLLOW-ON ITEMS FROM A PRIOR SESSION]
+[IF TRIGGERED: PASTE POLICY RESPONSE BLOCKS FROM THE LAST HEALTH
+ SYNTHESIS — these are MANDATORY scope additions for this cycle]
+[OPTIONAL: SEAMS AUDIT FOCUS — a seam this cycle should emphasize]
+
+If this scope is listed under Frozen Subsystems in the Cycle Workflow
+Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
+continuing, then proceed.
+
+Audit this subsystem across these focus areas:
+1. Bugs and logic errors in currently-reachable code paths
+2. Dead code / unused exports (only if they create confusion)
+3. Test gaps (missing coverage on load-bearing paths)
+4. Stale artifacts (TODOs, comments, docs that mislead)
+5. Hardcoded values that should be config/env
+6. Security and compliance gaps
+7. Docs drift (CLAUDE.md vs implementation)
+8. Code quality that is actively wrong (not style preference)
+9. Parallel source-of-truth (values/types defined in multiple places)
+10. Startup ordering / initialization assumptions
+11. Silent degradation paths (failure swallowed, wrong results continue)
+12. Operator-only state (manual steps with no automated validation)
+
+For each finding:
+- State the issue, cite file and function/line
+- Severity: Critical / High / Medium / Low
+- Confidence: High / Medium / Low
+- Would this fire in production this month? YES (trigger) / NO (why not)
+- Effort: S (<2h) / M (½–2 days) / L (3+ days) + rough time estimate
+
+DO NOT flag style preferences or speculative "could be cleaner"
+refactoring unless the current code is actively wrong.
+
+Do NOT produce an implementation plan — that is /plan. Produce a
+SESSION HANDOFF BLOCK:
+
+---SESSION HANDOFF BLOCK---
+Scope: [subsystem group name]
+Files covered: [comma-separated list]
+Audit confidence: [High / Medium / Low]
+
+FINDINGS:
+[ID] | [File: function/line] | [Severity] | [Confidence] | [Effort] | [Description]
+
+CROSS-MODULE DEPENDENCIES SURFACED:
+- [dependency description]
+
+TOP PRIORITIES:
+Impact: [finding IDs]
+High-leverage: [finding IDs]
+
+RECOMMENDED PLANNING STARTING POINT: [one sentence]
+---END HANDOFF BLOCK---
+```
 
 ### /plan
 
-Takes a SESSION HANDOFF BLOCK and produces an IMPLEMENTATION HANDOFF BLOCK with:
-- Prioritized actions (do immediately / do this week / defer)
-- Batch splitting for >15 findings
-- Architectural decisions with options and tradeoffs
-- Documentation update checklist
-- Implementation ordering with rationale
+```
+If $ARGUMENTS is empty AND no SESSION HANDOFF BLOCK exists earlier in
+this session, respond with exactly this and stop:
+
+Usage (same session): /plan — run after /audit
+Usage (new session): paste the SESSION HANDOFF BLOCK first, then run
+
+---
+
+Read CLAUDE.md (Common Gotchas, Cycle Workflow Config) before starting.
+Do not make any changes to any files during this session.
+
+[PASTE SESSION HANDOFF BLOCK HERE IF FRESH SESSION]
+[PASTE SYSTEMS MAP SUMMARY HERE]
+
+Produce a prioritized action plan for the scope in the handoff block.
+
+For each action:
+- Action ID (A1, A2…)
+- Concrete description (not "improve error handling")
+- Finding ID(s) it addresses
+- Effort: S / M / L + rough time estimate
+- Cross-module risk: Low / High / Very High
+- Prerequisites
+
+Organize into:
+1. Do immediately — critical, quick wins, or blockers
+2. Do this week — high-value, well-scoped
+3. Defer but schedule — important, not urgent, or has dependencies
+
+If more than ~15 findings, split actions into Batch 1 (P0/Critical +
+highest-compliance-risk) and Batch 2 (rest); note the split.
+
+Then:
+- Findings to escalate to the roadmap (too large/structural)
+- Architectural decisions needed before implementation — each with the
+  question, options + tradeoffs, a recommendation, and whether
+  implementation is blocked or a safe default can proceed now
+- Actions that are good automation/scripting candidates
+
+Produce a DOCUMENTATION UPDATE CHECKLIST (CLAUDE.md / README / roadmap /
+inline comments / other — omit files needing no change).
+
+Then produce an IMPLEMENTATION HANDOFF BLOCK:
+
+---IMPLEMENTATION HANDOFF BLOCK---
+Scope: [subsystem group name]
+Systems map reference: [available? Y/N]
+Batch: [1 of 1 / 1 of 2 / 2 of 2 — omit if no split]
+
+ACTIONS TO IMPLEMENT:
+[ID] | [File: function/area] | [Effort] | [Cross-module risk] | [One-line description] | [Prereq IDs]
+
+HIGH/VERY HIGH RISK ACTIONS (require dependency check before implementation):
+[action IDs + the exports/interfaces they touch]
+
+POLICY RESPONSE ACTIONS (mandatory if triggered — from last Health Synthesis):
+[list or "None triggered"]
+
+IMPLEMENT IN THIS ORDER: [ordered action IDs]
+ORDERING RATIONALE: [1–2 sentences]
+---END IMPLEMENTATION HANDOFF BLOCK---
+```
 
 ### /implement
 
-Takes an IMPLEMENTATION HANDOFF BLOCK and executes it with:
-- Pre-implementation dependency check for High/Very High risk actions
-- Scope discipline (only listed actions)
-- Test suite check (Category A/B/C failures)
-- IMPLEMENTATION SUMMARY BLOCK output
+```
+If $ARGUMENTS is empty AND no IMPLEMENTATION HANDOFF BLOCK exists earlier
+in this session, respond with exactly this and stop:
+
+Usage (same session): /implement — run after /plan
+Usage (new session): paste the IMPLEMENTATION HANDOFF BLOCK first, then run
+
+---
+
+Read CLAUDE.md (especially Common Gotchas) before starting.
+
+[PASTE SYSTEMS MAP SUMMARY HERE]
+[PASTE IMPLEMENTATION HANDOFF BLOCK HERE IF FRESH SESSION]
+
+Before starting: for every action listed as High/Very High risk, run the
+Pre-Implementation Dependency Check (identify every out-of-scope file
+that imports/calls the changed functions/exports; describe what would
+break) and confirm understanding before implementing those actions.
+Low-risk actions may proceed.
+
+Rules:
+- Implement ONLY the actions in the handoff block, in order
+- Do not fix anything outside scope — note it for follow-on
+- Stop on unexpected complexity and describe before continuing
+- Stop if an action requires touching out-of-scope files
+- Check Common Gotchas before each action
+- After each action, note: what changed, files touched, anything unexpected
+
+After all actions complete, in order:
+
+1. RUN TESTS — read Test Command from CLAUDE.md. If `manual`, walk the
+   Regression Scenarios for the touched subsystem(s) instead (PASS / FAIL
+   / NOT APPLICABLE; a FAIL = a test failure). Otherwise run the suite,
+   then walk any configured scenarios. Classify failures: this session /
+   pre-existing / real bug exposed by a correct test.
+2. Produce an IMPLEMENTATION SUMMARY BLOCK:
+
+---IMPLEMENTATION SUMMARY BLOCK---
+Session scope: [subsystem group]
+Actions completed: [IDs]
+Actions not completed (if any): [list with reason]
+
+CHANGES MADE:
+[Action ID] | [File(s)] | [What changed]
+
+TEST RESULTS: [passed/failed — details, or scenario outcomes if manual]
+
+UNEXPECTED FINDINGS DURING IMPLEMENTATION:
+- [discovered while implementing, not in the audit] (or "None")
+
+DEPLOY STEP:
+- [if a Deploy Command is configured for a touched subsystem, list it] (or "N/A — no Deploy Command configured")
+
+FOLLOW-ON ITEMS:
+- [out-of-scope items to add to the backlog] (or "None")
+
+DOCUMENTATION UPDATES NEEDED:
+- [CLAUDE.md / README / inline] (or "None")
+---END IMPLEMENTATION SUMMARY BLOCK---
+
+3. CHECKPOINT (optional — only if .cycle/ exists): create/update
+   .cycle/STATE.md (completed/pending actions, follow-ons, decisions,
+   "Where I left off") so /cycle-resume can continue. Skip if no .cycle/.
+
+Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.
+```
 
 ### /regression
 
-Takes an IMPLEMENTATION SUMMARY BLOCK and:
-- Identifies affected modules outside the changed scope
-- Validates each risk (materialized or negated)
-- Cross-references against invariant library
-- Produces FOLLOW-ON AUDIT ITEMS block
+```
+Read CLAUDE.md before starting. Do not make any changes to any files
+during this session.
+
+[PASTE SYSTEMS MAP SUMMARY HERE, INCLUDING THE INTER-MODULE DEPENDENCY MAP]
+[PASTE IMPLEMENTATION SUMMARY BLOCK FROM THE IMPLEMENTATION SESSION]
+
+Based on the systems map and the changes made:
+1. Identify which modules OUTSIDE the changed scope could be affected
+2. For each, describe what could break and where to verify (file:area)
+3. For each risk, explicitly confirm whether it materialized or was
+   negated (cascade configs, zero callers, idempotent ops, existing
+   indexes, defaults) — validate, don't just list
+4. Cross-reference the changes against the invariant library (Cycle
+   Workflow Config); flag any invariant at risk, and run its Verify test
+   if one is defined
+5. If a Deploy Command is configured for a touched subsystem, note which
+   risks are git-verified vs. only verifiable after deploy
+6. Note any docs (CLAUDE.md / README / roadmap) needing updates
+
+Prioritize the verification list by likelihood of breakage. Then:
+
+---FOLLOW-ON AUDIT ITEMS---
+- [File: function/area] — [what to check, why flagged, which change surfaced it]
+(repeat for each item, or "None")
+---END FOLLOW-ON AUDIT ITEMS---
+```
 
 ### /reflect
 
-Post-cycle assessment with:
-- Two binary questions per action (production bug? new failure mode?)
-- Three-way classification: production fix / new capability or feature / defensive improvement
-- Net score tally with severity breakdown
-- Invariant growth (new rules for the library)
-- Honest impact summary
-- CYCLE SUMMARY BLOCK output (consumed by Health Synthesis)
+```
+Read CLAUDE.md before starting. Do not make any changes to any files
+during this session (other than the optional metrics append below).
+
+[PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
+
+For each action completed this cycle, answer two binary questions:
+1. Would this bug have actually fired in production this month?
+   YES (real, currently-reachable, realistic load) / NO (speculative,
+   defensive, dead code, zero-caller). Be specific about the trigger.
+2. Did this action introduce a new failure mode, documented or not?
+   YES (describe it; better or worse than what it replaced; when it
+   fires) / NO. If the post-cycle state is worse under any realistic
+   scenario, that is a regression — count it, don't bury it as a
+   "tradeoff".
+
+Tally (three-way classification):
+- Production fixes (YES to Q1): [count] — severity breakdown
+- New capabilities / features: [count]
+- Defensive/structural (NO to Q1, not a feature): [count]
+- New failure modes (YES to Q2): [count] — severity breakdown
+- Net score: [production fixes] − [new failure modes] = [net]
+  (a net-positive score with a Critical new failure mode is still a problem)
+
+Honest impact summary:
+- What changed for a user right now?
+- What changed for the next developer in this subsystem?
+- What became safer under scale / concurrent load?
+- Was effort spent on dead code / zero-caller paths / future-proofing?
+
+Invariant growth: list rules this cycle establishes that the next
+Verification Pass should probe —
+[proposed ID] | [rule] | [subsystem/seam] | [Verify: test/assertion].
+
+End with: the single most structurally significant change; the finding
+that should have been deferred.
+
+Produce a CYCLE SUMMARY BLOCK:
+
+---CYCLE SUMMARY BLOCK---
+Scope: [subsystem] | Cycle: [N/date]
+Production fixes: [count] — severity: [breakdown]
+New capabilities/features: [count]
+Defensive/structural: [count]
+New failure modes: [count] — severity: [breakdown]
+Net score: [fixes] − [new failure modes] = [net]
+Invariant candidates: [list or "None"]
+Most structurally significant change: [one line]
+Should-have-been-deferred: [one line]
+---END CYCLE SUMMARY BLOCK---
+
+METRICS (optional — only if .cycle/ exists): append a phase=reflect row
+to .cycle/metrics.csv (header:
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
+with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
+columns blank. Skip if no .cycle/.
+```
 
 ### /health-pulse
 
-Quick directional snapshot on both axes:
-- Axis A: vertical subsystem health scores with confidence
-- Axis B: lightweight bug-shape posture scan (5 categories)
-- Closing questions focused on risk and investigation priority
+```
+Read CLAUDE.md (Cycle Workflow Config) before starting. Do not make any
+changes to any files during this session.
+
+[PASTE SYSTEMS MAP SUMMARY HERE]
+[OPTIONAL: PRIOR SYNTHESIS SCORE OR KEY FINDINGS FOR REFERENCE]
+
+Provide a Health Pulse — a directional snapshot on both axes. This is
+lower-precision than a synthesis; never compare pulse scores to synthesis
+scores.
+
+AXIS A — VERTICAL (subsystem health): for each Health Dimension in the
+Cycle Workflow Config, give a score /10 (or "Not assessed"), confidence
+(High / Med / Low), one sentence of reasoning, and flag any
+Low-confidence dimension whose audit is overdue.
+
+AXIS B — HORIZONTAL (bug-shape posture): for each Axis B category in the
+Cycle Workflow Config (default: Silent Degradation, Startup Ordering,
+Operator-Only Gaps, Parallel Drift, Test Coverage Quality), give a quick
+1–10 directional score and one sentence of evidence from CLAUDE.md,
+recent commits, and code structure. Flag these as lower-confidence.
+
+Close with:
+- Anything materially worse since the last assessment?
+- Which dimension/category should move up the audit queue?
+- The one thing most likely to cause a problem before the next full cycle
+- Which Axis B category you'd investigate first with one hour
+```
 
 ### /systems-map
 
-Five-phase read-only architectural analysis:
-1. Entry points and project structure
-2. Module identification with startup assumptions
-3. Data flow tracing (3 critical paths)
-4. Dependency map construction
-5. Cross-reference validation
+```
+Read CLAUDE.md and README before starting. Do not make any changes to any
+files during this session. Do not run audits or recommendations — this
+session only maps architecture.
+
+Produce a systems map in five phases:
+1. ENTRY POINTS & STRUCTURE — server/client entry points, route
+   registration, build/deploy entry, top-level directory roles
+2. MODULE IDENTIFICATION — each module's responsibility and its startup
+   assumptions (env vars, init order, singletons)
+3. DATA FLOW — trace 3 critical paths end to end (e.g. a request, a job,
+   an auth flow); note where data is transformed and persisted
+4. DEPENDENCY MAP — high-fan-out modules and what depends on them;
+   inter-module dependencies (this is the input to the §4 dependency check)
+5. CROSS-REFERENCE VALIDATION — reconcile the map against the Subsystems
+   section of CLAUDE.md's Cycle Workflow Config; flag mismatches
+
+End with a 3–5 bullet SYSTEMS MAP SUMMARY suitable for pasting into
+audit/plan/implement sessions, plus the inter-module dependency map.
+```
 
 ### /roadmap
 
-Four-tier strategic planning:
-- Tier 1 (days-weeks): grounded in audit findings
-- Tier 2 (weeks-months): structural improvements
-- Tier 3 (months+): capability expansions
-- Tier 4 (exploratory): not constrained by current architecture
+```
+Read CLAUDE.md and README before starting. Do not make any changes to any
+files during this session.
+
+[PASTE SYSTEMS MAP SUMMARY HERE]
+[OPTIONAL: SUMMARY OF RECENT AUDIT FINDINGS]
+
+Produce a roadmap in four tiers. Ground Tiers 1–3 in specific findings,
+gaps, or architectural realities — no ungrounded wishlist items. Tier 4
+is explicitly exploratory.
+
+Tier 1 — Short-term (days–weeks): concrete fixes / tech-debt from audits,
+quick wins, anything blocking other work.
+Tier 2 — Medium-term (weeks–months): structural improvements, feature
+completions, integrations with clear scope.
+Tier 3 — Long-term (months+): systemic changes, scaling, major new
+capability areas grounded in the project's direction.
+Tier 4 — Future possibilities (exploratory): directional ideas not
+constrained by current architecture.
+
+For Tiers 1–3: 3–5 items each with a one-line rationale and an effort
+estimate (S/M/L + rough time). For Tier 4: 3 distinct directions, a short
+paragraph each. End with the one strategic bet you'd prioritize if
+resources were limited, and why.
+```
 
 ### /test-sync
 
-Post-implementation test quality assessment and failure resolution. Leads with coverage and quality analysis, not just failure fixing:
+```
+Read CLAUDE.md before starting.
 
-**Step 1: Run tests and classify failures** into 5 categories:
-- Category A: outdated assertions (fix)
-- Category B: tests with local redefinitions (rewrite to import production values)
-- Category C: pre-existing failures (fix if scoped)
-- Category D: real production bugs caught by correct tests (flag only, defer)
-- Category E: infrastructure issues (fix)
+[PASTE THE IMPLEMENTATION SUMMARY from the cycle, if available]
 
-**Step 2: Fix categories A, B, C, E** in priority order
+Post-implementation test quality assessment AND failure resolution. Lead
+with coverage/quality, not just fixing reds.
 
-**Step 3: Coverage gap analysis** (primary value — runs even if all tests pass):
-- For every change in the implementation summary: does a test exist that would fail if the change regressed?
-- For each gap: describe what's untested, classify as simple (<30 min) or complex, implement simple ones immediately
-- Category D ratio: what percentage of fixes have no regression test?
+Step 1 — Run tests (Test Command from CLAUDE.md; if `manual`, walk the
+Regression Scenarios) and classify each failure:
+- A: outdated assertion (fix)
+- B: test redefines a production value locally (rewrite to import it)
+- C: pre-existing failure (fix if in scope)
+- D: real production bug caught by a correct test (flag only, defer)
+- E: infrastructure issue (fix)
 
-**Step 4: Test quality check** (new):
-- Flag tests that pass both before and after a fix — they don't guard against regression
-- Flag tests that assert on mock/stub behavior rather than production behavior
-- Flag tests with assertions so broad they'd pass regardless of the code under test
-- For each quality issue: is the test salvageable (tighten assertion) or should it be rewritten?
+Step 2 — Fix A, B, C, E in priority order. Do NOT "fix" a D by weakening
+the test.
 
-**Step 5: CI configuration check** (TypeScript, ESLint, build)
+Step 3 — Coverage gap analysis (runs even if all tests pass): for every
+change in the implementation summary, does a test exist that would FAIL
+if the change regressed? For each gap, describe what's untested, classify
+simple (<30 min) or complex, implement the simple ones now. Report the
+Category D ratio (fixes with no regression test / total fixes). Where an
+invariant defines a Verify test, confirm it exists and runs.
+
+Step 4 — Test quality: flag tests that pass both before and after a fix
+(no regression value), tests asserting on mock/stub behavior rather than
+production behavior, and assertions so broad they'd pass regardless of
+the code under test. Mark each salvageable (tighten) or rewrite.
+
+Step 5 — CI config check (typecheck, lint, build wired and green).
+
+Report: fixes made, remaining failures by category, coverage gaps and the
+Category D ratio, and quality issues found.
+```
 
 ### /sync-docs
 
-Four-check documentation drift detection:
-1. CLAUDE.md currency (known issues still present?)
-2. Subsystem file reference currency (paths correct?)
-3. Operator state inventory (undocumented manual setup?)
-4. Implementation drift (recent changes match docs?)
+```
+Read CLAUDE.md and README before starting.
+
+[PASTE THE IMPLEMENTATION SUMMARY / recent changes, if available]
+
+Detect (and, with approval, fix) documentation drift via four checks:
+1. CLAUDE.md currency — are listed Known Issues / Common Gotchas still
+   true? Remove or update resolved ones; add new gotchas this cycle
+   surfaced.
+2. Subsystem file-reference currency — do the file lists in the Cycle
+   Workflow Config Subsystems section still match the tree? Flag moved /
+   renamed / deleted paths.
+3. Operator state inventory — any new manual setup (env vars, one-time
+   migrations, deploy steps) that isn't documented? Add it.
+4. Implementation drift — do recent changes match what the docs / README
+   describe? Reconcile.
+
+Produce a list of proposed doc edits (file → what changes and why), then
+ask for approval before writing any files.
+```
 
 ---
 

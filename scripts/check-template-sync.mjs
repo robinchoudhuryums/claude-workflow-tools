@@ -16,6 +16,8 @@
 // Exit 0 = in sync, exit 1 = drift detected.
 
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const root = new URL('..', import.meta.url);
 const FILES = ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'];
@@ -61,9 +63,33 @@ for (const c of CHECKS) {
 console.log('Template sync check (CLAUDE.md ↔ HTML ↔ README):\n');
 console.log(lines.join('\n'));
 
+// ── Structural check 1: every command in the README slash-command table
+// has a fenced template in CLAUDE.md (so /sync-commands can manage it). ──
+const claudeRaw = readFileSync(new URL('CLAUDE.md', root), 'utf8');
+const readmeRaw = readFileSync(new URL('README.md', root), 'utf8');
+const tableCmds = [...new Set([...readmeRaw.matchAll(/`\/([a-z0-9-]+)`/g)].map(m => m[1]))];
+const cmdMissing = tableCmds.filter(n => !new RegExp('### /' + n + '\\n+```').test(claudeRaw));
+if (cmdMissing.length) {
+  failures++;
+  console.log(`  ✗ README commands without a CLAUDE.md template: ${cmdMissing.join(', ')}`);
+} else {
+  console.log(`  ✓ All README-referenced commands have a CLAUDE.md template (${tableCmds.length})`);
+}
+
+// ── Structural check 2: .claude/commands/ is in sync with CLAUDE.md. ──
+try {
+  execSync('node ' + fileURLToPath(new URL('gen-commands.mjs', import.meta.url)) + ' --check', { stdio: 'pipe' });
+  console.log('  ✓ .claude/commands/ is current with CLAUDE.md');
+} catch (e) {
+  failures++;
+  const out = (e.stdout?.toString() || '') + (e.stderr?.toString() || '');
+  console.log('  ✗ .claude/commands/ is stale — run: node scripts/gen-commands.mjs');
+  if (out.trim()) console.log('    ' + out.trim().replace(/\n/g, '\n    '));
+}
+
 if (failures) {
-  console.error(`\n${failures} feature(s) out of sync. Add the missing capability to the listed file(s),`);
-  console.error('or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');
+  console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
+  console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');
   process.exit(1);
 }
-console.log('\nAll tracked features present in every required artifact. ✓');
+console.log('\nAll tracked features present and command files in sync. ✓');

@@ -4,8 +4,10 @@ A structured workflow system for managing audit-implement-verify cycles on large
 
 ## What's in this repo
 
-- **`claude-code-guide-v2.html`** — Interactive HTML tool with all prompts, project selector, invariant library, cycle tracker, and archive. Open in a browser to use.
-- **`CLAUDE.md`** — Project-agnostic template versions of all prompts for quick reference and adaptation to new projects.
+- **`CLAUDE.md`** — The **canonical source** for every command's prompt text (project-agnostic; commands reference the Cycle Workflow Config rather than inlining project specifics).
+- **`.claude/commands/`** — Ready-to-copy slash-command files, one per command, **generated from `CLAUDE.md`** by `scripts/gen-commands.mjs`. Copy the whole directory into a project.
+- **`claude-code-guide-v2.html`** — Interactive HTML console with all prompts, project selector, invariant library, cycle tracker, and archive. Open in a browser to use.
+- **`scripts/`** — `gen-commands.mjs` (regenerate the command files) and `check-template-sync.mjs` (drift guard, run in CI).
 
 ## Three-Tier Workflow
 
@@ -69,7 +71,7 @@ A fresh session with no implementation context re-probes invariants, counts regr
 
 1. **Run `/setup-cycle`** in a Claude Code session connected to the project — produces a Cycle Workflow Config section and rotation plan
 2. **Paste the Cycle Workflow Config** into your project's CLAUDE.md — all commands reference this section, so it's the single source of truth for subsystems, dimensions, invariants, policy config, and (optionally) regression scenarios, frozen subsystems, and deploy commands
-3. **Copy command files** from this repo's CLAUDE.md templates into `.claude/commands/` — they are project-agnostic (they reference CLAUDE.md config, not inline project-specific content), so no placeholder replacement is needed
+3. **Copy the `.claude/commands/` directory** from this repo into your project — the files are project-agnostic (they reference CLAUDE.md config, not inline project-specific content), so no placeholder replacement is needed. (These are generated from CLAUDE.md by `scripts/gen-commands.mjs`.)
 4. **Optionally, add to the HTML tool:** Open `claude-code-guide-v2.html` → "Projects" → "+ Add custom project" → enter the same config
 
 ### Adapting for a small / correctness-focused project
@@ -185,16 +187,16 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 
 ## Maintaining this repo
 
-This repo has two presentations of the same workflow that must stay aligned:
+This repo has three presentations of the same workflow that must stay aligned:
 
-- **`CLAUDE.md`** is the **canonical source** for command semantics. Its command bodies are what you copy into a project's `.claude/commands/`, and they read that project's Cycle Workflow Config.
+- **`CLAUDE.md`** is the **canonical source** for command semantics. Every command is a `### /<name>` heading followed by a fenced prompt body.
+- **`.claude/commands/`** is **generated** from CLAUDE.md (`node scripts/gen-commands.mjs`) — never edit these by hand; edit CLAUDE.md and regenerate.
 - **`claude-code-guide-v2.html`** is a **self-contained prompt console** that inlines config from its own project store. Its prompt builders should produce the *same behavior* as the CLAUDE.md commands — they are deliberately not byte-identical.
-- **`README.md`** documents both for operators.
 
-When you add or change a capability, update it in every artifact it touches. A guard script checks for drift by feature-marker parity (not text diff):
+When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), run `node scripts/gen-commands.mjs`, then run the guard:
 
 ```
 node scripts/check-template-sync.mjs
 ```
 
-It exits non-zero if a tracked capability (manual test mode, Regression Scenarios, Frozen Subsystems, Deploy Command/Step, configurable Axis B, Dynamic Workflows) is present in one artifact but missing from another. If you intentionally rename a marker, update `CHECKS` in that script. CI runs this on every push and pull request.
+The guard exits non-zero if any tracked capability (manual test mode, Regression Scenarios, Frozen Subsystems, Deploy Command/Step, configurable Axis B, Dynamic Workflows, `.cycle/` state, `/cycle-resume`/`/cycle-status`, executable invariants, per-cycle metrics) is present in one artifact but missing from another, if a README-referenced command lacks a CLAUDE.md template, or if `.claude/commands/` is stale. If you intentionally rename a marker, update `CHECKS` in that script. CI runs the guard on every push and pull request.
