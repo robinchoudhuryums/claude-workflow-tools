@@ -17,12 +17,12 @@ Updated: 2026-06-03
 - F03 | .cycle/config.md | added INV-19 (HTML prompts stay behaviorally aligned with canonical commands).
 
 ## Pending / not yet done
-- F02 (remainder): the HTML §1 "Layered Audit" (p1) uses a flag-list rather than /audit's 12 numbered focus areas. Reconciling them is a DESIGN DECISION (which structure is canonical?) — needs operator input before rewriting. Not done.
-- F04 (no automated HTML-JS coverage), F05 (innerHTML of pasted content), F06 (silent state-write failures), F07/F08 (docs/console-prose drift) — not selected this session.
+- F04 (no automated HTML-JS coverage), F05 (innerHTML of pasted content), F06 (silent state-write failures) — not yet implemented.
 
 ## Open follow-on items
-- DECISION NEEDED: should the HTML §1 audit prompt be rewritten to match /audit's 12 focus areas, or is the "Layered Audit" intentionally distinct? (Blocks full F02.)
+- RESOLVED: §1 audit reconciliation — HTML §1 (p1) now uses /audit's 12 focus areas + "fire this month?" + effort/time. (F02 complete.) Note: p1 focus-area parity is content-aligned but NOT independently guarded (recurs only under R3 convergence).
 - The durable fix for the HTML-as-fourth-copy problem is ROADMAP R3 (generate the HTML prompts from CLAUDE.md). The F03 guard markers are a bounded mitigation, not the full solution.
+- F07/F08 docs: F07 fixed via /sync-docs; F08 (HTML §-section prose non-exhaustive) left as optional polish.
 - Tight guard markers add maintenance cost: intentionally rewording a guarded prompt requires updating both artifacts together (this is the guard working as designed, but worth knowing).
 
 ## Decisions made (so the next session doesn't re-litigate)

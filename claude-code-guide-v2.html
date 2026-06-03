@@ -700,22 +700,29 @@ Relevant files/directories: [LIST RELEVANT FILES AND DIRECTORIES]
 
 [OPTIONAL: PASTE THE "RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE" SECTION FROM THE LAST SEAMS & INVARIANTS AUDIT — if this subsystem was flagged, check the seam-related findings listed there before running the full audit]
 
-Audit this scope thoroughly. Flag:
-- Bugs and logic errors
-- Dead or unused code (functions, variables, imports never called or referenced)
-- Stale TODOs, commented-out code, and placeholder logic left in production paths
-- Hardcoded values that should be config or environment variables
-- Security concerns specific to this module (auth gaps, unvalidated inputs, exposed sensitive data)
-- Inconsistencies between documentation/CLAUDE.md and actual implementation
-- Code quality issues: overly complex functions, poor separation of concerns, naming that obscures intent
-- Anything that will compound into a larger problem if not addressed before this module scales
+Audit this scope across these focus areas:
+1. Bugs and logic errors in currently-reachable code paths
+2. Dead code / unused exports (only if they create confusion)
+3. Test gaps (missing coverage on load-bearing paths)
+4. Stale artifacts (TODOs, commented-out code, docs that mislead)
+5. Hardcoded values that should be config or environment variables
+6. Security and compliance gaps (auth, unvalidated inputs, exposed sensitive data)
+7. Docs drift (CLAUDE.md vs implementation)
+8. Code quality that is actively wrong (not style preference)
+9. Parallel source-of-truth (values/types/constants defined in multiple places)
+10. Startup ordering / initialization assumptions
+11. Silent degradation paths (failure swallowed, app continues with wrong results)
+12. Operator-only state (manual steps with no automated validation)
+
+DO NOT flag style preferences or speculative "could be cleaner" refactoring unless the current code is actively wrong.
 
 For each finding:
 - State the issue clearly in one or two sentences
 - Cite the file and approximate location (function name or line range)
-- Rate severity: Critical / High / Medium / Low
-- State your confidence level: High / Medium / Low (flag if you're inferring from limited context)
-- Add a rough effort signal for the fix: S (< 2 hours) / M (half-day to 2 days) / L (3+ days)
+- Severity: Critical / High / Medium / Low
+- Confidence: High / Medium / Low (flag if you're inferring from limited context)
+- Would this fire in production this month? YES (describe the trigger) / NO (why not)
+- Effort: S (< 2h) / M (½–2 days) / L (3+ days) + rough time estimate
 
 End with:
 - Top findings by impact — the 5 findings most likely to cause active breakage, data loss, or a security/compliance failure. Note: severity label and impact rank can differ; a High-severity compliance bug may outrank a Critical-severity code quality issue.
