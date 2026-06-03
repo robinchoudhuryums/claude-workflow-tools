@@ -1,0 +1,117 @@
+# Roadmap — Claude Workflow Tools
+
+Forward-looking work for this repo and adjacent workflow-optimization
+projects. Organized in the four-tier format produced by `/roadmap`
+(this repo dogfooding its own command). Tiers 1–3 are grounded in
+specific gaps; Tier 4 is exploratory. Effort: S ≈ <2h, M ≈ ½–2 days,
+L ≈ 3+ days for one developer working with Claude Code.
+
+Item IDs (R#) are stable references for planning sessions.
+
+---
+
+## Tier 1 — Short-term (days–weeks)
+
+- **R1 — Dogfood the workflow on this repo itself.** `effort: S`
+  The tool ships its own `.claude/commands/` as skills but has never
+  been run through its own cycle. Run `/setup-cycle`, write its Cycle
+  Workflow Config, and do one real `/broad-scan` → `/broad-implement`.
+  Fastest way to surface friction invisible from the outside, and it
+  will likely re-prioritise the rest of this roadmap. *(In progress —
+  `/setup-cycle` is the first step.)*
+
+- **R4 — `/cycle-init` scaffolding command.** `effort: S`
+  One command that creates `.cycle/`, seeds `STATE.md` from the
+  template, and stubs `PROJECT_HEALTH.md`. Removes the manual `mkdir` +
+  copy friction from adopting the file-backed state flow.
+
+- **R5 — Command versioning + changelog.** `effort: S`
+  Add a `VERSION` / `CHANGELOG.md` and a version marker the guard
+  checks, so `/sync-commands` can report *what changed and why* across
+  consuming repos, not just *that* text differs. Matters now that
+  updates roll across multiple projects (Observatory, CallAnalyzer,
+  pers-fin).
+
+- **R10 — Estimate calibration loop.** `effort: S`
+  We already capture S/M/L + wall-clock estimates. Log estimate-vs-actual
+  over cycles (a metrics column) and surface personal calibration
+  ("your L's actually take 5 days"). Cheap, compounding accuracy gain.
+
+## Tier 2 — Medium-term (weeks–months)
+
+- **R6 — SessionStart context-loader hook.** `effort: S–M`
+  A `SessionStart` hook that auto-loads the systems map + invariant
+  library + `.cycle/STATE.md` at the start of every session. Directly
+  retires the tool's most-cited friction ("paste the systems map every
+  session") and the cross-session memory burden the whole handoff-block
+  system exists to work around. Highest structural leverage of the
+  medium-term set.
+
+- **R2 — Metrics → visualization.** `effort: M`
+  Phase 3 added `metrics.csv` + `PROJECT_HEALTH.md` history but nothing
+  renders them — and long-term progress tracking is the HTML tool's
+  reason to exist. A generator (markdown sparkline tables, or a chart
+  view in the HTML that reads an imported `metrics.csv`) makes trend
+  tracking data-driven instead of hand-maintained. The missing half of
+  the Phase 3 work.
+
+- **R7 — PR-review counterpart.** `effort: M`
+  Apply the cycle's rubrics (severity/confidence, "would it fire in
+  production this month," the hard regression definition) to a single
+  PR, wired into the `subscribe_pr_activity` / webhook flow. Turns the
+  audit discipline into a review bot — health over time gets a sibling
+  for health per-change.
+
+- **R8 — Cross-project portfolio dashboard.** `effort: M`
+  Aggregate each repo's `PROJECT_HEALTH.md` into one board: "which
+  subsystem across my whole portfolio most needs attention this week."
+  The HTML already has a project selector; this is the roll-up above it.
+
+## Tier 3 — Long-term (months+)
+
+- **R3 — Converge the HTML's two state stores.** `effort: M–L`
+  The HTML keeps state in `localStorage` while the repo keeps it in
+  `.cycle/` / `PROJECT_HEALTH.md` — a dual source of truth that is
+  ironically the "Parallel Source-of-Truth Drift" the tool's own Axis B
+  polices. Use the File System Access API so the HTML reads/writes the
+  repo's `.cycle/` directly, unifying them and making export/import
+  largely unnecessary.
+
+- **R9 — Invariants-as-tests as a standalone library.** `effort: M–L`
+  The `Verify:` field is a convention with no runner. Generalise it
+  into a small vitest/pytest plugin where invariants are declared once
+  and become both documentation and executable tests — a reusable
+  product beyond this workflow.
+
+## Tier 4 — Future possibilities (exploratory)
+
+- **R11 — Dynamic Workflows orchestrator reference.**
+  Once Dynamic Workflows graduates past research preview, ship an actual
+  reference orchestration script that fans out per-subsystem audit
+  subagents and a no-context verifier, encoding the playbook we
+  documented. The handoff-block formats become the orchestrator's state.
+  Gated on DW stabilising; until then the playbook stays advisory.
+
+- **R12 — Multi-operator shared state.**
+  The single-operator assumption is a known limitation. Now that state
+  is file-backed, multi-developer use is tractable: define merge
+  conventions for `PROJECT_HEALTH.md` / `STATE.md`, a lightweight
+  "claim a subsystem" lock, and coordination for in-progress cycles.
+  Worth exploring if the workflow spreads to a team.
+
+- **R13 — Prompt-template regression harness.**
+  A meta-harness that runs the command prompts against fixture repos and
+  checks output *shape* (does `/audit` produce a well-formed SESSION
+  HANDOFF BLOCK?). Guards prompt regressions as the templates evolve —
+  the natural extension of the sync guard from structure to behaviour.
+
+---
+
+## The one strategic bet
+
+If resources were limited, prioritise **R1 (dogfood) immediately, then
+R6 (SessionStart hook)**. R1 is the cheapest way to learn what is
+actually worth building — its findings should reorder everything below
+it. R6 attacks the workflow's deepest structural friction (cross-session
+memory) more directly than anything shipped so far, and compounds with
+every command already in place.
