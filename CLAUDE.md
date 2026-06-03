@@ -40,9 +40,11 @@ Storage Layer / Database:
 (repeat for each subsystem)
 
 ### Invariant Library
-INV-01 | Rule text here | Subsystem: Core Architecture
+INV-01 | Rule text here | Subsystem: Core Architecture | Verify: test name or code ref
 INV-02 | Rule text here | Subsystem: Security
-(repeat for each invariant)
+(repeat for each invariant; `Verify:` is optional — name a test after the
+ invariant, e.g. `describe('INV-01', …)` or an assertion/code ref, so the
+ Verification Pass can execute it instead of only reading code)
 
 ### Policy Configuration
 Policy threshold: 4/10
@@ -107,6 +109,11 @@ copy-paste, keep a `.cycle/` directory at the project root:
   the implement commands' CHECKPOINT step, read by `/cycle-resume` and
   `/cycle-status`.
 - `.cycle/metrics.csv` — per-cycle metrics appended by `/reflect` / synthesis.
+  Header row (create on first write):
+  `date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes`
+  `/reflect` appends a `phase=reflect` row (net_score, prod_fixes,
+  new_failure_modes); Health Synthesis appends a `phase=synthesis` row
+  (category_d_ratio, axis_b_lowest). `/cycle-status` reads it for trend.
 - `PROJECT_HEALTH.md` stays at the repo root (see §7 in the HTML tool).
 
 This is **fully optional and additive**: if `.cycle/` does not exist, every
@@ -336,8 +343,9 @@ OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
 (repeat for each subsystem)
 
 ### Invariant Library
-INV-XX | [rule text] | Subsystem: [name]
-(repeat for each invariant)
+INV-XX | [rule text] | Subsystem: [name] | Verify: [test name or code ref — optional]
+(repeat for each invariant; carry the Phase 5 "How to verify" detail into
+ the optional Verify field when it names a concrete test or assertion)
 
 ### Policy Configuration
 Policy threshold: [N]/10

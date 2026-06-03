@@ -1103,7 +1103,15 @@ Invariant growth — answer this:
 End with:
 - One sentence: the single most structurally significant change in this cycle
 - One sentence: the finding that should have been deferred — lowest practical impact relative to implementation cost
-- Any actions where a design decision produced a tradeoff worth documenting in CLAUDE.md (e.g. "chose graceful degradation over hard failure — see gotcha X")</pre>
+- Any actions where a design decision produced a tradeoff worth documenting in CLAUDE.md (e.g. "chose graceful degradation over hard failure — see gotcha X")
+
+METRICS (optional — only if the project uses .cycle/ state):
+If a .cycle/ directory exists, append one row to .cycle/metrics.csv
+(create it with the header row if absent):
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
+Fill phase=reflect with this cycle's net_score, prod_fixes, and
+new_failure_modes; leave category_d_ratio/axis_b_lowest blank (the
+Health Synthesis row records those). If .cycle/ does not exist, skip this.</pre>
       </div>
     </div>
   </section>
@@ -1145,6 +1153,11 @@ End with:
         <div style="margin-bottom:10px">
           <div class="fill-label">Subsystem / seam it guards</div>
           <input id="inv-sub" type="text" placeholder="e.g. Security & Compliance"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="fill-label">Verify <span style="color:var(--text-muted);font-weight:400;font-size:10px">(optional — test name or code ref the Verification Pass can run)</span></div>
+          <input id="inv-verify" type="text" placeholder="e.g. describe('INV-08') or server/auth.ts:ROLE_HIERARCHY"
             style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box">
         </div>
         <div style="display:flex;gap:8px">
@@ -1463,7 +1476,7 @@ Policy responses triggered: [list categories, or "None"]
         <div id="pf-subs-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
       </div>
       <div style="margin-bottom:12px">
-        <div class="fill-label">Invariants <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(optional — one per line, format: rule text | subsystem)</span></div>
+        <div class="fill-label">Invariants <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
         <textarea id="pf-invs" rows="4" placeholder="e.g. PHI redactor runs before any external API call | Security&#10;Rate limiter state survives restart | Core Architecture"
           style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
       </div>
@@ -1706,14 +1719,17 @@ function toggleInvariantForm(){
   const show=form.style.display==='none';
   form.style.display=show?'block':'none';
   btn.style.display=show?'none':'';
-  if(!show){document.getElementById('inv-text').value='';document.getElementById('inv-sub').value='';}
+  if(!show){document.getElementById('inv-text').value='';document.getElementById('inv-sub').value='';var iv=document.getElementById('inv-verify');if(iv)iv.value='';}
 }
 
 function saveInvariant(){
   const text=document.getElementById('inv-text').value.trim();
   const sub=document.getElementById('inv-sub').value.trim();
+  const verifyEl=document.getElementById('inv-verify');
+  const verify=verifyEl?verifyEl.value.trim():'';
   if(!text)return;
   const inv={id:getNextInvariantId(),text,subsystem:sub||'Unassigned'};
+  if(verify)inv.verify=verify;
   const custom=loadCustomInvariants();
   custom.push(inv);
   saveCustomInvariants(custom);
@@ -2101,7 +2117,15 @@ Use these category-specific playbooks as starting points:
 
 ${axisBPlaybooks}
 
-If no categories are triggered, output: "No policy responses triggered this cycle."`;
+If no categories are triggered, output: "No policy responses triggered this cycle."
+
+8. METRICS (optional — only if the project uses .cycle/ state):
+If a .cycle/ directory exists at the project root, append one row to
+.cycle/metrics.csv (create it with the header row if absent):
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
+Fill phase=synthesis with the overall net_score, the Category D ratio
+from the Verification Block, and axis_b_lowest = the lowest-scoring
+Axis B category this cycle. If .cycle/ does not exist, skip this step.`;
 }
 
 function renderP6a(){
@@ -2240,7 +2264,7 @@ function openEditProject(id){
   document.getElementById('pf-name').value=p.name;
   document.getElementById('pf-dims').value=p.healthDimensions;
   document.getElementById('pf-axisb').value=axisBToText(getAxisB(p));
-  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.text} | ${inv.subsystem}`).join('\n');
+  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.text} | ${inv.subsystem}${inv.verify?` | ${inv.verify}`:''}`).join('\n');
   document.getElementById('pf-thresh').value=p.policyThreshold||4;
   document.getElementById('pf-consec').value=p.policyConsecutiveCycles||2;
   document.getElementById('pf-name-preview').textContent=`ID: ${p.id} (locked)`;
@@ -2302,7 +2326,9 @@ function saveProjectForm(){
   const invsRaw=document.getElementById('pf-invs').value.trim();
   const invsParsed=invsRaw?invsRaw.split('\n').filter(l=>l.trim()).map((l,i)=>{
     const parts=l.split('|').map(s=>s.trim());
-    return {id:`INV-${String(i+1).padStart(2,'0')}`,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
+    const inv={id:`INV-${String(i+1).padStart(2,'0')}`,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
+    if(parts[2])inv.verify=parts[2];
+    return inv;
   }):[];
   const thresh=parseInt(document.getElementById('pf-thresh').value)||4;
   const consec=parseInt(document.getElementById('pf-consec').value)||2;
@@ -2810,7 +2836,7 @@ function fillT2Subsystem(name,files){
 function buildSeamsText(project){
   const invs=getProjectInvariants();
   const invLines=invs.length
-    ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}`).join('\n')
+    ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet — this audit will create the initial library)';
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
   const subsysList=groups.map(g=>`  - ${g}`).join('\n');
@@ -2930,7 +2956,7 @@ function renderSeamsInvariantTable(){
 function buildVerificationText(project){
   const invs=getProjectInvariants();
   const invLines=invs.length
-    ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}`).join('\n')
+    ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet — add via Project Manager or grow organically via /reflect)';
   return `Do not make any changes to any files during this session.
 
