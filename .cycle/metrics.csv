@@ -1,0 +1,2 @@
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
+2026-06-03,1,Interactive Console (HTML) + Tooling,reflect,1,2,1,,,"F01-F03 from first broad-scan; reflect prompt now emits Cycle Summary Block, regression gained Verify/deploy notes, guard pins HTML prompt-behavior parity"

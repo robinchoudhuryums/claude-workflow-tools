@@ -1049,8 +1049,10 @@ Based on the systems map and your knowledge of the codebase:
 1. Identify which modules outside the changed scope could have been affected by these changes
 2. For each, describe specifically what could have broken and where to verify (file and function/area)
 3. For each risk item, explicitly confirm whether the risk materialized or was negated by other factors — cascade configs, zero callers, idempotent operations, existing indexes, default values. Don't just list risks; validate them.
-4. Flag anything that warrants a targeted re-audit of the dependent module before the next implementation session
-5. Note any documentation (CLAUDE.md, README, roadmap) that should be updated to reflect these changes
+4. Cross-reference the changes against the invariant library (Cycle Workflow Config); flag any invariant at risk, and run its Verify test if one is defined
+5. If a Deploy Command is configured for a touched subsystem, note which risks are git-verified vs. only verifiable after deploy
+6. Flag anything that warrants a targeted re-audit of the dependent module before the next implementation session
+7. Note any documentation (CLAUDE.md, README, roadmap) that should be updated to reflect these changes
 
 Prioritize the verification list by likelihood of breakage. Then produce a FOLLOW-ON AUDIT ITEMS block:
 
@@ -1104,6 +1106,20 @@ End with:
 - One sentence: the single most structurally significant change in this cycle
 - One sentence: the finding that should have been deferred — lowest practical impact relative to implementation cost
 - Any actions where a design decision produced a tradeoff worth documenting in CLAUDE.md (e.g. "chose graceful degradation over hard failure — see gotcha X")
+
+Produce a CYCLE SUMMARY BLOCK (this is the input §6a Health Synthesis consumes):
+
+---CYCLE SUMMARY BLOCK---
+Scope: [subsystem] | Cycle: [N/date]
+Production fixes: [count] — severity: [breakdown]
+New capabilities/features: [count]
+Defensive/structural: [count]
+New failure modes: [count] — severity: [breakdown]
+Net score: [fixes] − [new failure modes] = [net]
+Invariant candidates: [list or "None"]
+Most structurally significant change: [one line]
+Should-have-been-deferred: [one line]
+---END CYCLE SUMMARY BLOCK---
 
 METRICS (optional — only if the project uses .cycle/ state):
 If a .cycle/ directory exists, append one row to .cycle/metrics.csv

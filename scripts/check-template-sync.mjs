@@ -46,6 +46,23 @@ const CHECKS = [
   { feature: '/cycle-status command',     marker: 'cycle-status',                files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Executable invariants',     marker: 'test name or code ref',       files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
   { feature: 'Per-cycle metrics',         marker: 'metrics.csv',                 files: ['CLAUDE.md', 'README.md'] },
+  // HTML prompt-behavior parity (F02/F03): pin specific behaviors that
+  // diverged between the HTML §-prompts and the canonical CLAUDE.md commands.
+  { feature: 'Reflect emits Cycle Summary Block', marker: '---cycle summary block---', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+  { feature: 'Regression runs invariant Verify test', marker: 'run its verify test', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+  { feature: 'Regression notes deploy-verified risks', marker: 'git-verified vs', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+];
+
+// Every workflow output block must be representable in BOTH the canonical
+// commands and the HTML console, so a console user can produce/consume each.
+const WORKFLOW_BLOCKS = [
+  'session handoff block',
+  'implementation handoff block',
+  'implementation summary block',
+  'tier 2 handoff block',
+  'cycle summary block',
+  'verification block',
+  'follow-on audit items',
 ];
 
 let failures = 0;
@@ -85,6 +102,17 @@ try {
   const out = (e.stdout?.toString() || '') + (e.stderr?.toString() || '');
   console.log('  ✗ .claude/commands/ is stale — run: node scripts/gen-commands.mjs');
   if (out.trim()) console.log('    ' + out.trim().replace(/\n/g, '\n    '));
+}
+
+// ── Structural check 3: every workflow output block appears in both the
+// canonical commands (CLAUDE.md) and the HTML console. ──
+const blockMissing = WORKFLOW_BLOCKS.filter(b =>
+  !contents['CLAUDE.md'].includes(b) || !contents['claude-code-guide-v2.html'].includes(b));
+if (blockMissing.length) {
+  failures++;
+  console.log(`  ✗ Workflow blocks missing from CLAUDE.md or the HTML console: ${blockMissing.join(', ')}`);
+} else {
+  console.log(`  ✓ All ${WORKFLOW_BLOCKS.length} workflow output blocks present in both CLAUDE.md and the HTML console`);
 }
 
 if (failures) {

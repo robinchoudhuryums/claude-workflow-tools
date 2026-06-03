@@ -47,6 +47,7 @@ INV-15 | Axis B builders (p6a/p6b) and the dims note iterate getAxisB(project), 
 INV-16 | The CLAUDE.md /setup-cycle config schema and the HTML setup <pre> list the same optional sections (manual, regression, frozen, deploy, axis-b) | Subsystem: Canonical Templates & Docs | Verify: marker parity in check-template-sync.mjs
 INV-17 | gen-commands.mjs is idempotent — running it twice produces no git diff | Subsystem: Tooling & Sync Infrastructure | Verify: run twice + git diff --quiet
 INV-18 | Deleting .cycle/ returns a consuming project to pure copy-paste behavior (no command hard-depends on it) | Subsystem: Canonical Templates & Docs | Verify: code read of all CHECKPOINT/metrics steps
+INV-19 | The HTML console's prompts stay behaviorally aligned with the canonical CLAUDE.md commands — every workflow output block appears in both, the reflect prompt emits a Cycle Summary Block, and the regression prompt carries the invariant-Verify and deploy-verified notes | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-template-sync.mjs (HTML prompt-behavior parity + workflow-block checks)
 
 ### Policy Configuration
 Policy threshold: 4/10
