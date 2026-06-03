@@ -167,3 +167,19 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | VERIFICATION BLOCK | Verification Pass | Health Synthesis |
 | SEAMS & INVARIANTS AUDIT BLOCK | Seams Audit | Next subsystem audit, Synthesis |
 | CYCLE SUMMARY BLOCK | `/reflect` | Health Synthesis |
+
+## Maintaining this repo
+
+This repo has two presentations of the same workflow that must stay aligned:
+
+- **`CLAUDE.md`** is the **canonical source** for command semantics. Its command bodies are what you copy into a project's `.claude/commands/`, and they read that project's Cycle Workflow Config.
+- **`claude-code-guide-v2.html`** is a **self-contained prompt console** that inlines config from its own project store. Its prompt builders should produce the *same behavior* as the CLAUDE.md commands — they are deliberately not byte-identical.
+- **`README.md`** documents both for operators.
+
+When you add or change a capability, update it in every artifact it touches. A guard script checks for drift by feature-marker parity (not text diff):
+
+```
+node scripts/check-template-sync.mjs
+```
+
+It exits non-zero if a tracked capability (manual test mode, Regression Scenarios, Frozen Subsystems, Deploy Command/Step, configurable Axis B, Dynamic Workflows) is present in one artifact but missing from another. If you intentionally rename a marker, update `CHECKS` in that script. CI runs this on every push and pull request.
