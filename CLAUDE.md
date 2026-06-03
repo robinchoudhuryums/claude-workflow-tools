@@ -2,6 +2,14 @@
 
 Project-agnostic template versions of all slash command prompts. Copy and adapt for new projects by replacing `[PLACEHOLDER]` values with project-specific subsystems, dimensions, and file lists.
 
+> **Dogfooding note (this repo runs the workflow on itself):** the
+> `## Cycle Workflow Config` sections in this file are the *template /
+> schema* that consuming projects copy. This repo's own live config —
+> its subsystems, dimensions, Axis B categories, and invariant library —
+> lives in [`.cycle/config.md`](.cycle/config.md). When running any cycle
+> command against THIS repo, read `.cycle/config.md` as the Cycle
+> Workflow Config, not the template blocks below.
+
 ## Adaptation Checklist
 
 When setting up a new project:
