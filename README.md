@@ -94,6 +94,19 @@ For urgent production fixes, use `/broad-implement <describe the bug>` directly 
 ### Context Window Overflow
 If a session runs out of context mid-audit (typically 100k+ line codebases with deep subsystems), produce a partial handoff block with what you've covered and a "NOT COVERED" section listing remaining files. Run a second session on the uncovered scope. The `/setup-cycle` command sizes subsystems to fit in one session, but broad-scan covers the entire codebase and may overflow.
 
+If context fills mid-implementation (work unfinished), the optional `.cycle/` state directory makes resumption lossless — see "Cycle State & Resuming" below.
+
+### Cycle State & Resuming
+For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
+- `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it.
+- `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
+
+Two commands navigate it:
+- **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
+- **`/cycle-resume`** — continues an in-progress *implementation* thread. It carries forward **substrate + facts** (systems map, invariants, what's done/pending) but **never inherits the prior session's findings as authoritative** — a new audit always uses fresh eyes. Resume is for continuation, not re-auditing.
+
+This is **fully additive**: with no `.cycle/` directory every command behaves exactly as before (emit the block in chat, copy-paste into the next session). Deleting `.cycle/` returns you to the pure copy-paste workflow with no loss. See "Cycle State & Memory" in `CLAUDE.md` for the `STATE.md` template and the two-memory-channels rationale.
+
 ### When Tests Can't Run
 If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
 
@@ -102,7 +115,7 @@ For projects with no programmatic test runner at all, set `Test Command: manual`
 ### Known Limitations
 - **Single-operator design.** The workflow assumes one developer + Claude Code. Multi-developer usage would need shared state (shared Archive, coordination on which subsystems are in-progress).
 - **Axis B scoring is qualitative.** Claude reads code but can't run load tests or collect runtime metrics. Axis B scores are based on code structure evidence, not measured performance.
-- **Handoff blocks require manual copy-paste between sessions.** Save blocks to the Archive immediately after each session to prevent loss.
+- **Handoff blocks require manual copy-paste between sessions** by default. Save blocks to the Archive immediately after each session to prevent loss — or opt into the `.cycle/` state directory (see "Cycle State & Resuming") to persist them to files and resume with `/cycle-resume`.
 
 ## Optional: Dynamic Workflows acceleration (Opus 4.8+)
 
@@ -152,6 +165,8 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
 | `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
+| `/cycle-status` | any | 1 | Read-only: report standing + whether to resume or start fresh |
+| `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |
 | `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
 
 ## Handoff Block Types

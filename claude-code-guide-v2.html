@@ -966,7 +966,14 @@ FOLLOW-ON ITEMS:
 DOCUMENTATION UPDATES NEEDED:
 - [any CLAUDE.md, README, or inline docs to update]
 (or "None")
----END IMPLEMENTATION SUMMARY BLOCK---</pre>
+---END IMPLEMENTATION SUMMARY BLOCK---
+
+CHECKPOINT (optional — only if the project uses .cycle/ state):
+If a .cycle/ directory exists at the project root, create or update
+.cycle/STATE.md to reflect this session (completed actions, pending
+actions, open follow-on items, decisions made, and a "Where I left off"
+line) so /cycle-resume can continue cleanly if context runs out. If
+.cycle/ does not exist, skip this — the summary block above is the record.</pre>
     </div>
     <div class="vt" onclick="toggleVariant('v-single',this)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
     <div class="vb" id="v-single">
@@ -2738,7 +2745,14 @@ needs deeper investigation, any other subsystem that should be
 checked next because of what you changed here.
 
 Format each as:
-- [File: area] — [what to check and why]`;
+- [File: area] — [what to check and why]
+
+8. CHECKPOINT (optional — only if the project uses .cycle/ state)
+If a .cycle/ directory exists at the project root, create or update
+.cycle/STATE.md to reflect this session (completed actions, pending
+actions, open follow-on items, decisions made, and a "Where I left off"
+line) so /cycle-resume can continue cleanly if context runs out. If
+.cycle/ does not exist, skip this step.`;
 }
 
 function renderTier1(){

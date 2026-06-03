@@ -78,6 +78,76 @@ These definitions are used consistently across all commands:
 
 ---
 
+## Cycle State & Memory
+
+Claude Code has no memory between sessions. This system bridges that gap, but
+not all memory should be carried forward the same way. Two distinct channels:
+
+- **Substrate (carry forward — loading it is pure win):** the systems map,
+  the invariant library, Common Gotchas, and the score history. Re-deriving
+  these every session wastes context and produces *contradictory* conclusions.
+  Always make them available to a new session.
+- **Judgment (re-derive fresh — do NOT inherit as authoritative):** audit
+  findings, severity calls, and the prior agent's rationalizations. A new
+  audit must use fresh eyes. This is the same principle behind the §4v
+  Independent Verification pass, which deliberately runs with zero
+  implementation context so the implementer can't grade its own work.
+
+**The hard rule:** `/cycle-resume` continues an *in-progress implementation
+thread* — it carries substrate + objective facts (what changed, what's
+pending, decisions made), never prior judgments. **Starting a new audit is
+always fresh** and never inherits the previous scan's findings as conclusions.
+
+### Optional `.cycle/` state directory (per project)
+
+For projects that want lossless session-to-session continuity without manual
+copy-paste, keep a `.cycle/` directory at the project root:
+
+- `.cycle/STATE.md` — rolling "where I left off" (template below). Written by
+  the implement commands' CHECKPOINT step, read by `/cycle-resume` and
+  `/cycle-status`.
+- `.cycle/metrics.csv` — per-cycle metrics appended by `/reflect` / synthesis.
+- `PROJECT_HEALTH.md` stays at the repo root (see §7 in the HTML tool).
+
+This is **fully optional and additive**: if `.cycle/` does not exist, every
+command behaves exactly as it always has (emit the handoff/summary block in
+chat; copy-paste it into the next session). Deleting `.cycle/` returns you to
+the pure copy-paste workflow with no loss.
+
+`.cycle/STATE.md` template:
+
+```
+# Cycle State
+
+## Current
+Cycle: [N or name]
+Phase: [audit | plan | implement | regression | verify | reflect | idle]
+Scope: [subsystem(s) or "broad"]
+Test Command: [from Cycle Workflow Config]
+Updated: [date]
+
+## In progress (facts to carry forward — NOT judgments)
+- [what is partially done]
+- [the next concrete step]
+
+## Completed this cycle
+- [action ID] | [file(s)] | [one line]
+
+## Pending / not yet done
+- [action ID or description]
+
+## Open follow-on items
+- [File: area] — [what to check and why]
+
+## Decisions made (so the next session doesn't re-litigate)
+- [decision] — [rationale]
+
+## Where I left off
+[1–3 sentences: exactly what to do first on resume]
+```
+
+---
+
 ## Setup
 
 ### /setup-cycle
@@ -537,6 +607,14 @@ DOCUMENTATION UPDATES NEEDED:
 (or "None")
 ---END BROAD SCAN IMPLEMENTATION SUMMARY---
 
+6. CHECKPOINT (optional — only if the project uses .cycle/ state)
+If a .cycle/ directory exists at the project root, create or update
+.cycle/STATE.md to reflect this session: completed findings, any
+selected findings not finished, open follow-on items, decisions made,
+and a "Where I left off" line. This lets /cycle-resume continue cleanly
+in a fresh session if context runs out. If .cycle/ does not exist, skip
+this step — the summary block above is the record, as usual.
+
 After the summary, suggest running /test-sync if any test failures remain,
 and /sync-docs if any documentation updates are needed.
 ```
@@ -698,6 +776,13 @@ FOLLOW-ON ITEMS:
 DOCUMENTATION UPDATES NEEDED:
 - [updates or "None"]
 ---END TARGETED IMPLEMENTATION SUMMARY---
+
+7. CHECKPOINT (optional — only if the project uses .cycle/ state)
+If a .cycle/ directory exists at the project root, create or update
+.cycle/STATE.md to reflect this session: completed actions, any actions
+not finished, open follow-on items, decisions made, and a "Where I left
+off" line. This lets /cycle-resume continue cleanly in a fresh session
+if context runs out. If .cycle/ does not exist, skip this step.
 
 Suggest /test-sync and /sync-docs if applicable.
 ```
@@ -897,6 +982,82 @@ not inline project-specific content), so the update is a direct copy
 from the template — no merging needed.
 
 After the comparison, ask for approval before writing any files.
+```
+
+---
+
+## Cycle Navigation Commands
+
+These read the optional `.cycle/` state directory (see "Cycle State &
+Memory" above). They are additive: with no `.cycle/` directory, `/cycle-status`
+still reports from CLAUDE.md + PROJECT_HEALTH.md, and `/cycle-resume` simply
+tells you there is nothing to resume.
+
+### /cycle-status
+
+```
+Do not make any changes to any files during this session. This is a
+read-only status check — do not start any audit or implementation.
+
+Read the project's current cycle state, in this order (skip any that
+don't exist):
+1. CLAUDE.md Cycle Workflow Config (subsystems, invariants, policy config)
+2. PROJECT_HEALTH.md (score history / current standing)
+3. .cycle/STATE.md (in-progress work)
+4. .cycle/metrics.csv (per-cycle trend)
+
+Produce a CYCLE STATUS report:
+- Current standing: [latest synthesis scores / one-line health, or
+  "no synthesis recorded yet"]
+- Active cycle & phase: [from STATE.md, or "none in progress"]
+- In-progress work: [what's partially done + the next concrete step,
+  or "none"]
+- Open follow-on items: [list, or "none"]
+- Trend: [direction from metrics.csv if present, or "n/a"]
+- RECOMMENDED NEXT ACTION — choose explicitly:
+  → RESUME — there is unfinished implementation work in STATE.md →
+    run /cycle-resume
+  → FRESH AUDIT — the last cycle is complete (or none is in progress) →
+    start /broad-scan or /targeted-audit <subsystem>
+  State which and why in one sentence. A fresh audit must use fresh
+  eyes — it does NOT inherit prior findings as conclusions.
+```
+
+### /cycle-resume
+
+```
+You are RESUMING an in-progress implementation thread — you are NOT
+starting a new audit.
+
+Read .cycle/STATE.md. If it does not exist or shows no in-progress /
+pending work, STOP and respond exactly:
+"Nothing to resume. Start a fresh audit with /broad-scan or
+/targeted-audit <subsystem>."
+
+Also read this substrate (safe to carry forward): CLAUDE.md (Cycle
+Workflow Config, Common Gotchas, systems map if present) and the
+invariant library.
+
+TWO MEMORY CHANNELS — observe the boundary:
+- Carry forward FACTS + SUBSTRATE: what was changed, what is pending,
+  decisions already made, the systems map, invariants, gotchas.
+- Do NOT treat the prior session's findings or severity judgments as
+  authoritative. You are continuing agreed work, not re-auditing. If
+  you notice something that looks like a new finding outside the
+  pending work, record it as a follow-on item — do not expand scope.
+
+Continue the pending actions listed in STATE.md, in order, under the
+same scope discipline as /implement:
+- Implement only the pending actions. Stop on unexpected complexity and
+  describe before continuing. Check Common Gotchas before each action.
+- After each action, update .cycle/STATE.md (move the item from Pending
+  to Completed, refresh "Where I left off").
+
+When pending work is complete (or you must stop), update
+.cycle/STATE.md, run the test step per CLAUDE.md's Test Command (or walk
+the Regression Scenarios if `manual`), then emit the same
+implementation summary block the original implement command would have.
+Suggest /regression, /reflect, /test-sync, and /sync-docs as applicable.
 ```
 
 ---
