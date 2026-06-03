@@ -12,5 +12,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Check generated command files are current
+        run: node scripts/gen-commands.mjs --check
+      - name: Check HTML console JS (syntax, builders, behavior)
+        run: node scripts/check-html.mjs
       - name: Check CLAUDE.md ↔ HTML ↔ README feature parity
         run: node scripts/check-template-sync.mjs

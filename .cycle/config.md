@@ -8,7 +8,7 @@ are the template/schema for consuming projects, not this repo's config.
 ## Cycle Workflow Config
 
 ### Test Command
-node scripts/gen-commands.mjs --check && node scripts/check-template-sync.mjs
+node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs
 
 ### Health Dimensions
 Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
@@ -32,12 +32,12 @@ Tooling & Sync Infrastructure:
 INV-01 | .claude/commands/*.md are byte-identical to the command blocks extracted from CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
 INV-02 | Every command in the README slash-command table has a fenced ### /name template in CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: check-template-sync.mjs structural check
 INV-03 | Every tracked capability marker present in one artifact is present in all required artifacts | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs
-INV-04 | The HTML inline <script> parses with no syntax errors | Subsystem: Interactive Console (HTML) | Verify: node --check on extracted <script>
-INV-05 | No prompt builder emits an unresolved ${...} or "undefined" for any built-in project | Subsystem: Interactive Console (HTML) | Verify: headless builder smoke test
+INV-04 | The HTML inline <script> parses with no syntax errors | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-05 | No prompt builder emits an unresolved ${...} or "undefined" for any built-in project | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-06 | A project without project.axisB falls back to the 5 DEFAULT_AXIS_B categories | Subsystem: Interactive Console (HTML) | Verify: getAxisB({}).length === 5
 INV-07 | Built-in projects (obs, cla) are unchanged by Axis B configurability (no axisB field) | Subsystem: Interactive Console (HTML) | Verify: code read of PROJECTS
 INV-08 | Invariants render a "| Verify:" suffix iff they have a verify value | Subsystem: Interactive Console (HTML) | Verify: buildVerificationText / buildSeamsText
-INV-09 | State export collects exactly the ccg:* localStorage keys and no others | Subsystem: Interactive Console (HTML) | Verify: collectState() smoke test
+INV-09 | State export collects exactly the ccg:* localStorage keys and no others | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-10 | Import rejects non-JSON or missing-"data" payloads with a visible message and overwrites only ccg:* keys after a confirm | Subsystem: Interactive Console (HTML) | Verify: importStateFile logic
 INV-11 | Every command body in CLAUDE.md is fenced and contains no nested triple-backtick line (so gen can extract it) | Subsystem: Canonical Templates & Docs | Verify: gen-commands extraction succeeds for all 18
 INV-12 | Implement-command CHECKPOINT and metrics steps are gated on .cycle/ existing — never assumed | Subsystem: Canonical Templates & Docs | Verify: code read of command text
@@ -48,6 +48,7 @@ INV-16 | The CLAUDE.md /setup-cycle config schema and the HTML setup <pre> list 
 INV-17 | gen-commands.mjs is idempotent — running it twice produces no git diff | Subsystem: Tooling & Sync Infrastructure | Verify: run twice + git diff --quiet
 INV-18 | Deleting .cycle/ returns a consuming project to pure copy-paste behavior (no command hard-depends on it) | Subsystem: Canonical Templates & Docs | Verify: code read of all CHECKPOINT/metrics steps
 INV-19 | The HTML console's prompts stay behaviorally aligned with the canonical CLAUDE.md commands — every workflow output block appears in both, the reflect prompt emits a Cycle Summary Block, and the regression prompt carries the invariant-Verify and deploy-verified notes | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-template-sync.mjs (HTML prompt-behavior parity + workflow-block checks)
+INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, project-form rows); attribute-context JSON args are esc(JSON.stringify(...)) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (esc check) + code read
 
 ### Policy Configuration
 Policy threshold: 4/10
