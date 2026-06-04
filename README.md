@@ -102,6 +102,9 @@ If context fills mid-implementation (work unfinished), the optional `.cycle/` st
 For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
 - `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it.
 - `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
+- `.cycle/estimates.csv` — estimate-vs-actual effort log that `/reflect` appends, surfacing your personal calibration over time.
+
+Run **`/cycle-init`** to scaffold all of the above (and `PROJECT_HEALTH.md`) in one step — it only creates what's missing.
 
 Two commands navigate it:
 - **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
@@ -167,6 +170,7 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
 | `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
+| `/cycle-init` | any | 1 | Scaffold the optional `.cycle/` state dir + `PROJECT_HEALTH.md` (idempotent) |
 | `/cycle-status` | any | 1 | Read-only: report standing + whether to resume or start fresh |
 | `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |
 | `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
@@ -193,7 +197,9 @@ This repo has three presentations of the same workflow that must stay aligned:
 - **`.claude/commands/`** is **generated** from CLAUDE.md (`node scripts/gen-commands.mjs`) — never edit these by hand; edit CLAUDE.md and regenerate.
 - **`claude-code-guide-v2.html`** is a **self-contained prompt console** that inlines config from its own project store. Its prompt builders should produce the *same behavior* as the CLAUDE.md commands — they are deliberately not byte-identical.
 
-When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), run `node scripts/gen-commands.mjs`, then run the guard:
+**Versioning:** the templates are versioned in `VERSION` (semver) with a human-readable `CHANGELOG.md`. Bump both whenever you change command semantics, the config schema, or the tooling — `/sync-commands` reports the template version + latest changelog entry so consuming repos know what they're syncing to. The guard fails if `VERSION`/`CHANGELOG.md` are missing.
+
+When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), bump `VERSION` + add a `CHANGELOG.md` entry, run `node scripts/gen-commands.mjs`, then run the guard:
 
 ```
 node scripts/check-template-sync.mjs

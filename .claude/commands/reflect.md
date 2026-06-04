@@ -53,3 +53,10 @@ to .cycle/metrics.csv (header:
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
 with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
 columns blank. Skip if no .cycle/.
+
+ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
+that carried an effort estimate, append a row to .cycle/estimates.csv
+(header: date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
+recording the original S/M/L + estimated hours against the actual time
+spent. End with one line on your calibration trend (e.g. "L items are
+running ~2x the estimate"). Skip if no .cycle/.

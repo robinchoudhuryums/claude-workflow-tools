@@ -37,11 +37,16 @@ Updated: 2026-06-04
 - Did NOT rewrite the §1 Layered Audit (p1) — flagged as a design decision rather than a mechanical sync (per /broad-implement "stop if more complex than expected").
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
+## Roadmap progress
+- DONE R4 — /cycle-init scaffolding command (creates .cycle/ STATE/metrics/estimates + PROJECT_HEALTH.md, idempotent).
+- DONE R5 — VERSION + CHANGELOG.md; /sync-commands reports template version; guard checks both exist (INV-23).
+- DONE R10 — .cycle/estimates.csv convention + /reflect estimate-vs-actual step.
+- STOPPED R3 — "Converge the HTML's two state stores via the File System Access API" is browser-only (FSA needs a secure context + user gesture) and cannot be verified in this headless environment; it is Tier-3 (M–L). Needs its own plan + manual browser verification before implementing. See FOLLOW-ON.
+
 ## Where I left off
-Cycle 2 done (test-coverage priority): guard + storageWarn now have
-committed regression tests in the Test Command and CI; Category D ~17%.
-Pivoting to ROADMAP work next (operator's call). R3 — generate the HTML
-prompts from CLAUDE.md — is the natural follow-on, since it would also
-close the last unguarded parity gap (§1-audit) that this cycle could not.
-A full §6a re-synthesis of Cycles 1–2 can be run anytime for a fresh
-benchmark.
+R4/R5/R10 shipped (now at VERSION 1.0.0); full Test Command green
+(gen --check + check-html + sync guard + guard.test). R3 deferred —
+it needs a browser to build/verify (File System Access API). Next:
+either plan R3 properly (with manual browser verification), or pick
+another roadmap item — see the impact-ordered list provided to the
+operator. A full §6a re-synthesis can run anytime.

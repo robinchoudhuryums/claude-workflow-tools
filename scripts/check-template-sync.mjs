@@ -51,6 +51,9 @@ const CHECKS = [
   { feature: 'Reflect emits Cycle Summary Block', marker: '---cycle summary block---', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
   { feature: 'Regression runs invariant Verify test', marker: 'run its verify test', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
   { feature: 'Regression notes deploy-verified risks', marker: 'git-verified vs', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+  { feature: '/cycle-init command',        marker: 'cycle-init',                  files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Command versioning / changelog', marker: 'changelog',               files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Estimate calibration log',   marker: 'estimates.csv',               files: ['CLAUDE.md', 'README.md'] },
 ];
 
 // Every workflow output block must be representable in BOTH the canonical
@@ -114,6 +117,15 @@ if (blockMissing.length) {
 } else {
   console.log(`  ✓ All ${WORKFLOW_BLOCKS.length} workflow output blocks present in both CLAUDE.md and the HTML console`);
 }
+
+// ── Structural check 4: version + changelog present (R5). ──
+let versionOk = true;
+for (const f of ['VERSION', 'CHANGELOG.md']) {
+  try { if (!readFileSync(new URL(f, root), 'utf8').trim()) versionOk = false; }
+  catch (e) { versionOk = false; }
+}
+if (versionOk) console.log('  ✓ VERSION and CHANGELOG.md present');
+else { failures++; console.log('  ✗ VERSION and/or CHANGELOG.md missing or empty (R5 — bump on every template change)'); }
 
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);

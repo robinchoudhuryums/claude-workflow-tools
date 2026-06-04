@@ -19,7 +19,7 @@ const repo = fileURLToPath(new URL('..', import.meta.url));
 
 function setup() {
   const dir = mkdtempSync(join(tmpdir(), 'cwt-guard-'));
-  for (const f of ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html']) copyFileSync(join(repo, f), join(dir, f));
+  for (const f of ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html', 'VERSION', 'CHANGELOG.md']) copyFileSync(join(repo, f), join(dir, f));
   mkdirSync(join(dir, 'scripts'), { recursive: true });
   for (const s of ['gen-commands.mjs', 'check-template-sync.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
   cpSync(join(repo, '.claude'), join(dir, '.claude'), { recursive: true });

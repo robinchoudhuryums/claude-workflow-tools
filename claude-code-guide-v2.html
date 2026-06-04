@@ -1137,7 +1137,14 @@ If a .cycle/ directory exists, append one row to .cycle/metrics.csv
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
 Fill phase=reflect with this cycle's net_score, prod_fixes, and
 new_failure_modes; leave category_d_ratio/axis_b_lowest blank (the
-Health Synthesis row records those). If .cycle/ does not exist, skip this.</pre>
+Health Synthesis row records those). If .cycle/ does not exist, skip this.
+
+ESTIMATE CALIBRATION (optional — only if the project uses .cycle/ state):
+For each action that carried an effort estimate, append a row to
+.cycle/estimates.csv (header:
+date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
+comparing the original S/M/L + estimated hours to the actual time spent,
+then note your calibration trend. If .cycle/ does not exist, skip this.</pre>
       </div>
     </div>
   </section>

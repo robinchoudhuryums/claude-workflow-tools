@@ -51,6 +51,7 @@ INV-19 | The HTML console's prompts stay behaviorally aligned with the canonical
 INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, project-form rows); attribute-context JSON args are esc(JSON.stringify(...)) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (esc check) + code read
 INV-21 | A failed localStorage write surfaces via storageWarn (console.warn + one-shot alert) rather than being silently swallowed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (storageWarn check)
 INV-22 | The sync guard fails closed on injected drift (removed capability marker, stale .claude/commands file, README command without a CLAUDE.md template, workflow block dropped from the HTML) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
+INV-23 | VERSION (semver) and CHANGELOG.md exist and are non-empty; bumped when command semantics, the config schema, or tooling change | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (VERSION/CHANGELOG check)
 
 ### Policy Configuration
 Policy threshold: 4/10

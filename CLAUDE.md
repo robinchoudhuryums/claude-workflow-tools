@@ -122,6 +122,12 @@ copy-paste, keep a `.cycle/` directory at the project root:
   `/reflect` appends a `phase=reflect` row (net_score, prod_fixes,
   new_failure_modes); Health Synthesis appends a `phase=synthesis` row
   (category_d_ratio, axis_b_lowest). `/cycle-status` reads it for trend.
+- `.cycle/estimates.csv` — estimate-vs-actual calibration log, appended by
+  `/reflect`. Header row (create on first write):
+  `date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note`
+  Over time this surfaces personal calibration (e.g. "L items actually
+  take ~5 days"); `/plan` and `/audit` can consult it to sharpen future
+  effort estimates.
 - `PROJECT_HEALTH.md` stays at the repo root (see §7 in the HTML tool).
 
 This is **fully optional and additive**: if `.cycle/` does not exist, every
@@ -1103,6 +1109,13 @@ to .cycle/metrics.csv (header:
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
 with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
 columns blank. Skip if no .cycle/.
+
+ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
+that carried an effort estimate, append a row to .cycle/estimates.csv
+(header: date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
+recording the original S/M/L + estimated hours against the actual time
+spent. End with one line on your calibration trend (e.g. "L items are
+running ~2x the estimate"). Skip if no .cycle/.
 ```
 
 ### /health-pulse
@@ -1300,6 +1313,11 @@ Do not make any changes to any files until the comparison is complete.
 
 You are syncing this project's command files with the latest templates.
 
+Step 0: Read the template repo's VERSION file and the top entry of its
+CHANGELOG.md (local path or raw URL). Report the template version and the
+most recent changelog entry up front, so the operator knows what they are
+syncing to and what changed. If a VERSION/CHANGELOG is not found, note
+that and continue.
 Step 1: Read the template CLAUDE.md.
 If $ARGUMENTS is a local path: read $ARGUMENTS/CLAUDE.md directly.
 If $ARGUMENTS is a URL: fetch the raw CLAUDE.md from the repository
@@ -1415,6 +1433,31 @@ When pending work is complete (or you must stop), update
 the Regression Scenarios if `manual`), then emit the same
 implementation summary block the original implement command would have.
 Suggest /regression, /reflect, /test-sync, and /sync-docs as applicable.
+```
+
+### /cycle-init
+
+```
+Scaffold the optional .cycle/ state directory for this project so the
+file-backed workflow (the implement commands' CHECKPOINT, /cycle-status,
+/cycle-resume, and per-cycle metrics) works. Create only what is
+missing — NEVER overwrite or modify a file that already exists.
+
+1. If .cycle/ does not exist, create it.
+2. If .cycle/STATE.md does not exist, create it from the template in
+   CLAUDE.md's "Cycle State & Memory" section, with Phase: idle and a
+   "Where I left off" line pointing at the first audit.
+3. If .cycle/metrics.csv does not exist, create it with just the header:
+   date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
+4. If .cycle/estimates.csv does not exist, create it with just the header:
+   date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
+5. If PROJECT_HEALTH.md does not exist at the repo root, create it from
+   the §7 template (Current Standing + an empty Score History).
+
+Report which files were created and which already existed. If the
+project has no Cycle Workflow Config yet, suggest running /setup-cycle
+first. Remember: deleting .cycle/ at any time reverts to the pure
+copy-paste workflow with no loss.
 ```
 
 ---
