@@ -8,7 +8,7 @@ are the template/schema for consuming projects, not this repo's config.
 ## Cycle Workflow Config
 
 ### Test Command
-node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs
+node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs
 
 ### Health Dimensions
 Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
@@ -56,6 +56,7 @@ INV-24 | The SessionStart hook (cycle-context.mjs) emits the substrate block whe
 INV-25 | render-metrics.mjs parses metrics.csv (incl. quoted comma fields) and reports correct cumulative totals + sparklines | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/render-metrics.test.mjs
 INV-26 | invariant-check.mjs runs command-style Verify fields (stripping trailing annotations), FAILs on a failing command, classifies prose/test-name Verify as MANUAL, and dedupes identical commands | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/invariant-check.test.mjs
 INV-27 | portfolio.mjs aggregates multiple PROJECT_HEALTH.md "Current Standing" sections, ranks lowest overall first, averages only scored projects, and flags unscored ones | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/portfolio.test.mjs
+INV-28 | the R14 transform engine (gen-html-prompts.mjs) extracts command bodies, drops the usage guard, applies placeholder replacements, and HTML-escapes — import-safe (no CLI side effects on import) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/gen-html-prompts.test.mjs
 
 ### Policy Configuration
 Policy threshold: 4/10

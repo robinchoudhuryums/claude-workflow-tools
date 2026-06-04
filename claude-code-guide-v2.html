@@ -1470,6 +1470,16 @@ Policy responses triggered: [list categories, or "None"]
           <input id="importStateFile" type="file" accept="application/json,.json" style="display:none" onchange="importStateFile(this)">
         </div>
       </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a3142">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="font-size:11px;color:#4e5e7a">Experimental — sync state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers). Falls back to Export/Import elsewhere.</div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
+            <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
+            <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
+          </div>
+        </div>
+      </div>
       <div id="stateIoMsg" style="font-size:11px;margin-top:8px;display:none"></div>
     </div>
     <div id="projectsBuiltIn"></div>
@@ -2479,6 +2489,51 @@ function importStateFile(input){
   };
   reader.onerror=function(){ setStateIoMsg('Import failed: could not read file.','error'); input.value=''; };
   reader.readAsText(file);
+}
+
+// ─── R3 DRAFT — File System Access: persist console state to the repo's .cycle/ ───
+// EXPERIMENTAL and UNVERIFIED in a headless environment. Requires a browser
+// with the File System Access API (Chromium-based). All FSA calls are inside
+// click handlers and feature-detected, so this is a no-op at load and falls
+// back to Export/Import where the API is unavailable. Persists to
+// .cycle/console-state.json in the connected repo (one secure-context grant
+// replaces repeated download/upload round-trips).
+let repoDirHandle = null;
+async function connectRepoFolder(){
+  if(!window.showDirectoryPicker){ setStateIoMsg("This browser has no File System Access API — use Export / Import instead.",'info'); return; }
+  try{
+    repoDirHandle = await window.showDirectoryPicker();
+    setStateIoMsg(`Connected to "${repoDirHandle.name}". Use "Save → repo" / "Load ← repo".`,'ok');
+  }catch(e){ if(e&&e.name==='AbortError') return; setStateIoMsg('Could not connect folder: '+((e&&e.message)||'error'),'error'); }
+}
+async function saveStateToRepo(){
+  if(!repoDirHandle){ setStateIoMsg('Connect a repo folder first.','info'); return; }
+  try{
+    const cycle = await repoDirHandle.getDirectoryHandle('.cycle',{create:true});
+    const fh = await cycle.getFileHandle('console-state.json',{create:true});
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify({app:'claude-workflow-tools',kind:'state-backup',version:1,exportedAt:new Date().toISOString(),data:collectState()},null,2));
+    await w.close();
+    setStateIoMsg('Saved console state to .cycle/console-state.json in the connected repo.','ok');
+  }catch(e){ setStateIoMsg('Save to repo failed: '+((e&&e.message)||'error'),'error'); }
+}
+async function loadStateFromRepo(){
+  if(!repoDirHandle){ setStateIoMsg('Connect a repo folder first.','info'); return; }
+  try{
+    const cycle = await repoDirHandle.getDirectoryHandle('.cycle');
+    const fh = await cycle.getFileHandle('console-state.json');
+    const parsed = JSON.parse(await (await fh.getFile()).text());
+    const data = parsed && parsed.data && typeof parsed.data==='object' ? parsed.data : null;
+    if(!data){ setStateIoMsg('No recognizable state in .cycle/console-state.json.','error'); return; }
+    const keys = Object.keys(data).filter(k=>k.indexOf('ccg:')===0);
+    if(!keys.length){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
+    if(!confirm(`Load ${keys.length} item(s) from the connected repo? This OVERWRITES matching state in this browser.`)) return;
+    keys.forEach(k=>localStorage.setItem(k,data[k]));
+    activeProjectId=loadActiveProjectId();
+    if(!getAllProjects().map(p=>p.id).includes(activeProjectId)){ activeProjectId=PROJECTS[0].id; saveActiveProjectId(activeProjectId); }
+    switchProject(activeProjectId); renderProjectsTab();
+    setStateIoMsg(`Loaded ${keys.length} item(s) from the connected repo.`,'ok');
+  }catch(e){ setStateIoMsg('Load from repo failed: '+((e&&e.message)||'error'),'error'); }
 }
 
 // ─── ARCHIVE ─────────────────────────────────────────────────

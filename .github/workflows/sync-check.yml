@@ -28,3 +28,5 @@ jobs:
         run: node tests/invariant-check.test.mjs
       - name: Portfolio dashboard regression test
         run: node tests/portfolio.test.mjs
+      - name: R14 transform-engine regression test
+        run: node tests/gen-html-prompts.test.mjs

@@ -5,6 +5,23 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.4.0 — 2026-06-04
+
+### Added
+- R14 (option a) transform engine + drift report (`scripts/gen-html-prompts.mjs`):
+  a CLAUDE.md→console prompt transform with a read-only drift report
+  (`--check`) and an opt-in `--write`. Makes the console-vs-canonical gap
+  measurable; `--write` is browser-verify-only and never run by CI.
+  Engine unit test `tests/gen-html-prompts.test.mjs` (INV-28).
+- R3 DRAFT (experimental, unverified headless): File System Access option
+  in the console Backup & Restore card — "Connect repo folder" syncs state
+  to .cycle/console-state.json. Feature-detected; falls back to Export/Import.
+
+### Notes
+- R14 in-place `--write` rewrite and the R3 FSA flow both need manual
+  browser verification; the drift report measured 0–39% console↔canonical
+  overlap (173 canonical lines absent), confirming the rewrite is large.
+
 ## 1.3.0 — 2026-06-04
 
 ### Added

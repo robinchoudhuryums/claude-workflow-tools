@@ -37,7 +37,9 @@ Updated: 2026-06-04
 - Did NOT rewrite the §1 Layered Audit (p1) — flagged as a design decision rather than a mechanical sync (per /broad-implement "stop if more complex than expected").
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
-## Roadmap progress (now at VERSION 1.3.0)
+## Roadmap progress (now at VERSION 1.4.0)
+- PARTIAL R14 (option a) — transform engine + drift report (scripts/gen-html-prompts.mjs) + engine test (INV-28). Drift report (verified headless): console↔canonical overlap 0–39%, 173 canonical lines absent. REMAINING (browser-verified): run --write to regenerate the console <pre> blocks, reconcile console-only enrichments into CLAUDE.md/manifest, then wire gen-html --check into the guard. The in-place rewrite mutates the console surface so it needs browser rendering verification.
+- PARTIAL R3 (draft) — File System Access "Connect repo folder" / Save→repo / Load←repo in the console Backup & Restore card; feature-detected, headless-safe (check-html passes), falls back to Export/Import. UNVERIFIED in a browser. REMAINING: verify the FSA flow in a Chromium browser; consider persisting the dir handle via IndexedDB so it survives reloads.
 - DONE R8 — cross-project portfolio dashboard (scripts/portfolio.mjs); tests/portfolio.test.mjs (INV-27).
 - DONE R4 — /cycle-init scaffolding command.
 - DONE R5 — VERSION + CHANGELOG.md; /sync-commands version report; guard checks both (INV-23).
@@ -52,13 +54,14 @@ Updated: 2026-06-04
   PLAN/DECISION NEEDED: choose the canonical direction first — either (a) author a real CLAUDE.md→console templating transform (handles placeholder/idiom differences) with a generated-vs-committed guard like gen-commands, or (b) decide the console prompts are their own canonical surface and instead strengthen the parity guard (current marker approach) rather than generate. This is a design decision, not a mechanical implement.
 
 ## Remaining roadmap (impact order, with effort)
-R3 FSA state convergence (M–L, browser — plan above) · R14 generate HTML prompts from CLAUDE.md (M–L, design decision — plan above) · R7 PR-review counterpart (M) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
+R14 finish (browser: --write rewrite + reconcile + guard) · R3 finish (browser: verify FSA flow) · R7 PR-review counterpart (M, testable here) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
 
 ## Where I left off
-R8 shipped at v1.3.0; full Test Command green (8 stages). Roadmap done:
-R1,R2,R4,R5,R6,R8,R9,R10,R14(added). STOPPED this session: R3 (browser-only)
-and R14 (lossy transform / design decision) — both have plans above and
-need a different mode than a headless /broad-implement. Cheap follow-on
-still open: make INV-02/06/08/16/17 Verify fields runnable. Good next
-moves: R7 (testable here), a fresh §6a re-synthesis, or tackle R3 in a
-browser session.
+v1.4.0; full Test Command green (9 stages). This session: R14(a) engine +
+drift report (phase 1, verified) and R3 FSA draft (headless-safe,
+unverified in browser) — both have a clearly-scoped BROWSER-verified step
+remaining (see Roadmap progress). Roadmap fully/partly done:
+R1,R2,R4,R5,R6,R8,R9,R10 done; R14,R3 partial; R14(added). Next that's
+fully testable here: R7, or the cheap follow-on (make INV-02/06/08/16/17
+Verify fields runnable), or a fresh §6a re-synthesis. The two browser
+steps (R14 --write, R3 verify) need a real browser session.

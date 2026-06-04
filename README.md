@@ -112,6 +112,8 @@ Two optional helpers (both fail-safe, both covered by the Test Command):
 - **Executable invariant runner** (`scripts/invariant-check.mjs`) — runs every invariant whose `Verify:` field is a command and reports PASS/FAIL (prose/test-name `Verify:` fields are MANUAL). Write `Verify:` as a runnable command and the invariant becomes a test — the automated half of the §4v probe. `--list` shows the classification.
 - **Portfolio dashboard** (`scripts/portfolio.mjs`) — aggregates several projects' `PROJECT_HEALTH.md` into one board (lowest overall first = audit next) so you can see across your whole portfolio which project needs attention. Pass the `PROJECT_HEALTH.md` paths.
 
+The HTML console's Backup & Restore card also has an **experimental** "Connect repo folder" option (File System Access API, Chromium-based browsers) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — a draft of converging the console's `localStorage` with the repo's `.cycle/` state. It falls back to Export/Import where the API is unavailable.
+
 Two commands navigate it:
 - **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
 - **`/cycle-resume`** — continues an in-progress *implementation* thread. It carries forward **substrate + facts** (systems map, invariants, what's done/pending) but **never inherits the prior session's findings as authoritative** — a new audit always uses fresh eyes. Resume is for continuation, not re-auditing.
@@ -204,6 +206,8 @@ This repo has three presentations of the same workflow that must stay aligned:
 - **`claude-code-guide-v2.html`** is a **self-contained prompt console** that inlines config from its own project store. Its prompt builders should produce the *same behavior* as the CLAUDE.md commands — they are deliberately not byte-identical.
 
 **Versioning:** the templates are versioned in `VERSION` (semver) with a human-readable `CHANGELOG.md`. Bump both whenever you change command semantics, the config schema, or the tooling — `/sync-commands` reports the template version + latest changelog entry so consuming repos know what they're syncing to. The guard fails if `VERSION`/`CHANGELOG.md` are missing.
+
+The console's static §-prompts are a known drift surface (Cycle 1 F02/F03). `node scripts/gen-html-prompts.mjs` reports how far each console `<pre>` sits from its canonical CLAUDE.md command (the R14 transform engine + drift report); `--write` regenerates them from CLAUDE.md, but **mutates the console surface, so verify rendering in a browser** — CI never runs `--write`.
 
 When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), bump `VERSION` + add a `CHANGELOG.md` entry, run `node scripts/gen-commands.mjs`, then run the guard:
 
