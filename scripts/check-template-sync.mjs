@@ -46,6 +46,31 @@ const CHECKS = [
   { feature: '/cycle-status command',     marker: 'cycle-status',                files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Executable invariants',     marker: 'test name or code ref',       files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
   { feature: 'Per-cycle metrics',         marker: 'metrics.csv',                 files: ['CLAUDE.md', 'README.md'] },
+  // HTML prompt-behavior parity (F02/F03): pin specific behaviors that
+  // diverged between the HTML §-prompts and the canonical CLAUDE.md commands.
+  { feature: 'Reflect emits Cycle Summary Block', marker: '---cycle summary block---', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+  { feature: 'Regression runs invariant Verify test', marker: 'run its verify test', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+  { feature: 'Regression notes deploy-verified risks', marker: 'git-verified vs', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+  { feature: '/cycle-init command',        marker: 'cycle-init',                  files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Command versioning / changelog', marker: 'changelog',               files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Estimate calibration log',   marker: 'estimates.csv',               files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'SessionStart context hook',  marker: 'sessionstart',                files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Metrics report renderer',    marker: 'render-metrics',              files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Executable invariant runner', marker: 'invariant-check',            files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Portfolio dashboard',        marker: 'portfolio',                   files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'File System Access draft (R3)', marker: 'file system access',        files: ['README.md', 'claude-code-guide-v2.html'] },
+];
+
+// Every workflow output block must be representable in BOTH the canonical
+// commands and the HTML console, so a console user can produce/consume each.
+const WORKFLOW_BLOCKS = [
+  'session handoff block',
+  'implementation handoff block',
+  'implementation summary block',
+  'tier 2 handoff block',
+  'cycle summary block',
+  'verification block',
+  'follow-on audit items',
 ];
 
 let failures = 0;
@@ -86,6 +111,26 @@ try {
   console.log('  ✗ .claude/commands/ is stale — run: node scripts/gen-commands.mjs');
   if (out.trim()) console.log('    ' + out.trim().replace(/\n/g, '\n    '));
 }
+
+// ── Structural check 3: every workflow output block appears in both the
+// canonical commands (CLAUDE.md) and the HTML console. ──
+const blockMissing = WORKFLOW_BLOCKS.filter(b =>
+  !contents['CLAUDE.md'].includes(b) || !contents['claude-code-guide-v2.html'].includes(b));
+if (blockMissing.length) {
+  failures++;
+  console.log(`  ✗ Workflow blocks missing from CLAUDE.md or the HTML console: ${blockMissing.join(', ')}`);
+} else {
+  console.log(`  ✓ All ${WORKFLOW_BLOCKS.length} workflow output blocks present in both CLAUDE.md and the HTML console`);
+}
+
+// ── Structural check 4: version + changelog present (R5). ──
+let versionOk = true;
+for (const f of ['VERSION', 'CHANGELOG.md']) {
+  try { if (!readFileSync(new URL(f, root), 'utf8').trim()) versionOk = false; }
+  catch (e) { versionOk = false; }
+}
+if (versionOk) console.log('  ✓ VERSION and CHANGELOG.md present');
+else { failures++; console.log('  ✗ VERSION and/or CHANGELOG.md missing or empty (R5 — bump on every template change)'); }
 
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);

@@ -12,5 +12,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Check generated command files are current
+        run: node scripts/gen-commands.mjs --check
+      - name: Check HTML console JS (syntax, builders, behavior)
+        run: node scripts/check-html.mjs
       - name: Check CLAUDE.md ↔ HTML ↔ README feature parity
         run: node scripts/check-template-sync.mjs
+      - name: Assert console §-prompts match CLAUDE.md (R14 lock)
+        run: node scripts/gen-html-prompts.mjs --assert
+      - name: Guard regression test (fails closed on injected drift)
+        run: node tests/guard.test.mjs
+      - name: Metrics renderer regression test
+        run: node tests/render-metrics.test.mjs
+      - name: SessionStart context hook regression test
+        run: node tests/cycle-context.test.mjs
+      - name: Invariant runner regression test
+        run: node tests/invariant-check.test.mjs
+      - name: Portfolio dashboard regression test
+        run: node tests/portfolio.test.mjs
+      - name: R14 transform-engine regression test
+        run: node tests/gen-html-prompts.test.mjs

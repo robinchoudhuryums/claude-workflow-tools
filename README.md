@@ -102,6 +102,17 @@ If context fills mid-implementation (work unfinished), the optional `.cycle/` st
 For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
 - `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it.
 - `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
+- `.cycle/estimates.csv` — estimate-vs-actual effort log that `/reflect` appends, surfacing your personal calibration over time.
+
+Run **`/cycle-init`** to scaffold all of the above (and `PROJECT_HEALTH.md`) in one step — it only creates what's missing.
+
+Two optional helpers (both fail-safe, both covered by the Test Command):
+- **SessionStart context hook** (`scripts/cycle-context.mjs`) — auto-loads the substrate (STATE + current standing + invariant count) into every new session, so you never have to paste it. Enable by copying the script and adding a `SessionStart` hook to `.claude/settings.json` (see CLAUDE.md "Cycle State & Memory" for the snippet). With no `.cycle/` it prints nothing.
+- **Metrics report** (`scripts/render-metrics.mjs`) — renders `.cycle/metrics.csv` into a markdown trend report (table + net-score/Category-D sparklines + cumulative summary). Run `node scripts/render-metrics.mjs` anytime.
+- **Executable invariant runner** (`scripts/invariant-check.mjs`) — runs every invariant whose `Verify:` field is a command and reports PASS/FAIL (prose/test-name `Verify:` fields are MANUAL). Write `Verify:` as a runnable command and the invariant becomes a test — the automated half of the §4v probe. `--list` shows the classification.
+- **Portfolio dashboard** (`scripts/portfolio.mjs`) — aggregates several projects' `PROJECT_HEALTH.md` into one board (lowest overall first = audit next) so you can see across your whole portfolio which project needs attention. Pass the `PROJECT_HEALTH.md` paths.
+
+The HTML console's Backup & Restore card also has an **experimental** "Connect repo folder" option (File System Access API, Chromium-based browsers) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — a draft of converging the console's `localStorage` with the repo's `.cycle/` state. It falls back to Export/Import where the API is unavailable.
 
 Two commands navigate it:
 - **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
@@ -167,6 +178,7 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
 | `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
+| `/cycle-init` | any | 1 | Scaffold the optional `.cycle/` state dir + `PROJECT_HEALTH.md` (idempotent) |
 | `/cycle-status` | any | 1 | Read-only: report standing + whether to resume or start fresh |
 | `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |
 | `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
@@ -193,10 +205,16 @@ This repo has three presentations of the same workflow that must stay aligned:
 - **`.claude/commands/`** is **generated** from CLAUDE.md (`node scripts/gen-commands.mjs`) — never edit these by hand; edit CLAUDE.md and regenerate.
 - **`claude-code-guide-v2.html`** is a **self-contained prompt console** that inlines config from its own project store. Its prompt builders should produce the *same behavior* as the CLAUDE.md commands — they are deliberately not byte-identical.
 
-When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), run `node scripts/gen-commands.mjs`, then run the guard:
+**Versioning:** the templates are versioned in `VERSION` (semver) with a human-readable `CHANGELOG.md`. Bump both whenever you change command semantics, the config schema, or the tooling — `/sync-commands` reports the template version + latest changelog entry so consuming repos know what they're syncing to. The guard fails if `VERSION`/`CHANGELOG.md` are missing.
+
+The console's static §-prompts are a known drift surface (Cycle 1 F02/F03). `node scripts/gen-html-prompts.mjs` reports how far each console `<pre>` sits from its canonical CLAUDE.md command (the R14 transform engine + drift report); `--write` regenerates them from CLAUDE.md, but **mutates the console surface, so verify rendering in a browser** — CI never runs `--write`.
+
+When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), bump `VERSION` + add a `CHANGELOG.md` entry, run `node scripts/gen-commands.mjs`, then run the guard:
 
 ```
 node scripts/check-template-sync.mjs
 ```
 
-The guard exits non-zero if any tracked capability (manual test mode, Regression Scenarios, Frozen Subsystems, Deploy Command/Step, configurable Axis B, Dynamic Workflows, `.cycle/` state, `/cycle-resume`/`/cycle-status`, executable invariants, per-cycle metrics) is present in one artifact but missing from another, if a README-referenced command lacks a CLAUDE.md template, or if `.claude/commands/` is stale. If you intentionally rename a marker, update `CHECKS` in that script. CI runs the guard on every push and pull request.
+The guard exits non-zero if any tracked capability (manual test mode, Regression Scenarios, Frozen Subsystems, Deploy Command/Step, configurable Axis B, Dynamic Workflows, `.cycle/` state, `/cycle-resume`/`/cycle-status`, executable invariants, per-cycle metrics) is present in one artifact but missing from another, if a README-referenced command lacks a CLAUDE.md template, if `.claude/commands/` is stale, or if a workflow output block or pinned prompt behavior is missing from the HTML console. If you intentionally rename a marker, update `CHECKS` in that script. CI runs the guard on every push and pull request.
+
+> **Gotcha (the repo's defining risk):** the HTML console is a *separate presentation* of the same prompts, not a copy generated from CLAUDE.md — so it can silently drift from the canonical commands. Keep its prompt behavior aligned with CLAUDE.md; the guard pins the known divergence points (workflow output blocks, the reflect Cycle Summary Block, the regression Verify/deploy notes) but does **not** verify full prompt equivalence. The durable fix is generating the console's prompts from CLAUDE.md (ROADMAP R3).

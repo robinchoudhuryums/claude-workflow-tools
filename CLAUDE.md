@@ -1,6 +1,14 @@
 # Claude Workflow Tools — Prompt Templates
 
-Project-agnostic template versions of all slash command prompts. Copy and adapt for new projects by replacing `[PLACEHOLDER]` values with project-specific subsystems, dimensions, and file lists.
+Project-agnostic prompt templates for every slash command, and the canonical source from which this repo's `.claude/commands/` are generated. The commands are project-agnostic: they reference a per-project **Cycle Workflow Config** rather than inlining specifics, so adapting to a new project means writing that config (via `/setup-cycle`) and copying the `.claude/commands/` directory — not replacing placeholders.
+
+> **Dogfooding note (this repo runs the workflow on itself):** the
+> `## Cycle Workflow Config` sections in this file are the *template /
+> schema* that consuming projects copy. This repo's own live config —
+> its subsystems, dimensions, Axis B categories, and invariant library —
+> lives in [`.cycle/config.md`](.cycle/config.md). When running any cycle
+> command against THIS repo, read `.cycle/config.md` as the Cycle
+> Workflow Config, not the template blocks below.
 
 ## Adaptation Checklist
 
@@ -114,7 +122,40 @@ copy-paste, keep a `.cycle/` directory at the project root:
   `/reflect` appends a `phase=reflect` row (net_score, prod_fixes,
   new_failure_modes); Health Synthesis appends a `phase=synthesis` row
   (category_d_ratio, axis_b_lowest). `/cycle-status` reads it for trend.
+- `.cycle/estimates.csv` — estimate-vs-actual calibration log, appended by
+  `/reflect`. Header row (create on first write):
+  `date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note`
+  Over time this surfaces personal calibration (e.g. "L items actually
+  take ~5 days"); `/plan` and `/audit` can consult it to sharpen future
+  effort estimates.
 - `PROJECT_HEALTH.md` stays at the repo root (see §7 in the HTML tool).
+
+Two optional helpers operate on this state (both fail-safe and additive):
+- `scripts/cycle-context.mjs` — a **SessionStart** hook that auto-loads
+  the substrate (STATE + current standing + invariant count) into every
+  new session, retiring the "paste the systems map every session"
+  friction. Enable it by copying the script and adding to
+  `.claude/settings.json`:
+  `{ "hooks": { "SessionStart": [ { "hooks": [ { "type": "command", "command": "node scripts/cycle-context.mjs" } ] } ] } }`
+  With no `.cycle/` it prints nothing and never fails the session.
+- `scripts/render-metrics.mjs` — renders `.cycle/metrics.csv` into a
+  markdown trend report (per-row table + net-score / Category-D
+  sparklines + cumulative summary). Run it anytime; `--out FILE` writes.
+
+And one helper operates on the invariant library:
+- `scripts/invariant-check.mjs` — the executable invariant runner. Reads
+  the library (`.cycle/config.md` or CLAUDE.md), runs every invariant
+  whose `Verify:` field is a command (`node …`, `npm …`, `./…`, …) and
+  reports PASS/FAIL; prose/test-name `Verify:` fields are reported
+  MANUAL. This is the automated half of the §4v invariant probe — write
+  `Verify:` as a runnable command and the invariant becomes a test.
+  `--list` shows the classification without running.
+
+And one operates across projects:
+- `scripts/portfolio.mjs` — aggregates several projects' `PROJECT_HEALTH.md`
+  "Current Standing" sections into one portfolio board (lowest overall
+  first = audit next), with the portfolio average. Pass the
+  `PROJECT_HEALTH.md` paths; `--out FILE` writes.
 
 This is **fully optional and additive**: if `.cycle/` does not exist, every
 command behaves exactly as it always has (emit the handoff/summary block in
@@ -1095,6 +1136,13 @@ to .cycle/metrics.csv (header:
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
 with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
 columns blank. Skip if no .cycle/.
+
+ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
+that carried an effort estimate, append a row to .cycle/estimates.csv
+(header: date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
+recording the original S/M/L + estimated hours against the actual time
+spent. End with one line on your calibration trend (e.g. "L items are
+running ~2x the estimate"). Skip if no .cycle/.
 ```
 
 ### /health-pulse
@@ -1248,7 +1296,7 @@ ask for approval before writing any files.
 ### Verification Pass (Section 4v in HTML tool)
 
 Independent verification in a fresh session with no implementation context. Produces a VERIFICATION BLOCK with:
-- Invariant probe results (re-probes cycle-touched + 5 random from library)
+- Invariant probe results (re-probes cycle-touched + 5 random from library; for invariants whose `Verify:` is a runnable command, `scripts/invariant-check.mjs` probes them automatically)
 - Regression count (hard definition: worse under realistic load = regression)
 - Cycle execution quality (3 yes/no facts with evidence)
 - Coverage gap report (Category D candidates — fixes without regression tests)
@@ -1292,6 +1340,11 @@ Do not make any changes to any files until the comparison is complete.
 
 You are syncing this project's command files with the latest templates.
 
+Step 0: Read the template repo's VERSION file and the top entry of its
+CHANGELOG.md (local path or raw URL). Report the template version and the
+most recent changelog entry up front, so the operator knows what they are
+syncing to and what changed. If a VERSION/CHANGELOG is not found, note
+that and continue.
 Step 1: Read the template CLAUDE.md.
 If $ARGUMENTS is a local path: read $ARGUMENTS/CLAUDE.md directly.
 If $ARGUMENTS is a URL: fetch the raw CLAUDE.md from the repository
@@ -1407,6 +1460,31 @@ When pending work is complete (or you must stop), update
 the Regression Scenarios if `manual`), then emit the same
 implementation summary block the original implement command would have.
 Suggest /regression, /reflect, /test-sync, and /sync-docs as applicable.
+```
+
+### /cycle-init
+
+```
+Scaffold the optional .cycle/ state directory for this project so the
+file-backed workflow (the implement commands' CHECKPOINT, /cycle-status,
+/cycle-resume, and per-cycle metrics) works. Create only what is
+missing — NEVER overwrite or modify a file that already exists.
+
+1. If .cycle/ does not exist, create it.
+2. If .cycle/STATE.md does not exist, create it from the template in
+   CLAUDE.md's "Cycle State & Memory" section, with Phase: idle and a
+   "Where I left off" line pointing at the first audit.
+3. If .cycle/metrics.csv does not exist, create it with just the header:
+   date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
+4. If .cycle/estimates.csv does not exist, create it with just the header:
+   date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
+5. If PROJECT_HEALTH.md does not exist at the repo root, create it from
+   the §7 template (Current Standing + an empty Score History).
+
+Report which files were created and which already existed. If the
+project has no Cycle Workflow Config yet, suggest running /setup-cycle
+first. Remember: deleting .cycle/ at any time reverts to the pure
+copy-paste workflow with no loss.
 ```
 
 ---
