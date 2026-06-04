@@ -73,10 +73,24 @@ function main(argv) {
       if (body == null) { console.error(`! no command body for /${m.command}`); continue; }
       const re = new RegExp(`(<pre id="${m.id}">)([\\s\\S]*?)(</pre>)`);
       if (!re.test(updated)) { console.error(`! no <pre id="${m.id}"> in HTML`); continue; }
-      updated = updated.replace(re, `$1${esc(transform(body, m))}$3`); n++;
+      const gen = esc(transform(body, m));
+      updated = updated.replace(re, (_match, open, _cur, close) => open + gen + close); n++;
     }
     writeFileSync(htmlPath, updated);
-    console.log(`Rewrote ${n} console prompt(s) from CLAUDE.md. VERIFY RENDERING IN A BROWSER before committing.`);
+    console.log(`Rewrote ${n} console prompt(s) from CLAUDE.md. VERIFY RENDERING IN A BROWSER before relying on it.`);
+    return 0;
+  }
+
+  if (argv.includes('--assert')) {
+    let drift = 0;
+    for (const m of MANIFEST) {
+      const body = commandBody(claudeMd, m.command);
+      const cur = preBody(html, m.id);
+      if (body == null || cur == null) { console.error(`  ! ${m.id} ← /${m.command}: ${body == null ? 'command body' : '<pre>'} not found`); drift++; continue; }
+      if (cur.trim() !== transform(body, m).trim()) { console.error(`  ✗ ${m.id} has drifted from /${m.command}`); drift++; }
+    }
+    if (drift) { console.error(`\n${drift} console prompt(s) drifted from CLAUDE.md — run: node scripts/gen-html-prompts.mjs --write`); return 1; }
+    console.log(`All ${MANIFEST.length} console §-prompts match CLAUDE.md. ✓`);
     return 0;
   }
 

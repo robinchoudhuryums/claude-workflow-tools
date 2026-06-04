@@ -37,9 +37,9 @@ Updated: 2026-06-04
 - Did NOT rewrite the §1 Layered Audit (p1) — flagged as a design decision rather than a mechanical sync (per /broad-implement "stop if more complex than expected").
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
-## Roadmap progress (now at VERSION 1.4.0)
-- PARTIAL R14 (option a) — transform engine + drift report (scripts/gen-html-prompts.mjs) + engine test (INV-28). Drift report (verified headless): console↔canonical overlap 0–39%, 173 canonical lines absent. REMAINING (browser-verified): run --write to regenerate the console <pre> blocks, reconcile console-only enrichments into CLAUDE.md/manifest, then wire gen-html --check into the guard. The in-place rewrite mutates the console surface so it needs browser rendering verification.
-- PARTIAL R3 (draft) — File System Access "Connect repo folder" / Save→repo / Load←repo in the console Backup & Restore card; feature-detected, headless-safe (check-html passes), falls back to Export/Import. UNVERIFIED in a browser. REMAINING: verify the FSA flow in a Chromium browser; consider persisting the dir handle via IndexedDB so it survives reloads.
+## Roadmap progress (now at VERSION 1.5.0)
+- DONE (headless) R14 (option a) — the console static §-prompts (p0,p1,p2,p3,p4post,p4reflect,p5) are now GENERATED from CLAUDE.md (gen-html-prompts.mjs --write) and LOCKED by --assert in the Test Command + CI (INV-29). Reconciliation needed no preambles: the canonical command bodies are self-contained; PH_RE confirmed Fill-fields tokens are neutral; <pre> tag balance unchanged (24/24); no <pre>/</pre> leakage. The drift class is retired for these prompts. REMAINING: a 5-minute BROWSER render spot-check (the only step that needs a browser) — open the file, confirm §0–§5 render cleanly, Fill fields detects placeholders, Copy works.
+- DONE (headless) R3 — added IndexedDB persistence for the connected dir handle (survives reloads), explicit read/write permission checks (ensureRepoPermission), and auto-reconnect on load (restoreRepoFolder, no-op without FSA). Headless fallback regression test in check-html.mjs (INV-30). REMAINING (browser only): verify the real picker/Save→repo/Load←repo flow in a Chromium browser served over http://localhost (FSA is blocked on file://).
 - DONE R8 — cross-project portfolio dashboard (scripts/portfolio.mjs); tests/portfolio.test.mjs (INV-27).
 - DONE R4 — /cycle-init scaffolding command.
 - DONE R5 — VERSION + CHANGELOG.md; /sync-commands version report; guard checks both (INV-23).
@@ -57,11 +57,12 @@ Updated: 2026-06-04
 R14 finish (browser: --write rewrite + reconcile + guard) · R3 finish (browser: verify FSA flow) · R7 PR-review counterpart (M, testable here) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
 
 ## Where I left off
-v1.4.0; full Test Command green (9 stages). This session: R14(a) engine +
-drift report (phase 1, verified) and R3 FSA draft (headless-safe,
-unverified in browser) — both have a clearly-scoped BROWSER-verified step
-remaining (see Roadmap progress). Roadmap fully/partly done:
-R1,R2,R4,R5,R6,R8,R9,R10 done; R14,R3 partial; R14(added). Next that's
-fully testable here: R7, or the cheap follow-on (make INV-02/06/08/16/17
-Verify fields runnable), or a fresh §6a re-synthesis. The two browser
-steps (R14 --write, R3 verify) need a real browser session.
+v1.5.0; full Test Command green (10 stages incl. the R14 --assert lock).
+R14 is functionally complete headless — console §-prompts generated from
+CLAUDE.md + guarded; only a 5-min browser render spot-check remains. R3
+is hardened (IndexedDB + permissions + fallback test); only the real FSA
+flow needs a browser (serve over http://localhost). 30 invariants; the
+runner now auto-probes ~14 (INV-29/30 are command-style Verify). Roadmap:
+R1,R2,R4,R5,R6,R8,R9,R10,R14 done; R3 done-pending-browser. Open & testable
+here: R7 (PR-review counterpart), the cheap runnable-Verify follow-on, or a
+fresh §6a re-synthesis.

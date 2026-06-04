@@ -5,6 +5,21 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.5.0 — 2026-06-04
+
+### Changed
+- R14 (option a) FINISHED (headless portion): the console static §-prompts
+  (p0,p1,p2,p3,p4post,p4reflect,p5) are now GENERATED from CLAUDE.md via
+  `gen-html-prompts.mjs --write` and locked by `--assert` in the Test
+  Command + CI (INV-29). The HTML-as-fourth-copy drift class is retired for
+  these prompts. (Browser render spot-check still recommended.)
+
+### Added
+- R3 — IndexedDB persistence for the connected repo folder handle (survives
+  reloads), explicit read/write permission checks, and auto-reconnect on
+  load. Headless fallback regression test in check-html.mjs (INV-30). The
+  real FSA picker/IO flow still needs browser verification.
+
 ## 1.4.0 — 2026-06-04
 
 ### Added

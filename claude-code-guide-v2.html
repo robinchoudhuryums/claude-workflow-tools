@@ -631,32 +631,24 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         </div>
       </div>
       <div class="fill-form" id="fill-p0"></div>
-      <pre id="p0">Do not run audits or recommendations in this session.
-Do not make any changes to any files during this session.
+      <pre id="p0">Read CLAUDE.md and README before starting. Do not make any changes to any
+files during this session. Do not run audits or recommendations — this
+session only maps architecture.
 
-Read the following files carefully in this order:
-1. CLAUDE.md
-2. README (and any supplementary docs in /docs if present)
-3. Roadmap file
-4. All top-level index, entry-point, and configuration files
+Produce a systems map in five phases:
+1. ENTRY POINTS &amp; STRUCTURE — server/client entry points, route
+   registration, build/deploy entry, top-level directory roles
+2. MODULE IDENTIFICATION — each module's responsibility and its startup
+   assumptions (env vars, init order, singletons)
+3. DATA FLOW — trace 3 critical paths end to end (e.g. a request, a job,
+   an auth flow); note where data is transformed and persisted
+4. DEPENDENCY MAP — high-fan-out modules and what depends on them;
+   inter-module dependencies (this is the input to the §4 dependency check)
+5. CROSS-REFERENCE VALIDATION — reconcile the map against the Subsystems
+   section of CLAUDE.md's Cycle Workflow Config; flag mismatches
 
-Then build a systems map of this codebase. Include:
-
-- Major systems/modules and their responsibilities (one sentence each)
-- How data flows between them (inputs → processing → outputs for each major path)
-- External dependencies and integrations (APIs, databases, services)
-- Authentication and security surface (where auth is enforced, where data is sensitive)
-- Anything in CLAUDE.md or documentation that appears to conflict with or be absent from the actual codebase
-- Inter-module dependency map: for each major module, what does it export (functions, classes, constants, types), and which other modules consume those exports. Format as a simple list: [Module] → exports [X] → consumed by [Y, Z]
-
-Do NOT read deeply into implementation files yet. Stay at the architectural level.
-
-End with:
-- A ranked list of the 3-5 highest-complexity subsystems (most likely to contain hidden issues)
-- A ranked list of the 3-5 highest-risk subsystems (most likely to cause problems if broken)
-- Any immediate red flags visible from entry points and configuration alone
-
-Note your confidence level on each part of the map (high / medium / low) based on how much of the relevant code you were actually able to read.</pre>
+End with a 3–5 bullet SYSTEMS MAP SUMMARY suitable for pasting into
+audit/plan/implement sessions, plus the inter-module dependency map.</pre>
     </div>
   </section>
 
@@ -691,68 +683,65 @@ Note your confidence level on each part of the map (high / medium / low) based o
         </div>
       </div>
       <div class="fill-form" id="fill-p1"></div>
-      <pre id="p1">Here is the systems map from a prior session: [PASTE SYSTEMS MAP SUMMARY HERE]
-Do not make any changes to any files during this session.
+      <pre id="p1">Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
+Cycle Workflow Config) before starting. Do not make any changes to any
+files during this session.
 
-This session's audit scope: [SUBSYSTEM GROUP NAME]
-Relevant files/directories: [LIST RELEVANT FILES AND DIRECTORIES]
+This session's scope: [SUBSYSTEM GROUP NAME]
 
-[OPTIONAL: PASTE ANY FOLLOW-ON AUDIT ITEMS FROM A PRIOR REGRESSION CHECK THAT APPLY TO THIS SCOPE — check these first before running the full audit]
+[PASTE SYSTEMS MAP SUMMARY HERE — 3–5 bullets]
+[OPTIONAL: PASTE FOLLOW-ON ITEMS FROM A PRIOR SESSION]
+[IF TRIGGERED: PASTE POLICY RESPONSE BLOCKS FROM THE LAST HEALTH
+ SYNTHESIS — these are MANDATORY scope additions for this cycle]
+[OPTIONAL: SEAMS AUDIT FOCUS — a seam this cycle should emphasize]
 
-[IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS FROM THE LAST HEALTH SYNTHESIS — these are MANDATORY scope additions for this cycle regardless of subsystem focus]
+If this scope is listed under Frozen Subsystems in the Cycle Workflow
+Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
+continuing, then proceed.
 
-[OPTIONAL: PASTE THE "RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE" SECTION FROM THE LAST SEAMS & INVARIANTS AUDIT — if this subsystem was flagged, check the seam-related findings listed there before running the full audit]
-
-Audit this scope across these focus areas:
+Audit this subsystem across these focus areas:
 1. Bugs and logic errors in currently-reachable code paths
 2. Dead code / unused exports (only if they create confusion)
 3. Test gaps (missing coverage on load-bearing paths)
-4. Stale artifacts (TODOs, commented-out code, docs that mislead)
-5. Hardcoded values that should be config or environment variables
-6. Security and compliance gaps (auth, unvalidated inputs, exposed sensitive data)
+4. Stale artifacts (TODOs, comments, docs that mislead)
+5. Hardcoded values that should be config/env
+6. Security and compliance gaps
 7. Docs drift (CLAUDE.md vs implementation)
 8. Code quality that is actively wrong (not style preference)
-9. Parallel source-of-truth (values/types/constants defined in multiple places)
+9. Parallel source-of-truth (values/types defined in multiple places)
 10. Startup ordering / initialization assumptions
-11. Silent degradation paths (failure swallowed, app continues with wrong results)
+11. Silent degradation paths (failure swallowed, wrong results continue)
 12. Operator-only state (manual steps with no automated validation)
 
-DO NOT flag style preferences or speculative "could be cleaner" refactoring unless the current code is actively wrong.
-
 For each finding:
-- State the issue clearly in one or two sentences
-- Cite the file and approximate location (function name or line range)
+- State the issue, cite file and function/line
 - Severity: Critical / High / Medium / Low
-- Confidence: High / Medium / Low (flag if you're inferring from limited context)
-- Would this fire in production this month? YES (describe the trigger) / NO (why not)
-- Effort: S (< 2h) / M (½–2 days) / L (3+ days) + rough time estimate
+- Confidence: High / Medium / Low
+- Would this fire in production this month? YES (trigger) / NO (why not)
+- Effort: S (&lt;2h) / M (½–2 days) / L (3+ days) + rough time estimate
 
-End with:
-- Top findings by impact — the 5 findings most likely to cause active breakage, data loss, or a security/compliance failure. Note: severity label and impact rank can differ; a High-severity compliance bug may outrank a Critical-severity code quality issue.
-- Top 5 highest-leverage improvements (things that would most improve velocity or reliability if addressed)
-- Any dependencies or interactions with OTHER subsystems that this audit surfaced
+DO NOT flag style preferences or speculative "could be cleaner"
+refactoring unless the current code is actively wrong.
 
-Then produce a SESSION HANDOFF BLOCK formatted exactly as shown below.
-This block will be pasted directly into the next planning session — keep it structured, compressed, and complete. Do not add prose or commentary outside the block format.
+Do NOT produce an implementation plan — that is /plan. Produce a
+SESSION HANDOFF BLOCK:
 
 ---SESSION HANDOFF BLOCK---
 Scope: [subsystem group name]
 Files covered: [comma-separated list]
-Audit confidence: [High / Medium / Low overall, with any dimension-specific notes]
+Audit confidence: [High / Medium / Low]
 
 FINDINGS:
-[ID] | [File: function/line] | [Severity] | [Confidence] | [Effort: S/M/L] | [One-line description]
-(repeat for each finding)
+[ID] | [File: function/line] | [Severity] | [Confidence] | [Effort] | [Description]
 
 CROSS-MODULE DEPENDENCIES SURFACED:
-- [module or file] depends on [specific function/export] in this scope — [nature of dependency]
-(repeat for each, or "None identified")
+- [dependency description]
 
 TOP PRIORITIES:
-Impact: [finding IDs — group related findings that should be fixed together, e.g. F03+F04+F05 (batch)]
+Impact: [finding IDs]
 High-leverage: [finding IDs]
 
-RECOMMENDED PLANNING STARTING POINT: [one sentence — include why this ordering matters, e.g. which findings block others or share a root cause]
+RECOMMENDED PLANNING STARTING POINT: [one sentence]
 ---END HANDOFF BLOCK---</pre>
     </div>
 
@@ -842,66 +831,58 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
         </div>
       </div>
       <div class="fill-form" id="fill-p2"></div>
-      <pre id="p2">Do not make any changes to any files during this session.
+      <pre id="p2">Read CLAUDE.md (Common Gotchas, Cycle Workflow Config) before starting.
+Do not make any changes to any files during this session.
 
---- SESSION CONTEXT ---
-If continuing in the same session as the audit: the handoff block above is your input — proceed directly.
-If starting a fresh session: paste the Session Handoff Block from the audit here before continuing.
-[PASTE SESSION HANDOFF BLOCK HERE IF FRESH SESSION — otherwise delete this line]
---- END SESSION CONTEXT ---
+[PASTE SESSION HANDOFF BLOCK HERE IF FRESH SESSION]
+[PASTE SYSTEMS MAP SUMMARY HERE]
 
-Based on these findings, produce a prioritized action plan for the [SUBSYSTEM GROUP] scope.
+Produce a prioritized action plan for the scope in the handoff block.
 
-For each recommended action:
-- Assign an Action ID (A1, A2, A3...)
-- State what to do (specific and concrete — not "improve error handling" but "add try/catch to the transcription callback in [file] and route errors to the audit log")
-- Link it back to the finding ID(s) it addresses
-- Estimate effort: Small (< 2 hours) / Medium (half-day to 2 days) / Large (3+ days)
-- Classify cross-module risk: Low / High / Very High
-- Note any prerequisites: actions that must complete first, or other modules that need updating alongside this change
+For each action:
+- Action ID (A1, A2…)
+- Concrete description (not "improve error handling")
+- Finding ID(s) it addresses
+- Effort: S / M / L + rough time estimate
+- Cross-module risk: Low / High / Very High
+- Prerequisites
 
-Organize the plan into:
-1. Do immediately — critical issues, quick wins, or anything that blocks other work
-2. Do this week — high-value improvements that are well-scoped
-3. Defer but schedule — important but not urgent; needs planning or has dependencies
+Organize into:
+1. Do immediately — critical, quick wins, or blockers
+2. Do this week — high-value, well-scoped
+3. Defer but schedule — important, not urgent, or has dependencies
 
-If this audit produced more than ~15 findings, split the implementation actions into two explicit batches: Batch 1 (P0/Critical + highest-compliance-risk items) and Batch 2 (everything else). Note the batch split in the handoff block.
+If more than ~15 findings, split actions into Batch 1 (P0/Critical +
+highest-compliance-risk) and Batch 2 (rest); note the split.
 
-Then provide:
-- Any findings that should be escalated to the roadmap (too large or structural for a sprint)
-- Architectural decisions needed before implementation — list each separately with: the specific question to resolve, the options and their tradeoffs, a recommendation, and whether implementation should be blocked until the decision is made or if a safe default can proceed now
-- Any actions that would be good candidates for automation or scripting rather than manual fixes
+Then:
+- Findings to escalate to the roadmap (too large/structural)
+- Architectural decisions needed before implementation — each with the
+  question, options + tradeoffs, a recommendation, and whether
+  implementation is blocked or a safe default can proceed now
+- Actions that are good automation/scripting candidates
 
-Then produce a DOCUMENTATION UPDATE CHECKLIST listing every doc that will need updating as a result of the planned actions. For each entry note which action(s) trigger the update and what specifically needs to change. Use this format:
+Produce a DOCUMENTATION UPDATE CHECKLIST (CLAUDE.md / README / roadmap /
+inline comments / other — omit files needing no change).
 
-DOCUMENTATION UPDATE CHECKLIST:
-[ ] CLAUDE.md — [what needs updating and why]
-[ ] README — [what needs updating and why]
-[ ] Roadmap — [what needs updating and why]
-[ ] Inline code comments — [which files/functions]
-[ ] Other: [filename] — [reason]
-(omit any file that requires no changes)
-
-Then produce an IMPLEMENTATION HANDOFF BLOCK formatted exactly as shown below.
-This block will be pasted into the implementation session — keep it structured and complete.
+Then produce an IMPLEMENTATION HANDOFF BLOCK:
 
 ---IMPLEMENTATION HANDOFF BLOCK---
 Scope: [subsystem group name]
-Systems map reference: [confirm whether systems map was available in this session]
-Batch: [1 of 1 / 1 of 2 / 2 of 2 — omit if no batch split]
+Systems map reference: [available? Y/N]
+Batch: [1 of 1 / 1 of 2 / 2 of 2 — omit if no split]
 
 ACTIONS TO IMPLEMENT:
-[ID] | [File: function/area] | [Effort] | [Cross-module risk] | [One-line description] | [Prerequisite action IDs if any]
-(repeat for each action)
+[ID] | [File: function/area] | [Effort] | [Cross-module risk] | [One-line description] | [Prereq IDs]
 
 HIGH/VERY HIGH RISK ACTIONS (require dependency check before implementation):
-[List action IDs and the specific exports/interfaces they touch]
+[action IDs + the exports/interfaces they touch]
 
 POLICY RESPONSE ACTIONS (mandatory if triggered — from last Health Synthesis):
-[List any policy fix actions from triggered Axis B categories, or "None triggered"]
+[list or "None triggered"]
 
-IMPLEMENT IN THIS ORDER: [ordered list of action IDs accounting for prerequisites]
-ORDERING RATIONALE: [1-2 sentences — why this order, which items must land together in the same commit/PR, and whether high-risk items depend on low-risk items being committed first]
+IMPLEMENT IN THIS ORDER: [ordered action IDs]
+ORDERING RATIONALE: [1–2 sentences]
 ---END IMPLEMENTATION HANDOFF BLOCK---</pre>
     </div>
   </section>
@@ -923,67 +904,62 @@ ORDERING RATIONALE: [1-2 sentences — why this order, which items must land tog
         </div>
       </div>
       <div class="fill-form" id="fill-p3"></div>
-      <pre id="p3">[PASTE SYSTEMS MAP SUMMARY HERE — same 3-5 bullet format used in the audit session]
+      <pre id="p3">Read CLAUDE.md (especially Common Gotchas) before starting.
 
-[PASTE IMPLEMENTATION HANDOFF BLOCK FROM PLANNING SESSION HERE]
+[PASTE SYSTEMS MAP SUMMARY HERE]
+[PASTE IMPLEMENTATION HANDOFF BLOCK HERE IF FRESH SESSION]
 
-Before starting: review the HIGH/VERY HIGH RISK ACTIONS listed in the handoff block above. For any of those actions, run the Pre-Implementation Dependency Check (§4) now and paste the results here before implementing those specific actions. Low-risk actions may proceed without a dep check.
+Before starting: for every action listed as High/Very High risk, run the
+Pre-Implementation Dependency Check (identify every out-of-scope file
+that imports/calls the changed functions/exports; describe what would
+break) and confirm understanding before implementing those actions.
+Low-risk actions may proceed.
 
-You are now in an implementation session. The actions above are the agreed scope for this session.
+Rules:
+- Implement ONLY the actions in the handoff block, in order
+- Do not fix anything outside scope — note it for follow-on
+- Stop on unexpected complexity and describe before continuing
+- Stop if an action requires touching out-of-scope files
+- Check Common Gotchas before each action
+- After each action, note: what changed, files touched, anything unexpected
 
-Rules for this session:
-- Implement only the actions listed in the handoff block. Do not fix, refactor, or improve anything outside this scope, even if you notice other issues. Flag those separately at the end.
-- Work through actions in the order specified in the handoff block unless a blocker requires reordering — if so, say why before reordering.
-- Before implementing any action rated High or Very High cross-module risk, confirm your understanding of the change and its intended effect. Wait for acknowledgement before proceeding.
-- If a finding turns out to be more complex than the effort estimate suggested, stop and describe what you found before continuing. Do not improvise a larger solution without discussion.
-- If implementing an action would require touching files outside the listed scope, stop and flag it rather than proceeding.
-- After completing each action, note briefly: what was changed, what file(s) were touched, and whether anything unexpected was encountered.
+After all actions complete, in order:
 
-When all actions are complete, run tests before producing the summary.
-Read the Test Command from CLAUDE.md's Cycle Workflow Config. If it is
-`manual`, skip programmatic execution and walk every Regression Scenario
-whose Subsystem overlaps a file you modified (record PASS / FAIL / NOT
-APPLICABLE); a FAIL is classified the same as a test failure. Otherwise
-run the suite, then walk any configured Regression Scenarios. Classify
-each failure: caused by this session / pre-existing / real bug exposed
-by a correct test.
-
-Then produce an IMPLEMENTATION SUMMARY BLOCK:
+1. RUN TESTS — read Test Command from CLAUDE.md. If `manual`, walk the
+   Regression Scenarios for the touched subsystem(s) instead (PASS / FAIL
+   / NOT APPLICABLE; a FAIL = a test failure). Otherwise run the suite,
+   then walk any configured scenarios. Classify failures: this session /
+   pre-existing / real bug exposed by a correct test.
+2. Produce an IMPLEMENTATION SUMMARY BLOCK:
 
 ---IMPLEMENTATION SUMMARY BLOCK---
 Session scope: [subsystem group]
-Actions completed: [list action IDs]
+Actions completed: [IDs]
 Actions not completed (if any): [list with reason]
 
 CHANGES MADE:
-[Action ID] | [File(s) modified] | [Brief description of what changed]
-(repeat for each completed action)
+[Action ID] | [File(s)] | [What changed]
 
-TEST RESULTS: [passed / failed — details if failed, or scenario outcomes if manual]
+TEST RESULTS: [passed/failed — details, or scenario outcomes if manual]
 
 UNEXPECTED FINDINGS DURING IMPLEMENTATION:
-- [anything discovered while implementing that wasn't in the audit]
-(or "None")
+- [discovered while implementing, not in the audit] (or "None")
 
 DEPLOY STEP:
-- [if a Deploy Command is configured in CLAUDE.md for any touched subsystem, list it here, one line per subsystem]
-(or "N/A — no Deploy Command configured")
+- [if a Deploy Command is configured for a touched subsystem, list it] (or "N/A — no Deploy Command configured")
 
 FOLLOW-ON ITEMS:
-- [anything to add to the planning backlog or escalate to the roadmap]
-(or "None")
+- [out-of-scope items to add to the backlog] (or "None")
 
 DOCUMENTATION UPDATES NEEDED:
-- [any CLAUDE.md, README, or inline docs to update]
-(or "None")
+- [CLAUDE.md / README / inline] (or "None")
 ---END IMPLEMENTATION SUMMARY BLOCK---
 
-CHECKPOINT (optional — only if the project uses .cycle/ state):
-If a .cycle/ directory exists at the project root, create or update
-.cycle/STATE.md to reflect this session (completed actions, pending
-actions, open follow-on items, decisions made, and a "Where I left off"
-line) so /cycle-resume can continue cleanly if context runs out. If
-.cycle/ does not exist, skip this — the summary block above is the record.</pre>
+3. CHECKPOINT (optional — only if .cycle/ exists): create/update
+   .cycle/STATE.md (completed/pending actions, follow-ons, decisions,
+   "Where I left off") so /cycle-resume can continue. Skip if no .cycle/.
+
+Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
     <div class="vt" onclick="toggleVariant('v-single',this)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
     <div class="vb" id="v-single">
@@ -1048,28 +1024,30 @@ Do not begin implementation until this check is complete.</pre>
         </div>
       </div>
       <div class="fill-form" id="fill-p4post"></div>
-      <pre id="p4post">Do not make any changes to any files during this session.
+      <pre id="p4post">Read CLAUDE.md before starting. Do not make any changes to any files
+during this session.
 
 [PASTE SYSTEMS MAP SUMMARY HERE, INCLUDING THE INTER-MODULE DEPENDENCY MAP]
-
 [PASTE IMPLEMENTATION SUMMARY BLOCK FROM THE IMPLEMENTATION SESSION]
 
-Based on the systems map and your knowledge of the codebase:
+Based on the systems map and the changes made:
+1. Identify which modules OUTSIDE the changed scope could be affected
+2. For each, describe what could break and where to verify (file:area)
+3. For each risk, explicitly confirm whether it materialized or was
+   negated (cascade configs, zero callers, idempotent ops, existing
+   indexes, defaults) — validate, don't just list
+4. Cross-reference the changes against the invariant library (Cycle
+   Workflow Config); flag any invariant at risk, and run its Verify test
+   if one is defined
+5. If a Deploy Command is configured for a touched subsystem, note which
+   risks are git-verified vs. only verifiable after deploy
+6. Note any docs (CLAUDE.md / README / roadmap) needing updates
 
-1. Identify which modules outside the changed scope could have been affected by these changes
-2. For each, describe specifically what could have broken and where to verify (file and function/area)
-3. For each risk item, explicitly confirm whether the risk materialized or was negated by other factors — cascade configs, zero callers, idempotent operations, existing indexes, default values. Don't just list risks; validate them.
-4. Cross-reference the changes against the invariant library (Cycle Workflow Config); flag any invariant at risk, and run its Verify test if one is defined
-5. If a Deploy Command is configured for a touched subsystem, note which risks are git-verified vs. only verifiable after deploy
-6. Flag anything that warrants a targeted re-audit of the dependent module before the next implementation session
-7. Note any documentation (CLAUDE.md, README, roadmap) that should be updated to reflect these changes
-
-Prioritize the verification list by likelihood of breakage. Then produce a FOLLOW-ON AUDIT ITEMS block:
+Prioritize the verification list by likelihood of breakage. Then:
 
 ---FOLLOW-ON AUDIT ITEMS---
-- [File: function/area] — [what to check, why it was flagged, which change surfaced it]
+- [File: function/area] — [what to check, why flagged, which change surfaced it]
 (repeat for each item, or "None")
-These become explicit inputs for the next audit session on the affected modules.
 ---END FOLLOW-ON AUDIT ITEMS---</pre>
     </div>
 
@@ -1083,41 +1061,43 @@ These become explicit inputs for the next audit session on the affected modules.
             <button class="copy-btn" id="copy-p4reflect" onclick="doCopy('p4reflect')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
           </div>
         </div>
-        <pre id="p4reflect">Now that the regression check is complete, provide an honest post-cycle assessment. Do not make any changes to any files.
+        <pre id="p4reflect">Read CLAUDE.md before starting. Do not make any changes to any files
+during this session (other than the optional metrics append below).
 
-For each action completed this cycle, answer two questions:
+[PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
-1. "Would this bug have actually fired in production this month?"
-   Answer YES (real production bug — currently-reachable code path, realistic load, active user scenario) or NO (speculative, defensive, future-proofing, dead code, or zero-caller path).
-   Be specific: if YES, describe the trigger scenario. If NO, say why it wouldn't have fired.
+For each action completed this cycle, answer two binary questions:
+1. Would this bug have actually fired in production this month?
+   YES (real, currently-reachable, realistic load) / NO (speculative,
+   defensive, dead code, zero-caller). Be specific about the trigger.
+2. Did this action introduce a new failure mode, documented or not?
+   YES (describe it; better or worse than what it replaced; when it
+   fires) / NO. If the post-cycle state is worse under any realistic
+   scenario, that is a regression — count it, don't bury it as a
+   "tradeoff".
 
-2. "Did this action introduce a new failure mode, documented or not?"
-   Answer YES or NO. If YES: describe the new failure mode, whether it is better or worse than what it replaced, and under what conditions it would fire. Do not bury this in a "tradeoffs" section — if the post-cycle state is worse under any realistic scenario, that is a regression and must be counted as one.
-
-Tally:
-- Production bug fixes (YES to question 1): [count] — severity breakdown: [Critical/High/Medium/Low]
-- New capabilities / feature work: [count]
-- Defensive/structural improvements (NO to question 1, not new capability): [count]
-- Actions that introduced new failure modes (YES to question 2): [count] — severity: [Critical/High/Medium/Low]
+Tally (three-way classification):
+- Production fixes (YES to Q1): [count] — severity breakdown
+- New capabilities / features: [count]
+- Defensive/structural (NO to Q1, not a feature): [count]
+- New failure modes (YES to Q2): [count] — severity breakdown
 - Net score: [production fixes] − [new failure modes] = [net]
-  Note: a net-positive score with a Critical new failure mode is still a problem — severity matters, not just count.
+  (a net-positive score with a Critical new failure mode is still a problem)
 
-Honest impact summary — answer each directly:
-- What actually changed for a user of this application right now?
-- What changed for the next developer working in this subsystem?
-- What became safer under scale or concurrent load that wasn't safe before?
-- Was any effort spent on dead code, zero-caller paths, or future-proofing that won't be exercised for months?
+Honest impact summary:
+- What changed for a user right now?
+- What changed for the next developer in this subsystem?
+- What became safer under scale / concurrent load?
+- Was effort spent on dead code / zero-caller paths / future-proofing?
 
-Invariant growth — answer this:
-- "What invariants does this cycle establish that the next Verification Pass should probe?"
-  List any rules that must now hold as a result of this cycle's changes. These become candidates for the invariant library. Format each as: [proposed ID] | [one-sentence rule] | [which subsystem/seam it guards] | [how to verify: code read, test, or assertion]
+Invariant growth: list rules this cycle establishes that the next
+Verification Pass should probe —
+[proposed ID] | [rule] | [subsystem/seam] | [Verify: test/assertion].
 
-End with:
-- One sentence: the single most structurally significant change in this cycle
-- One sentence: the finding that should have been deferred — lowest practical impact relative to implementation cost
-- Any actions where a design decision produced a tradeoff worth documenting in CLAUDE.md (e.g. "chose graceful degradation over hard failure — see gotcha X")
+End with: the single most structurally significant change; the finding
+that should have been deferred.
 
-Produce a CYCLE SUMMARY BLOCK (this is the input §6a Health Synthesis consumes):
+Produce a CYCLE SUMMARY BLOCK:
 
 ---CYCLE SUMMARY BLOCK---
 Scope: [subsystem] | Cycle: [N/date]
@@ -1131,20 +1111,18 @@ Most structurally significant change: [one line]
 Should-have-been-deferred: [one line]
 ---END CYCLE SUMMARY BLOCK---
 
-METRICS (optional — only if the project uses .cycle/ state):
-If a .cycle/ directory exists, append one row to .cycle/metrics.csv
-(create it with the header row if absent):
-date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
-Fill phase=reflect with this cycle's net_score, prod_fixes, and
-new_failure_modes; leave category_d_ratio/axis_b_lowest blank (the
-Health Synthesis row records those). If .cycle/ does not exist, skip this.
+METRICS (optional — only if .cycle/ exists): append a phase=reflect row
+to .cycle/metrics.csv (header:
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
+with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
+columns blank. Skip if no .cycle/.
 
-ESTIMATE CALIBRATION (optional — only if the project uses .cycle/ state):
-For each action that carried an effort estimate, append a row to
-.cycle/estimates.csv (header:
-date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
-comparing the original S/M/L + estimated hours to the actual time spent,
-then note your calibration trend. If .cycle/ does not exist, skip this.</pre>
+ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
+that carried an effort estimate, append a row to .cycle/estimates.csv
+(header: date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
+recording the original S/M/L + estimated hours against the actual time
+spent. End with one line on your calibration trend (e.g. "L items are
+running ~2x the estimate"). Skip if no .cycle/.</pre>
       </div>
     </div>
   </section>
@@ -1271,50 +1249,29 @@ Category D ratio: [X%]
         </div>
       </div>
       <div class="fill-form" id="fill-p5"></div>
-      <pre id="p5">Do not make any changes to any files during this session.
+      <pre id="p5">Read CLAUDE.md and README before starting. Do not make any changes to any
+files during this session.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
-[OPTIONAL: PASTE A SUMMARY OF FINDINGS FROM RECENT AUDIT SESSIONS]
+[OPTIONAL: SUMMARY OF RECENT AUDIT FINDINGS]
 
-Based on the current state of the codebase and project documentation, produce a roadmap organized into four tiers.
+Produce a roadmap in four tiers. Ground Tiers 1–3 in specific findings,
+gaps, or architectural realities — no ungrounded wishlist items. Tier 4
+is explicitly exploratory.
 
-For tiers 1–3, ground every item in a specific finding, gap, or architectural reality from the audit or systems map. Do not include wishlist items that have no basis in what was actually found.
+Tier 1 — Short-term (days–weeks): concrete fixes / tech-debt from audits,
+quick wins, anything blocking other work.
+Tier 2 — Medium-term (weeks–months): structural improvements, feature
+completions, integrations with clear scope.
+Tier 3 — Long-term (months+): systemic changes, scaling, major new
+capability areas grounded in the project's direction.
+Tier 4 — Future possibilities (exploratory): directional ideas not
+constrained by current architecture.
 
-For tier 4, you have explicit permission to be exploratory. Think about the project's domain, purpose, and trajectory — not just its current architecture. Suggest directions that may require significant rethinking but could be genuinely valuable.
-
----
-
-Tier 1 — Short-term (days to weeks):
-Concrete, well-scoped improvements actionable within the current architecture. Include:
-- Specific bug fixes and tech debt items from recent audits
-- Quick wins with outsized impact on stability or velocity
-- Anything blocking other planned work
-
-Tier 2 — Medium-term (weeks to months):
-Structural improvements, feature additions, or refactors that require planning but build on what exists. Include:
-- Architectural improvements surfaced by the audit
-- Feature completions or hardening of existing capabilities
-- Integrations or enhancements with clear scope
-
-Tier 3 — Long-term (months+):
-Significant capability expansions, architectural evolution, or scaling work. Include:
-- Systemic changes that are too large for a sprint but clearly necessary
-- Scaling infrastructure if growth is expected
-- Major new capability areas grounded in the project's direction
-
-Tier 4 — Future possibilities (exploratory):
-Broader directional ideas not constrained by current architecture. Consider:
-- How this project could evolve if the core worked perfectly
-- Adjacent capabilities that would compound the value of what already exists
-- Emerging patterns in the domain (technical or market) worth watching
-- Ideas that might seem ambitious but are directionally correct
-
----
-
-For Tiers 1–3: provide 3–5 items each, with a one-line rationale and effort estimate.
-For Tier 4: provide 3 distinct directions (not variations on the same theme), with a short paragraph each explaining the idea and why it's worth considering.
-
-End with: the one strategic bet you'd prioritize if resources were limited, and why.</pre>
+For Tiers 1–3: 3–5 items each with a one-line rationale and an effort
+estimate (S/M/L + rough time). For Tier 4: 3 distinct directions, a short
+paragraph each. End with the one strategic bet you'd prioritize if
+resources were limited, and why.</pre>
     </div>
     <div class="vt" onclick="toggleVariant('v-rm-opts',this)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
     <div class="vb" id="v-rm-opts">
@@ -2499,15 +2456,43 @@ function importStateFile(input){
 // .cycle/console-state.json in the connected repo (one secure-context grant
 // replaces repeated download/upload round-trips).
 let repoDirHandle = null;
+
+// Tiny IndexedDB key/value (FileSystemDirectoryHandle is structured-cloneable
+// but cannot live in localStorage), so the connected folder survives reloads.
+function idb(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open('ccg-fsa',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); }
+async function idbSet(k,v){ try{ const db=await idb(); await new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }catch(e){} }
+async function idbGet(k){ try{ const db=await idb(); return await new Promise((res,rej)=>{ const t=db.transaction('kv','readonly'); const q=t.objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }catch(e){ return undefined; } }
+
+// Ensure read/write permission on a handle (may prompt on a user gesture).
+async function ensureRepoPermission(handle){
+  if(!handle || !handle.queryPermission) return true;
+  if(await handle.queryPermission({mode:'readwrite'})==='granted') return true;
+  return (await handle.requestPermission({mode:'readwrite'}))==='granted';
+}
+
 async function connectRepoFolder(){
   if(!window.showDirectoryPicker){ setStateIoMsg("This browser has no File System Access API — use Export / Import instead.",'info'); return; }
   try{
-    repoDirHandle = await window.showDirectoryPicker();
-    setStateIoMsg(`Connected to "${repoDirHandle.name}". Use "Save → repo" / "Load ← repo".`,'ok');
+    const h = await window.showDirectoryPicker({mode:'readwrite'});
+    if(!await ensureRepoPermission(h)){ setStateIoMsg('Permission to read/write the folder was denied.','error'); return; }
+    repoDirHandle = h;
+    await idbSet('repoDir', h);
+    setStateIoMsg(`Connected to "${h.name}". Use "Save → repo" / "Load ← repo". (Reconnects automatically next time.)`,'ok');
   }catch(e){ if(e&&e.name==='AbortError') return; setStateIoMsg('Could not connect folder: '+((e&&e.message)||'error'),'error'); }
+}
+
+// On load, silently restore a previously-connected folder handle if permission persists.
+async function restoreRepoFolder(){
+  try{
+    if(!window.showDirectoryPicker) return;
+    const h = await idbGet('repoDir');
+    if(!h || !h.queryPermission) return;
+    if(await h.queryPermission({mode:'readwrite'})==='granted'){ repoDirHandle = h; setStateIoMsg(`Reconnected to "${h.name}".`,'info'); }
+  }catch(e){}
 }
 async function saveStateToRepo(){
   if(!repoDirHandle){ setStateIoMsg('Connect a repo folder first.','info'); return; }
+  if(!await ensureRepoPermission(repoDirHandle)){ setStateIoMsg('Read/write permission to the folder was denied.','error'); return; }
   try{
     const cycle = await repoDirHandle.getDirectoryHandle('.cycle',{create:true});
     const fh = await cycle.getFileHandle('console-state.json',{create:true});
@@ -2519,6 +2504,7 @@ async function saveStateToRepo(){
 }
 async function loadStateFromRepo(){
   if(!repoDirHandle){ setStateIoMsg('Connect a repo folder first.','info'); return; }
+  if(!await ensureRepoPermission(repoDirHandle)){ setStateIoMsg('Read/write permission to the folder was denied.','error'); return; }
   try{
     const cycle = await repoDirHandle.getDirectoryHandle('.cycle');
     const fh = await cycle.getFileHandle('console-state.json');
@@ -3258,6 +3244,7 @@ renderVerification();
 renderInvariantTable();
 renderCustomInvariantsList();
 renderSubsysTable();
+restoreRepoFolder();
 </script>
 </body>
 </html>

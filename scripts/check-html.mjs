@@ -112,6 +112,18 @@ if (loaded) {
   } else bad('saveCustomProjects not defined — cannot test storageWarn');
 }
 
+// R3 fallback: connectRepoFolder must degrade gracefully when the File System
+// Access API is absent (the stubbed environment has no window.showDirectoryPicker).
+if (loaded && typeof ctx.connectRepoFolder === 'function') {
+  let msg = '';
+  const realMsg = ctx.setStateIoMsg;
+  ctx.setStateIoMsg = m => { msg = m; };
+  try { await ctx.connectRepoFolder(); } catch (e) { /* must not throw */ }
+  ctx.setStateIoMsg = realMsg;
+  if (/file system access/i.test(msg)) ok('connectRepoFolder falls back gracefully without the FSA API (R3)');
+  else bad('R3 fallback path did not show the expected message (got: ' + JSON.stringify(msg).slice(0, 70) + ')');
+} else if (loaded) bad('connectRepoFolder not defined (R3 draft missing)');
+
 console.log('HTML console check (claude-code-guide-v2.html):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} HTML check(s) failed.`); process.exit(1); }

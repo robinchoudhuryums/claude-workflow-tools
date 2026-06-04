@@ -8,7 +8,7 @@ are the template/schema for consuming projects, not this repo's config.
 ## Cycle Workflow Config
 
 ### Test Command
-node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs
+node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs
 
 ### Health Dimensions
 Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
@@ -57,6 +57,8 @@ INV-25 | render-metrics.mjs parses metrics.csv (incl. quoted comma fields) and r
 INV-26 | invariant-check.mjs runs command-style Verify fields (stripping trailing annotations), FAILs on a failing command, classifies prose/test-name Verify as MANUAL, and dedupes identical commands | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/invariant-check.test.mjs
 INV-27 | portfolio.mjs aggregates multiple PROJECT_HEALTH.md "Current Standing" sections, ranks lowest overall first, averages only scored projects, and flags unscored ones | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/portfolio.test.mjs
 INV-28 | the R14 transform engine (gen-html-prompts.mjs) extracts command bodies, drops the usage guard, applies placeholder replacements, and HTML-escapes — import-safe (no CLI side effects on import) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/gen-html-prompts.test.mjs
+INV-29 | the console's static §-prompts (p0,p1,p2,p3,p4post,p4reflect,p5) are generated from CLAUDE.md and must not drift from it | Subsystem: Interactive Console (HTML) | Verify: node scripts/gen-html-prompts.mjs --assert
+INV-30 | the R3 File System Access flow degrades gracefully (connectRepoFolder shows a fallback message, does not throw) when window.showDirectoryPicker is absent | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (R3 fallback check)
 
 ### Policy Configuration
 Policy threshold: 4/10
