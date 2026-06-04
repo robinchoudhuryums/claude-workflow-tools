@@ -1,16 +1,22 @@
 # Cycle State
 
 ## Current
-Cycle: 1 — COMPLETE (scored; see PROJECT_HEALTH.md)
-Phase: idle (cycle wrapped: implement → reflect → synthesis done)
-Scope: Interactive Console (HTML), Tooling & Sync Infrastructure (+ Canonical Templates via /sync-docs)
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs
+Cycle: 2 — test-coverage priority (implement + reflect done; full synthesis deferred)
+Phase: idle — pivoting to ROADMAP items next
+Scope: Tooling & Sync Infrastructure + Interactive Console (HTML)
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs
 Updated: 2026-06-04
 
 ## In progress (facts to carry forward — NOT judgments)
 - First broad-scan complete (8 findings F01–F08). F01–F03 implemented this session.
 
-## Completed this cycle
+## Completed — Cycle 2 (test-coverage priority)
+- tests/guard.test.mjs | regression test for the F03 guard logic — black-box: runs the real guard against a temp copy and asserts it fails closed on 4 kinds of injected drift. (INV-22)
+- scripts/check-html.mjs | added a storageWarn assertion (F06): a thrown setItem must surface via console.warn. (INV-21)
+- .cycle/config.md, .github/workflows/sync-check.yml | both new tests wired into the Test Command and CI.
+- Result: Category D for the Cycle-1 fixes ~17% (under the 25% gate); remaining gap is §1-audit content-parity → ROADMAP R3.
+
+## Completed — Cycle 1
 - F01 | claude-code-guide-v2.html | HTML reflect prompt now emits a ---CYCLE SUMMARY BLOCK--- (the input §6a synthesis consumes).
 - F02 | claude-code-guide-v2.html | HTML regression prompt gained invariant Verify-test + deploy-verified notes; §1 audit prompt converged to /audit's 12 focus areas + "fire this month?" + effort/time.
 - F03 | scripts/check-template-sync.mjs, .cycle/config.md | guard pins HTML prompt-behavior parity + 7 workflow blocks; added INV-19.
@@ -32,10 +38,10 @@ Updated: 2026-06-04
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
 ## Where I left off
-Cycle 1 complete: F01–F08 implemented, reflected, and scored
-(PROJECT_HEALTH.md, overall 7.9/10, 0 regressions, no policy triggers).
-Recommended next: run a Verification Pass in a FRESH session (true §4v —
-this cycle's qualitative scoring was by the implementer), then start
-Cycle 2 on the test-coverage priority (regression tests for the guard +
-storageWarn) per the rotation, or audit the next subsystem
-(Canonical Templates & Docs).
+Cycle 2 done (test-coverage priority): guard + storageWarn now have
+committed regression tests in the Test Command and CI; Category D ~17%.
+Pivoting to ROADMAP work next (operator's call). R3 — generate the HTML
+prompts from CLAUDE.md — is the natural follow-on, since it would also
+close the last unguarded parity gap (§1-audit) that this cycle could not.
+A full §6a re-synthesis of Cycles 1–2 can be run anytime for a fresh
+benchmark.

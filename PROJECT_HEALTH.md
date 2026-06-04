@@ -34,4 +34,4 @@ Delta from prior: n/a (first synthesis).
 Policy responses triggered: None (first measurement; no category at or below the 4/10 threshold).
 
 ## Pulse Check Log (directional only — do not compare to synthesis scores)
-(none yet)
+2026-06-04 — Cycle 2 (test-coverage priority): added a guard regression test (tests/guard.test.mjs) covering the F03 logic and a storageWarn assertion (F06), both wired into the Test Command + CI. Category D for the Cycle-1 fixes is now ~17% (under the 25% gate); the remaining gap is §1-audit content-parity, which is ROADMAP R3's domain. Directional read: Guard/Test Coverage Quality moved up (~6.5 → ~7.5); confirm at the next full synthesis.

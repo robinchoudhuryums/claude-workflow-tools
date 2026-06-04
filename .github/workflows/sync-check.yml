@@ -18,3 +18,5 @@ jobs:
         run: node scripts/check-html.mjs
       - name: Check CLAUDE.md ↔ HTML ↔ README feature parity
         run: node scripts/check-template-sync.mjs
+      - name: Guard regression test (fails closed on injected drift)
+        run: node tests/guard.test.mjs

@@ -96,6 +96,20 @@ if (loaded) {
     if (ctx.esc('<img onerror=x>') === '&lt;img onerror=x&gt;') ok('esc() HTML-escapes stored content (F05)');
     else bad('esc() did not escape angle brackets as expected');
   } else bad('esc() helper not defined (F05 not wired)');
+
+  // storageWarn surfaces failed localStorage writes instead of swallowing them (F06)
+  if (typeof ctx.saveCustomProjects === 'function') {
+    let warned = false;
+    const realWarn = ctx.console.warn;
+    ctx.console.warn = () => { warned = true; };
+    const ls = ctx.localStorage, origSet = ls.setItem;
+    ls.setItem = () => { throw new Error('quota exceeded'); };
+    try { ctx.saveCustomProjects([{ id: 't', name: 't', subsystems: [], healthDimensions: '' }]); } catch (_) {}
+    ls.setItem = origSet;
+    ctx.console.warn = realWarn;
+    if (warned) ok('storageWarn surfaces a failed localStorage write (F06)');
+    else bad('a failed localStorage write was swallowed silently (storageWarn did not fire)');
+  } else bad('saveCustomProjects not defined — cannot test storageWarn');
 }
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');

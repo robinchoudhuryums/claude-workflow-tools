@@ -8,7 +8,7 @@ are the template/schema for consuming projects, not this repo's config.
 ## Cycle Workflow Config
 
 ### Test Command
-node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs
+node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs
 
 ### Health Dimensions
 Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
@@ -49,6 +49,8 @@ INV-17 | gen-commands.mjs is idempotent — running it twice produces no git dif
 INV-18 | Deleting .cycle/ returns a consuming project to pure copy-paste behavior (no command hard-depends on it) | Subsystem: Canonical Templates & Docs | Verify: code read of all CHECKPOINT/metrics steps
 INV-19 | The HTML console's prompts stay behaviorally aligned with the canonical CLAUDE.md commands — every workflow output block appears in both, the reflect prompt emits a Cycle Summary Block, and the regression prompt carries the invariant-Verify and deploy-verified notes | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-template-sync.mjs (HTML prompt-behavior parity + workflow-block checks)
 INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, project-form rows); attribute-context JSON args are esc(JSON.stringify(...)) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (esc check) + code read
+INV-21 | A failed localStorage write surfaces via storageWarn (console.warn + one-shot alert) rather than being silently swallowed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (storageWarn check)
+INV-22 | The sync guard fails closed on injected drift (removed capability marker, stale .claude/commands file, README command without a CLAUDE.md template, workflow block dropped from the HTML) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
 
 ### Policy Configuration
 Policy threshold: 4/10
