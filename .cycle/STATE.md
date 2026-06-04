@@ -1,11 +1,11 @@
 # Cycle State
 
 ## Current
-Cycle: 1
-Phase: implement (F01–F05 + F02 done; F06–F08 remain)
-Scope: Interactive Console (HTML), Tooling & Sync Infrastructure
+Cycle: 1 — COMPLETE (scored; see PROJECT_HEALTH.md)
+Phase: idle (cycle wrapped: implement → reflect → synthesis done)
+Scope: Interactive Console (HTML), Tooling & Sync Infrastructure (+ Canonical Templates via /sync-docs)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs
-Updated: 2026-06-03
+Updated: 2026-06-04
 
 ## In progress (facts to carry forward — NOT judgments)
 - First broad-scan complete (8 findings F01–F08). F01–F03 implemented this session.
@@ -18,7 +18,8 @@ Updated: 2026-06-03
 - F05 | claude-code-guide-v2.html, .cycle/config.md | added esc() and escaped all stored/pasted content in innerHTML (archive, invariants, project/subsystem tables, form rows); fixed the broken archive Copy-content onclick (JSON.stringify in a double-quoted attribute); added INV-20.
 
 ## Pending / not yet done
-- F06 (silent state-write failures), F07/F08 (F07 done via sync-docs; F08 optional polish) — F06 not yet implemented.
+- All 8 findings (F01–F08) from the first broad-scan are addressed. Cycle 1 complete and scored.
+- Carry to Cycle 2 (priority from synthesis): raise Test Coverage Quality — write regression tests for the guard logic (F03) and storageWarn (F06); drive Category D below 25%.
 
 ## Open follow-on items
 - RESOLVED: §1 audit reconciliation — HTML §1 (p1) now uses /audit's 12 focus areas + "fire this month?" + effort/time. (F02 complete.) Note: p1 focus-area parity is content-aligned but NOT independently guarded (recurs only under R3 convergence).
@@ -31,8 +32,10 @@ Updated: 2026-06-03
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
 ## Where I left off
-F01–F05 + F02 implemented; full Test Command (gen --check + check-html +
-sync guard) green. Only F06 (wrap silent localStorage writes with a
-visible failure message) remains from the first broad-scan, plus F08
-(optional HTML prose polish). Next: /broad-implement F06, or call the
-cycle and run a Verification Pass + Health Synthesis to score it.
+Cycle 1 complete: F01–F08 implemented, reflected, and scored
+(PROJECT_HEALTH.md, overall 7.9/10, 0 regressions, no policy triggers).
+Recommended next: run a Verification Pass in a FRESH session (true §4v —
+this cycle's qualitative scoring was by the implementer), then start
+Cycle 2 on the test-coverage priority (regression tests for the guard +
+storageWarn) per the rotation, or audit the next subsystem
+(Canonical Templates & Docs).
