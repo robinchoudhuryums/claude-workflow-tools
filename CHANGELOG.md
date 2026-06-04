@@ -5,6 +5,21 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.3.0 — 2026-06-04
+
+### Added
+- Cross-project portfolio dashboard (`scripts/portfolio.mjs`, R8):
+  aggregates several projects PROJECT_HEALTH.md "Current Standing"
+  sections into one board (lowest overall first = audit next) with the
+  portfolio average. Regression test `tests/portfolio.test.mjs` (INV-27),
+  wired into the Test Command + CI.
+
+### Notes
+- R3 (FSA state-store convergence) and R14 (generate HTML prompts from
+  CLAUDE.md) remain open by design — R3 is browser-only (unverifiable
+  headless); R14 is a lossy templating transform that risks degrading the
+  console prompts. Both need their own focused effort (see ROADMAP/STATE).
+
 ## 1.2.0 — 2026-06-04
 
 ### Added

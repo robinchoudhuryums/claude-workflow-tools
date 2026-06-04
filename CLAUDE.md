@@ -151,6 +151,12 @@ And one helper operates on the invariant library:
   `Verify:` as a runnable command and the invariant becomes a test.
   `--list` shows the classification without running.
 
+And one operates across projects:
+- `scripts/portfolio.mjs` — aggregates several projects' `PROJECT_HEALTH.md`
+  "Current Standing" sections into one portfolio board (lowest overall
+  first = audit next), with the portfolio average. Pass the
+  `PROJECT_HEALTH.md` paths; `--out FILE` writes.
+
 This is **fully optional and additive**: if `.cycle/` does not exist, every
 command behaves exactly as it always has (emit the handoff/summary block in
 chat; copy-paste it into the next session). Deleting `.cycle/` returns you to

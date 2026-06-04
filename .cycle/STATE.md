@@ -37,7 +37,8 @@ Updated: 2026-06-04
 - Did NOT rewrite the §1 Layered Audit (p1) — flagged as a design decision rather than a mechanical sync (per /broad-implement "stop if more complex than expected").
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
-## Roadmap progress (now at VERSION 1.2.0)
+## Roadmap progress (now at VERSION 1.3.0)
+- DONE R8 — cross-project portfolio dashboard (scripts/portfolio.mjs); tests/portfolio.test.mjs (INV-27).
 - DONE R4 — /cycle-init scaffolding command.
 - DONE R5 — VERSION + CHANGELOG.md; /sync-commands version report; guard checks both (INV-23).
 - DONE R10 — .cycle/estimates.csv + /reflect estimate-vs-actual step.
@@ -45,15 +46,19 @@ Updated: 2026-06-04
 - DONE R2 — metrics report renderer (scripts/render-metrics.mjs); tests/render-metrics.test.mjs (INV-25).
 - DONE R9 — executable invariant runner (scripts/invariant-check.mjs): runs command-style Verify fields, reports PASS/FAIL/MANUAL; tests/invariant-check.test.mjs (INV-26). On this repo: 12/12 runnable invariants PASS, 13 manual.
 - DONE R14 — added to ROADMAP (generate HTML prompts from CLAUDE.md; distinct from R3).
-- STOPPED R3 — FSA state-store convergence: browser-only, unverifiable headless, Tier-3 (M–L). Needs its own plan + manual browser verification.
+- STOPPED R3 — FSA state-store convergence: browser-only (File System Access API needs a secure context + user gesture), unverifiable headless, Tier-3 (M–L).
+  PLAN: in a browser session — add a "Connect repo folder" button (showDirectoryPicker), read/write .cycle/STATE.md + metrics.csv + PROJECT_HEALTH.md via FileSystemDirectoryHandle, fall back to localStorage when no handle/permission. Verify manually in a browser (FSA can't run headless). Keep export/import as the no-permission fallback.
+- STOPPED R14 — generate the HTML console prompts from CLAUDE.md: per its own roadmap note this is "a templating job, not a copy". The console prompts use [PASTE …] placeholders + the Layered-Audit structure + Fill-field tokens; a mechanical transform from the slash-command bodies would DEGRADE them (regression risk), so a naive pass violates "don't make it worse".
+  PLAN/DECISION NEEDED: choose the canonical direction first — either (a) author a real CLAUDE.md→console templating transform (handles placeholder/idiom differences) with a generated-vs-committed guard like gen-commands, or (b) decide the console prompts are their own canonical surface and instead strengthen the parity guard (current marker approach) rather than generate. This is a design decision, not a mechanical implement.
 
 ## Remaining roadmap (impact order, with effort)
-R3 FSA state convergence (M–L, browser) · R14 generate HTML prompts from CLAUDE.md (M–L) · R7 PR-review counterpart (M) · R8 portfolio dashboard (M) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
+R3 FSA state convergence (M–L, browser — plan above) · R14 generate HTML prompts from CLAUDE.md (M–L, design decision — plan above) · R7 PR-review counterpart (M) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
 
 ## Where I left off
-R9 shipped at v1.2.0; full Test Command green (7 stages). The invariant
-runner makes the Verify convention executable — and surfaced that several
-invariants (INV-02, 06, 08, 16, 17) have prose Verify fields that could be
-rewritten as runnable commands to raise auto-coverage (follow-on, out of
-R9 scope). Next: R3 (needs a browser session) or R14/R7/R8 (testable
-here). A full §6a re-synthesis can run anytime.
+R8 shipped at v1.3.0; full Test Command green (8 stages). Roadmap done:
+R1,R2,R4,R5,R6,R8,R9,R10,R14(added). STOPPED this session: R3 (browser-only)
+and R14 (lossy transform / design decision) — both have plans above and
+need a different mode than a headless /broad-implement. Cheap follow-on
+still open: make INV-02/06/08/16/17 Verify fields runnable. Good next
+moves: R7 (testable here), a fresh §6a re-synthesis, or tackle R3 in a
+browser session.

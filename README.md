@@ -110,6 +110,7 @@ Two optional helpers (both fail-safe, both covered by the Test Command):
 - **SessionStart context hook** (`scripts/cycle-context.mjs`) — auto-loads the substrate (STATE + current standing + invariant count) into every new session, so you never have to paste it. Enable by copying the script and adding a `SessionStart` hook to `.claude/settings.json` (see CLAUDE.md "Cycle State & Memory" for the snippet). With no `.cycle/` it prints nothing.
 - **Metrics report** (`scripts/render-metrics.mjs`) — renders `.cycle/metrics.csv` into a markdown trend report (table + net-score/Category-D sparklines + cumulative summary). Run `node scripts/render-metrics.mjs` anytime.
 - **Executable invariant runner** (`scripts/invariant-check.mjs`) — runs every invariant whose `Verify:` field is a command and reports PASS/FAIL (prose/test-name `Verify:` fields are MANUAL). Write `Verify:` as a runnable command and the invariant becomes a test — the automated half of the §4v probe. `--list` shows the classification.
+- **Portfolio dashboard** (`scripts/portfolio.mjs`) — aggregates several projects' `PROJECT_HEALTH.md` into one board (lowest overall first = audit next) so you can see across your whole portfolio which project needs attention. Pass the `PROJECT_HEALTH.md` paths.
 
 Two commands navigate it:
 - **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.

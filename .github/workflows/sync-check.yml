@@ -26,3 +26,5 @@ jobs:
         run: node tests/cycle-context.test.mjs
       - name: Invariant runner regression test
         run: node tests/invariant-check.test.mjs
+      - name: Portfolio dashboard regression test
+        run: node tests/portfolio.test.mjs
