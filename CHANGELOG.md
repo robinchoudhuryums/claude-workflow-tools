@@ -5,6 +5,16 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.2.0 — 2026-06-04
+
+### Added
+- Executable invariant runner (`scripts/invariant-check.mjs`, R9): runs
+  every invariant whose `Verify:` field is a command and reports
+  PASS/FAIL; prose/test-name fields are MANUAL. `--list` shows the
+  classification. The automated half of the §4v invariant probe.
+- Regression test `tests/invariant-check.test.mjs` (INV-26), wired into
+  the Test Command + CI.
+
 ## 1.1.0 — 2026-06-04
 
 ### Added

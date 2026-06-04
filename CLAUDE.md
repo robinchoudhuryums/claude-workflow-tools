@@ -142,6 +142,15 @@ Two optional helpers operate on this state (both fail-safe and additive):
   markdown trend report (per-row table + net-score / Category-D
   sparklines + cumulative summary). Run it anytime; `--out FILE` writes.
 
+And one helper operates on the invariant library:
+- `scripts/invariant-check.mjs` — the executable invariant runner. Reads
+  the library (`.cycle/config.md` or CLAUDE.md), runs every invariant
+  whose `Verify:` field is a command (`node …`, `npm …`, `./…`, …) and
+  reports PASS/FAIL; prose/test-name `Verify:` fields are reported
+  MANUAL. This is the automated half of the §4v invariant probe — write
+  `Verify:` as a runnable command and the invariant becomes a test.
+  `--list` shows the classification without running.
+
 This is **fully optional and additive**: if `.cycle/` does not exist, every
 command behaves exactly as it always has (emit the handoff/summary block in
 chat; copy-paste it into the next session). Deleting `.cycle/` returns you to
@@ -1281,7 +1290,7 @@ ask for approval before writing any files.
 ### Verification Pass (Section 4v in HTML tool)
 
 Independent verification in a fresh session with no implementation context. Produces a VERIFICATION BLOCK with:
-- Invariant probe results (re-probes cycle-touched + 5 random from library)
+- Invariant probe results (re-probes cycle-touched + 5 random from library; for invariants whose `Verify:` is a runnable command, `scripts/invariant-check.mjs` probes them automatically)
 - Regression count (hard definition: worse under realistic load = regression)
 - Cycle execution quality (3 yes/no facts with evidence)
 - Coverage gap report (Category D candidates — fixes without regression tests)

@@ -37,22 +37,23 @@ Updated: 2026-06-04
 - Did NOT rewrite the §1 Layered Audit (p1) — flagged as a design decision rather than a mechanical sync (per /broad-implement "stop if more complex than expected").
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
-## Roadmap progress (now at VERSION 1.1.0)
+## Roadmap progress (now at VERSION 1.2.0)
 - DONE R4 — /cycle-init scaffolding command.
 - DONE R5 — VERSION + CHANGELOG.md; /sync-commands version report; guard checks both (INV-23).
 - DONE R10 — .cycle/estimates.csv + /reflect estimate-vs-actual step.
 - DONE R6 — SessionStart context hook (scripts/cycle-context.mjs) + .claude/settings.json; tests/cycle-context.test.mjs (INV-24).
 - DONE R2 — metrics report renderer (scripts/render-metrics.mjs); tests/render-metrics.test.mjs (INV-25).
+- DONE R9 — executable invariant runner (scripts/invariant-check.mjs): runs command-style Verify fields, reports PASS/FAIL/MANUAL; tests/invariant-check.test.mjs (INV-26). On this repo: 12/12 runnable invariants PASS, 13 manual.
 - DONE R14 — added to ROADMAP (generate HTML prompts from CLAUDE.md; distinct from R3).
 - STOPPED R3 — FSA state-store convergence: browser-only, unverifiable headless, Tier-3 (M–L). Needs its own plan + manual browser verification.
 
 ## Remaining roadmap (impact order, with effort)
-R9 invariants-as-tests library (M–L) · R3 FSA state convergence (M–L, browser) · R14 generate HTML prompts from CLAUDE.md (M–L) · R7 PR-review counterpart (M) · R8 portfolio dashboard (M) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
+R3 FSA state convergence (M–L, browser) · R14 generate HTML prompts from CLAUDE.md (M–L) · R7 PR-review counterpart (M) · R8 portfolio dashboard (M) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
 
 ## Where I left off
-R6, R2, R14 shipped at v1.1.0; full Test Command green (gen --check +
-check-html + sync guard + guard.test + render-metrics.test +
-cycle-context.test). The SessionStart hook is dogfooded via
-.claude/settings.json in this repo. Next: pick a remaining roadmap item
-(R9 is the highest-impact testable-here one; R3 needs a browser). A full
-§6a re-synthesis of Cycles 1–2 + roadmap work can run anytime.
+R9 shipped at v1.2.0; full Test Command green (7 stages). The invariant
+runner makes the Verify convention executable — and surfaced that several
+invariants (INV-02, 06, 08, 16, 17) have prose Verify fields that could be
+rewritten as runnable commands to raise auto-coverage (follow-on, out of
+R9 scope). Next: R3 (needs a browser session) or R14/R7/R8 (testable
+here). A full §6a re-synthesis can run anytime.
