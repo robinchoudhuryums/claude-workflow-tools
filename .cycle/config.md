@@ -8,7 +8,7 @@ are the template/schema for consuming projects, not this repo's config.
 ## Cycle Workflow Config
 
 ### Test Command
-node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs
+node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs
 
 ### Health Dimensions
 Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
@@ -52,6 +52,8 @@ INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interp
 INV-21 | A failed localStorage write surfaces via storageWarn (console.warn + one-shot alert) rather than being silently swallowed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (storageWarn check)
 INV-22 | The sync guard fails closed on injected drift (removed capability marker, stale .claude/commands file, README command without a CLAUDE.md template, workflow block dropped from the HTML) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
 INV-23 | VERSION (semver) and CHANGELOG.md exist and are non-empty; bumped when command semantics, the config schema, or tooling change | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (VERSION/CHANGELOG check)
+INV-24 | The SessionStart hook (cycle-context.mjs) emits the substrate block when .cycle/ exists and stays silent + exits 0 when it does not (never breaks a session) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/cycle-context.test.mjs
+INV-25 | render-metrics.mjs parses metrics.csv (incl. quoted comma fields) and reports correct cumulative totals + sparklines | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/render-metrics.test.mjs
 
 ### Policy Configuration
 Policy threshold: 4/10

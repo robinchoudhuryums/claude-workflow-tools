@@ -130,6 +130,18 @@ copy-paste, keep a `.cycle/` directory at the project root:
   effort estimates.
 - `PROJECT_HEALTH.md` stays at the repo root (see §7 in the HTML tool).
 
+Two optional helpers operate on this state (both fail-safe and additive):
+- `scripts/cycle-context.mjs` — a **SessionStart** hook that auto-loads
+  the substrate (STATE + current standing + invariant count) into every
+  new session, retiring the "paste the systems map every session"
+  friction. Enable it by copying the script and adding to
+  `.claude/settings.json`:
+  `{ "hooks": { "SessionStart": [ { "hooks": [ { "type": "command", "command": "node scripts/cycle-context.mjs" } ] } ] } }`
+  With no `.cycle/` it prints nothing and never fails the session.
+- `scripts/render-metrics.mjs` — renders `.cycle/metrics.csv` into a
+  markdown trend report (per-row table + net-score / Category-D
+  sparklines + cumulative summary). Run it anytime; `--out FILE` writes.
+
 This is **fully optional and additive**: if `.cycle/` does not exist, every
 command behaves exactly as it always has (emit the handoff/summary block in
 chat; copy-paste it into the next session). Deleting `.cycle/` returns you to

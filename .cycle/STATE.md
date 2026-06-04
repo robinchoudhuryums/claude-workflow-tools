@@ -37,16 +37,22 @@ Updated: 2026-06-04
 - Did NOT rewrite the §1 Layered Audit (p1) — flagged as a design decision rather than a mechanical sync (per /broad-implement "stop if more complex than expected").
 - F03 implemented as marker + structural-block parity checks (bounded), not full HTML/CLAUDE.md generation convergence (that is R3).
 
-## Roadmap progress
-- DONE R4 — /cycle-init scaffolding command (creates .cycle/ STATE/metrics/estimates + PROJECT_HEALTH.md, idempotent).
-- DONE R5 — VERSION + CHANGELOG.md; /sync-commands reports template version; guard checks both exist (INV-23).
-- DONE R10 — .cycle/estimates.csv convention + /reflect estimate-vs-actual step.
-- STOPPED R3 — "Converge the HTML's two state stores via the File System Access API" is browser-only (FSA needs a secure context + user gesture) and cannot be verified in this headless environment; it is Tier-3 (M–L). Needs its own plan + manual browser verification before implementing. See FOLLOW-ON.
+## Roadmap progress (now at VERSION 1.1.0)
+- DONE R4 — /cycle-init scaffolding command.
+- DONE R5 — VERSION + CHANGELOG.md; /sync-commands version report; guard checks both (INV-23).
+- DONE R10 — .cycle/estimates.csv + /reflect estimate-vs-actual step.
+- DONE R6 — SessionStart context hook (scripts/cycle-context.mjs) + .claude/settings.json; tests/cycle-context.test.mjs (INV-24).
+- DONE R2 — metrics report renderer (scripts/render-metrics.mjs); tests/render-metrics.test.mjs (INV-25).
+- DONE R14 — added to ROADMAP (generate HTML prompts from CLAUDE.md; distinct from R3).
+- STOPPED R3 — FSA state-store convergence: browser-only, unverifiable headless, Tier-3 (M–L). Needs its own plan + manual browser verification.
+
+## Remaining roadmap (impact order, with effort)
+R9 invariants-as-tests library (M–L) · R3 FSA state convergence (M–L, browser) · R14 generate HTML prompts from CLAUDE.md (M–L) · R7 PR-review counterpart (M) · R8 portfolio dashboard (M) · R13 prompt-output harness (M) · R11 DW orchestrator (L, gated) · R12 multi-operator (L).
 
 ## Where I left off
-R4/R5/R10 shipped (now at VERSION 1.0.0); full Test Command green
-(gen --check + check-html + sync guard + guard.test). R3 deferred —
-it needs a browser to build/verify (File System Access API). Next:
-either plan R3 properly (with manual browser verification), or pick
-another roadmap item — see the impact-ordered list provided to the
-operator. A full §6a re-synthesis can run anytime.
+R6, R2, R14 shipped at v1.1.0; full Test Command green (gen --check +
+check-html + sync guard + guard.test + render-metrics.test +
+cycle-context.test). The SessionStart hook is dogfooded via
+.claude/settings.json in this repo. Next: pick a remaining roadmap item
+(R9 is the highest-impact testable-here one; R3 needs a browser). A full
+§6a re-synthesis of Cycles 1–2 + roadmap work can run anytime.

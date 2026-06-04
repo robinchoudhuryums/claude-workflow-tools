@@ -106,6 +106,10 @@ For session-to-session continuity without manual copy-paste, projects can keep a
 
 Run **`/cycle-init`** to scaffold all of the above (and `PROJECT_HEALTH.md`) in one step — it only creates what's missing.
 
+Two optional helpers (both fail-safe, both covered by the Test Command):
+- **SessionStart context hook** (`scripts/cycle-context.mjs`) — auto-loads the substrate (STATE + current standing + invariant count) into every new session, so you never have to paste it. Enable by copying the script and adding a `SessionStart` hook to `.claude/settings.json` (see CLAUDE.md "Cycle State & Memory" for the snippet). With no `.cycle/` it prints nothing.
+- **Metrics report** (`scripts/render-metrics.mjs`) — renders `.cycle/metrics.csv` into a markdown trend report (table + net-score/Category-D sparklines + cumulative summary). Run `node scripts/render-metrics.mjs` anytime.
+
 Two commands navigate it:
 - **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
 - **`/cycle-resume`** — continues an in-progress *implementation* thread. It carries forward **substrate + facts** (systems map, invariants, what's done/pending) but **never inherits the prior session's findings as authoritative** — a new audit always uses fresh eyes. Resume is for continuation, not re-auditing.

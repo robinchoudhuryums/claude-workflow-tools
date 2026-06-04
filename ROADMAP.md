@@ -83,6 +83,18 @@ Item IDs (R#) are stable references for planning sessions.
   and become both documentation and executable tests — a reusable
   product beyond this workflow.
 
+- **R14 — Generate the HTML console's prompts from CLAUDE.md.** `effort: M–L`
+  Distinct from R3 (which converges *state*); this converges *prompt
+  content*. The HTML's static §-prompts are a hand-maintained fourth
+  copy of the commands that can silently drift from the canonical
+  CLAUDE.md bodies — Cycle 1 found exactly this (F02/F03), and the guard
+  can only marker-pin known divergence points, not full equivalence.
+  Generating the console's prompt text from CLAUDE.md (the way
+  `.claude/commands/` already is) would retire the whole drift class and
+  close the last unguarded gap (§1-audit parity). The hard part is the
+  transform: console prompts use `[PASTE …]` placeholders + inline
+  per-project config, so it's a templating job, not a copy.
+
 ## Tier 4 — Future possibilities (exploratory)
 
 - **R11 — Dynamic Workflows orchestrator reference.**

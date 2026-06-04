@@ -20,3 +20,7 @@ jobs:
         run: node scripts/check-template-sync.mjs
       - name: Guard regression test (fails closed on injected drift)
         run: node tests/guard.test.mjs
+      - name: Metrics renderer regression test
+        run: node tests/render-metrics.test.mjs
+      - name: SessionStart context hook regression test
+        run: node tests/cycle-context.test.mjs

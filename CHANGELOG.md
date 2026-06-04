@@ -5,6 +5,20 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.1.0 — 2026-06-04
+
+### Added
+- SessionStart context hook (`scripts/cycle-context.mjs`) — auto-loads the
+  cycle substrate (STATE + current standing + invariant count) into each
+  new session. Wire via `.claude/settings.json`. (R6)
+- Metrics report renderer (`scripts/render-metrics.mjs`) — turns
+  `.cycle/metrics.csv` into a markdown trend report (table + sparklines +
+  cumulative summary). (R2)
+- Regression tests for both (`tests/render-metrics.test.mjs`,
+  `tests/cycle-context.test.mjs`), wired into the Test Command + CI.
+- ROADMAP R14 (generate the HTML console prompts from CLAUDE.md) recorded.
+
+
 ## 1.0.0 — 2026-06-04
 
 First versioned release. Consolidates the templates, the interactive HTML
