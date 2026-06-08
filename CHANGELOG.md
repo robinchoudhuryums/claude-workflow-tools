@@ -5,6 +5,36 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.9.0 — 2026-06-04
+
+P11 from the downstream field review — a metrics.csv SCHEMA change (additive,
+backward-compatible).
+
+### Added
+- `defensive_count` — a SECONDARY signal in .cycle/metrics.csv: the
+  Defensive/structural count from /reflect's three-way tally. It does NOT
+  enter net_score (the strict "would it fire this month?" gate is
+  deliberate), but it makes hardening cycles visible in the trend instead
+  of reading as a flat ~0. Surfaced by `render-metrics` (a "def" column +
+  a cumulative "Defensive/structural items (secondary)" line).
+- Appended as the LAST column (after the quoted notes) so older files
+  parse unchanged. `render-metrics` shows the column only when present;
+  tests cover both the new schema and an old (pre-column) file.
+
+### Changed
+- CLAUDE.md metrics schema note, /reflect METRICS step, and /cycle-init
+  header now include defensive_count. This repo's .cycle/metrics.csv header
+  updated (existing rows read blank for it).
+
+### Downstream impact
+- Command-body changes -> re-pull via /sync-commands. For projects that
+  already have a .cycle/metrics.csv: optionally append `,defensive_count`
+  to the header to start populating it — existing rows keep working without
+  it (render-metrics tolerates the missing column). No data rewrite needed.
+
+### Still open from the review
+P10 (seam cadence wired), P4 (pair parity guard, maintainer-only). P6 declined.
+
 ## 1.8.0 — 2026-06-04
 
 P2 + P3 from the downstream field review — clarifications, no block-schema change.

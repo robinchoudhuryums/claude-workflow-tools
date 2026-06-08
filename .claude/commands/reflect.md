@@ -54,12 +54,15 @@ Should-have-been-deferred: [one line]
 METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
 of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
 row per cycle's reflection to .cycle/metrics.csv (header:
-date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
-with net_score, prod_fixes, new_failure_modes; take the `cycle` value from
-.cycle/STATE.md's Cycle field (the single source of truth — don't invent
-one); leave the synthesis-only columns blank. Do NOT also record these on
-an implement-phase row (the implement commands write STATE.md, not
-metrics). Skip if no .cycle/.
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count)
+with net_score, prod_fixes, new_failure_modes, and defensive_count (the
+Defensive/structural count from the tally above — a secondary signal that
+does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
+Cycle field (the single source of truth — don't invent one); leave the
+synthesis-only columns blank. defensive_count is the LAST column (after
+the quoted notes). Do NOT also record net_score/prod_fixes/
+new_failure_modes on an implement-phase row (the implement commands write
+STATE.md, not metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv

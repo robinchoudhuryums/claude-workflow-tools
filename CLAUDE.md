@@ -127,14 +127,20 @@ copy-paste, keep a `.cycle/` directory at the project root:
   `/cycle-status`.
 - `.cycle/metrics.csv` — per-cycle metrics appended by `/reflect` / synthesis.
   Header row (create on first write):
-  `date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes`
+  `date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count`
   `/reflect` appends a `phase=reflect` row (net_score, prod_fixes,
-  new_failure_modes); Health Synthesis appends a `phase=synthesis` row
-  (category_d_ratio, axis_b_lowest). `/cycle-status` reads it for trend.
-  net_score/prod_fixes/new_failure_modes are owned **only** by the
-  `phase=reflect` row — the implement commands write STATE.md, not
-  metrics, so never add a metrics row for an implement/plan/audit phase
-  or the CSV totals will double-count.
+  new_failure_modes, and defensive_count); Health Synthesis appends a
+  `phase=synthesis` row (category_d_ratio, axis_b_lowest). `/cycle-status`
+  reads it for trend. net_score/prod_fixes/new_failure_modes are owned
+  **only** by the `phase=reflect` row — the implement commands write
+  STATE.md, not metrics, so never add a metrics row for an
+  implement/plan/audit phase or the CSV totals will double-count.
+  `defensive_count` is a **secondary signal** (defensive/structural items
+  this cycle, from /reflect's three-way tally) — it does NOT enter
+  net_score (the strict gate is deliberate), but it makes hardening cycles
+  visible in the trend (`render-metrics`). It is appended as the last
+  column for backward-compat; older `metrics.csv` files without it still
+  parse (the column simply reads blank).
 - `.cycle/estimates.csv` — estimate-vs-actual calibration log, appended by
   `/reflect`. Header row (create on first write):
   `date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note`
@@ -1188,12 +1194,15 @@ Should-have-been-deferred: [one line]
 METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
 of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
 row per cycle's reflection to .cycle/metrics.csv (header:
-date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
-with net_score, prod_fixes, new_failure_modes; take the `cycle` value from
-.cycle/STATE.md's Cycle field (the single source of truth — don't invent
-one); leave the synthesis-only columns blank. Do NOT also record these on
-an implement-phase row (the implement commands write STATE.md, not
-metrics). Skip if no .cycle/.
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count)
+with net_score, prod_fixes, new_failure_modes, and defensive_count (the
+Defensive/structural count from the tally above — a secondary signal that
+does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
+Cycle field (the single source of truth — don't invent one); leave the
+synthesis-only columns blank. defensive_count is the LAST column (after
+the quoted notes). Do NOT also record net_score/prod_fixes/
+new_failure_modes on an implement-phase row (the implement commands write
+STATE.md, not metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv
@@ -1534,7 +1543,7 @@ missing — NEVER overwrite or modify a file that already exists.
    CLAUDE.md's "Cycle State & Memory" section, with Phase: idle and a
    "Where I left off" line pointing at the first audit.
 3. If .cycle/metrics.csv does not exist, create it with just the header:
-   date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
+   date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
 4. If .cycle/estimates.csv does not exist, create it with just the header:
    date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
 5. If PROJECT_HEALTH.md does not exist at the repo root, create it from

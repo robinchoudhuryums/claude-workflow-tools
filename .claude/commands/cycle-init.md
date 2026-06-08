@@ -8,7 +8,7 @@ missing — NEVER overwrite or modify a file that already exists.
    CLAUDE.md's "Cycle State & Memory" section, with Phase: idle and a
    "Where I left off" line pointing at the first audit.
 3. If .cycle/metrics.csv does not exist, create it with just the header:
-   date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
+   date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
 4. If .cycle/estimates.csv does not exist, create it with just the header:
    date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
 5. If PROJECT_HEALTH.md does not exist at the repo root, create it from
