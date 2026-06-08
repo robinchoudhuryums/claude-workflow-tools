@@ -114,7 +114,7 @@ Two optional helpers (both fail-safe, both covered by the Test Command):
 - **Executable invariant runner** (`scripts/invariant-check.mjs`) — runs every invariant whose `Verify:` field is a command and reports PASS/FAIL (prose/test-name `Verify:` fields are MANUAL). Write `Verify:` as a runnable command and the invariant becomes a test — the automated half of the §4v probe. `--list` shows the classification.
 - **Portfolio dashboard** (`scripts/portfolio.mjs`) — aggregates several projects' `PROJECT_HEALTH.md` into one board (lowest overall first = audit next) so you can see across your whole portfolio which project needs attention. Pass the `PROJECT_HEALTH.md` paths.
 
-The HTML console's Backup & Restore card also has an **experimental** "Connect repo folder" option (File System Access API, Chromium-based browsers) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — a draft of converging the console's `localStorage` with the repo's `.cycle/` state. It falls back to Export/Import where the API is unavailable.
+The HTML console's Backup & Restore card also has a **"Connect repo folder"** option (File System Access API, Chromium-based browsers, served over http(s)/localhost) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — converging the console's `localStorage` with the repo's `.cycle/` state, with the directory handle persisted across reloads via IndexedDB. It falls back to Export/Import where the API is unavailable.
 
 Two commands navigate it:
 - **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.

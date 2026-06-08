@@ -1482,7 +1482,7 @@ Policy responses triggered: [list categories, or "None"]
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a3142">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div style="font-size:11px;color:#4e5e7a">Experimental — sync state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers). Falls back to Export/Import elsewhere.</div>
+          <div style="font-size:11px;color:#4e5e7a">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
           <div style="display:flex;gap:8px;flex-shrink:0">
             <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
             <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
@@ -2501,11 +2501,11 @@ function importStateFile(input){
   reader.readAsText(file);
 }
 
-// ─── R3 DRAFT — File System Access: persist console state to the repo's .cycle/ ───
-// EXPERIMENTAL and UNVERIFIED in a headless environment. Requires a browser
-// with the File System Access API (Chromium-based). All FSA calls are inside
-// click handlers and feature-detected, so this is a no-op at load and falls
-// back to Export/Import where the API is unavailable. Persists to
+// ─── R3 — File System Access: persist console state to the repo's .cycle/ ───
+// Browser-verified (Chromium, served over http(s)/localhost). Requires the
+// File System Access API. All FSA calls are inside click handlers and
+// feature-detected, so this is a no-op at load and falls back to
+// Export/Import where the API is unavailable. Persists to
 // .cycle/console-state.json in the connected repo (one secure-context grant
 // replaces repeated download/upload round-trips).
 let repoDirHandle = null;

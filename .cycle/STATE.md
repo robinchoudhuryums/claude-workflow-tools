@@ -22,12 +22,11 @@ Updated: 2026-06-04
 - DISAGREE P6 — declined (template has no baseline test run; rationale moot).
 
 ## Roadmap (1.x) — status
-- DONE: R1 (dogfood), R2 (render-metrics), R4 (/cycle-init), R5 (VERSION/CHANGELOG), R6 (SessionStart hook),
-  R8 (portfolio), R9 (invariant runner), R10 (estimates), R14 (console prompts generated from CLAUDE.md + --assert lock).
-- DONE-PENDING-BROWSER:
-  - R14 render — 5-min browser spot-check of §0–§5 (rendering, Fill fields, Copy).
-  - R3 File System Access — verify the Connect/Save→repo/Load←repo flow in Chromium over http://localhost
-    (headless parts done: IndexedDB persistence, permissions, fallback test).
+- DONE: R1 (dogfood), R2 (render-metrics), R3 (FSA repo sync — browser-verified), R4 (/cycle-init),
+  R5 (VERSION/CHANGELOG), R6 (SessionStart hook), R8 (portfolio), R9 (invariant runner), R10 (estimates),
+  R14 (console prompts generated from CLAUDE.md + --assert lock — browser-verified).
+- R3 + R14 browser checks PASSED (render of §0–§5 clean; FSA Connect/Save/Load/reconnect/fallback all work).
+  "Experimental/unverified" labels dropped.
 
 ## Decisions made (don't re-litigate)
 - HTML console §-prompts are GENERATED from CLAUDE.md (gen-html-prompts) and locked by --assert; every command-body
@@ -36,12 +35,12 @@ Updated: 2026-06-04
 - net_score stays a strict gate; hardening visibility comes from the separate defensive_count secondary signal (P11).
 
 ## Open follow-on items
-- The two browser-verified steps above (R14 render, R3 FSA flow).
 - Optional future: severity-weighted defensive signal (P11 shipped a count); expand parity markers (e.g. CHECKPOINT).
 - Full §6a Health re-synthesis of Cycle 3 can run anytime (would show net + a non-zero defensive_count).
+- Downstream HIPAA-RAG project: re-pull 1.6.0→1.10.x in one /sync-commands (P7 is the only block-schema change,
+  backward-tolerant; P11 optionally wants `,defensive_count` appended to that project's metrics.csv header).
 
 ## Where I left off
-v1.10.0; full Test Command green (10 stages). Cycle 3 (downstream field review) is fully implemented — P1–P11 done,
-P6 declined. Remaining work is the two browser-only verifications (R14 render, R3 FSA) and an optional re-synthesis.
-Downstream HIPAA-RAG project should re-pull 1.6.0→1.10.0 in one /sync-commands (P7 is the only block-schema change,
-backward-tolerant; P11 optionally wants `,defensive_count` appended to that project's metrics.csv header).
+v1.10.1; full Test Command green (10 stages). Cycle 3 (downstream field review) fully implemented (P1–P11 done, P6
+declined). R3 + R14 browser checks PASSED — both fully done, experimental labels dropped. No pending work in this
+repo except the optional re-synthesis and the downstream re-pull. Next fresh work would be a new audit cycle.

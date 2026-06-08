@@ -5,6 +5,22 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.10.1 — 2026-06-04
+
+R3 and R14 browser-verified — promoted out of "experimental/draft".
+
+### Changed
+- R3 (File System Access repo sync) and R14 (console §-prompts generated
+  from CLAUDE.md) passed their browser checks: §0–§5 render cleanly with
+  working Fill fields / Copy; FSA Connect / Save→repo / Load←repo /
+  reconnect / non-Chromium fallback all work.
+- Dropped the "experimental / unverified" labels (HTML Backup & Restore
+  card + code comment, README, ROADMAP) and marked R3/R14 DONE.
+
+### Downstream impact
+- None requiring a re-pull (UI label + docs only; no command bodies, config
+  schema, or block schema changed).
+
 ## 1.10.0 — 2026-06-04
 
 P10 from the downstream field review — wires the seam-audit cadence so the
