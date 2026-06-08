@@ -5,6 +5,28 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.9.1 — 2026-06-04
+
+P4 from the downstream field review — MAINTAINER-ONLY tooling; no command
+bodies changed, so downstream does NOT need to re-pull.
+
+### Added
+- Command-pair parity check in scripts/check-template-sync.mjs (P4):
+  asserts the near-duplicate command groups keep their SHARED behaviors in
+  sync, so updating one member can't silently leave the others behind —
+    - implement family (/implement, /broad-implement, /targeted-implement):
+      run-tests step, test-double scan, OPERATOR ACTIONS, manual-mode branch
+    - audit family (/audit, /targeted-audit): "fire in production this
+      month", OPERATOR ACTIONS SURFACED, "do not flag style preferences"
+  This is a GUARD, not factoring — the commands stay self-contained.
+- guard.test.mjs gains a 6th case: parity drift (a shared behavior dropped
+  from one pair member) is caught.
+
+### Notes
+- Chosen over the proposal's "factor the shared body" because the commands
+  are standalone prompts with no include mechanism; a guard preserves
+  self-containment while killing the drift surface.
+
 ## 1.9.0 — 2026-06-04
 
 P11 from the downstream field review — a metrics.csv SCHEMA change (additive,

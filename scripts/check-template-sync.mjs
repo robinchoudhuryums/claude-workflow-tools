@@ -132,6 +132,30 @@ for (const f of ['VERSION', 'CHANGELOG.md']) {
 if (versionOk) console.log('  ✓ VERSION and CHANGELOG.md present');
 else { failures++; console.log('  ✗ VERSION and/or CHANGELOG.md missing or empty (R5 — bump on every template change)'); }
 
+// ── Structural check 5: command-pair parity (P4) — the near-duplicate
+// command groups must keep their SHARED behaviors in sync, so updating one
+// member can't silently leave the others behind (no factoring; just a guard).
+const COMMAND_GROUPS = [
+  { name: 'implement family', cmds: ['implement', 'broad-implement', 'targeted-implement'],
+    markers: ['run tests', 'test doubles', 'operator actions', 'manual'] },
+  { name: 'audit family', cmds: ['audit', 'targeted-audit'],
+    markers: ['fire in production this month', 'operator actions surfaced', 'do not flag style preferences'] },
+];
+const cmdText = name => { try { return readFileSync(new URL(`.claude/commands/${name}.md`, root), 'utf8').toLowerCase(); } catch { return null; } };
+let parityFail = 0;
+for (const g of COMMAND_GROUPS) {
+  const loaded = g.cmds.map(c => [c, cmdText(c)]);
+  for (const m of g.markers) {
+    const missing = loaded.filter(([, txt]) => !txt || !txt.includes(m)).map(([c]) => c);
+    if (missing.length) {
+      parityFail++;
+      console.log(`  ✗ ${g.name}: shared behavior "${m}" missing from ${missing.join(', ')} (drift across the pair)`);
+    }
+  }
+}
+if (parityFail) failures += parityFail;
+else console.log(`  ✓ Command-pair parity — shared behaviors consistent across ${COMMAND_GROUPS.length} command groups`);
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

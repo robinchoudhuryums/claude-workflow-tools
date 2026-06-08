@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 3 — downstream field proposals (HIPAA RAG dogfooding) → template improvements
-Phase: implement (P1/P5/P8/P9 @1.6.0; P7 @1.7.0; P2/P3 @1.8.0; P11 @1.9.0)
+Phase: implement (P1/P5/P8/P9 @1.6.0; P7 @1.7.0; P2/P3 @1.8.0; P11 @1.9.0; P4 @1.9.1)
 Scope: Canonical Templates & Docs (command bodies)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs
 Updated: 2026-06-04
@@ -16,7 +16,8 @@ Updated: 2026-06-04
 - DONE (v1.8.0) P2 — finding IDs declared session-local in /audit; /reflect + Seams assign INV-N from library max.
 - DONE (v1.8.0) P3 — cycle-number single source of truth (STATE.md Cycle) + increment rule; /reflect stamps metrics cycle from it; /cycle-status surfaces/flags it.
 - DONE (v1.9.0) P11 — defensive_count secondary metric in metrics.csv (appended last, backward-compat); /reflect writes it, render-metrics surfaces it (def column + cumulative "secondary" line); net_score stays strict. Test covers new + old-file schemas.
-- CONCURRED, PENDING: P10 (seam cadence wired — M–L), P4 (pair parity GUARD, not factoring — maintainer-only).
+- DONE (v1.9.1) P4 — command-pair parity GUARD in check-template-sync.mjs (implement family + audit family share-behavior markers) + guard.test 6th case. Maintainer-only (no command bodies changed; no downstream re-pull). Chosen over factoring (commands stay self-contained).
+- CONCURRED, PENDING: P10 (seam cadence wired — M–L).
 - DISAGREE: P6 (skip — rationale moot; template has no baseline test run).
 
 ## In progress (facts to carry forward — NOT judgments)
