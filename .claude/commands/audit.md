@@ -46,6 +46,11 @@ For each finding:
 DO NOT flag style preferences or speculative "could be cleaner"
 refactoring unless the current code is actively wrong.
 
+Finding IDs in the handoff block are SESSION-LOCAL labels (F1, F2, …) —
+not invariant-library IDs. INV-N IDs are assigned only when a rule is
+promoted to the Invariant Library (see /reflect), so parallel audit
+sessions can reuse F1/F2 without colliding.
+
 Do NOT produce an implementation plan — that is /plan. Produce a
 SESSION HANDOFF BLOCK:
 

@@ -5,6 +5,33 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.8.0 — 2026-06-04
+
+P2 + P3 from the downstream field review — clarifications, no block-schema change.
+
+### Changed
+- P2 — finding-ID namespacing made explicit:
+  - /audit states finding IDs are SESSION-LOCAL (F1, F2, …), not
+    invariant-library IDs, so parallel audits don't collide.
+  - /reflect (invariant growth) and the Seams audit (invariant discovery)
+    now assign INV-N by reading the library's current max and incrementing,
+    rather than the model picking a number.
+- P3 — cycle numbering single source of truth:
+  - Defined the increment rule (a new number begins only when a fresh
+    /broad-scan or /audit starts after the prior cycle's /reflect; initial
+    setup + first scan = Cycle 1) in CLAUDE.md "Cycle State & Memory".
+  - .cycle/STATE.md's Cycle field is authoritative; /reflect stamps the
+    metrics.csv cycle column from it; /cycle-status surfaces it and flags
+    any metrics row whose cycle disagrees.
+
+### Downstream impact
+- Command-body changes -> re-pull via /sync-commands. No block-schema or
+  data-format change. Console p1/p3 regenerated; --assert green.
+
+### Still open from the review
+P11 (defensive_count metric — schema change + backward-compat), P10 (seam
+cadence), P4 (pair parity guard). P6 declined.
+
 ## 1.7.0 — 2026-06-04
 
 P7 from the downstream field review — a handoff/summary BLOCK-SCHEMA change.

@@ -11,7 +11,8 @@ don't exist):
 Produce a CYCLE STATUS report:
 - Current standing: [latest synthesis scores / one-line health, or
   "no synthesis recorded yet"]
-- Active cycle & phase: [from STATE.md, or "none in progress"]
+- Active cycle & phase: [from STATE.md's Cycle field — the single source of
+  truth; flag if any metrics.csv row's cycle disagrees with it]
 - In-progress work: [what's partially done + the next concrete step,
   or "none"]
 - Open follow-on items: [list, or "none"]

@@ -108,6 +108,15 @@ thread* — it carries substrate + objective facts (what changed, what's
 pending, decisions made), never prior judgments. **Starting a new audit is
 always fresh** and never inherits the previous scan's findings as conclusions.
 
+**Cycle numbering (single source of truth):** the `Cycle:` field in
+`.cycle/STATE.md` is authoritative. It increments by 1 when a NEW audit
+cycle begins — a fresh `/broad-scan` or `/audit` started after the prior
+cycle's `/reflect` (or its Health Synthesis) completed; the initial
+`/setup-cycle` + first broad-scan is **Cycle 1**. Every phase within a
+cycle (audit → plan → implement → regression → reflect) carries the SAME
+number. `/reflect` stamps the `metrics.csv` `cycle` column from this field
+(never invents one), and `/cycle-status` surfaces it.
+
 ### Optional `.cycle/` state directory (per project)
 
 For projects that want lossless session-to-session continuity without manual
@@ -172,7 +181,7 @@ the pure copy-paste workflow with no loss.
 # Cycle State
 
 ## Current
-Cycle: [N or name]
+Cycle: [N — single source of truth; increments only when a new audit cycle begins]
 Phase: [audit | plan | implement | regression | verify | reflect | idle]
 Scope: [subsystem(s) or "broad"]
 Test Command: [from Cycle Workflow Config]
@@ -903,6 +912,11 @@ For each finding:
 DO NOT flag style preferences or speculative "could be cleaner"
 refactoring unless the current code is actively wrong.
 
+Finding IDs in the handoff block are SESSION-LOCAL labels (F1, F2, …) —
+not invariant-library IDs. INV-N IDs are assigned only when a rule is
+promoted to the Invariant Library (see /reflect), so parallel audit
+sessions can reuse F1/F2 without colliding.
+
 Do NOT produce an implementation plan — that is /plan. Produce a
 SESSION HANDOFF BLOCK:
 
@@ -1148,8 +1162,11 @@ Honest impact summary:
 - Was effort spent on dead code / zero-caller paths / future-proofing?
 
 Invariant growth: list rules this cycle establishes that the next
-Verification Pass should probe —
-[proposed ID] | [rule] | [subsystem/seam] | [Verify: test/assertion].
+Verification Pass should probe. Assign each a NEW invariant ID by reading
+the current maximum INV-N in the library and incrementing (INV-(max+1),
+INV-(max+2), …) — do not invent or reuse a number, so parallel sessions
+don't collide:
+[INV-N] | [rule] | [subsystem/seam] | [Verify: test/assertion].
 
 End with: the single most structurally significant change; the finding
 that should have been deferred.
@@ -1172,9 +1189,11 @@ METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
 of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
 row per cycle's reflection to .cycle/metrics.csv (header:
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
-with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
-columns blank. Do NOT also record these on an implement-phase row (the
-implement commands write STATE.md, not metrics). Skip if no .cycle/.
+with net_score, prod_fixes, new_failure_modes; take the `cycle` value from
+.cycle/STATE.md's Cycle field (the single source of truth — don't invent
+one); leave the synthesis-only columns blank. Do NOT also record these on
+an implement-phase row (the implement commands write STATE.md, not
+metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv
@@ -1345,7 +1364,7 @@ Independent verification in a fresh session with no implementation context. Prod
 Runs every 3-4 subsystem cycles. No implementation phase. Produces:
 - Seam inventory (boundaries between subsystems, explicit vs implicit contracts)
 - Invariant validation (PASS/FAIL/STALE/UNVERIFIABLE for each library entry)
-- Invariant discovery (new rules from seam analysis)
+- Invariant discovery (new rules from seam analysis; assign INV-N = library max + 1, never reuse a number)
 - Horizontal bug-shape observations (evidence for Axis B scoring)
 
 ### Health Synthesis (Section 6a in HTML tool)
@@ -1450,7 +1469,8 @@ don't exist):
 Produce a CYCLE STATUS report:
 - Current standing: [latest synthesis scores / one-line health, or
   "no synthesis recorded yet"]
-- Active cycle & phase: [from STATE.md, or "none in progress"]
+- Active cycle & phase: [from STATE.md's Cycle field — the single source of
+  truth; flag if any metrics.csv row's cycle disagrees with it]
 - In-progress work: [what's partially done + the next concrete step,
   or "none"]
 - Open follow-on items: [list, or "none"]

@@ -28,8 +28,11 @@ Honest impact summary:
 - Was effort spent on dead code / zero-caller paths / future-proofing?
 
 Invariant growth: list rules this cycle establishes that the next
-Verification Pass should probe —
-[proposed ID] | [rule] | [subsystem/seam] | [Verify: test/assertion].
+Verification Pass should probe. Assign each a NEW invariant ID by reading
+the current maximum INV-N in the library and incrementing (INV-(max+1),
+INV-(max+2), …) — do not invent or reuse a number, so parallel sessions
+don't collide:
+[INV-N] | [rule] | [subsystem/seam] | [Verify: test/assertion].
 
 End with: the single most structurally significant change; the finding
 that should have been deferred.
@@ -52,9 +55,11 @@ METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
 of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
 row per cycle's reflection to .cycle/metrics.csv (header:
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
-with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
-columns blank. Do NOT also record these on an implement-phase row (the
-implement commands write STATE.md, not metrics). Skip if no .cycle/.
+with net_score, prod_fixes, new_failure_modes; take the `cycle` value from
+.cycle/STATE.md's Cycle field (the single source of truth — don't invent
+one); leave the synthesis-only columns blank. Do NOT also record these on
+an implement-phase row (the implement commands write STATE.md, not
+metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv
