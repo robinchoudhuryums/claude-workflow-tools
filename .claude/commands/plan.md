@@ -28,7 +28,10 @@ Organize into:
 3. Defer but schedule — important, not urgent, or has dependencies
 
 If more than ~15 findings, split actions into Batch 1 (P0/Critical +
-highest-compliance-risk) and Batch 2 (rest); note the split.
+highest-compliance-risk) and Batch 2 (rest), and emit a complete,
+SEPARATE IMPLEMENTATION HANDOFF BLOCK for EACH batch (set the Batch field
+accordingly). Batch 2's block must stand alone — a fresh session must be
+able to run it from its block alone, so do not leave Batch 2 as prose.
 
 Then:
 - Findings to escalate to the roadmap (too large/structural)

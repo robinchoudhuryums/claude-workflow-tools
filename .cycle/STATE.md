@@ -1,11 +1,19 @@
 # Cycle State
 
 ## Current
-Cycle: 2 — test-coverage priority (implement + reflect done; full synthesis deferred)
-Phase: idle — pivoting to ROADMAP items next
-Scope: Tooling & Sync Infrastructure + Interactive Console (HTML)
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node tests/guard.test.mjs
+Cycle: 3 — downstream field proposals (HIPAA RAG dogfooding) → template improvements
+Phase: implement (P1/P5/P8/P9 done at v1.6.0)
+Scope: Canonical Templates & Docs (command bodies)
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs
 Updated: 2026-06-04
+
+## Downstream field proposals (from a HIPAA RAG dogfooding session)
+- DONE (v1.6.0) P1 — metrics.csv net_score ownership pinned to phase=reflect.
+- DONE (v1.6.0) P5 — /plan emits a separate IMPLEMENTATION HANDOFF BLOCK per batch.
+- DONE (v1.6.0) P8 — test-vs-prod-path probe in /regression (step 4) + /implement dep check.
+- DONE (v1.6.0) P9 — implement family scans test doubles before editing.
+- CONCURRED, PENDING: P7 (operator-actions field — block-schema ripple across 5 cmds), P2 (ID namespacing + INV-N=max+1), P3 (cycle-number SoT + increment rule), P11 (defensive_count secondary metric — schema change + backward-compat), P10 (seam cadence wired — M–L), P4 (pair parity GUARD, not factoring — maintainer-only).
+- DISAGREE: P6 (skip — rationale moot; template has no baseline test run).
 
 ## In progress (facts to carry forward — NOT judgments)
 - First broad-scan complete (8 findings F01–F08). F01–F03 implemented this session.

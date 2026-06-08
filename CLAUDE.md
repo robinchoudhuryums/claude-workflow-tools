@@ -122,6 +122,10 @@ copy-paste, keep a `.cycle/` directory at the project root:
   `/reflect` appends a `phase=reflect` row (net_score, prod_fixes,
   new_failure_modes); Health Synthesis appends a `phase=synthesis` row
   (category_d_ratio, axis_b_lowest). `/cycle-status` reads it for trend.
+  net_score/prod_fixes/new_failure_modes are owned **only** by the
+  `phase=reflect` row — the implement commands write STATE.md, not
+  metrics, so never add a metrics row for an implement/plan/audit phase
+  or the CSV totals will double-count.
 - `.cycle/estimates.csv` — estimate-vs-actual calibration log, appended by
   `/reflect`. Header row (create on first write):
   `date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note`
@@ -581,6 +585,9 @@ Rules:
 - After each fix, briefly note: what changed, files touched, anything
   unexpected
 - Check Common Gotchas before each fix to avoid re-introducing known issues
+- Before editing a module, scan for its test doubles — mocks/stubs/fixtures
+  of that module, especially ones encoding the OLD behavior; update them as
+  part of the fix, not reactively in RUN TESTS
 
 After all fixes are complete, do the following in order:
 
@@ -778,6 +785,9 @@ Rules:
 - Stop on unexpected complexity and describe before continuing
 - Stop if touching DO NOT TOUCH files or out-of-scope files
 - Check Common Gotchas before each action
+- Before editing a module, scan for its test doubles — mocks/stubs/fixtures
+  of that module, especially ones encoding the OLD behavior; update them as
+  part of the action, not reactively in the test step
 
 After all actions complete:
 
@@ -946,7 +956,10 @@ Organize into:
 3. Defer but schedule — important, not urgent, or has dependencies
 
 If more than ~15 findings, split actions into Batch 1 (P0/Critical +
-highest-compliance-risk) and Batch 2 (rest); note the split.
+highest-compliance-risk) and Batch 2 (rest), and emit a complete,
+SEPARATE IMPLEMENTATION HANDOFF BLOCK for EACH batch (set the Batch field
+accordingly). Batch 2's block must stand alone — a fresh session must be
+able to run it from its block alone, so do not leave Batch 2 as prose.
 
 Then:
 - Findings to escalate to the roadmap (too large/structural)
@@ -999,7 +1012,10 @@ Before starting: for every action listed as High/Very High risk, run the
 Pre-Implementation Dependency Check (identify every out-of-scope file
 that imports/calls the changed functions/exports; describe what would
 break) and confirm understanding before implementing those actions.
-Low-risk actions may proceed.
+Low-risk actions may proceed. Also confirm the path your change affects is
+the one that runs in production — not just an in-memory / fallback / mock
+path; where a real (e.g. DB-backed) path exists alongside a fallback,
+implement and test BOTH.
 
 Rules:
 - Implement ONLY the actions in the handoff block, in order
@@ -1007,6 +1023,11 @@ Rules:
 - Stop on unexpected complexity and describe before continuing
 - Stop if an action requires touching out-of-scope files
 - Check Common Gotchas before each action
+- Before editing a module, scan for its test doubles — mocks/stubs/fixtures
+  of that module, especially ones encoding the OLD behavior (a factory mock
+  that throws on a newly-added export, a non-date-scoped mock, a fixture
+  asserting the prior output). Update them as part of the change, not
+  reactively in RUN TESTS.
 - After each action, note: what changed, files touched, anything unexpected
 
 After all actions complete, in order:
@@ -1063,12 +1084,16 @@ Based on the systems map and the changes made:
 3. For each risk, explicitly confirm whether it materialized or was
    negated (cascade configs, zero callers, idempotent ops, existing
    indexes, defaults) — validate, don't just list
-4. Cross-reference the changes against the invariant library (Cycle
+4. Confirm the path the tests exercise IS the path that runs in
+   production — flag any change that passes via an in-memory / fallback /
+   mock path but is broken or untested on the real (e.g. DB-backed)
+   production path (Parallel Source-of-Truth Drift)
+5. Cross-reference the changes against the invariant library (Cycle
    Workflow Config); flag any invariant at risk, and run its Verify test
    if one is defined
-5. If a Deploy Command is configured for a touched subsystem, note which
+6. If a Deploy Command is configured for a touched subsystem, note which
    risks are git-verified vs. only verifiable after deploy
-6. Note any docs (CLAUDE.md / README / roadmap) needing updates
+7. Note any docs (CLAUDE.md / README / roadmap) needing updates
 
 Prioritize the verification list by likelihood of breakage. Then:
 
@@ -1131,11 +1156,13 @@ Most structurally significant change: [one line]
 Should-have-been-deferred: [one line]
 ---END CYCLE SUMMARY BLOCK---
 
-METRICS (optional — only if .cycle/ exists): append a phase=reflect row
-to .cycle/metrics.csv (header:
+METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
+of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
+row per cycle's reflection to .cycle/metrics.csv (header:
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
 with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
-columns blank. Skip if no .cycle/.
+columns blank. Do NOT also record these on an implement-phase row (the
+implement commands write STATE.md, not metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv

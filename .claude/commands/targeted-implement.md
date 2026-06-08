@@ -16,6 +16,9 @@ Rules:
 - Stop on unexpected complexity and describe before continuing
 - Stop if touching DO NOT TOUCH files or out-of-scope files
 - Check Common Gotchas before each action
+- Before editing a module, scan for its test doubles — mocks/stubs/fixtures
+  of that module, especially ones encoding the OLD behavior; update them as
+  part of the action, not reactively in the test step
 
 After all actions complete:
 

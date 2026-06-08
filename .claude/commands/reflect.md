@@ -48,11 +48,13 @@ Most structurally significant change: [one line]
 Should-have-been-deferred: [one line]
 ---END CYCLE SUMMARY BLOCK---
 
-METRICS (optional — only if .cycle/ exists): append a phase=reflect row
-to .cycle/metrics.csv (header:
+METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
+of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
+row per cycle's reflection to .cycle/metrics.csv (header:
 date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
 with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
-columns blank. Skip if no .cycle/.
+columns blank. Do NOT also record these on an implement-phase row (the
+implement commands write STATE.md, not metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv

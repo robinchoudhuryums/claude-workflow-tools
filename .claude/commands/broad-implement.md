@@ -24,6 +24,9 @@ Rules:
 - After each fix, briefly note: what changed, files touched, anything
   unexpected
 - Check Common Gotchas before each fix to avoid re-introducing known issues
+- Before editing a module, scan for its test doubles — mocks/stubs/fixtures
+  of that module, especially ones encoding the OLD behavior; update them as
+  part of the fix, not reactively in RUN TESTS
 
 After all fixes are complete, do the following in order:
 

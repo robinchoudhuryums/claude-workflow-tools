@@ -15,7 +15,10 @@ Before starting: for every action listed as High/Very High risk, run the
 Pre-Implementation Dependency Check (identify every out-of-scope file
 that imports/calls the changed functions/exports; describe what would
 break) and confirm understanding before implementing those actions.
-Low-risk actions may proceed.
+Low-risk actions may proceed. Also confirm the path your change affects is
+the one that runs in production — not just an in-memory / fallback / mock
+path; where a real (e.g. DB-backed) path exists alongside a fallback,
+implement and test BOTH.
 
 Rules:
 - Implement ONLY the actions in the handoff block, in order
@@ -23,6 +26,11 @@ Rules:
 - Stop on unexpected complexity and describe before continuing
 - Stop if an action requires touching out-of-scope files
 - Check Common Gotchas before each action
+- Before editing a module, scan for its test doubles — mocks/stubs/fixtures
+  of that module, especially ones encoding the OLD behavior (a factory mock
+  that throws on a newly-added export, a non-date-scoped mock, a fixture
+  asserting the prior output). Update them as part of the change, not
+  reactively in RUN TESTS.
 - After each action, note: what changed, files touched, anything unexpected
 
 After all actions complete, in order:

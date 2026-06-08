@@ -5,6 +5,32 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.6.0 — 2026-06-04
+
+Field proposals from a downstream dogfooding session (HIPAA RAG app).
+
+### Changed
+- P1 — pinned metrics.csv ownership: net_score/prod_fixes/new_failure_modes
+  are written ONLY by the phase=reflect row; implement commands write
+  STATE.md, not metrics. Closes a double-count footgun. (CLAUDE.md Cycle
+  State note + /reflect METRICS step.)
+- P5 — /plan now emits a complete, SEPARATE IMPLEMENTATION HANDOFF BLOCK
+  per batch (Batch 2 must stand alone), so a split survives a fresh session.
+- P8 — added a "is the tested path the production path?" probe to
+  /regression (new step 4) and the /implement dependency check, catching
+  Parallel-Source-of-Truth drift during implement instead of after.
+- P9 — implement family (/implement, /broad-implement, /targeted-implement)
+  now scans for a module's test doubles (mocks/stubs/fixtures encoding the
+  OLD behavior) BEFORE editing, not reactively in RUN TESTS.
+
+### Notes
+- Command-body changes -> downstream must re-pull via /sync-commands.
+- No handoff/summary block SCHEMA changed, so cross-command paste
+  compatibility is unaffected. Console prompts regenerated + --assert green.
+- Still open from the same review (future versions): P7 (operator-actions
+  field), P2 (ID namespacing), P3 (cycle-number SoT), P11 (defensive signal),
+  P10 (seam cadence), P4 (pair parity guard).
+
 ## 1.5.0 — 2026-06-04
 
 ### Changed

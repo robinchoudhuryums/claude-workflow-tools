@@ -10,12 +10,16 @@ Based on the systems map and the changes made:
 3. For each risk, explicitly confirm whether it materialized or was
    negated (cascade configs, zero callers, idempotent ops, existing
    indexes, defaults) — validate, don't just list
-4. Cross-reference the changes against the invariant library (Cycle
+4. Confirm the path the tests exercise IS the path that runs in
+   production — flag any change that passes via an in-memory / fallback /
+   mock path but is broken or untested on the real (e.g. DB-backed)
+   production path (Parallel Source-of-Truth Drift)
+5. Cross-reference the changes against the invariant library (Cycle
    Workflow Config); flag any invariant at risk, and run its Verify test
    if one is defined
-5. If a Deploy Command is configured for a touched subsystem, note which
+6. If a Deploy Command is configured for a touched subsystem, note which
    risks are git-verified vs. only verifiable after deploy
-6. Note any docs (CLAUDE.md / README / roadmap) needing updates
+7. Note any docs (CLAUDE.md / README / roadmap) needing updates
 
 Prioritize the verification list by likelihood of breakage. Then:
 
