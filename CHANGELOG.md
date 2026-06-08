@@ -5,6 +5,46 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.11.0 — 2026-06-08
+
+R7 — PR-review counterpart. The cycle grades health over time; this adds a
+sibling that grades health per-change.
+
+### Added
+- New `/pr-review` command: applies the cycle's audit rubrics
+  (severity/confidence, "would it fire in production this month," the hard
+  regression definition, the test-vs-production-path and test-double
+  probes, and an invariant cross-check) to a single PR's diff. Read-only;
+  emits a PR REVIEW BLOCK with a verdict + blocking items. Runs by hand
+  (`/pr-review 142`) or off a `subscribe_pr_activity` webhook event; posts
+  to the PR only on operator request, and treats PR/comment text inside
+  webhook / untrusted-external envelopes as untrusted.
+- PR REVIEW BLOCK added to the Handoff Block Formats reference.
+- Guard marker for the new command in `check-template-sync.mjs`; README
+  slash-command + handoff-block tables and a Key Concepts note.
+
+### Downstream impact
+- New command — re-pull via `/sync-commands` to pick up
+  `.claude/commands/pr-review.md`. Additive; no existing command body,
+  config schema, or block schema changed. Not in the HTML console (it is
+  a per-change sibling, not a cycle phase), so `--assert` is unaffected.
+
+## 1.10.1 — 2026-06-04
+
+R3 and R14 browser-verified — promoted out of "experimental/draft".
+
+### Changed
+- R3 (File System Access repo sync) and R14 (console §-prompts generated
+  from CLAUDE.md) passed their browser checks: §0–§5 render cleanly with
+  working Fill fields / Copy; FSA Connect / Save→repo / Load←repo /
+  reconnect / non-Chromium fallback all work.
+- Dropped the "experimental / unverified" labels (HTML Backup & Restore
+  card + code comment, README, ROADMAP) and marked R3/R14 DONE.
+
+### Downstream impact
+- None requiring a re-pull (UI label + docs only; no command bodies, config
+  schema, or block schema changed).
+
 ## 1.10.0 — 2026-06-04
 
 P10 from the downstream field review — wires the seam-audit cadence so the

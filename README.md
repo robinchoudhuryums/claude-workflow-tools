@@ -69,6 +69,9 @@ When an Axis B category scores at or below the policy threshold for consecutive 
 ### Independent Verification
 A fresh session with no implementation context re-probes invariants, counts regressions with a hard definition (any behavior worse under realistic load = regression, regardless of "tradeoff" label), and checks whether fixes have corresponding regression tests.
 
+### Health per-change (`/pr-review`)
+The cycle grades health *over time*; `/pr-review` is its sibling for health *per change*. It applies the same rubrics — severity/confidence, "would it fire in production this month," the hard regression definition, plus the test-vs-production-path and test-double probes — to a single PR's diff, and emits a PR REVIEW BLOCK with a verdict and blocking items. It is read-only and runs either by hand (`/pr-review 142`) or off a `subscribe_pr_activity` webhook event; it posts to the PR only when you ask.
+
 ## Adapting for a New Project
 
 1. **Run `/setup-cycle`** in a Claude Code session connected to the project — produces a Cycle Workflow Config section and rotation plan
@@ -114,7 +117,7 @@ Two optional helpers (both fail-safe, both covered by the Test Command):
 - **Executable invariant runner** (`scripts/invariant-check.mjs`) — runs every invariant whose `Verify:` field is a command and reports PASS/FAIL (prose/test-name `Verify:` fields are MANUAL). Write `Verify:` as a runnable command and the invariant becomes a test — the automated half of the §4v probe. `--list` shows the classification.
 - **Portfolio dashboard** (`scripts/portfolio.mjs`) — aggregates several projects' `PROJECT_HEALTH.md` into one board (lowest overall first = audit next) so you can see across your whole portfolio which project needs attention. Pass the `PROJECT_HEALTH.md` paths.
 
-The HTML console's Backup & Restore card also has an **experimental** "Connect repo folder" option (File System Access API, Chromium-based browsers) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — a draft of converging the console's `localStorage` with the repo's `.cycle/` state. It falls back to Export/Import where the API is unavailable.
+The HTML console's Backup & Restore card also has a **"Connect repo folder"** option (File System Access API, Chromium-based browsers, served over http(s)/localhost) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — converging the console's `localStorage` with the repo's `.cycle/` state, with the directory handle persisted across reloads via IndexedDB. It falls back to Export/Import where the API is unavailable.
 
 Two commands navigate it:
 - **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
@@ -183,6 +186,7 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | `/cycle-init` | any | 1 | Scaffold the optional `.cycle/` state dir + `PROJECT_HEALTH.md` (idempotent) |
 | `/cycle-status` | any | 1 | Read-only: report standing + whether to resume or start fresh |
 | `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |
+| `/pr-review` | any | 1 | Apply the cycle's audit rubrics to a single PR (health per-change); runs by hand or off a PR webhook |
 | `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
 
 ## Handoff Block Types
@@ -198,6 +202,7 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | VERIFICATION BLOCK | Verification Pass | Health Synthesis |
 | SEAMS & INVARIANTS AUDIT BLOCK | Seams Audit | Next subsystem audit, Synthesis |
 | CYCLE SUMMARY BLOCK | `/reflect` | Health Synthesis |
+| PR REVIEW BLOCK | `/pr-review` | Operator (merge decision); optionally posted to the PR |
 
 ## Maintaining this repo
 
