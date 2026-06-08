@@ -56,15 +56,17 @@ const idx = name => header.indexOf(name);
 const data = rows.slice(1).map(r => Object.fromEntries(header.map((h, i) => [h, (r[i] ?? '').trim()])));
 
 const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
+const hasDef = idx('defensive_count') !== -1; // backward-compat: older files lack this column
 const out = [];
 out.push('# Cycle Metrics Report', '', `Source: \`${input}\` · ${data.length} rows · generated ${new Date().toISOString().slice(0, 10)}`, '');
 
-// Per-row table
-out.push('| date | cycle | phase | net | prod | new failure | Cat D | Axis B low | notes |');
-out.push('|---|---|---|---|---|---|---|---|---|');
+// Per-row table (the "Def" column appears only when the file carries defensive_count)
+out.push(`| date | cycle | phase | net | prod | new failure |${hasDef ? ' def |' : ''} Cat D | Axis B low | notes |`);
+out.push(`|---|---|---|---|---|---|${hasDef ? '---|' : ''}---|---|---|`);
 for (const d of data) {
   const note = (d.notes || '').replace(/\|/g, '\\|').slice(0, 70);
-  out.push(`| ${d.date} | ${d.cycle} | ${d.phase} | ${d.net_score} | ${d.prod_fixes} | ${d.new_failure_modes} | ${d.category_d_ratio || '—'} | ${(d.axis_b_lowest || '—').slice(0, 28)} | ${note} |`);
+  const def = hasDef ? ` ${d.defensive_count || '—'} |` : '';
+  out.push(`| ${d.date} | ${d.cycle} | ${d.phase} | ${d.net_score} | ${d.prod_fixes} | ${d.new_failure_modes} |${def} ${d.category_d_ratio || '—'} | ${(d.axis_b_lowest || '—').slice(0, 28)} | ${note} |`);
 }
 out.push('');
 
@@ -82,8 +84,9 @@ const lastSynth = [...data].reverse().find(d => d.phase === 'synthesis');
 out.push('## Summary',
   `- Cumulative net score: **${cumNet}** (${totalProd} production fixes − ${totalNFM} new failure modes)`,
   `- Cycles recorded: ${new Set(data.map(d => d.cycle)).size}`,
-  lastSynth ? `- Latest synthesis: net ${lastSynth.net_score}, Category D ${lastSynth.category_d_ratio || 'n/a'}, lowest Axis B = ${lastSynth.axis_b_lowest || 'n/a'}` : '- No synthesis row yet.',
-  '');
+  lastSynth ? `- Latest synthesis: net ${lastSynth.net_score}, Category D ${lastSynth.category_d_ratio || 'n/a'}, lowest Axis B = ${lastSynth.axis_b_lowest || 'n/a'}` : '- No synthesis row yet.');
+if (hasDef) out.push(`- Defensive/structural items (secondary — not in net score): **${sum('defensive_count')}** — hardening work that the strict net-score gate excludes.`);
+out.push('');
 
 const report = out.join('\n');
 if (outFile) { writeFileSync(outFile, report + '\n'); console.log(`Wrote ${outFile}`); }

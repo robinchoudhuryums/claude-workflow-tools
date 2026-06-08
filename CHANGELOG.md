@@ -5,6 +5,168 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.10.0 — 2026-06-04
+
+P10 from the downstream field review — wires the seam-audit cadence so the
+rotation isn't purely manual. Also a one-time .cycle/STATE.md tidy.
+
+### Added
+- `Seams Audit Cadence` — a command-readable Cycle Workflow Config field
+  (default: every 4 subsystem cycles), and a "Subsystem cycles since last
+  Seams audit" counter in .cycle/STATE.md.
+- /reflect increments the counter (a completed subsystem cycle); the Seams
+  & Invariants audit resets it to 0.
+- /audit reads the cadence + counter and flags at the top when a Seams
+  audit is DUE; /cycle-status surfaces "K of N (DUE?)". Both tolerate a
+  missing counter/cadence (treat as 0 / default 4).
+
+### Changed
+- /setup-cycle output and the config schema include the new field; README
+  Cycle Rotation documents it. Console p1/p4reflect regenerated; --assert green.
+- Tidied this repo's .cycle/STATE.md (removed contradictory STOPPED R3/R14
+  lines and stale Cycle-1/2 sections; corrected the version header).
+
+### Downstream impact
+- Command-body + config-schema change -> re-pull via /sync-commands. Fully
+  backward-tolerant: existing STATE.md without the counter and config
+  without the cadence both default gracefully.
+
+### Review status
+All concurred proposals (P1, P2, P3, P5, P7, P8, P9, P10, P11) shipped; P4
+shipped as a guard; P6 declined.
+
+## 1.9.1 — 2026-06-04
+
+P4 from the downstream field review — MAINTAINER-ONLY tooling; no command
+bodies changed, so downstream does NOT need to re-pull.
+
+### Added
+- Command-pair parity check in scripts/check-template-sync.mjs (P4):
+  asserts the near-duplicate command groups keep their SHARED behaviors in
+  sync, so updating one member can't silently leave the others behind —
+    - implement family (/implement, /broad-implement, /targeted-implement):
+      run-tests step, test-double scan, OPERATOR ACTIONS, manual-mode branch
+    - audit family (/audit, /targeted-audit): "fire in production this
+      month", OPERATOR ACTIONS SURFACED, "do not flag style preferences"
+  This is a GUARD, not factoring — the commands stay self-contained.
+- guard.test.mjs gains a 6th case: parity drift (a shared behavior dropped
+  from one pair member) is caught.
+
+### Notes
+- Chosen over the proposal's "factor the shared body" because the commands
+  are standalone prompts with no include mechanism; a guard preserves
+  self-containment while killing the drift surface.
+
+## 1.9.0 — 2026-06-04
+
+P11 from the downstream field review — a metrics.csv SCHEMA change (additive,
+backward-compatible).
+
+### Added
+- `defensive_count` — a SECONDARY signal in .cycle/metrics.csv: the
+  Defensive/structural count from /reflect's three-way tally. It does NOT
+  enter net_score (the strict "would it fire this month?" gate is
+  deliberate), but it makes hardening cycles visible in the trend instead
+  of reading as a flat ~0. Surfaced by `render-metrics` (a "def" column +
+  a cumulative "Defensive/structural items (secondary)" line).
+- Appended as the LAST column (after the quoted notes) so older files
+  parse unchanged. `render-metrics` shows the column only when present;
+  tests cover both the new schema and an old (pre-column) file.
+
+### Changed
+- CLAUDE.md metrics schema note, /reflect METRICS step, and /cycle-init
+  header now include defensive_count. This repo's .cycle/metrics.csv header
+  updated (existing rows read blank for it).
+
+### Downstream impact
+- Command-body changes -> re-pull via /sync-commands. For projects that
+  already have a .cycle/metrics.csv: optionally append `,defensive_count`
+  to the header to start populating it — existing rows keep working without
+  it (render-metrics tolerates the missing column). No data rewrite needed.
+
+### Still open from the review
+P10 (seam cadence wired), P4 (pair parity guard, maintainer-only). P6 declined.
+
+## 1.8.0 — 2026-06-04
+
+P2 + P3 from the downstream field review — clarifications, no block-schema change.
+
+### Changed
+- P2 — finding-ID namespacing made explicit:
+  - /audit states finding IDs are SESSION-LOCAL (F1, F2, …), not
+    invariant-library IDs, so parallel audits don't collide.
+  - /reflect (invariant growth) and the Seams audit (invariant discovery)
+    now assign INV-N by reading the library's current max and incrementing,
+    rather than the model picking a number.
+- P3 — cycle numbering single source of truth:
+  - Defined the increment rule (a new number begins only when a fresh
+    /broad-scan or /audit starts after the prior cycle's /reflect; initial
+    setup + first scan = Cycle 1) in CLAUDE.md "Cycle State & Memory".
+  - .cycle/STATE.md's Cycle field is authoritative; /reflect stamps the
+    metrics.csv cycle column from it; /cycle-status surfaces it and flags
+    any metrics row whose cycle disagrees.
+
+### Downstream impact
+- Command-body changes -> re-pull via /sync-commands. No block-schema or
+  data-format change. Console p1/p3 regenerated; --assert green.
+
+### Still open from the review
+P11 (defensive_count metric — schema change + backward-compat), P10 (seam
+cadence), P4 (pair parity guard). P6 declined.
+
+## 1.7.0 — 2026-06-04
+
+P7 from the downstream field review — a handoff/summary BLOCK-SCHEMA change.
+
+### Changed
+- P7 — operator-only state is now a first-class field, not prose:
+  - SESSION HANDOFF BLOCK (/audit) + TIER 2 HANDOFF BLOCK (/targeted-audit)
+    gain "OPERATOR ACTIONS SURFACED" (each line tagged BLOCKS DEPLOY: Y/N).
+  - IMPLEMENTATION HANDOFF BLOCK (/plan) gains "OPERATOR ACTIONS" carried
+    forward to implement.
+  - IMPLEMENTATION / BROAD SCAN / TARGETED SUMMARY BLOCKS subsume the old
+    "DEPLOY STEP:" footer into "OPERATOR ACTIONS / DEPLOY:" — an operator-
+    steps list (BLOCKS DEPLOY tags) plus the Deploy command line. The
+    v1.5.0 Deploy Command value is preserved as the "Deploy:" sub-line.
+  - Handoff Block Formats reference updated to match.
+
+### Downstream impact
+- BLOCK SCHEMA changed → re-pull via /sync-commands. The change is
+  additive/rename and backward-tolerant: an old handoff block pasted into a
+  new command is fine (missing field reads as None); the deploy command is
+  retained. No data migration.
+- Console §-prompts (p1/p2/p3) regenerated; --assert green.
+
+### Still open from the review
+P2 (ID namespacing), P3 (cycle-number SoT), P11 (defensive_count metric),
+P10 (seam cadence), P4 (pair parity guard). P6 declined.
+
+## 1.6.0 — 2026-06-04
+
+Field proposals from a downstream dogfooding session (HIPAA RAG app).
+
+### Changed
+- P1 — pinned metrics.csv ownership: net_score/prod_fixes/new_failure_modes
+  are written ONLY by the phase=reflect row; implement commands write
+  STATE.md, not metrics. Closes a double-count footgun. (CLAUDE.md Cycle
+  State note + /reflect METRICS step.)
+- P5 — /plan now emits a complete, SEPARATE IMPLEMENTATION HANDOFF BLOCK
+  per batch (Batch 2 must stand alone), so a split survives a fresh session.
+- P8 — added a "is the tested path the production path?" probe to
+  /regression (new step 4) and the /implement dependency check, catching
+  Parallel-Source-of-Truth drift during implement instead of after.
+- P9 — implement family (/implement, /broad-implement, /targeted-implement)
+  now scans for a module's test doubles (mocks/stubs/fixtures encoding the
+  OLD behavior) BEFORE editing, not reactively in RUN TESTS.
+
+### Notes
+- Command-body changes -> downstream must re-pull via /sync-commands.
+- No handoff/summary block SCHEMA changed, so cross-command paste
+  compatibility is unaffected. Console prompts regenerated + --assert green.
+- Still open from the same review (future versions): P7 (operator-actions
+  field), P2 (ID namespacing), P3 (cycle-number SoT), P11 (defensive signal),
+  P10 (seam cadence), P4 (pair parity guard).
+
 ## 1.5.0 — 2026-06-04
 
 ### Changed

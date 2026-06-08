@@ -70,6 +70,11 @@ expectFail('detects a workflow block dropped from the HTML console',
   d => writeFileSync(join(d, 'claude-code-guide-v2.html'), readFileSync(join(d, 'claude-code-guide-v2.html'), 'utf8').replaceAll('CYCLE SUMMARY BLOCK', 'CYCLE-SUMMARY-GONE')),
   /cycle summary block|reflect emits/i);
 
+// 6) Command-pair parity (P4): a shared behavior removed from one member of a pair is caught.
+expectFail('detects command-pair parity drift (shared behavior dropped from one member)',
+  d => { const f = join(d, '.claude', 'commands', 'broad-implement.md'); writeFileSync(f, readFileSync(f, 'utf8').replace(/test doubles/i, 'TEST-DOUBLES-REMOVED')); },
+  /shared behavior|drift across the pair/i);
+
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} guard test case(s) failed.`); process.exit(1); }

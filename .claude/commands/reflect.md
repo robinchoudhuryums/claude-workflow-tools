@@ -1,5 +1,6 @@
 Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics append below).
+during this session (other than the optional metrics / estimates / STATE
+counter appends below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -28,8 +29,11 @@ Honest impact summary:
 - Was effort spent on dead code / zero-caller paths / future-proofing?
 
 Invariant growth: list rules this cycle establishes that the next
-Verification Pass should probe —
-[proposed ID] | [rule] | [subsystem/seam] | [Verify: test/assertion].
+Verification Pass should probe. Assign each a NEW invariant ID by reading
+the current maximum INV-N in the library and incrementing (INV-(max+1),
+INV-(max+2), …) — do not invent or reuse a number, so parallel sessions
+don't collide:
+[INV-N] | [rule] | [subsystem/seam] | [Verify: test/assertion].
 
 End with: the single most structurally significant change; the finding
 that should have been deferred.
@@ -48,11 +52,18 @@ Most structurally significant change: [one line]
 Should-have-been-deferred: [one line]
 ---END CYCLE SUMMARY BLOCK---
 
-METRICS (optional — only if .cycle/ exists): append a phase=reflect row
-to .cycle/metrics.csv (header:
-date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
-with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
-columns blank. Skip if no .cycle/.
+METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
+of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
+row per cycle's reflection to .cycle/metrics.csv (header:
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count)
+with net_score, prod_fixes, new_failure_modes, and defensive_count (the
+Defensive/structural count from the tally above — a secondary signal that
+does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
+Cycle field (the single source of truth — don't invent one); leave the
+synthesis-only columns blank. defensive_count is the LAST column (after
+the quoted notes). Do NOT also record net_score/prod_fixes/
+new_failure_modes on an implement-phase row (the implement commands write
+STATE.md, not metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv
@@ -60,3 +71,8 @@ that carried an effort estimate, append a row to .cycle/estimates.csv
 recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
+
+SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
+cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
+completes a subsystem cycle, and the count drives /audit's seams-cadence
+reminder. (A Seams & Invariants audit resets it to 0.) Skip if no .cycle/.

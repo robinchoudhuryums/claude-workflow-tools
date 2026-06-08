@@ -64,6 +64,9 @@ INV-30 | the R3 File System Access flow degrades gracefully (connectRepoFolder s
 Policy threshold: 4/10
 Consecutive cycles: 2
 
+### Seams Audit Cadence
+every 3 subsystem cycles
+
 ### Regression Scenarios
 S1 | Load console + switch between built-in projects | Subsystem: Interactive Console (HTML)
   Steps:

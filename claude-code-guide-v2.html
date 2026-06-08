@@ -699,6 +699,13 @@ If this scope is listed under Frozen Subsystems in the Cycle Workflow
 Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
+Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
+Workflow Config and "Subsystem cycles since last Seams audit" (K) from
+.cycle/STATE.md (treat a missing counter or cadence as 0 / default 4). If
+K &gt;= N, note at the TOP of your output that a Seams &amp; Invariants audit is
+DUE (K of N) and recommend running it this cycle or next — then proceed
+with this audit normally.
+
 Audit this subsystem across these focus areas:
 1. Bugs and logic errors in currently-reachable code paths
 2. Dead code / unused exports (only if they create confusion)
@@ -723,6 +730,11 @@ For each finding:
 DO NOT flag style preferences or speculative "could be cleaner"
 refactoring unless the current code is actively wrong.
 
+Finding IDs in the handoff block are SESSION-LOCAL labels (F1, F2, …) —
+not invariant-library IDs. INV-N IDs are assigned only when a rule is
+promoted to the Invariant Library (see /reflect), so parallel audit
+sessions can reuse F1/F2 without colliding.
+
 Do NOT produce an implementation plan — that is /plan. Produce a
 SESSION HANDOFF BLOCK:
 
@@ -736,6 +748,10 @@ FINDINGS:
 
 CROSS-MODULE DEPENDENCIES SURFACED:
 - [dependency description]
+
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps this scope depends on — env vars, IaC, console/dashboard, one-time migrations):
+- [action] | BLOCKS DEPLOY: Y/N
+(or "None")
 
 TOP PRIORITIES:
 Impact: [finding IDs]
@@ -853,7 +869,10 @@ Organize into:
 3. Defer but schedule — important, not urgent, or has dependencies
 
 If more than ~15 findings, split actions into Batch 1 (P0/Critical +
-highest-compliance-risk) and Batch 2 (rest); note the split.
+highest-compliance-risk) and Batch 2 (rest), and emit a complete,
+SEPARATE IMPLEMENTATION HANDOFF BLOCK for EACH batch (set the Batch field
+accordingly). Batch 2's block must stand alone — a fresh session must be
+able to run it from its block alone, so do not leave Batch 2 as prose.
 
 Then:
 - Findings to escalate to the roadmap (too large/structural)
@@ -880,6 +899,9 @@ HIGH/VERY HIGH RISK ACTIONS (require dependency check before implementation):
 
 POLICY RESPONSE ACTIONS (mandatory if triggered — from last Health Synthesis):
 [list or "None triggered"]
+
+OPERATOR ACTIONS (carry forward to implement; mark deploy blockers — env vars, IaC, console/dashboard, migrations):
+[action | BLOCKS DEPLOY: Y/N, or "None"]
 
 IMPLEMENT IN THIS ORDER: [ordered action IDs]
 ORDERING RATIONALE: [1–2 sentences]
@@ -913,7 +935,10 @@ Before starting: for every action listed as High/Very High risk, run the
 Pre-Implementation Dependency Check (identify every out-of-scope file
 that imports/calls the changed functions/exports; describe what would
 break) and confirm understanding before implementing those actions.
-Low-risk actions may proceed.
+Low-risk actions may proceed. Also confirm the path your change affects is
+the one that runs in production — not just an in-memory / fallback / mock
+path; where a real (e.g. DB-backed) path exists alongside a fallback,
+implement and test BOTH.
 
 Rules:
 - Implement ONLY the actions in the handoff block, in order
@@ -921,6 +946,11 @@ Rules:
 - Stop on unexpected complexity and describe before continuing
 - Stop if an action requires touching out-of-scope files
 - Check Common Gotchas before each action
+- Before editing a module, scan for its test doubles — mocks/stubs/fixtures
+  of that module, especially ones encoding the OLD behavior (a factory mock
+  that throws on a newly-added export, a non-date-scoped mock, a fixture
+  asserting the prior output). Update them as part of the change, not
+  reactively in RUN TESTS.
 - After each action, note: what changed, files touched, anything unexpected
 
 After all actions complete, in order:
@@ -945,8 +975,11 @@ TEST RESULTS: [passed/failed — details, or scenario outcomes if manual]
 UNEXPECTED FINDINGS DURING IMPLEMENTATION:
 - [discovered while implementing, not in the audit] (or "None")
 
-DEPLOY STEP:
-- [if a Deploy Command is configured for a touched subsystem, list it] (or "N/A — no Deploy Command configured")
+OPERATOR ACTIONS / DEPLOY:
+- [human-only step outside the PR — env var, IaC, console/dashboard, one-time migration] | BLOCKS DEPLOY: Y/N
+(or "None")
+Deploy: [Deploy Command for any touched subsystem if configured, else "N/A — no Deploy Command configured"]
+(Not complete in production until blocking operator actions are done AND the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
 - [out-of-scope items to add to the backlog] (or "None")
@@ -1036,12 +1069,16 @@ Based on the systems map and the changes made:
 3. For each risk, explicitly confirm whether it materialized or was
    negated (cascade configs, zero callers, idempotent ops, existing
    indexes, defaults) — validate, don't just list
-4. Cross-reference the changes against the invariant library (Cycle
+4. Confirm the path the tests exercise IS the path that runs in
+   production — flag any change that passes via an in-memory / fallback /
+   mock path but is broken or untested on the real (e.g. DB-backed)
+   production path (Parallel Source-of-Truth Drift)
+5. Cross-reference the changes against the invariant library (Cycle
    Workflow Config); flag any invariant at risk, and run its Verify test
    if one is defined
-5. If a Deploy Command is configured for a touched subsystem, note which
+6. If a Deploy Command is configured for a touched subsystem, note which
    risks are git-verified vs. only verifiable after deploy
-6. Note any docs (CLAUDE.md / README / roadmap) needing updates
+7. Note any docs (CLAUDE.md / README / roadmap) needing updates
 
 Prioritize the verification list by likelihood of breakage. Then:
 
@@ -1062,7 +1099,8 @@ Prioritize the verification list by likelihood of breakage. Then:
           </div>
         </div>
         <pre id="p4reflect">Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics append below).
+during this session (other than the optional metrics / estimates / STATE
+counter appends below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -1091,8 +1129,11 @@ Honest impact summary:
 - Was effort spent on dead code / zero-caller paths / future-proofing?
 
 Invariant growth: list rules this cycle establishes that the next
-Verification Pass should probe —
-[proposed ID] | [rule] | [subsystem/seam] | [Verify: test/assertion].
+Verification Pass should probe. Assign each a NEW invariant ID by reading
+the current maximum INV-N in the library and incrementing (INV-(max+1),
+INV-(max+2), …) — do not invent or reuse a number, so parallel sessions
+don't collide:
+[INV-N] | [rule] | [subsystem/seam] | [Verify: test/assertion].
 
 End with: the single most structurally significant change; the finding
 that should have been deferred.
@@ -1111,18 +1152,30 @@ Most structurally significant change: [one line]
 Should-have-been-deferred: [one line]
 ---END CYCLE SUMMARY BLOCK---
 
-METRICS (optional — only if .cycle/ exists): append a phase=reflect row
-to .cycle/metrics.csv (header:
-date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes)
-with net_score, prod_fixes, new_failure_modes; leave the synthesis-only
-columns blank. Skip if no .cycle/.
+METRICS (optional — only if .cycle/ exists): /reflect is the SOLE writer
+of net_score/prod_fixes/new_failure_modes — append exactly ONE phase=reflect
+row per cycle's reflection to .cycle/metrics.csv (header:
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count)
+with net_score, prod_fixes, new_failure_modes, and defensive_count (the
+Defensive/structural count from the tally above — a secondary signal that
+does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
+Cycle field (the single source of truth — don't invent one); leave the
+synthesis-only columns blank. defensive_count is the LAST column (after
+the quoted notes). Do NOT also record net_score/prod_fixes/
+new_failure_modes on an implement-phase row (the implement commands write
+STATE.md, not metrics). Skip if no .cycle/.
 
 ESTIMATE CALIBRATION (optional — only if .cycle/ exists): for each action
 that carried an effort estimate, append a row to .cycle/estimates.csv
 (header: date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
 recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
-running ~2x the estimate"). Skip if no .cycle/.</pre>
+running ~2x the estimate"). Skip if no .cycle/.
+
+SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
+cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
+completes a subsystem cycle, and the count drives /audit's seams-cadence
+reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</pre>
       </div>
     </div>
   </section>

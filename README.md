@@ -52,6 +52,8 @@ Cycle 5: Subsystem D (audit + implement + verify)
 ...repeat
 ```
 
+The frequency is a config field — **`Seams Audit Cadence`** (default: every 4 subsystem cycles) in the Cycle Workflow Config. `/reflect` increments a "Subsystem cycles since last Seams audit" counter in `.cycle/STATE.md`; `/audit` and `/cycle-status` read it against the cadence and remind you when a Seams audit is **DUE**, so the rotation isn't purely manual. A Seams audit resets the counter.
+
 ## Key Concepts
 
 ### Two-Axis Scoring (Tier 3)
@@ -79,7 +81,7 @@ A fresh session with no implementation context re-probes invariants, counts regr
 For small projects (< ~30k LOC), single-organization tools, or projects where correctness matters more than scale (internal dashboards, admin tools, Apps Script, Salesforce, similar), three optional Cycle Workflow Config sections make the workflow fit better:
 
 1. **`Test Command: manual`** + `Regression Scenarios` — for projects with no programmatic test runner. Manual walks of named scenarios replace test runs in `/broad-implement`, `/targeted-implement`, `/implement`, `/test-sync`, and Verification Pass.
-2. **`Deploy Command`** — for projects where merge ≠ live (clasp, terraform, manual deploys). Implementation summaries gain a `DEPLOY STEP:` footer; `/regression` distinguishes git-verified vs. deploy-verified state.
+2. **`Deploy Command`** — for projects where merge ≠ live (clasp, terraform, manual deploys). Implementation summaries gain an `OPERATOR ACTIONS / DEPLOY:` footer (human-only out-of-PR steps tagged `BLOCKS DEPLOY: Y/N`, plus the deploy command); `/regression` distinguishes git-verified vs. deploy-verified state.
 3. **`Frozen Subsystems`** — for projects with legacy code being migrated out. Frozen subsystems are excluded from rotation and default audit scope; explicit targeting still works (with a banner).
 
 Tier 1 (broad scan) is usually the right starting point at this scale. Tier 3 ceremony often outweighs its benefits below ~30k LOC; revisit if the project grows or you want benchmarkable scoring.

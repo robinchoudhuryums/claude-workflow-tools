@@ -38,7 +38,7 @@ const CHECKS = [
   { feature: 'Regression Scenarios',      marker: 'regression scenario',         files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
   { feature: 'Frozen Subsystems',         marker: 'frozen subsystem',            files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
   { feature: 'Deploy Command (config)',   marker: 'deploy command',              files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
-  { feature: 'Deploy Step (output)',      marker: 'deploy step',                 files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
+  { feature: 'Operator actions / deploy (output)', marker: 'operator actions / deploy', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
   { feature: 'Configurable Axis B',       marker: 'horizontal (axis b) categories', files: ['CLAUDE.md', 'claude-code-guide-v2.html'] },
   { feature: 'Dynamic Workflows playbook', marker: 'dynamic workflows',          files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
   { feature: 'Cycle state directory',     marker: '.cycle/',                     files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
@@ -59,6 +59,7 @@ const CHECKS = [
   { feature: 'Executable invariant runner', marker: 'invariant-check',            files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Portfolio dashboard',        marker: 'portfolio',                   files: ['CLAUDE.md', 'README.md'] },
   { feature: 'File System Access draft (R3)', marker: 'file system access',        files: ['README.md', 'claude-code-guide-v2.html'] },
+  { feature: 'Seams audit cadence (P10)',  marker: 'seams audit cadence',         files: ['CLAUDE.md', 'README.md'] },
 ];
 
 // Every workflow output block must be representable in BOTH the canonical
@@ -131,6 +132,30 @@ for (const f of ['VERSION', 'CHANGELOG.md']) {
 }
 if (versionOk) console.log('  ✓ VERSION and CHANGELOG.md present');
 else { failures++; console.log('  ✗ VERSION and/or CHANGELOG.md missing or empty (R5 — bump on every template change)'); }
+
+// ── Structural check 5: command-pair parity (P4) — the near-duplicate
+// command groups must keep their SHARED behaviors in sync, so updating one
+// member can't silently leave the others behind (no factoring; just a guard).
+const COMMAND_GROUPS = [
+  { name: 'implement family', cmds: ['implement', 'broad-implement', 'targeted-implement'],
+    markers: ['run tests', 'test doubles', 'operator actions', 'manual'] },
+  { name: 'audit family', cmds: ['audit', 'targeted-audit'],
+    markers: ['fire in production this month', 'operator actions surfaced', 'do not flag style preferences'] },
+];
+const cmdText = name => { try { return readFileSync(new URL(`.claude/commands/${name}.md`, root), 'utf8').toLowerCase(); } catch { return null; } };
+let parityFail = 0;
+for (const g of COMMAND_GROUPS) {
+  const loaded = g.cmds.map(c => [c, cmdText(c)]);
+  for (const m of g.markers) {
+    const missing = loaded.filter(([, txt]) => !txt || !txt.includes(m)).map(([c]) => c);
+    if (missing.length) {
+      parityFail++;
+      console.log(`  ✗ ${g.name}: shared behavior "${m}" missing from ${missing.join(', ')} (drift across the pair)`);
+    }
+  }
+}
+if (parityFail) failures += parityFail;
+else console.log(`  ✓ Command-pair parity — shared behaviors consistent across ${COMMAND_GROUPS.length} command groups`);
 
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);

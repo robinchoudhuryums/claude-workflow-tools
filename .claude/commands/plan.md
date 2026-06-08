@@ -28,7 +28,10 @@ Organize into:
 3. Defer but schedule — important, not urgent, or has dependencies
 
 If more than ~15 findings, split actions into Batch 1 (P0/Critical +
-highest-compliance-risk) and Batch 2 (rest); note the split.
+highest-compliance-risk) and Batch 2 (rest), and emit a complete,
+SEPARATE IMPLEMENTATION HANDOFF BLOCK for EACH batch (set the Batch field
+accordingly). Batch 2's block must stand alone — a fresh session must be
+able to run it from its block alone, so do not leave Batch 2 as prose.
 
 Then:
 - Findings to escalate to the roadmap (too large/structural)
@@ -55,6 +58,9 @@ HIGH/VERY HIGH RISK ACTIONS (require dependency check before implementation):
 
 POLICY RESPONSE ACTIONS (mandatory if triggered — from last Health Synthesis):
 [list or "None triggered"]
+
+OPERATOR ACTIONS (carry forward to implement; mark deploy blockers — env vars, IaC, console/dashboard, migrations):
+[action | BLOCKS DEPLOY: Y/N, or "None"]
 
 IMPLEMENT IN THIS ORDER: [ordered action IDs]
 ORDERING RATIONALE: [1–2 sentences]
