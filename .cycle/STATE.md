@@ -23,10 +23,14 @@ Updated: 2026-06-04
 
 ## Roadmap (1.x) — status
 - DONE: R1 (dogfood), R2 (render-metrics), R3 (FSA repo sync — browser-verified), R4 (/cycle-init),
-  R5 (VERSION/CHANGELOG), R6 (SessionStart hook), R8 (portfolio), R9 (invariant runner), R10 (estimates),
+  R5 (VERSION/CHANGELOG), R6 (SessionStart hook), R7 (/pr-review — v1.11.0), R8 (portfolio),
+  R9 (invariant runner), R10 (estimates),
   R14 (console prompts generated from CLAUDE.md + --assert lock — browser-verified).
 - R3 + R14 browser checks PASSED (render of §0–§5 clean; FSA Connect/Save/Load/reconnect/fallback all work).
   "Experimental/unverified" labels dropped.
+- R7 (v1.11.0): /pr-review applies cycle rubrics to a single PR diff → PR REVIEW BLOCK; read-only,
+  runs by hand or off a subscribe_pr_activity webhook event. New command → downstream re-pull (additive).
+- Remaining roadmap: R11 (DW orchestrator, gated on DW GA), R12 (multi-operator state), R13 (prompt-output harness).
 
 ## Decisions made (don't re-litigate)
 - HTML console §-prompts are GENERATED from CLAUDE.md (gen-html-prompts) and locked by --assert; every command-body
@@ -41,6 +45,8 @@ Updated: 2026-06-04
   backward-tolerant; P11 optionally wants `,defensive_count` appended to that project's metrics.csv header).
 
 ## Where I left off
-v1.10.1; full Test Command green (10 stages). Cycle 3 (downstream field review) fully implemented (P1–P11 done, P6
-declined). R3 + R14 browser checks PASSED — both fully done, experimental labels dropped. No pending work in this
-repo except the optional re-synthesis and the downstream re-pull. Next fresh work would be a new audit cycle.
+v1.11.0; full Test Command green (10 stages); committed 5fc69bd, pushed. Cycle 3 (downstream field review) fully
+implemented (P1–P11 done, P6 declined). Roadmap R7 (/pr-review) shipped this session — new command, additive,
+needs a downstream re-pull to pick up .claude/commands/pr-review.md. No pending work in this repo except the
+optional §6a re-synthesis and the downstream re-pull. Remaining roadmap is R11/R12/R13 (exploratory). Next fresh
+work would be a new audit cycle.
