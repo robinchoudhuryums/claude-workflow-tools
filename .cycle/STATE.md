@@ -30,13 +30,17 @@ Updated: 2026-06-04
   "Experimental/unverified" labels dropped.
 - R7 (v1.11.0): /pr-review applies cycle rubrics to a single PR diff → PR REVIEW BLOCK; read-only,
   runs by hand or off a subscribe_pr_activity webhook event. New command → downstream re-pull (additive).
-- Remaining roadmap: R11 (DW orchestrator, gated on DW GA), R12 (multi-operator state), R13 (prompt-output harness).
+- Remaining roadmap: R11 (DW orchestrator — ⏸️ HELD, BLOCKED ON DW GA, decision 2026-06-08; advisory planner
+  subset offered + declined, waiting for DW to leave research preview), R12 (multi-operator state),
+  R13 (prompt-output harness).
 
 ## Decisions made (don't re-litigate)
 - HTML console §-prompts are GENERATED from CLAUDE.md (gen-html-prompts) and locked by --assert; every command-body
   edit must run gen-commands + gen-html-prompts --write or CI goes red.
 - Near-duplicate command pairs are kept honest by a parity GUARD (P4), not by factoring (commands stay self-contained).
 - net_score stays a strict gate; hardening visibility comes from the separate defensive_count secondary signal (P11).
+- R11 (DW orchestrator) is HELD until Dynamic Workflows leaves research preview — a live integration can't meet the
+  verification bar in this environment and DW semantics will shift. Don't build it (even the planner subset) until DW GA.
 
 ## Open follow-on items
 - Optional future: severity-weighted defensive signal (P11 shipped a count); expand parity markers (e.g. CHECKPOINT).
@@ -48,5 +52,5 @@ Updated: 2026-06-04
 v1.11.0; full Test Command green (10 stages); committed 5fc69bd, pushed. Cycle 3 (downstream field review) fully
 implemented (P1–P11 done, P6 declined). Roadmap R7 (/pr-review) shipped this session — new command, additive,
 needs a downstream re-pull to pick up .claude/commands/pr-review.md. No pending work in this repo except the
-optional §6a re-synthesis and the downstream re-pull. Remaining roadmap is R11/R12/R13 (exploratory). Next fresh
-work would be a new audit cycle.
+optional §6a re-synthesis and the downstream re-pull. R11 considered 2026-06-08 and HELD (blocked on DW GA).
+Remaining open roadmap is R12/R13 (exploratory). Next fresh work would be a new audit cycle.

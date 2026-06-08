@@ -99,12 +99,17 @@ Item IDs (R#) are stable references for planning sessions.
 
 ## Tier 4 — Future possibilities (exploratory)
 
-- **R11 — Dynamic Workflows orchestrator reference.**
+- **R11 — Dynamic Workflows orchestrator reference.** ⏸️ HELD — BLOCKED ON DW GA (decision 2026-06-08).
   Once Dynamic Workflows graduates past research preview, ship an actual
   reference orchestration script that fans out per-subsystem audit
   subagents and a no-context verifier, encoding the playbook we
   documented. The handoff-block formats become the orchestrator's state.
   Gated on DW stabilising; until then the playbook stays advisory.
+  *Considered 2026-06-08 and deliberately held: a live DW-calling
+  orchestrator can't be verified in this environment (no DW runtime;
+  research-preview semantics will shift), which fails the verification-bar
+  discipline. A headless advisory "planner" subset was offered and
+  declined in favor of waiting for DW GA. Revisit when DW leaves preview.*
 
 - **R12 — Multi-operator shared state.**
   The single-operator assumption is a known limitation. Now that state
