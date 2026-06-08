@@ -1,5 +1,6 @@
 Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics append below).
+during this session (other than the optional metrics / estimates / STATE
+counter appends below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -70,3 +71,8 @@ that carried an effort estimate, append a row to .cycle/estimates.csv
 recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
+
+SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
+cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
+completes a subsystem cycle, and the count drives /audit's seams-cadence
+reminder. (A Seams & Invariants audit resets it to 0.) Skip if no .cycle/.

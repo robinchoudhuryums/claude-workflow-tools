@@ -699,6 +699,13 @@ If this scope is listed under Frozen Subsystems in the Cycle Workflow
 Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
+Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
+Workflow Config and "Subsystem cycles since last Seams audit" (K) from
+.cycle/STATE.md (treat a missing counter or cadence as 0 / default 4). If
+K &gt;= N, note at the TOP of your output that a Seams &amp; Invariants audit is
+DUE (K of N) and recommend running it this cycle or next — then proceed
+with this audit normally.
+
 Audit this subsystem across these focus areas:
 1. Bugs and logic errors in currently-reachable code paths
 2. Dead code / unused exports (only if they create confusion)
@@ -1092,7 +1099,8 @@ Prioritize the verification list by likelihood of breakage. Then:
           </div>
         </div>
         <pre id="p4reflect">Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics append below).
+during this session (other than the optional metrics / estimates / STATE
+counter appends below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -1162,7 +1170,12 @@ that carried an effort estimate, append a row to .cycle/estimates.csv
 (header: date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note)
 recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
-running ~2x the estimate"). Skip if no .cycle/.</pre>
+running ~2x the estimate"). Skip if no .cycle/.
+
+SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
+cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
+completes a subsystem cycle, and the count drives /audit's seams-cadence
+reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</pre>
       </div>
     </div>
   </section>

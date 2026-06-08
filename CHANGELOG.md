@@ -5,6 +5,36 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.10.0 — 2026-06-04
+
+P10 from the downstream field review — wires the seam-audit cadence so the
+rotation isn't purely manual. Also a one-time .cycle/STATE.md tidy.
+
+### Added
+- `Seams Audit Cadence` — a command-readable Cycle Workflow Config field
+  (default: every 4 subsystem cycles), and a "Subsystem cycles since last
+  Seams audit" counter in .cycle/STATE.md.
+- /reflect increments the counter (a completed subsystem cycle); the Seams
+  & Invariants audit resets it to 0.
+- /audit reads the cadence + counter and flags at the top when a Seams
+  audit is DUE; /cycle-status surfaces "K of N (DUE?)". Both tolerate a
+  missing counter/cadence (treat as 0 / default 4).
+
+### Changed
+- /setup-cycle output and the config schema include the new field; README
+  Cycle Rotation documents it. Console p1/p4reflect regenerated; --assert green.
+- Tidied this repo's .cycle/STATE.md (removed contradictory STOPPED R3/R14
+  lines and stale Cycle-1/2 sections; corrected the version header).
+
+### Downstream impact
+- Command-body + config-schema change -> re-pull via /sync-commands. Fully
+  backward-tolerant: existing STATE.md without the counter and config
+  without the cadence both default gracefully.
+
+### Review status
+All concurred proposals (P1, P2, P3, P5, P7, P8, P9, P10, P11) shipped; P4
+shipped as a guard; P6 declined.
+
 ## 1.9.1 — 2026-06-04
 
 P4 from the downstream field review — MAINTAINER-ONLY tooling; no command

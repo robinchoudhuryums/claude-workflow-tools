@@ -58,6 +58,9 @@ INV-02 | Rule text here | Subsystem: Security
 Policy threshold: 4/10
 Consecutive cycles: 2
 
+### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles
+every 4 subsystem cycles
+
 ### Regression Scenarios   ← optional; required when Test Command is `manual`
 S1 | [short scenario name] | Subsystem: [name]
   Steps:
@@ -191,6 +194,7 @@ Cycle: [N — single source of truth; increments only when a new audit cycle beg
 Phase: [audit | plan | implement | regression | verify | reflect | idle]
 Scope: [subsystem(s) or "broad"]
 Test Command: [from Cycle Workflow Config]
+Subsystem cycles since last Seams audit: [K — /reflect increments, a Seams audit resets to 0]
 Updated: [date]
 
 ## In progress (facts to carry forward — NOT judgments)
@@ -410,6 +414,9 @@ INV-XX | [rule text] | Subsystem: [name] | Verify: [test name or code ref — op
 ### Policy Configuration
 Policy threshold: [N]/10
 Consecutive cycles: [N]
+
+### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles
+every [N] subsystem cycles
 
 ### Regression Scenarios   ← required iff Test Command is `manual`; otherwise optional
 S1 | [short scenario name] | Subsystem: [name]
@@ -894,6 +901,13 @@ If this scope is listed under Frozen Subsystems in the Cycle Workflow
 Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
+Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
+Workflow Config and "Subsystem cycles since last Seams audit" (K) from
+.cycle/STATE.md (treat a missing counter or cadence as 0 / default 4). If
+K >= N, note at the TOP of your output that a Seams & Invariants audit is
+DUE (K of N) and recommend running it this cycle or next — then proceed
+with this audit normally.
+
 Audit this subsystem across these focus areas:
 1. Bugs and logic errors in currently-reachable code paths
 2. Dead code / unused exports (only if they create confusion)
@@ -1139,7 +1153,8 @@ Prioritize the verification list by likelihood of breakage. Then:
 
 ```
 Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics append below).
+during this session (other than the optional metrics / estimates / STATE
+counter appends below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -1210,6 +1225,11 @@ that carried an effort estimate, append a row to .cycle/estimates.csv
 recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
+
+SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
+cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
+completes a subsystem cycle, and the count drives /audit's seams-cadence
+reminder. (A Seams & Invariants audit resets it to 0.) Skip if no .cycle/.
 ```
 
 ### /health-pulse
@@ -1370,11 +1390,16 @@ Independent verification in a fresh session with no implementation context. Prod
 
 ### Seams & Invariants Audit (Section 1s in HTML tool)
 
-Runs every 3-4 subsystem cycles. No implementation phase. Produces:
+Runs on the Seams Audit Cadence from the Cycle Workflow Config (default
+every 4 subsystem cycles; `/audit` reminds when due via STATE's counter).
+No implementation phase. Produces:
 - Seam inventory (boundaries between subsystems, explicit vs implicit contracts)
 - Invariant validation (PASS/FAIL/STALE/UNVERIFIABLE for each library entry)
 - Invariant discovery (new rules from seam analysis; assign INV-N = library max + 1, never reuse a number)
 - Horizontal bug-shape observations (evidence for Axis B scoring)
+
+On completion, reset "Subsystem cycles since last Seams audit" to 0 in
+`.cycle/STATE.md` (if the project uses `.cycle/`).
 
 ### Health Synthesis (Section 6a in HTML tool)
 
@@ -1484,6 +1509,9 @@ Produce a CYCLE STATUS report:
   or "none"]
 - Open follow-on items: [list, or "none"]
 - Trend: [direction from metrics.csv if present, or "n/a"]
+- Seams cadence: [K of N subsystem cycles since the last Seams audit —
+  K from STATE.md's "Subsystem cycles since last Seams audit", N from the
+  Cycle Workflow Config's Seams Audit Cadence; flag "DUE" if K >= N]
 - RECOMMENDED NEXT ACTION — choose explicitly:
   → RESUME — there is unfinished implementation work in STATE.md →
     run /cycle-resume

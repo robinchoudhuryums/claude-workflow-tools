@@ -22,6 +22,13 @@ If this scope is listed under Frozen Subsystems in the Cycle Workflow
 Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
+Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
+Workflow Config and "Subsystem cycles since last Seams audit" (K) from
+.cycle/STATE.md (treat a missing counter or cadence as 0 / default 4). If
+K >= N, note at the TOP of your output that a Seams & Invariants audit is
+DUE (K of N) and recommend running it this cycle or next — then proceed
+with this audit normally.
+
 Audit this subsystem across these focus areas:
 1. Bugs and logic errors in currently-reachable code paths
 2. Dead code / unused exports (only if they create confusion)

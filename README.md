@@ -52,6 +52,8 @@ Cycle 5: Subsystem D (audit + implement + verify)
 ...repeat
 ```
 
+The frequency is a config field — **`Seams Audit Cadence`** (default: every 4 subsystem cycles) in the Cycle Workflow Config. `/reflect` increments a "Subsystem cycles since last Seams audit" counter in `.cycle/STATE.md`; `/audit` and `/cycle-status` read it against the cadence and remind you when a Seams audit is **DUE**, so the rotation isn't purely manual. A Seams audit resets the counter.
+
 ## Key Concepts
 
 ### Two-Axis Scoring (Tier 3)
