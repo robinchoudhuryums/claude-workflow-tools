@@ -118,11 +118,16 @@ Item IDs (R#) are stable references for planning sessions.
   "claim a subsystem" lock, and coordination for in-progress cycles.
   Worth exploring if the workflow spreads to a team.
 
-- **R13 — Prompt-template regression harness.**
-  A meta-harness that runs the command prompts against fixture repos and
-  checks output *shape* (does `/audit` produce a well-formed SESSION
-  HANDOFF BLOCK?). Guards prompt regressions as the templates evolve —
-  the natural extension of the sync guard from structure to behaviour.
+- **R13 — Prompt-template regression harness.** ✅ DONE (v1.12.0).
+  `scripts/check-output-blocks.mjs` validates output *shape* — does
+  `/audit` still produce a well-formed SESSION HANDOFF BLOCK? — by
+  checking balanced delimiters, required fields, producer emission, and
+  inline-vs-reference field drift across all 10 workflow blocks, with
+  `tests/check-output-blocks.test.mjs` proving it fails closed. The
+  natural extension of the sync guard from structure to behaviour. Shipped
+  the static, deterministic half (CI-able); live-LLM execution against
+  fixture repos (real output capture) is non-deterministic and was left
+  out of the CI gate by design.
 
 ---
 

@@ -5,6 +5,31 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.12.0 — 2026-06-08
+
+R13 — prompt-output regression harness. Extends the sync guard from
+structure to output shape.
+
+### Added
+- `scripts/check-output-blocks.mjs`: validates every workflow output block
+  in CLAUDE.md — balanced `---NAME---` / `---END…---` delimiters (incl. the
+  asymmetric SESSION HANDOFF close), all required fields present, the
+  producing command still emits the block, no field drift between a
+  command's inline copy and the Handoff Block Formats reference, and no
+  unregistered block delimiter. 10 blocks covered.
+- `tests/check-output-blocks.test.mjs`: proves the harness fails closed on
+  a dropped field, a broken/renamed delimiter, a producer that stops
+  emitting its block, and an unregistered new block.
+- Wired both into the Test Command and CI; new invariants INV-31 (shape
+  valid) and INV-32 (fails closed) in `.cycle/config.md`.
+
+### Notes
+- Maintainer-only repo tooling (like `check-html` / `check-template-sync`),
+  not part of the project-agnostic command set — no downstream re-pull, no
+  command body / config / block schema change.
+- The static, deterministic half of R13; live-LLM execution against fixture
+  repos (real output capture) is non-deterministic and out of scope for CI.
+
 ## 1.11.0 — 2026-06-08
 
 R7 — PR-review counterpart. The cycle grades health over time; this adds a

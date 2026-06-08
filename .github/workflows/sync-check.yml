@@ -20,6 +20,8 @@ jobs:
         run: node scripts/check-template-sync.mjs
       - name: Assert console §-prompts match CLAUDE.md (R14 lock)
         run: node scripts/gen-html-prompts.mjs --assert
+      - name: Check output-block shape (R13 — delimiters, fields, producers)
+        run: node scripts/check-output-blocks.mjs
       - name: Guard regression test (fails closed on injected drift)
         run: node tests/guard.test.mjs
       - name: Metrics renderer regression test
@@ -32,3 +34,5 @@ jobs:
         run: node tests/portfolio.test.mjs
       - name: R14 transform-engine regression test
         run: node tests/gen-html-prompts.test.mjs
+      - name: R13 output-block harness regression test
+        run: node tests/check-output-blocks.test.mjs

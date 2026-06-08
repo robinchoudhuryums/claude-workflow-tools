@@ -4,7 +4,7 @@
 Cycle: 3 — downstream field proposals (HIPAA RAG dogfooding) → template improvements
 Phase: implement (P1/P5/P8/P9 @1.6.0; P7 @1.7.0; P2/P3 @1.8.0; P11 @1.9.0; P4 @1.9.1; P10 @1.10.0)
 Scope: Canonical Templates & Docs + Tooling & Sync Infrastructure
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 0 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
 Updated: 2026-06-04
 
@@ -30,9 +30,12 @@ Updated: 2026-06-04
   "Experimental/unverified" labels dropped.
 - R7 (v1.11.0): /pr-review applies cycle rubrics to a single PR diff → PR REVIEW BLOCK; read-only,
   runs by hand or off a subscribe_pr_activity webhook event. New command → downstream re-pull (additive).
+- R13 (v1.12.0): prompt-output regression harness — scripts/check-output-blocks.mjs validates block shape
+  (balanced delimiters, required fields, producer emission, inline-vs-reference field drift) across all 10 workflow
+  blocks; tests/check-output-blocks.test.mjs proves fail-closed. Wired into Test Command + CI (now 12 stages).
+  INV-31/INV-32 added. Maintainer-only tooling → no downstream re-pull.
 - Remaining roadmap: R11 (DW orchestrator — ⏸️ HELD, BLOCKED ON DW GA, decision 2026-06-08; advisory planner
-  subset offered + declined, waiting for DW to leave research preview), R12 (multi-operator state),
-  R13 (prompt-output harness).
+  subset offered + declined, waiting for DW to leave research preview), R12 (multi-operator state — only open item).
 
 ## Decisions made (don't re-litigate)
 - HTML console §-prompts are GENERATED from CLAUDE.md (gen-html-prompts) and locked by --assert; every command-body
@@ -49,8 +52,8 @@ Updated: 2026-06-04
   backward-tolerant; P11 optionally wants `,defensive_count` appended to that project's metrics.csv header).
 
 ## Where I left off
-v1.11.0; full Test Command green (10 stages); committed 5fc69bd, pushed. Cycle 3 (downstream field review) fully
-implemented (P1–P11 done, P6 declined). Roadmap R7 (/pr-review) shipped this session — new command, additive,
-needs a downstream re-pull to pick up .claude/commands/pr-review.md. No pending work in this repo except the
-optional §6a re-synthesis and the downstream re-pull. R11 considered 2026-06-08 and HELD (blocked on DW GA).
-Remaining open roadmap is R12/R13 (exploratory). Next fresh work would be a new audit cycle.
+v1.12.0; full Test Command green (now 12 stages). Recent roadmap work: R7 (/pr-review, v1.11.0 — new command,
+needs downstream re-pull), R11 HELD (blocked on DW GA), R13 (output-block harness, v1.12.0 — maintainer tooling,
+no re-pull). Cycle 3 field review fully done (P1–P11, P6 declined). Only open roadmap item now is R12 (multi-operator
+shared state, exploratory). No pending work otherwise except the optional §6a re-synthesis + the downstream re-pull
+(1.6.0→1.12.0). Next fresh work would be a new audit cycle or R12.
