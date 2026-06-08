@@ -82,16 +82,15 @@ REGRESSION RISKS: [any risks identified, or "None"]
 INVARIANTS AT RISK: [any invariants potentially affected, or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
 
-DEPLOY STEP:
-[If Deploy Command is configured in CLAUDE.md for any modified
-subsystem, list the deploy command(s) the operator must run for the
-change to be live, one line per subsystem:]
-- [subsystem]: [command]
-[Otherwise:]
-N/A — no Deploy Command configured
+OPERATOR ACTIONS / DEPLOY:
+- [human-only step outside the PR — env var, IaC, console/dashboard, one-time migration] | BLOCKS DEPLOY: Y/N
+(repeat per action, or "None")
+Deploy: [if a Deploy Command is configured in CLAUDE.md for any modified
+subsystem, the command(s) to run, one line per subsystem; else
+"N/A — no Deploy Command configured"]
 
-(Implementation is not considered complete in production until the
-operator confirms the deploy step.)
+(Not complete in production until blocking operator actions are done AND
+the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
 - [anything noticed but not fixed, out of scope]

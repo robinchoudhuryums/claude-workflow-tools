@@ -49,15 +49,14 @@ INVARIANTS AT RISK: [any or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
 INVARIANT CANDIDATES: [new rules or "None"]
 
-DEPLOY STEP:
-[If Deploy Command is configured in CLAUDE.md for the touched
-subsystem, list the deploy command:]
-- [subsystem]: [command]
-[Otherwise:]
-N/A — no Deploy Command configured
+OPERATOR ACTIONS / DEPLOY:
+- [human-only step outside the PR — env var, IaC, console/dashboard, one-time migration] | BLOCKS DEPLOY: Y/N
+(repeat per action, or "None")
+Deploy: [Deploy Command for the touched subsystem if configured, else
+"N/A — no Deploy Command configured"]
 
-(Implementation is not considered complete in production until the
-operator confirms the deploy step.)
+(Not complete in production until blocking operator actions are done AND
+the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
 - [File: area] — [what to check and why]

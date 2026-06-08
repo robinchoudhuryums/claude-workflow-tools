@@ -59,6 +59,9 @@ HIGH/VERY HIGH RISK ACTIONS (require dependency check before implementation):
 POLICY RESPONSE ACTIONS (mandatory if triggered — from last Health Synthesis):
 [list or "None triggered"]
 
+OPERATOR ACTIONS (carry forward to implement; mark deploy blockers — env vars, IaC, console/dashboard, migrations):
+[action | BLOCKS DEPLOY: Y/N, or "None"]
+
 IMPLEMENT IN THIS ORDER: [ordered action IDs]
 ORDERING RATIONALE: [1–2 sentences]
 ---END IMPLEMENTATION HANDOFF BLOCK---

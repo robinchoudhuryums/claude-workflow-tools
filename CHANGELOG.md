@@ -5,6 +5,33 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.7.0 — 2026-06-04
+
+P7 from the downstream field review — a handoff/summary BLOCK-SCHEMA change.
+
+### Changed
+- P7 — operator-only state is now a first-class field, not prose:
+  - SESSION HANDOFF BLOCK (/audit) + TIER 2 HANDOFF BLOCK (/targeted-audit)
+    gain "OPERATOR ACTIONS SURFACED" (each line tagged BLOCKS DEPLOY: Y/N).
+  - IMPLEMENTATION HANDOFF BLOCK (/plan) gains "OPERATOR ACTIONS" carried
+    forward to implement.
+  - IMPLEMENTATION / BROAD SCAN / TARGETED SUMMARY BLOCKS subsume the old
+    "DEPLOY STEP:" footer into "OPERATOR ACTIONS / DEPLOY:" — an operator-
+    steps list (BLOCKS DEPLOY tags) plus the Deploy command line. The
+    v1.5.0 Deploy Command value is preserved as the "Deploy:" sub-line.
+  - Handoff Block Formats reference updated to match.
+
+### Downstream impact
+- BLOCK SCHEMA changed → re-pull via /sync-commands. The change is
+  additive/rename and backward-tolerant: an old handoff block pasted into a
+  new command is fine (missing field reads as None); the deploy command is
+  retained. No data migration.
+- Console §-prompts (p1/p2/p3) regenerated; --assert green.
+
+### Still open from the review
+P2 (ID namespacing), P3 (cycle-number SoT), P11 (defensive_count metric),
+P10 (seam cadence), P4 (pair parity guard). P6 declined.
+
 ## 1.6.0 — 2026-06-04
 
 Field proposals from a downstream dogfooding session (HIPAA RAG app).

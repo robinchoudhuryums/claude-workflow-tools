@@ -60,6 +60,10 @@ FINDINGS:
 CROSS-MODULE DEPENDENCIES SURFACED:
 - [dependency description]
 
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps this scope depends on — env vars, IaC, console/dashboard, one-time migrations):
+- [action] | BLOCKS DEPLOY: Y/N
+(or "None")
+
 TOP PRIORITIES:
 Impact: [finding IDs]
 High-leverage: [finding IDs]

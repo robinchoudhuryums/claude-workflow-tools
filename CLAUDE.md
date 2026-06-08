@@ -643,16 +643,15 @@ REGRESSION RISKS: [any risks identified, or "None"]
 INVARIANTS AT RISK: [any invariants potentially affected, or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
 
-DEPLOY STEP:
-[If Deploy Command is configured in CLAUDE.md for any modified
-subsystem, list the deploy command(s) the operator must run for the
-change to be live, one line per subsystem:]
-- [subsystem]: [command]
-[Otherwise:]
-N/A — no Deploy Command configured
+OPERATOR ACTIONS / DEPLOY:
+- [human-only step outside the PR — env var, IaC, console/dashboard, one-time migration] | BLOCKS DEPLOY: Y/N
+(repeat per action, or "None")
+Deploy: [if a Deploy Command is configured in CLAUDE.md for any modified
+subsystem, the command(s) to run, one line per subsystem; else
+"N/A — no Deploy Command configured"]
 
-(Implementation is not considered complete in production until the
-operator confirms the deploy step.)
+(Not complete in production until blocking operator actions are done AND
+the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
 - [anything noticed but not fixed, out of scope]
@@ -759,6 +758,10 @@ CROSS-MODULE RISKS:
 - [what could break outside this scope and where to verify]
 (or "None identified")
 
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps — env vars, IaC, console/dashboard, migrations):
+- [action] | BLOCKS DEPLOY: Y/N
+(or "None")
+
 DO NOT TOUCH:
 - [high-risk files/functions — explain why]
 ---END TIER 2 HANDOFF BLOCK---
@@ -818,15 +821,14 @@ INVARIANTS AT RISK: [any or "None"]
 NET SCORE: [production fixes] − [new failure modes] = [net]
 INVARIANT CANDIDATES: [new rules or "None"]
 
-DEPLOY STEP:
-[If Deploy Command is configured in CLAUDE.md for the touched
-subsystem, list the deploy command:]
-- [subsystem]: [command]
-[Otherwise:]
-N/A — no Deploy Command configured
+OPERATOR ACTIONS / DEPLOY:
+- [human-only step outside the PR — env var, IaC, console/dashboard, one-time migration] | BLOCKS DEPLOY: Y/N
+(repeat per action, or "None")
+Deploy: [Deploy Command for the touched subsystem if configured, else
+"N/A — no Deploy Command configured"]
 
-(Implementation is not considered complete in production until the
-operator confirms the deploy step.)
+(Not complete in production until blocking operator actions are done AND
+the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
 - [File: area] — [what to check and why]
@@ -915,6 +917,10 @@ FINDINGS:
 CROSS-MODULE DEPENDENCIES SURFACED:
 - [dependency description]
 
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps this scope depends on — env vars, IaC, console/dashboard, one-time migrations):
+- [action] | BLOCKS DEPLOY: Y/N
+(or "None")
+
 TOP PRIORITIES:
 Impact: [finding IDs]
 High-leverage: [finding IDs]
@@ -987,6 +993,9 @@ HIGH/VERY HIGH RISK ACTIONS (require dependency check before implementation):
 POLICY RESPONSE ACTIONS (mandatory if triggered — from last Health Synthesis):
 [list or "None triggered"]
 
+OPERATOR ACTIONS (carry forward to implement; mark deploy blockers — env vars, IaC, console/dashboard, migrations):
+[action | BLOCKS DEPLOY: Y/N, or "None"]
+
 IMPLEMENT IN THIS ORDER: [ordered action IDs]
 ORDERING RATIONALE: [1–2 sentences]
 ---END IMPLEMENTATION HANDOFF BLOCK---
@@ -1052,8 +1061,11 @@ TEST RESULTS: [passed/failed — details, or scenario outcomes if manual]
 UNEXPECTED FINDINGS DURING IMPLEMENTATION:
 - [discovered while implementing, not in the audit] (or "None")
 
-DEPLOY STEP:
-- [if a Deploy Command is configured for a touched subsystem, list it] (or "N/A — no Deploy Command configured")
+OPERATOR ACTIONS / DEPLOY:
+- [human-only step outside the PR — env var, IaC, console/dashboard, one-time migration] | BLOCKS DEPLOY: Y/N
+(or "None")
+Deploy: [Deploy Command for any touched subsystem if configured, else "N/A — no Deploy Command configured"]
+(Not complete in production until blocking operator actions are done AND the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
 - [out-of-scope items to add to the backlog] (or "None")
@@ -1570,6 +1582,10 @@ FINDINGS:
 CROSS-MODULE DEPENDENCIES SURFACED:
 - [dependency description]
 
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps this scope depends on — env vars, IaC, console/dashboard, one-time migrations):
+- [action] | BLOCKS DEPLOY: Y/N
+(or "None")
+
 TOP PRIORITIES:
 Impact: [finding IDs]
 High-leverage: [finding IDs]
@@ -1590,6 +1606,10 @@ ACTIONS (implement in this order):
 
 CROSS-MODULE RISKS:
 - [risks or "None"]
+
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps; mark deploy blockers):
+- [action] | BLOCKS DEPLOY: Y/N
+(or "None")
 
 DO NOT TOUCH:
 - [high-risk items or "None"]

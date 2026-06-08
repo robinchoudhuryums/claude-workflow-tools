@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 3 — downstream field proposals (HIPAA RAG dogfooding) → template improvements
-Phase: implement (P1/P5/P8/P9 done at v1.6.0)
+Phase: implement (P1/P5/P8/P9 at v1.6.0; P7 at v1.7.0)
 Scope: Canonical Templates & Docs (command bodies)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs
 Updated: 2026-06-04
@@ -12,7 +12,8 @@ Updated: 2026-06-04
 - DONE (v1.6.0) P5 — /plan emits a separate IMPLEMENTATION HANDOFF BLOCK per batch.
 - DONE (v1.6.0) P8 — test-vs-prod-path probe in /regression (step 4) + /implement dep check.
 - DONE (v1.6.0) P9 — implement family scans test doubles before editing.
-- CONCURRED, PENDING: P7 (operator-actions field — block-schema ripple across 5 cmds), P2 (ID namespacing + INV-N=max+1), P3 (cycle-number SoT + increment rule), P11 (defensive_count secondary metric — schema change + backward-compat), P10 (seam cadence wired — M–L), P4 (pair parity GUARD, not factoring — maintainer-only).
+- DONE (v1.7.0) P7 — OPERATOR ACTIONS field across SESSION/TIER-2/IMPLEMENTATION handoff + the three SUMMARY blocks (subsumes DEPLOY STEP → OPERATOR ACTIONS / DEPLOY, keeping the Deploy command line). BLOCK-SCHEMA change → downstream re-pull (backward-tolerant). Handoff Block Formats ref + guard marker updated; console p1/p2/p3 regenerated.
+- CONCURRED, PENDING: P2 (ID namespacing + INV-N=max+1), P3 (cycle-number SoT + increment rule), P11 (defensive_count secondary metric — schema change + backward-compat), P10 (seam cadence wired — M–L), P4 (pair parity GUARD, not factoring — maintainer-only).
 - DISAGREE: P6 (skip — rationale moot; template has no baseline test run).
 
 ## In progress (facts to carry forward — NOT judgments)

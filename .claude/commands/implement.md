@@ -55,8 +55,11 @@ TEST RESULTS: [passed/failed — details, or scenario outcomes if manual]
 UNEXPECTED FINDINGS DURING IMPLEMENTATION:
 - [discovered while implementing, not in the audit] (or "None")
 
-DEPLOY STEP:
-- [if a Deploy Command is configured for a touched subsystem, list it] (or "N/A — no Deploy Command configured")
+OPERATOR ACTIONS / DEPLOY:
+- [human-only step outside the PR — env var, IaC, console/dashboard, one-time migration] | BLOCKS DEPLOY: Y/N
+(or "None")
+Deploy: [Deploy Command for any touched subsystem if configured, else "N/A — no Deploy Command configured"]
+(Not complete in production until blocking operator actions are done AND the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
 - [out-of-scope items to add to the backlog] (or "None")
