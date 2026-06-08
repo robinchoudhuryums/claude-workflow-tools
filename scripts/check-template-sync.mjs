@@ -60,6 +60,7 @@ const CHECKS = [
   { feature: 'Portfolio dashboard',        marker: 'portfolio',                   files: ['CLAUDE.md', 'README.md'] },
   { feature: 'File System Access draft (R3)', marker: 'file system access',        files: ['README.md', 'claude-code-guide-v2.html'] },
   { feature: 'Seams audit cadence (P10)',  marker: 'seams audit cadence',         files: ['CLAUDE.md', 'README.md'] },
+  { feature: '/pr-review command (R7)',    marker: 'pr-review',                    files: ['CLAUDE.md', 'README.md'] },
 ];
 
 // Every workflow output block must be representable in BOTH the canonical

@@ -55,12 +55,14 @@ Item IDs (R#) are stable references for planning sessions.
   tracking data-driven instead of hand-maintained. The missing half of
   the Phase 3 work.
 
-- **R7 — PR-review counterpart.** `effort: M`
-  Apply the cycle's rubrics (severity/confidence, "would it fire in
-  production this month," the hard regression definition) to a single
-  PR, wired into the `subscribe_pr_activity` / webhook flow. Turns the
-  audit discipline into a review bot — health over time gets a sibling
-  for health per-change.
+- **R7 — PR-review counterpart.** `effort: M` — ✅ DONE (v1.11.0). New
+  `/pr-review` command applies the cycle's rubrics (severity/confidence,
+  "would it fire in production this month," the hard regression
+  definition, test-vs-prod-path + test-double probes, invariant
+  cross-check) to a single PR's diff and emits a PR REVIEW BLOCK. Runs by
+  hand or off a `subscribe_pr_activity` webhook event; posts only on
+  operator request. Health over time now has a sibling for health
+  per-change.
 
 - **R8 — Cross-project portfolio dashboard.** `effort: M`
   Aggregate each repo's `PROJECT_HEALTH.md` into one board: "which
