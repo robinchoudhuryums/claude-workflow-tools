@@ -216,6 +216,8 @@ This repo has three presentations of the same workflow that must stay aligned:
 
 The console's static §-prompts are a known drift surface (Cycle 1 F02/F03). `node scripts/gen-html-prompts.mjs` reports how far each console `<pre>` sits from its canonical CLAUDE.md command (the R14 transform engine + drift report); `--write` regenerates them from CLAUDE.md, but **mutates the console surface, so verify rendering in a browser** — CI never runs `--write`.
 
+**Output-block shape (R13).** `node scripts/check-output-blocks.mjs` is a second-order guard: where `check-template-sync` verifies a workflow block's *name* appears, this validates each block's *shape* — balanced `---NAME---` / `---END…---` delimiters, every required field present, and that the producing command still emits it (e.g. `/audit` still produces a well-formed SESSION HANDOFF BLOCK). It also catches field drift between a command's inline block and the canonical copy in Handoff Block Formats. It is the static, deterministic half of a prompt-output regression harness; running the prompts through an LLM against fixture repos (real output capture) is non-deterministic and out of scope for the CI gate.
+
 When you add or change a capability: edit CLAUDE.md (and the HTML builder + README where relevant), bump `VERSION` + add a `CHANGELOG.md` entry, run `node scripts/gen-commands.mjs`, then run the guard:
 
 ```
