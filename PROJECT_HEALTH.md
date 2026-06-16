@@ -1,13 +1,38 @@
 # Project Health
 
 ## Current Standing
-Last synthesis: 2026-06-08
-Overall (weighted avg): 8.7/10
-One-line summary: Two cycles of concentrated hardening have resolved both Cycle-1 priorities — the console is now generated from CLAUDE.md and locked, every tool has a fail-closed regression test, and output-block shape is guarded. Mature, well-instrumented, low-drift.
-Top vertical priority: HTML Console Correctness (8.5, Med-High confidence) — the only surface still verified manually (browser-only paths).
-Top horizontal priority: none urgent — lowest Axis B categories sit at 8.5 (Backward-Compatibility Breakage / Silent Prompt Degradation); keep them there as the schema/state format evolves.
+Last synthesis: 2026-06-16
+Overall (weighted avg): 8.8/10
+One-line summary: A fresh-eyes cycle found and fixed a cross-artifact drift the guard couldn't see — the §6a synthesis prompt violated the P1 metrics-ownership rule and had corrupted this repo's own trend — then guard-enforced it (checks 6+7) and shipped the R15 portfolio-status board. Mature and low-drift, now with the metrics pipeline and dynamic-builder contracts under guard.
+Top vertical priority: HTML Console Correctness (8.5, Med-High confidence) — browser-only render/FSA paths are still operator-verified, not headless-tested; the natural next coverage frontier.
+Top horizontal priority: Cross-Artifact Drift / Silent Prompt Degradation (8.5) — re-baselined this cycle (the prior 9 was over-confident); the dynamic console builders are now marker-pinned but not generated from CLAUDE.md (R16-full open).
 
 ## Score History
+
+### Cycle 4 — 2026-06-16 — Synthesis
+Scope this cycle: a fresh-eyes /broad-scan (Interactive Console §6a + Tooling & Sync Infra + Canonical Docs) → /broad-implement F1–F5 → /reflect, plus R16(S) and R15. Tier-1 dogfood flow (no separate §4v fresh-session verification; the implementer scored the qualitative axes, so Axis B confidence is Medium — the executable checks are objective).
+
+AXIS A — VERTICAL (Subsystem Health):
+Overall: 8.8/10 (↑ from 8.7) | Prompt Quality & Efficacy: 9.5/10 | Cross-Artifact Consistency: 9/10 (held, now guard-earned)
+HTML Console Correctness: 8.5/10 | Command Completeness & Coverage: 9/10
+Documentation Accuracy: 9/10 (↑ from 8.5) | Config-Schema Robustness: 9/10 (↑ from 8.5)
+Guard & Tooling Coverage: 9.5/10 (↑ from 9) | Adaptability / Project-Agnosticism: 9/10
+Onboarding & Adoption Friction: 9/10 (↑ from 8.5 — R15 status board) | Backward Compatibility: 9/10 (↑ from 8.5)
+State & Memory Integrity: 9/10 (↑ from 8.5 — metrics double-count fixed + INV-33 guard)
+
+AXIS B — HORIZONTAL (Bug-Shape Posture):
+Cross-Artifact Drift: 8.5/10 (re-baselined from an over-confident 9 — a real drift, F1, existed in a non-generated builder; fix + guard 7 added, R16-full open)
+Silent Prompt Degradation: 8.5/10 (the §6a silent double-count fixed + guarded; residual class = dynamic builders only marker-pinned)
+Generated-Artifact Staleness: 9/10 | Backward-Compatibility Breakage: 9/10 (↑ from 8.5 — defensive_count schema parity guarded)
+Guard / Test Coverage Quality: 9/10 (↑ from 8.5 — Category D 0%; +3 guard checks/tests this cycle)
+
+Overall (weighted avg): 8.8/10 (weights unchanged).
+Verification: 13-stage Test Command green; invariant-check 22/22 runnable PASS, 0 FAIL (13 MANUAL by design; 35 total, +INV-33/34/35). Regressions: 0. Net score across the span +1 (1 production fix F1 − 0 new failure modes; 3 defensive/structural; 1 new capability R15).
+Category D ratio: 0% — every fix + new tool shipped with a fail-closed test (guard.test cases 7/8/9; portfolio-status.test/INV-35).
+Key finding: dogfooding's intended payoff — a fresh-eyes audit caught a defect the prior two cycles' scoring missed. The §6a synthesis prompt instructed writing net_score on synthesis rows, violating the P1 ownership rule (v1.6.0) and silently double-counting the trend; it had already corrupted this repo's own metrics (cum net 10 vs true 8). Fixed, data corrected, and guard-enforced (checks 6+7) so it and the broader dynamic-builder drift class can't recur silently.
+Priority for next cycle: HTML Console Correctness stays the lowest-confidence vertical (browser-only paths operator-verified). The structural frontier is R16-full — generate the dynamic console builders (§6a/§6b/§1s/§4v/Tier1/Tier2) from CLAUDE.md so they're equivalence-locked, not just marker-pinned. No policy action required.
+Delta from prior: Overall +0.1 (8.7 → 8.8); six verticals +0.5 (State & Memory, Guard & Tooling, Config-Schema, Backward Compat, Documentation, Onboarding); Axis B Cross-Artifact Drift re-baselined 9 → 8.5 (honest correction, not a degradation).
+Policy responses triggered: None (lowest Axis B = 8.5, far above the 4/10 threshold).
 
 ### Cycle 3 — 2026-06-08 — Synthesis
 Scope this cycle: everything since the Cycle-1 synthesis (no Cycle-2 synthesis was recorded — only reflects + a pulse). Cycle-2 roadmap items R2/R4/R5/R6/R8/R9/R10/R14/R3 + Cycle-3 field proposals P1–P11 + R7 (/pr-review) and R13 (output-block harness); R11 considered and HELD (blocked on Dynamic Workflows GA).

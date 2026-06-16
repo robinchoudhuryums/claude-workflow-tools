@@ -1,12 +1,12 @@
 # Cycle State
 
 ## Current
-Cycle: 4 — fresh-eyes broad-scan → metrics-ownership drift fix (v1.12.1)
-Phase: reflect (F1–F5 reflected; metrics row appended; not yet synthesized)
+Cycle: 4 — fresh-eyes broad-scan → metrics-ownership drift fix + R16(S) + R15 — COMPLETE (synthesized)
+Phase: idle (Cycle 4 synthesized 2026-06-16 — overall 8.8/10; next work starts Cycle 5)
 Scope: Interactive Console (HTML §6a) + Tooling & Sync Infrastructure + Canonical Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
-Updated: 2026-06-08
+Updated: 2026-06-16
 
 ## Downstream field proposals (Cycle 3 — HIPAA RAG dogfooding) — COMPLETE
 - DONE P1 (1.6.0) — metrics.csv net_score ownership pinned to phase=reflect.
@@ -80,7 +80,9 @@ Updated: 2026-06-08
   parity markers, check 7) shipped this cycle — a dropped/renamed contract now fails closed, but the builders
   are still hand-written (not generated from CLAUDE.md). Full equivalence is the remaining R16 work.
 ## Where I left off
-v1.13.0; full Test Command green (13 stages); invariant-check 22/22 runnable PASS (35 total). Cycle 4 work
-COMPLETE: F1–F5 (metrics-ownership drift fix) + R16(S) (per-builder parity guard) + R15 (portfolio-status
-board). INV-33/34/35 in config.md. Roadmap: R15 DONE; remaining = R16-full (M–L), R9, R12, R11(held). Next:
-close Cycle 4 with a §6a Health Synthesis + PROJECT_HEALTH update, or open a PR for the branch.
+v1.13.0; full Test Command green (13 stages); invariant-check 22/22 runnable PASS (35 total). Cycle 4 SYNTHESIZED
+2026-06-16 — overall 8.7→8.8 (+0.1); 0 regressions; Category D 0%; no policy triggers. The cycle's lesson:
+fresh eyes caught the §6a metrics-ownership drift the prior scoring missed (Cross-Artifact Drift re-baselined
+9→8.5, honest correction). PROJECT_HEALTH Current Standing + Cycle-4 entry updated; metrics.csv synthesis row
+appended (net columns BLANK — the corrected F1 behavior; Category D 0%). Roadmap: R15 DONE; remaining = R16-full
+(M–L, the structural frontier), R9, R12, R11(held). Next: Cycle 5 (fresh audit) or R16-full; PR for the branch is open to do anytime.
