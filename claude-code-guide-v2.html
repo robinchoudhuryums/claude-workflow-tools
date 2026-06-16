@@ -2189,10 +2189,13 @@ If no categories are triggered, output: "No policy responses triggered this cycl
 8. METRICS (optional — only if the project uses .cycle/ state):
 If a .cycle/ directory exists at the project root, append one row to
 .cycle/metrics.csv (create it with the header row if absent):
-date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
-Fill phase=synthesis with the overall net_score, the Category D ratio
-from the Verification Block, and axis_b_lowest = the lowest-scoring
-Axis B category this cycle. If .cycle/ does not exist, skip this step.`;
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
+Fill phase=synthesis with the Category D ratio from the Verification
+Block and axis_b_lowest = the lowest-scoring Axis B category this cycle.
+Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK
+— those columns are owned ONLY by the phase=reflect rows (/reflect is
+their sole writer), so a synthesis row must not repeat them or the
+cumulative trend double-counts. If .cycle/ does not exist, skip this step.`;
 }
 
 function renderP6a(){

@@ -158,6 +158,30 @@ for (const g of COMMAND_GROUPS) {
 if (parityFail) failures += parityFail;
 else console.log(`  ✓ Command-pair parity — shared behaviors consistent across ${COMMAND_GROUPS.length} command groups`);
 
+// ── Structural check 6: metrics-row ownership + schema parity. Guards the
+// non-R14-generated HTML §6a synthesis prompt (and CLAUDE.md) against the
+// two ways the metrics schema has silently drifted before:
+//   (a) every metrics.csv header emitted anywhere must carry the trailing
+//       defensive_count column (P11, v1.9.0); and
+//   (b) the phase=synthesis row must NOT be told to write net_score —
+//       net_score/prod_fixes/new_failure_modes are owned ONLY by phase=reflect
+//       rows (P1, v1.6.0), or the render-metrics cumulative trend double-counts.
+const htmlRaw = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
+const HEADER_PREFIX = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes';
+let metricsFail = 0;
+for (const [f, raw] of [['CLAUDE.md', claudeRaw], ['claude-code-guide-v2.html', htmlRaw]]) {
+  const re = new RegExp(HEADER_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(,defensive_count)?', 'g');
+  let m, stale = 0;
+  while ((m = re.exec(raw)) !== null) { if (!m[1]) stale++; }
+  if (stale) { metricsFail++; console.log(`  ✗ ${f}: ${stale} metrics.csv header(s) missing the trailing defensive_count column (P11)`); }
+}
+if (/phase=synthesis with the overall net_score/i.test(htmlRaw)) {
+  metricsFail++;
+  console.log('  ✗ HTML §6a tells the phase=synthesis row to write net_score — owned only by phase=reflect (P1 double-count footgun)');
+}
+if (metricsFail) failures += metricsFail;
+else console.log('  ✓ Metrics-row ownership + defensive_count schema parity (P1 + P11)');
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

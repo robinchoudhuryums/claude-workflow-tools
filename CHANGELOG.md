@@ -5,6 +5,37 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.12.1 — 2026-06-16
+
+Cycle 4 dogfood broad-scan — fixes a cross-artifact drift the guard couldn't
+see: the non-R14-generated HTML §6a synthesis prompt still violated the P1
+metrics-ownership rule.
+
+### Fixed
+- HTML §6a Health Synthesis prompt (`buildP6aText`): the `phase=synthesis`
+  metrics row was instructed to write `net_score`/`prod_fixes`, contradicting
+  the canonical P1 rule (those columns are owned ONLY by `phase=reflect` rows,
+  v1.6.0). `render-metrics` sums every row, so this double-counted the trend.
+  Now it writes only `category_d_ratio` + `axis_b_lowest` and leaves the
+  reflect-owned columns blank (F1).
+- HTML §6a metrics header updated to the 11-column P11 schema (adds the
+  trailing `defensive_count`) — it was the stale pre-v1.9.0 10-column header (F2).
+- This repo's `.cycle/metrics.csv` Cycle-1 synthesis row had the double-count
+  baked in (`net_score=2,prod_fixes=2` duplicating the two reflect rows);
+  blanked those fields. Cumulative net 10 → 8 (true 9 fixes − 1) (F3).
+- `README.md` "What's in this repo" listed only 2 of 9 scripts; now lists all (F5).
+
+### Added
+- `check-template-sync.mjs` structural check 6 (F4): fails closed if any
+  `metrics.csv` header in CLAUDE.md/HTML drops `defensive_count`, or if the
+  §6a synthesis step is told to write `net_score` (the double-count footgun).
+  Two fail-closed cases added to `guard.test.mjs`.
+
+### Downstream impact
+- None requiring a re-pull: §6a is HTML-console-only (not a slash command),
+  and no `.claude/commands/` body, config schema, or output-block schema
+  changed. Maintainer-side correctness + guard hardening.
+
 ## 1.12.0 — 2026-06-08
 
 R13 — prompt-output regression harness. Extends the sync guard from

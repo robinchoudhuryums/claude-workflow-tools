@@ -1,9 +1,9 @@
 # Cycle State
 
 ## Current
-Cycle: 3 — downstream field proposals (HIPAA RAG dogfooding) → template improvements — COMPLETE (synthesized)
-Phase: idle (Cycle 3 synthesized 2026-06-08 — overall 8.7/10; next work starts Cycle 4)
-Scope: Canonical Templates & Docs + Tooling & Sync Infrastructure
+Cycle: 4 — fresh-eyes broad-scan → metrics-ownership drift fix (v1.12.1)
+Phase: implement (F1–F5 done; not yet reflected/synthesized)
+Scope: Interactive Console (HTML §6a) + Tooling & Sync Infrastructure + Canonical Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 0 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
 Updated: 2026-06-08
@@ -51,9 +51,30 @@ Updated: 2026-06-08
 - Downstream HIPAA-RAG project: re-pull 1.6.0→1.10.x in one /sync-commands (P7 is the only block-schema change,
   backward-tolerant; P11 optionally wants `,defensive_count` appended to that project's metrics.csv header).
 
+## Cycle 4 (broad-implement F1–F5) — COMPLETE (v1.12.1)
+- DONE F1 — HTML §6a synthesis metrics step no longer writes net_score on the phase=synthesis row
+  (owned only by phase=reflect, P1); writes only category_d_ratio + axis_b_lowest.
+- DONE F2 — HTML §6a metrics header now the 11-col P11 schema (adds defensive_count).
+- DONE F3 — .cycle/metrics.csv:4 Cycle-1 synthesis row blanked (was net_score=2,prod_fixes=2 double-count);
+  render-metrics cumulative net 10→8 (9 fixes − 1).
+- DONE F4 — check-template-sync.mjs structural check 6 (metrics ownership + defensive_count parity);
+  guard.test.mjs +2 fail-closed cases.
+- DONE F5 — README "What's in this repo" now lists all 9 scripts.
+- VERSION 1.12.0→1.12.1; CHANGELOG entry added. Full 12-stage Test Command green.
+
+## Decisions made (don't re-litigate)
+- The metrics-ownership rule (P1: net_score/prod_fixes/new_failure_modes owned ONLY by phase=reflect) is now
+  guard-enforced, not just prose — closes the half-fixed footgun (command bodies were fixed in v1.6.0; the
+  non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
+
+## Open follow-on items
+- The dynamic (non-R14-generated) HTML builders — buildP6aText (§6a), buildP6bText (§6b), buildSeamsText,
+  buildVerificationText, buildTier1/Tier2 — remain hand-maintained and only marker-pinned, not equivalence-locked.
+  F1 was a concrete instance of this residual R14 gap. Candidate: extend gen-html-prompts to these, or add
+  per-builder parity markers. (Effort M–L; structural.)
+
 ## Where I left off
-v1.12.0; full Test Command green (12 stages). Cycle 3 SYNTHESIZED 2026-06-08 — overall 7.9→8.7/10 (+0.8); both
-Cycle-1 priorities resolved (Guard & Tooling 7.5→9, Guard/Test Coverage Quality 6.5→8.5); 0 regressions; no policy
-triggers. PROJECT_HEALTH.md Current Standing + Cycle-3 entry updated; metrics.csv synthesis row appended (Category D
-0%). Roadmap essentially cleared: R7 done, R11 held (DW GA), R13 done; only R12 (multi-operator, exploratory) open.
-Next work = Cycle 4 (a fresh audit with fresh eyes) or R12. Optional: downstream re-pull 1.6.0→1.12.0.
+v1.12.1; full Test Command green (12 stages, now incl. guard check 6 + 2 new fail-closed cases). Cycle 4
+broad-implement F1–F5 COMPLETE — fixed the §6a metrics-ownership drift (P1) the guard couldn't see, corrected
+this repo's double-counted trend (net 10→8), and added a guard so it can't recur. Next: /reflect then optional
+§6a Health Synthesis for Cycle 4, or pick up the R14-residual follow-on above.

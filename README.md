@@ -7,7 +7,7 @@ A structured workflow system for managing audit-implement-verify cycles on large
 - **`CLAUDE.md`** — The **canonical source** for every command's prompt text (project-agnostic; commands reference the Cycle Workflow Config rather than inlining project specifics).
 - **`.claude/commands/`** — Ready-to-copy slash-command files, one per command, **generated from `CLAUDE.md`** by `scripts/gen-commands.mjs`. Copy the whole directory into a project.
 - **`claude-code-guide-v2.html`** — Interactive HTML console with all prompts, project selector, invariant library, cycle tracker, and archive. Open in a browser to use.
-- **`scripts/`** — `gen-commands.mjs` (regenerate the command files) and `check-template-sync.mjs` (drift guard, run in CI).
+- **`scripts/`** — the generators, drift guards, and `.cycle/` helpers. Generation/guards (run in CI): `gen-commands.mjs` (regenerate the command files), `gen-html-prompts.mjs` (generate/lock the console §-prompts from CLAUDE.md), `check-template-sync.mjs` (cross-artifact drift guard), `check-html.mjs` (console JS soundness), `check-output-blocks.mjs` (output-block shape). `.cycle/` helpers: `cycle-context.mjs` (SessionStart substrate loader), `render-metrics.mjs` (metrics trend report), `invariant-check.mjs` (executable invariant runner), `portfolio.mjs` (cross-project dashboard).
 
 ## Three-Tier Workflow
 
