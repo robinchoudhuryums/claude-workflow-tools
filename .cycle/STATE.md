@@ -61,6 +61,10 @@ Updated: 2026-06-08
   guard.test.mjs +2 fail-closed cases.
 - DONE F5 — README "What's in this repo" now lists all 9 scripts.
 - VERSION 1.12.0→1.12.1; CHANGELOG entry added. Full 12-stage Test Command green.
+- DONE R16 (S half, v1.12.2) — per-builder parity guard: check-template-sync structural check 7 pins the 6
+  dynamic console builders (§6a/§6b/§1s/§4v/Tier1/Tier2) to load-bearing contract markers co-present in
+  CLAUDE.md + HTML; guard.test 9th fail-closed case. Closes the residual F1 exposed. Maintainer-only → no re-pull.
+  Promoted INV-33 (metrics ownership, check 6) + INV-34 (builder parity, check 7) into .cycle/config.md (now 34).
 
 ## Decisions made (don't re-litigate)
 - The metrics-ownership rule (P1: net_score/prod_fixes/new_failure_modes owned ONLY by phase=reflect) is now
@@ -68,13 +72,13 @@ Updated: 2026-06-08
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
 ## Open follow-on items
-- The dynamic (non-R14-generated) HTML builders — buildP6aText (§6a), buildP6bText (§6b), buildSeamsText,
-  buildVerificationText, buildTier1/Tier2 — remain hand-maintained and only marker-pinned, not equivalence-locked.
-  F1 was a concrete instance of this residual R14 gap. Candidate: extend gen-html-prompts to these, or add
-  per-builder parity markers. (Effort M–L; structural.)
+- R16 (M–L, full generation of the dynamic builders) remains open on the roadmap. The S half (per-builder
+  parity markers, check 7) shipped this cycle — a dropped/renamed contract now fails closed, but the builders
+  are still hand-written (not generated from CLAUDE.md). Full equivalence is the remaining R16 work.
+- R15 (portfolio status board) logged to ROADMAP (Tier 2, S–M) — not started.
 
 ## Where I left off
-v1.12.1; full Test Command green (12 stages, now incl. guard check 6 + 2 new fail-closed cases). Cycle 4
-broad-implement F1–F5 COMPLETE — fixed the §6a metrics-ownership drift (P1) the guard couldn't see, corrected
-this repo's double-counted trend (net 10→8), and added a guard so it can't recur. Next: /reflect then optional
-§6a Health Synthesis for Cycle 4, or pick up the R14-residual follow-on above.
+v1.12.2; full Test Command green (12 stages); invariant-check 21/21 runnable PASS (34 total). Cycle 4 work
+COMPLETE: F1–F5 (metrics-ownership drift fix) + R16(S) (per-builder parity guard, check 7) + roadmap R15/R16
+logged. INV-33/INV-34 promoted into config.md. Next: close Cycle 4 with a §6a Health Synthesis (would show
+net +1, defensive_count this span) and a PROJECT_HEALTH update, or open a PR for the branch.

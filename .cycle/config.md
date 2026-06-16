@@ -61,6 +61,8 @@ INV-29 | the console's static §-prompts (p0,p1,p2,p3,p4post,p4reflect,p5) are g
 INV-30 | the R3 File System Access flow degrades gracefully (connectRepoFolder shows a fallback message, does not throw) when window.showDirectoryPicker is absent | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (R3 fallback check)
 INV-31 | every workflow output block in CLAUDE.md is shape-valid (balanced open/close delimiters, all required fields present) and is emitted by its producing command | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-output-blocks.mjs
 INV-32 | the R13 output-block harness fails closed on injected drift (dropped field, broken/renamed delimiter, non-emitting producer, unregistered new block) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/check-output-blocks.test.mjs
+INV-33 | the phase=synthesis metrics row never writes net_score/prod_fixes/new_failure_modes (owned only by phase=reflect — P1), and every metrics.csv header in CLAUDE.md/HTML carries the trailing defensive_count column (P11) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 6)
+INV-34 | each dynamic console prompt builder (§6a/§6b/§1s/§4v/Tier1/Tier2) keeps its load-bearing contract markers co-present in CLAUDE.md and the HTML console | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 7)
 
 ### Policy Configuration
 Policy threshold: 4/10

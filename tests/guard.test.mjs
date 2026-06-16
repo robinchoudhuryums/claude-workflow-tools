@@ -87,6 +87,12 @@ expectFail('detects the §6a synthesis double-count footgun (net_score on a synt
   d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace('Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score')); },
   /double-count|net_score/i);
 
+// 9) Dynamic-builder parity (R16): a dropped contract marker in a dynamic
+// console builder (here §6a's "TWO-AXIS GRID") is caught.
+expectFail('detects dynamic console builder drift (a dropped contract marker)',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(/TWO-AXIS GRID/i, 'TWO-PLANE GRID')); },
+  /two-axis grid/i);
+
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} guard test case(s) failed.`); process.exit(1); }

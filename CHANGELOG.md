@@ -5,6 +5,27 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.12.2 — 2026-06-16
+
+R16 (S half) — per-builder parity guard for the DYNAMIC console prompt builders.
+Closes the residual that Cycle-4 F1 exposed: R14 locked the static §-prompts,
+but the per-project dynamic builders were only marker-pinned for known points.
+
+### Added
+- `check-template-sync.mjs` structural check 7: pins each dynamic builder
+  (`buildP6aText` §6a, `buildP6bText` §6b, `buildSeamsText` §1s,
+  `buildVerificationText` §4v, `buildTier1Text`, `buildTier2*Text`) to a small
+  set of load-bearing contract markers that must co-occur in BOTH CLAUDE.md and
+  the HTML console — a dropped/renamed contract now fails closed (6 builders).
+- `guard.test.mjs` 9th case proving the new check fails closed on a dropped
+  contract marker (§6a "TWO-AXIS GRID").
+
+### Notes
+- Maintainer-only repo tooling (like `check-html`/`check-template-sync`); no
+  command body, config schema, or output-block schema changed — no downstream
+  re-pull. The `S` half of R16; full generation of the dynamic builders (M–L)
+  stays open on the roadmap.
+
 ## 1.12.1 — 2026-06-16
 
 Cycle 4 dogfood broad-scan — fixes a cross-artifact drift the guard couldn't
