@@ -64,6 +64,7 @@ INV-32 | the R13 output-block harness fails closed on injected drift (dropped fi
 INV-33 | the phase=synthesis metrics row never writes net_score/prod_fixes/new_failure_modes (owned only by phase=reflect — P1), and every metrics.csv header in CLAUDE.md/HTML carries the trailing defensive_count column (P11) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 6)
 INV-34 | each dynamic console prompt builder (§6a/§6b/§1s/§4v/Tier1/Tier2) keeps its load-bearing contract markers co-present in CLAUDE.md and the HTML console | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 7)
 INV-35 | portfolio-status.mjs joins PROJECT_HEALTH.md health with each project's .cycle/ STATE.md (phase, in-progress, seams K/N + DUE) and metrics.csv (net trend), ranks lowest-overall first, and degrades to "—" when a project has no .cycle/ | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/portfolio-status.test.mjs
+INV-36 | the §T1 console builder (buildTier1Text) contains 100% of the /broad-scan canonical command lines — the dynamic-builder lock (R16) fails closed via headless render + canonicalCoverage | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
 
 ### Policy Configuration
 Policy threshold: 4/10

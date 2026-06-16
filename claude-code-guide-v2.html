@@ -2673,8 +2673,7 @@ Flag:
 - Silent degradation paths: places where failure is swallowed and the
   app continues with wrong results rather than surfacing an error
 
-For findings in any Frozen Subsystem (see the Frozen Subsystems section
-of CLAUDE.md's Cycle Workflow Config, if present):
+For findings in any Frozen Subsystem (see CLAUDE.md Cycle Workflow Config):
 - Prefix the finding with [FROZEN: subsystem-name]
 - Consider whether the finding is worth fixing given retirement —
   Critical/High findings still warrant a fix; Medium/Low findings
@@ -2684,7 +2683,9 @@ DO NOT flag code for "simplification" or "cleanup" unless the current
 code is actively wrong or creates a maintenance trap. Working code
 that could be written differently is not a finding.
 
-After the broad pass, provide ratings out of 10 with reasoning:
+After the broad pass, provide ratings out of 10 with reasoning for
+each dimension listed in the "Health Dimensions" section of CLAUDE.md's
+Cycle Workflow Config. One bullet per dimension.
 ${dimList}
 
 For each rating include:

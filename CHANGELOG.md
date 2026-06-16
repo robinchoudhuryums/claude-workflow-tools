@@ -5,6 +5,41 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.14.0 — 2026-06-16
+
+R16 (first increment) — dynamic-builder lock engine + §T1 locked to /broad-scan.
+Extends the R14 generation lock from the static §-prompts to the runtime
+prompt builders.
+
+### Added
+- `gen-html-prompts.mjs`: a headless render-and-compare engine for the dynamic
+  builders. `renderDynamicPrompt()` executes the console's inline `<script>`
+  under a stubbed DOM and returns a builder's output; `canonicalCoverage()`
+  requires 100% of a canonical command's lines to be present (injected config =
+  ignored extra lines). A `DYNAMIC_MANIFEST` marks each builder `locked` (gated
+  by `--assert`) or report-only. `--assert` now also gates locked builders; the
+  default drift report shows per-builder canonical coverage.
+- `buildTier1Text` (§T1) reconciled to 100% of `/broad-scan` and **locked**
+  (INV-36) — the canonical "rate each Health Dimensions entry" sentence is
+  restored (the injected dimension list follows it) and the frozen-subsystem
+  line matches canonical.
+- `tests/gen-html-prompts.test.mjs`: 6 new cases (canonicalCoverage fail-closed +
+  extra-line tolerance + drop; renderDynamicPrompt project/no-arg/missing paths).
+
+### Notes / paused
+- Measured coverage exposed that §T2a (56%), §T2b (4%), §6b (0%) materially
+  diverge — and that canonical `/targeted-implement` & `/health-pulse` delegate
+  to sibling commands, so locking them as-is would regress the console's
+  standalone prompts. They are tracked report-only in the drift report and
+  **paused** pending the ROADMAP R16 decision (expand canonical to standalone vs.
+  keep the richer console prompts). check 6/7 (R16-S markers) still guard them.
+
+### Downstream impact
+- The §T1 console prompt text was refined toward canonical — re-copy the HTML
+  console if you use it. No `.claude/commands/` body, config schema, or
+  output-block schema changed → no `/sync-commands` re-pull for commands. The
+  engine is maintainer tooling.
+
 ## 1.13.0 — 2026-06-16
 
 R15 — cross-project development-status board. The status sibling of the R8

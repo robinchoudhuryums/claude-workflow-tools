@@ -1,12 +1,26 @@
 # Cycle State
 
 ## Current
-Cycle: 4 — fresh-eyes broad-scan → metrics-ownership drift fix + R16(S) + R15 — COMPLETE (synthesized)
-Phase: idle (Cycle 4 synthesized 2026-06-16 — overall 8.8/10; next work starts Cycle 5)
-Scope: Interactive Console (HTML §6a) + Tooling & Sync Infrastructure + Canonical Docs
+Cycle: 4 — SYNTHESIZED (overall 8.8/10). Post-synthesis roadmap work in progress: R16 (dynamic-builder lock).
+Phase: implement (R16 first increment shipped — §T1 locked + engine; §T2a/§T2b/§6b paused on a decision)
+Scope: Interactive Console (HTML builders) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
 Updated: 2026-06-16
+
+## R16 (dynamic-builder lock) — IN PROGRESS (v1.14.0)
+- DONE engine — gen-html-prompts.mjs: renderDynamicPrompt (headless DOM-stub render) + canonicalCoverage
+  (100%-canonical-line-presence) + DYNAMIC_MANIFEST (locked vs report-only); --assert gates locked builders;
+  drift report shows per-builder coverage. 6 new test cases.
+- DONE §T1 — buildTier1Text reconciled to 100% of /broad-scan (restored the canonical ratings sentence +
+  frozen-subsystem line; injected dim list now follows the canonical sentence) and LOCKED (INV-36).
+- PAUSED §T2a (56%) / §T2b (4%) / §6b (0%) — DECISION NEEDED. Measurement found canonical /targeted-implement &
+  /health-pulse DELEGATE to sibling commands ("see /broad-implement Step 1"), so locking them as-is regresses the
+  console's standalone prompts. Options: (a) expand those canonical bodies to standalone (changes slash-command
+  text for ALL consumers + downstream re-pull) then lock; (b) keep richer console prompts, R16-S-marker-guarded only.
+  §T2a (both standalone, just reworded) is lockable without that decision whenever wanted. Tracked report-only.
+- Decision this session: locked only self-contained §T1; paused the rest rather than regress them (user chose
+  "§T1 + engine now, pause rest"). Engine is reusable for the remaining builders once the (a)/(b) decision lands.
 
 ## Downstream field proposals (Cycle 3 — HIPAA RAG dogfooding) — COMPLETE
 - DONE P1 (1.6.0) — metrics.csv net_score ownership pinned to phase=reflect.
@@ -75,14 +89,10 @@ Updated: 2026-06-16
   guard-enforced, not just prose — closes the half-fixed footgun (command bodies were fixed in v1.6.0; the
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
-## Open follow-on items
-- R16 (M–L, full generation of the dynamic builders) remains open on the roadmap. The S half (per-builder
-  parity markers, check 7) shipped this cycle — a dropped/renamed contract now fails closed, but the builders
-  are still hand-written (not generated from CLAUDE.md). Full equivalence is the remaining R16 work.
 ## Where I left off
-v1.13.0; full Test Command green (13 stages); invariant-check 22/22 runnable PASS (35 total). Cycle 4 SYNTHESIZED
-2026-06-16 — overall 8.7→8.8 (+0.1); 0 regressions; Category D 0%; no policy triggers. The cycle's lesson:
-fresh eyes caught the §6a metrics-ownership drift the prior scoring missed (Cross-Artifact Drift re-baselined
-9→8.5, honest correction). PROJECT_HEALTH Current Standing + Cycle-4 entry updated; metrics.csv synthesis row
-appended (net columns BLANK — the corrected F1 behavior; Category D 0%). Roadmap: R15 DONE; remaining = R16-full
-(M–L, the structural frontier), R9, R12, R11(held). Next: Cycle 5 (fresh audit) or R16-full; PR for the branch is open to do anytime.
+v1.14.0; full Test Command green (13 stages); invariant-check 23/23 runnable PASS (36 total). R16 first increment
+shipped: the dynamic-builder lock ENGINE (renderDynamicPrompt + canonicalCoverage in gen-html-prompts) + §T1
+reconciled to 100% of /broad-scan and LOCKED by --assert (INV-36). §T2a/§T2b/§6b PAUSED on a real decision —
+canonical /targeted-implement & /health-pulse delegate to sibling commands, so locking them as-is regresses the
+console's standalone prompts (see the R16 section above + ROADMAP). Next options: settle the (a) expand-canonical /
+(b) keep-console decision for §T2b/§6b; or lock §T2a now (standalone, just a reword); or open a PR for the branch.

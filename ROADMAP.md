@@ -110,7 +110,8 @@ Item IDs (R#) are stable references for planning sessions.
   transform: console prompts use `[PASTE …]` placeholders + inline
   per-project config, so it's a templating job, not a copy.
 
-- **R16 — Finish R14 for the *dynamic* console builders.** `effort: M–L`
+- **R16 — Finish R14 for the *dynamic* console builders.** `effort: M–L` — 🟡 IN PROGRESS (v1.14.0). Dynamic-builder lock engine shipped (`renderDynamicPrompt` + `canonicalCoverage` in `gen-html-prompts.mjs`); §T1 (`buildTier1Text`) reconciled to 100% of `/broad-scan` and **locked** by `--assert` (INV-36).
+  **Paused (decision needed):** measurement showed §T2a `/targeted-audit` 56%, §T2b `/targeted-implement` 4%, §6b `/health-pulse` 0% — and canonical `/targeted-implement` & `/health-pulse` *delegate to sibling commands* ("see /broad-implement Step 1"), so locking them as-is would regress the console's deliberately-standalone prompts. Options: (a) expand those canonical bodies to be standalone (changes the slash-command text for ALL consumers + a downstream re-pull), then lock; (b) keep the richer console prompts and leave them R16-S-marker-guarded only. §T2a (both standalone, just reworded) can be locked without that decision whenever desired.
   R14 generated + locked only the static §-prompts (`p0,p1,p2,p3,p4post,
   p4reflect,p5`). The per-project *dynamic* builders — `buildP6aText` (§6a
   synthesis), `buildP6bText` (§6b pulse), `buildSeamsText`,
