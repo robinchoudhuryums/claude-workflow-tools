@@ -69,7 +69,7 @@ Item IDs (R#) are stable references for planning sessions.
   subsystem across my whole portfolio most needs attention this week."
   The HTML already has a project selector; this is the roll-up above it.
 
-- **R15 — Portfolio *status* board (extends R8).** `effort: S–M (~½ day)`
+- **R15 — Portfolio *status* board (extends R8).** `effort: S–M (~½ day)` — ✅ DONE (v1.13.0). `scripts/portfolio-status.mjs` joins health with `.cycle/` STATE + metrics into a `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated` board; fail-closed test (INV-35) wired into the Test Command + CI.
   `portfolio.mjs` (R8) ranks projects by *health score* (it reads only the
   `Current Standing` block), but not by *development status*. Join it with
   the `.cycle/` data every project already writes — `STATE.md` (`Phase`,

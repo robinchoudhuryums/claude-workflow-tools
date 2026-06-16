@@ -5,6 +5,29 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.13.0 — 2026-06-16
+
+R15 — cross-project development-status board. The status sibling of the R8
+health dashboard.
+
+### Added
+- `scripts/portfolio-status.mjs`: joins each project's `PROJECT_HEALTH.md`
+  health score with the `.cycle/` data it already writes — `STATE.md`
+  (phase, in-progress, "Subsystem cycles since last Seams audit" K vs the
+  cadence N → DUE) and `metrics.csv` (net-score trend) — into one board:
+  `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated`. Ranks
+  lowest-overall first; surfaces in-progress projects to /cycle-resume and
+  DUE seams audits; projects without a `.cycle/` directory still list (status
+  columns degrade to `—`). Same args as `portfolio.mjs`; `--out FILE` writes.
+- `tests/portfolio-status.test.mjs` (INV-35): fixture projects prove the
+  join, ranking, seams-DUE/cadence, net trend (comma-in-notes safe), and the
+  no-`.cycle/` degradation. Wired into the Test Command + CI.
+
+### Downstream impact
+- Additive helper — copy `scripts/portfolio-status.mjs` if you want it. No
+  command body, config schema, or output-block schema changed → no
+  `/sync-commands` re-pull needed for commands.
+
 ## 1.12.2 — 2026-06-16
 
 R16 (S half) — per-builder parity guard for the DYNAMIC console prompt builders.

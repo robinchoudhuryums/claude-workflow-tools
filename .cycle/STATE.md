@@ -4,7 +4,7 @@
 Cycle: 4 — fresh-eyes broad-scan → metrics-ownership drift fix (v1.12.1)
 Phase: reflect (F1–F5 reflected; metrics row appended; not yet synthesized)
 Scope: Interactive Console (HTML §6a) + Tooling & Sync Infrastructure + Canonical Docs
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
 Updated: 2026-06-08
 
@@ -65,6 +65,10 @@ Updated: 2026-06-08
   dynamic console builders (§6a/§6b/§1s/§4v/Tier1/Tier2) to load-bearing contract markers co-present in
   CLAUDE.md + HTML; guard.test 9th fail-closed case. Closes the residual F1 exposed. Maintainer-only → no re-pull.
   Promoted INV-33 (metrics ownership, check 6) + INV-34 (builder parity, check 7) into .cycle/config.md (now 34).
+- DONE R15 (v1.13.0) — scripts/portfolio-status.mjs: cross-project development-status board joining
+  PROJECT_HEALTH health with .cycle/ STATE (phase/in-progress/seams K/N+DUE) + metrics (net trend);
+  ranks lowest-overall first, flags resume/seams-DUE, degrades to "—" with no .cycle/. tests/portfolio-status.test.mjs
+  (INV-35, 16 assertions) wired into Test Command (now 13 stages) + CI. README/CLAUDE helper docs updated. Additive helper.
 
 ## Decisions made (don't re-litigate)
 - The metrics-ownership rule (P1: net_score/prod_fixes/new_failure_modes owned ONLY by phase=reflect) is now
@@ -75,10 +79,8 @@ Updated: 2026-06-08
 - R16 (M–L, full generation of the dynamic builders) remains open on the roadmap. The S half (per-builder
   parity markers, check 7) shipped this cycle — a dropped/renamed contract now fails closed, but the builders
   are still hand-written (not generated from CLAUDE.md). Full equivalence is the remaining R16 work.
-- R15 (portfolio status board) logged to ROADMAP (Tier 2, S–M) — not started.
-
 ## Where I left off
-v1.12.2; full Test Command green (12 stages); invariant-check 21/21 runnable PASS (34 total). Cycle 4 work
-COMPLETE: F1–F5 (metrics-ownership drift fix) + R16(S) (per-builder parity guard, check 7) + roadmap R15/R16
-logged. INV-33/INV-34 promoted into config.md. Next: close Cycle 4 with a §6a Health Synthesis (would show
-net +1, defensive_count this span) and a PROJECT_HEALTH update, or open a PR for the branch.
+v1.13.0; full Test Command green (13 stages); invariant-check 22/22 runnable PASS (35 total). Cycle 4 work
+COMPLETE: F1–F5 (metrics-ownership drift fix) + R16(S) (per-builder parity guard) + R15 (portfolio-status
+board). INV-33/34/35 in config.md. Roadmap: R15 DONE; remaining = R16-full (M–L), R9, R12, R11(held). Next:
+close Cycle 4 with a §6a Health Synthesis + PROJECT_HEALTH update, or open a PR for the branch.
