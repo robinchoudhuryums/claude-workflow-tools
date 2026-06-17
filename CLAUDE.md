@@ -1395,6 +1395,102 @@ Independent verification in a fresh session with no implementation context. Prod
 - Cycle execution quality (3 yes/no facts with evidence)
 - Coverage gap report (Category D candidates — fixes without regression tests)
 
+Canonical prompt body — the §4v console builder (`buildVerificationText`) is
+locked to this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16, full
+textual lock). The per-project invariant library and the 5 rotation probes are
+injected at render time; bracketed lines are render-time placeholders.
+
+```
+Do not make any changes to any files during this session.
+
+IMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.
+
+You are verifying the output of a complete audit-implement cycle.
+
+INPUTS — paste these from the completed cycle:
+[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]
+
+[PASTE CYCLE SUMMARY BLOCK FROM /REFLECT HERE]
+
+[INVARIANT LIBRARY — the current library is injected here per project]
+
+---
+
+Conduct the following verification in four parts. Use code reads and targeted test executions — not prose assessments or trust in the cycle's self-reported results. (If the project's Test Command is `manual`, substitute the relevant Regression Scenarios from CLAUDE.md for test executions and rely on close code reads; treat a failed scenario as a failed probe.)
+
+PART 1 — INVARIANT PROBE RESULTS
+Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected at copy time — do NOT substitute your own picks):
+
+MANDATORY ROTATION PROBES:
+[5 mandatory rotation probes — pre-selected from the library at render time]
+
+For each invariant probed:
+- Read the relevant code directly (do not rely on the cycle's description of what changed)
+- If a test exists for this invariant, run it and report the result
+- If no test exists, verify by code inspection and explain what you checked
+- Result: PASS / FAIL / UNVERIFIED (with reason for each)
+
+PART 2 — REGRESSION COUNT
+Count regressions using this hard definition: any behavior change where the post-cycle state is worse under any realistic load than the pre-cycle state — whether the cycle documented it as a "tradeoff" or not. A tradeoff that makes things worse in a realistic scenario IS a regression.
+
+For each regression found:
+- Describe the behavior that is now worse
+- Cite the specific code change that caused it
+- Note whether the cycle documented it (as a tradeoff or otherwise)
+- Rate severity: Critical / High / Medium / Low
+
+Calculate: Net score = (findings fixed) − (regressions introduced)
+
+PART 3 — CYCLE EXECUTION QUALITY
+Answer three yes/no questions with concrete evidence (not just the cycle's claims):
+1. Did the cycle run tests to completion? (Check for test output artifacts, not just assertions that tests passed)
+2. Did the cycle cross-check against the Common Gotchas section of CLAUDE.md? (Look for evidence in implementation decisions)
+3. Did the cycle introduce new entries to Common Gotchas? (Check CLAUDE.md for recent additions — this is a lagging indicator of operator-only state gaps)
+
+PART 4 — COVERAGE GAP REPORT
+For every fix claimed in the Implementation Summary Block:
+- Does a test exist that would fail if the bug came back?
+- If yes: cite the test file and what it asserts
+- If no: flag as a Category D candidate (fix without regression test)
+
+Calculate: Category D ratio = (fixes without regression tests) / (total fixes)
+
+---
+
+Produce a VERIFICATION BLOCK formatted exactly as shown below:
+
+---VERIFICATION BLOCK---
+Verified scope: [subsystem group name from implementation summary]
+Verification date: [today's date]
+Cycle being verified: [subsystem + cycle reference]
+
+INVARIANT PROBE RESULTS:
+INV-XX | [invariant description] | PASS / FAIL / UNVERIFIED | [evidence summary]
+(repeat for each probed invariant)
+Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
+
+REGRESSION COUNT:
+Regressions found: [N]
+R1 | [description] | [severity] | Documented by cycle: Y/N | [code location]
+(repeat for each regression, or "None found")
+Net score: [findings fixed] − [regressions] = [net]
+
+CYCLE EXECUTION QUALITY:
+Tests run to completion: YES/NO — [evidence]
+Common Gotchas cross-checked: YES/NO — [evidence]
+New Common Gotchas added: YES/NO — [what was added, or N/A]
+
+COVERAGE GAP REPORT:
+Fixes with regression tests: [N of M]
+Category D candidates (fixes without regression tests):
+[action ID] | [fix description] | [what test is needed]
+(repeat for each, or "None — all fixes have regression tests")
+Category D ratio: [X%]
+---END VERIFICATION BLOCK---
+
+Finally, answer: "What invariants should be added to the library based on what this cycle revealed?" List any new invariants discovered during verification that should be probed in future cycles.
+```
+
 ### Seams & Invariants Audit (Section 1s in HTML tool)
 
 Runs on the Seams Audit Cadence from the Cycle Workflow Config (default
@@ -1408,6 +1504,109 @@ No implementation phase. Produces:
 On completion, reset "Subsystem cycles since last Seams audit" to 0 in
 `.cycle/STATE.md` (if the project uses `.cycle/`).
 
+Canonical prompt body — the §1s console builder (`buildSeamsText`) is locked to
+this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16). The project
+subsystem list and the current invariant library are injected at render time;
+bracketed lines are render-time placeholders.
+
+```
+Do not make any changes to any files during this session.
+
+[PASTE SYSTEMS MAP SUMMARY HERE]
+
+This is a Seams & Invariants Audit. It runs every 3–4 subsystem cycles and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
+
+Project subsystems for reference:
+[the project subsystem list is injected here per project]
+
+INPUTS — read these before starting:
+1. CLAUDE.md — especially the Common Gotchas section and Key Design Decisions
+2. The Operator State Checklist (manual setup steps, env vars, one-time migrations)
+3. The current invariant library below
+
+[CURRENT INVARIANT LIBRARY — the current library is injected here per project]
+
+---
+
+Conduct the following audit in four parts:
+
+PART 1 — SEAM INVENTORY
+Identify every seam (boundary, interface, or handoff point) between the subsystems listed above. For each seam:
+- Which two subsystems does it connect?
+- What data or control crosses the boundary? (function calls, shared state, events, DB tables, config values)
+- What assumptions does each side make about the other?
+- Is the contract explicit (typed interface, schema, documented API) or implicit (convention, coincidence)?
+
+Focus especially on seams where:
+- One side was recently modified by a subsystem audit but the other side wasn't
+- The contract is implicit rather than explicit
+- Failure on one side would silently degrade the other (no error, just wrong results)
+
+PART 2 — INVARIANT VALIDATION
+For each invariant in the current library:
+- Probe it via code read and/or test execution. Result: PASS / FAIL / STALE / UNVERIFIABLE
+- STALE means the invariant references code that has been refactored or removed — it needs rewording or retirement
+- If FAIL: describe what broke and which subsystem cycle likely caused it
+- If UNVERIFIABLE: explain what would need to exist (test, assertion, monitoring) to make it verifiable
+
+PART 3 — INVARIANT DISCOVERY
+Based on Part 1 (seam inventory), identify new invariants that should be added to the library. These are rules that:
+- Must hold across subsystem boundaries (not internal to one subsystem)
+- Would cause silent degradation or data corruption if violated
+- Are not currently tested or asserted anywhere
+
+For each proposed invariant:
+- State the rule clearly in one sentence
+- Identify which seam it guards
+- Note whether it is currently testable or would need new infrastructure
+
+Also review the Common Gotchas section of CLAUDE.md and the Operator State Checklist for any rules that should be promoted to formal invariants.
+
+PART 4 — HORIZONTAL BUG-SHAPE OBSERVATIONS
+Provide cross-cutting observations relevant to the five Axis B categories from Health Synthesis. This is not a score — it is evidence for the next synthesis:
+- Silent Degradation: any new silent-failure paths discovered at seams
+- Startup Ordering: any ordering dependencies between subsystems that lack validation
+- Operator-Only State Gaps: any manual steps that affect multiple subsystems but have no automated check
+- Parallel Source-of-Truth Drift: any definitions, configs, or types duplicated across subsystem boundaries
+- Test Coverage Quality: any seams that have zero test coverage
+
+---
+
+Produce the following output:
+
+---SEAMS & INVARIANTS AUDIT BLOCK---
+Audit date: [today's date]
+Subsystem cycles since last seams audit: [N or "First audit"]
+
+SEAM INVENTORY:
+[seam-ID] | [Subsystem A] ↔ [Subsystem B] | [What crosses] | Contract: explicit/implicit | Risk: [High/Med/Low]
+(repeat for each seam identified)
+
+INVARIANT LIBRARY UPDATE:
+[Validated — one PASS/FAIL/STALE/UNVERIFIABLE line per current invariant, injected at render time]
+[INV-XX] | [PASS/FAIL/STALE/UNVERIFIABLE] | [one-line evidence]
+(repeat for each existing invariant)
+
+Proposed additions:
+[INV-NEW-XX] | [invariant rule] | Guards seam: [seam-ID] | Testable: Yes/No
+(repeat for each proposed invariant)
+
+Proposed retirements:
+[INV-XX] | [reason — stale, subsumed, or no longer applicable]
+(or "None")
+
+HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring):
+Silent Degradation: [observations]
+Startup Ordering: [observations]
+Operator-Only Gaps: [observations]
+Parallel Drift: [observations]
+Test Coverage: [observations]
+
+RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
+[Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
+---END SEAMS & INVARIANTS AUDIT BLOCK---
+```
+
 ### Health Synthesis (Section 6a in HTML tool)
 
 Full benchmarkable assessment after a complete cycle. Takes 3 inputs per subsystem (Session Handoff + Cycle Summary + Verification Block). Produces:
@@ -1415,6 +1614,132 @@ Full benchmarkable assessment after a complete cycle. Takes 3 inputs per subsyst
 - Weighted average (secondary signal)
 - Delta summary vs prior cycle
 - Policy response triggers (Axis B category at threshold for consecutive cycles)
+
+Canonical prompt body — the §6a console builder (`buildP6aText`) is locked to this
+verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16). The subsystem list,
+vertical dimensions, and Axis B categories/playbooks are injected at render time;
+bracketed lines are render-time placeholders. (This is the builder Cycle-4 F1
+silently broke — the metrics-ownership rule in step 8 is now locked.)
+
+```
+Do not make any changes to any files during this session.
+
+PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
+(Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
+
+[one entry per project subsystem — three blocks each, injected at render time]
+[OPTIONAL: PASTE PRIOR SYNTHESIS SCORE HERE FOR DELTA COMPARISON]
+
+[OPTIONAL: PASTE SEAMS & INVARIANTS AUDIT BLOCK — if a Seams audit ran this cycle, its horizontal observations feed directly into Axis B scoring and its invariant library updates should be reflected in invariant probe results]
+
+Using these inputs as your primary source of truth, produce a Project Health Report scored on two orthogonal axes.
+
+Important: The Verification Block is an independent check — its regression counts, invariant probe results, and coverage gap data take precedence over the cycle's self-reported results where they conflict.
+
+If a Verification Block is missing for a subsystem: mark Axis B confidence as "Low — no independent verification" for that subsystem's contributions. Score Axis B categories using only the Cycle Summary Block and Session Handoff Block, but note that these are self-reported and unverified. Do NOT skip Axis B scoring entirely — provide best-effort scores with the low-confidence flag.
+
+═══════════════════════════════════════════════════
+AXIS A — VERTICAL (Subsystem Health)
+═══════════════════════════════════════════════════
+
+For each dimension below, provide:
+- A score out of 10, OR "Not assessed this cycle" if no direct signal exists from the cycle inputs
+  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. RAG, Business Viability, or any domain-specific dimension without direct signal this cycle).
+- Coverage confidence: High (full cycle with verification block) / Medium (cycle summary only, no verification) / Low (inferred from adjacent signals)
+- 2–3 sentences of reasoning grounded in specific findings from the cycle inputs, not general impressions
+- The single most important finding or unresolved item driving the score
+- One concrete action that would most improve this score
+
+Vertical dimensions:
+[the project health dimensions are injected here per project]
+
+═══════════════════════════════════════════════════
+AXIS B — HORIZONTAL (Bug-Shape Posture)
+═══════════════════════════════════════════════════
+
+Score each of the following cross-cutting categories. These measure systemic bug patterns that span subsystems — no single vertical audit owns them. Evidence comes from all subsystem inputs combined, especially the Verification Blocks.
+
+[the project Axis B categories + their "Measured by" definitions are injected here]
+For each Axis B category provide:
+- Score 1–10
+- Trend vs. prior cycle: Improving / Stable / Degrading (or "First measurement" if no prior data)
+- 1–2 sentences of key evidence from this cycle's inputs
+- One specific action that would improve this category
+
+═══════════════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════════════
+
+Produce the following sections in order:
+
+1. TWO-AXIS GRID (this is the primary output):
+
+AXIS A — VERTICAL              Score     Confidence
+────────────────────────────────────────────────────
+[each dimension]                X/10      High/Med/Low
+                                ...or "Not assessed"
+
+AXIS B — HORIZONTAL             Score     Trend
+────────────────────────────────────────────────────
+[one grid row per Axis B category, injected at render time]
+
+Reading the grid:
+- Vertical axis tells you which subsystem to audit next (lowest-scoring assessed dimension).
+- Horizontal axis tells you which bug class needs policy intervention (lowest-scoring category, especially if trending down).
+
+2. OVERALL WEIGHTED AVERAGE (secondary signal only — do not use as the primary assessment):
+   A single X/10 score. State the weights used. This exists for quick comparison across cycles, not for decision-making.
+
+3. DELTA SUMMARY (if prior score provided):
+   Which dimensions improved, declined, or held steady on BOTH axes, and why.
+
+4. PRIORITY CALLS:
+- Vertical: the dimension most in need of attention before the next development cycle
+- Horizontal: the category most in need of policy intervention
+- Any subsystem where the Verification Block signals failed invariants or unresolved Critical/High findings
+- Any Axis B category at ≤5/10 for 2 consecutive cycles — this triggers an automatic policy response (see section 7 below)
+- The dimension closest to a meaningful threshold (nearly production-ready, or at risk of regression)
+
+5. PLAIN-LANGUAGE SUMMARY:
+One paragraph summarizing where the project stands, written for a technical stakeholder who hasn't read the full report.
+
+6. PROJECT_HEALTH.md UPDATE BLOCK:
+Produce a ready-to-paste block containing the Current Standing section and a new Cycle entry with both axes formatted for the score history.
+
+7. POLICY RESPONSE TRIGGERS:
+Check each Axis B category against its prior cycle score. If any category scored ≤5/10 in BOTH this cycle and the prior cycle (2 consecutive cycles), it triggers a mandatory policy response in the next cycle's scope.
+
+For each triggered category, produce a POLICY RESPONSE entry:
+
+---POLICY RESPONSE TRIGGERED---
+Category: [Axis B category name]
+Consecutive poor cycles: [N]
+Current score: [X/10] | Prior score: [X/10]
+Root pattern: [one-sentence description of the systemic pattern causing the persistent low score]
+
+Prescribed policy fix (include in next cycle scope):
+- [specific, concrete action — not "improve X" but "add ESLint rule for Y" or "write test for Z"]
+- [second action if needed]
+
+Scope addition: Add these policy fixes to the next subsystem cycle's Implementation Handoff Block as mandatory actions alongside the subsystem-specific findings.
+---END POLICY RESPONSE---
+
+Use these category-specific playbooks as starting points:
+
+[per-Axis-B-category policy playbooks injected here]
+If no categories are triggered, output: "No policy responses triggered this cycle."
+
+8. METRICS (optional — only if the project uses .cycle/ state):
+If a .cycle/ directory exists at the project root, append one row to
+.cycle/metrics.csv (create it with the header row if absent):
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
+Fill phase=synthesis with the Category D ratio from the Verification
+Block and axis_b_lowest = the lowest-scoring Axis B category this cycle.
+Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK
+— those columns are owned ONLY by the phase=reflect rows (/reflect is
+their sole writer), so a synthesis row must not repeat them or the
+cumulative trend double-counts. If .cycle/ does not exist, skip this step.
+```
 
 ---
 
@@ -1813,6 +2138,57 @@ COVERAGE GAP REPORT:
 Fixes with regression tests: [N of M]
 Category D ratio: [X%]
 ---END VERIFICATION BLOCK---
+```
+
+### SEAMS & INVARIANTS AUDIT BLOCK
+```
+---SEAMS & INVARIANTS AUDIT BLOCK---
+Audit date: [today's date]
+Subsystem cycles since last seams audit: [N or "First audit"]
+
+SEAM INVENTORY:
+[seam-ID] | [Subsystem A] ↔ [Subsystem B] | [What crosses] | Contract: explicit/implicit | Risk: [High/Med/Low]
+(repeat for each seam identified)
+
+INVARIANT LIBRARY UPDATE:
+[Validated — one PASS/FAIL/STALE/UNVERIFIABLE line per current invariant, injected at render time]
+[INV-XX] | [PASS/FAIL/STALE/UNVERIFIABLE] | [one-line evidence]
+(repeat for each existing invariant)
+
+Proposed additions:
+[INV-NEW-XX] | [invariant rule] | Guards seam: [seam-ID] | Testable: Yes/No
+(repeat for each proposed invariant)
+
+Proposed retirements:
+[INV-XX] | [reason — stale, subsumed, or no longer applicable]
+(or "None")
+
+HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring):
+Silent Degradation: [observations]
+Startup Ordering: [observations]
+Operator-Only Gaps: [observations]
+Parallel Drift: [observations]
+Test Coverage: [observations]
+
+RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
+[Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
+---END SEAMS & INVARIANTS AUDIT BLOCK---
+```
+
+### POLICY RESPONSE
+```
+---POLICY RESPONSE TRIGGERED---
+Category: [Axis B category name]
+Consecutive poor cycles: [N]
+Current score: [X/10] | Prior score: [X/10]
+Root pattern: [one-sentence description of the systemic pattern causing the persistent low score]
+
+Prescribed policy fix (include in next cycle scope):
+- [specific, concrete action — not "improve X" but "add ESLint rule for Y" or "write test for Z"]
+- [second action if needed]
+
+Scope addition: Add these policy fixes to the next subsystem cycle's Implementation Handoff Block as mandatory actions alongside the subsystem-specific findings.
+---END POLICY RESPONSE---
 ```
 
 ### PR REVIEW BLOCK

@@ -20,10 +20,11 @@ Item IDs (R#) are stable references for planning sessions.
   will likely re-prioritise the rest of this roadmap. *(In progress —
   `/setup-cycle` is the first step.)*
 
-- **R4 — `/cycle-init` scaffolding command.** `effort: S`
-  One command that creates `.cycle/`, seeds `STATE.md` from the
-  template, and stubs `PROJECT_HEALTH.md`. Removes the manual `mkdir` +
-  copy friction from adopting the file-backed state flow.
+- **R4 — `/cycle-init` scaffolding command.** `effort: S` — ✅ DONE.
+  `/cycle-init` (`.claude/commands/cycle-init.md`) creates `.cycle/`, seeds
+  `STATE.md` from the template, stubs `metrics.csv` / `estimates.csv` /
+  `PROJECT_HEALTH.md`, and never overwrites an existing file. Removes the manual
+  `mkdir` + copy friction from adopting the file-backed state flow.
 
 - **R5 — Command versioning + changelog.** `effort: S`
   Add a `VERSION` / `CHANGELOG.md` and a version marker the guard
@@ -39,13 +40,12 @@ Item IDs (R#) are stable references for planning sessions.
 
 ## Tier 2 — Medium-term (weeks–months)
 
-- **R6 — SessionStart context-loader hook.** `effort: S–M`
-  A `SessionStart` hook that auto-loads the systems map + invariant
-  library + `.cycle/STATE.md` at the start of every session. Directly
-  retires the tool's most-cited friction ("paste the systems map every
-  session") and the cross-session memory burden the whole handoff-block
-  system exists to work around. Highest structural leverage of the
-  medium-term set.
+- **R6 — SessionStart context-loader hook.** `effort: S–M` — ✅ DONE.
+  `scripts/cycle-context.mjs` (wired as a `SessionStart` hook) auto-loads the
+  STATE substrate + Current Standing + invariant count into every session;
+  fail-safe (prints nothing with no `.cycle/`). Directly retired the tool's
+  most-cited friction ("paste the systems map every session") and the
+  cross-session memory burden the handoff-block system works around.
 
 - **R2 — Metrics → visualization.** `effort: M`
   Phase 3 added `metrics.csv` + `PROJECT_HEALTH.md` history but nothing
@@ -64,10 +64,11 @@ Item IDs (R#) are stable references for planning sessions.
   operator request. Health over time now has a sibling for health
   per-change.
 
-- **R8 — Cross-project portfolio dashboard.** `effort: M`
-  Aggregate each repo's `PROJECT_HEALTH.md` into one board: "which
-  subsystem across my whole portfolio most needs attention this week."
-  The HTML already has a project selector; this is the roll-up above it.
+- **R8 — Cross-project portfolio dashboard.** `effort: M` — ✅ DONE.
+  `scripts/portfolio.mjs` aggregates each repo's `PROJECT_HEALTH.md` "Current
+  Standing" into one board ranked lowest-overall-first (with the portfolio
+  average) — "which project across my portfolio most needs attention." R15
+  extended it with the development-status sibling (`portfolio-status.mjs`).
 
 - **R15 — Portfolio *status* board (extends R8).** `effort: S–M (~½ day)` — ✅ DONE (v1.13.0). `scripts/portfolio-status.mjs` joins health with `.cycle/` STATE + metrics into a `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated` board; fail-closed test (INV-35) wired into the Test Command + CI.
   `portfolio.mjs` (R8) ranks projects by *health score* (it reads only the
@@ -112,17 +113,29 @@ Item IDs (R#) are stable references for planning sessions.
 
 - **R16 — Finish R14 for the *dynamic* console builders.** `effort: M–L` — ✅ DONE (v1.14.0–1.16.0). Dynamic-builder lock engine shipped (`renderDynamicPrompt` + `canonicalCoverage` in `gen-html-prompts.mjs`); **3 of 4 dynamic builders locked** to 100% canonical coverage by `--assert` (INV-36): §T1 (`buildTier1Text` ← /broad-scan), §T2a (`buildTier2AuditText` ← /targeted-audit), §6b (`buildP6bText` ← /health-pulse).
   **§T2b resolved via option (b):** canonical `/targeted-implement` deliberately *delegates* to `/broad-implement` Step 1, while the console prompt must be standalone — an intentional divergence. Rather than duplicate the Step-1 detail into canonical (which would contradict the repo's "parity-guard, not factoring" decision), `buildTier2ImplText` stays **report-only, guarded by the R16-S parity markers** (a dropped/renamed contract still fails closed). The earlier measurement (§T2a 56%, §T2b 4%, §6b 0%) is what surfaced that only §T2b genuinely delegates; §T2a and §6b were standalone reword-drift and are now locked.
-  R14 generated + locked only the static §-prompts (`p0,p1,p2,p3,p4post,
-  p4reflect,p5`). The per-project *dynamic* builders — `buildP6aText` (§6a
-  synthesis), `buildP6bText` (§6b pulse), `buildSeamsText`,
-  `buildVerificationText`, `buildTier1/Tier2Text` — are still hand-written
-  JS, guarded only by marker-pins, not full equivalence. **Cycle 4 (F1)
-  found exactly this class:** §6a silently violated the P1 metrics-ownership
-  rule and had corrupted this repo's own trend. Either extend the
-  transform to cover these builders, or (cheaper) add per-builder parity
-  markers/structural checks so each stays aligned with its canonical rule.
-  Closes the last residual of the fourth-copy drift class. `S` for targeted
-  markers, `M–L` for full generation of the dynamic builders.
+  **R16-full — ✅ DONE (v1.18.0, W1).** The remaining hand-written dynamic
+  builders — `buildVerificationText` (§4v), `buildSeamsText` (§1s), and
+  `buildP6aText` (§6a) — are now textually locked too. They are cycle-type
+  prompts, not slash commands, so a new `sectionBody()` extractor diffs each
+  against a canonical body in a fenced block under its `### ` section heading
+  (no `/command` minted). **6 of 7 dynamic builders are now `--assert`-locked at
+  100% line coverage** (only §T2b stays report-only-by-design); zero marker-only
+  builders remain. The §6a lock pins the P1 metrics-ownership rule that Cycle-4
+  F1 broke (proven fail-closed). The §1s/§6a output blocks (`SEAMS & INVARIANTS
+  AUDIT BLOCK`, `POLICY RESPONSE`) are now registered + shape-guarded by
+  check-output-blocks. The fourth-copy drift class is fully closed.
+
+- **R17 — Hosted-console UX (GitHub Pages tool).** `effort: M` — ✅ DONE (v1.17.0).
+  Followed from hosting the console at `https://robinchoudhuryums.github.io/claude-workflow-tools/`:
+  (a) a **Dashboard** landing showing live per-project status — GitHub-primary
+  (`PROJECT_HEALTH.md` + `.cycle/STATE.md`) with cache → self-reported fallback,
+  optional local-only token for private repos; parsers locked by `check-html`
+  (INV-37); (b) **light/dark theme** (chrome-only flip, persists, respects
+  `prefers-color-scheme`); (c) **mobile nav drawer** replacing the prior
+  `nav{display:none}` dead-end. All network deferred via `setTimeout` so headless
+  checks stay green. Possible follow-ons: scroll-spy/active-state sync on deep
+  links, an accessibility (keyboard) pass on custom controls, and a cross-project
+  "worst-first" sort on the Dashboard.
 
 ## Tier 4 — Future possibilities (exploratory)
 

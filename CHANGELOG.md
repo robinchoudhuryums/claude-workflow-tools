@@ -5,6 +5,78 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.18.0 — 2026-06-17
+
+Closes the last unguarded gaps in the HTML console — both 8.5 priorities from
+the Cycle-4 synthesis (top vertical: "browser-only render/FSA paths not
+headless-tested"; top horizontal: "dynamic console builders marker-pinned but
+not generated"). No command body / config schema change → no `/sync-commands`
+re-pull.
+
+### W2 — headless coverage of browser-only paths
+- `check-html` now captures `innerHTML` per element id and asserts the render
+  *outputs* (subsystem table, invariant table, cycle tracker, Dashboard board),
+  not merely that init didn't throw. Proven fail-closed via mutation.
+- Factored the duplicated state-import logic in `importStateFile` and
+  `loadStateFromRepo` into shared `stateBackupKeys` / `applyStateKeys` helpers
+  (the Parallel-Source-of-Truth shape the tool polices), then headless-tested
+  the serialize→wipe→restore round-trip — every `ccg:*` key restores losslessly,
+  foreign keys dropped on both sides.
+
+### W1 — full textual lock of the remaining dynamic builders (R16-full)
+- §4v (`buildVerificationText`), §1s (`buildSeamsText`), §6a (`buildP6aText`)
+  were marker-pinned but not textually locked (no canonical body to diff). Added
+  `sectionBody()` — extracts a canonical body from a fenced block under a
+  non-slash `### ` heading, so these cycle-type prompts get locked **without
+  minting a slash command**. Each now carries its full canonical body in
+  CLAUDE.md and is gated by `gen-html-prompts --assert` at 100% line coverage.
+- **6 of the 7 dynamic builders are now textually locked** (was 3); only §T2b
+  remains report-only-by-design. Zero marker-only builders left. The §6a lock
+  specifically catches the Cycle-4 F1 class (the metrics-ownership rule is now
+  pinned — proven fail-closed).
+- Registered the `SEAMS & INVARIANTS AUDIT BLOCK` (§1s) and `POLICY RESPONSE`
+  (§6a) output blocks in `check-output-blocks` + homed them in Handoff Block
+  Formats, so their shape is guarded now that they live in CLAUDE.md.
+- Added `sectionBody` unit tests; check-template-sync's marker pins are retained
+  as a documented secondary layer (defense-in-depth).
+
+### Roadmap reconciliation
+- Marked R4 (`/cycle-init`), R6 (SessionStart hook), R8 (`portfolio.mjs`) DONE —
+  shipped earlier but never reflected. R16 closed in full.
+
+## 1.17.0 — 2026-06-17
+
+Hosted-console UX: a project Dashboard, light mode, and working mobile nav.
+All in `claude-code-guide-v2.html` (the GitHub Pages tool) — no command body,
+config schema, or output-block change, so no `/sync-commands` re-pull.
+
+### Added
+- **Dashboard** — a new landing section showing live status for each configured
+  project. Data source is GitHub-primary with a fallback chain: live fetch of
+  `PROJECT_HEALTH.md` + `.cycle/STATE.md` (raw URL for public repos, contents
+  API for private when a token is set) → last-cached (with relative timestamp)
+  → self-reported → "no source". Per-card ⚙ editor sets the `owner/repo[@branch]`
+  mapping and a manual fallback; an optional read-only GitHub token (stored only
+  in `localStorage`, sent only to `api.github.com`) covers private repos and
+  rate limits. All network calls are deferred via `setTimeout`, so the headless
+  `check-html` / `gen-html-prompts --assert` stubs never touch `fetch`.
+- **Light / dark theme** — a `[data-theme="light"]` chrome flip (prompt/code
+  blocks stay dark in both themes for legibility); toggle in the sidebar + mobile
+  bar; persists to `localStorage` (`ccg:theme`); first load respects
+  `prefers-color-scheme`.
+- **Mobile navigation** — the 768px breakpoint used to do `nav{display:none}`,
+  leaving phones with no nav at all. Replaced with a slide-in drawer + hamburger
+  in a sticky top bar + tap-backdrop; nav links close the drawer.
+
+### Guarded
+- INV-37: the Dashboard's pure parsers (`parseHealth` / `parseState` /
+  `parseRepoSpec` / `scoreColor`) are locked by `check-html`, verified against
+  real `PROJECT_HEALTH.md` / `STATE.md` shapes, so a regex regression can't
+  silently blank the board.
+
+### New localStorage keys
+`ccg:theme`, `ccg:dashRepos`, `ccg:dashCache`, `ccg:dashManual`, `ccg:ghToken`.
+
 ## 1.16.0 — 2026-06-16
 
 R16 (increment 3 — **COMPLETE**) — §6b locked, §T2b resolved by design.

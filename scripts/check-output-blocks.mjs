@@ -84,6 +84,12 @@ export const BLOCKS = [
     fields: ['PR:', 'Files reviewed:', 'Review confidence:', 'VERDICT:', 'One line:',
       'FINDINGS:', 'REGRESSIONS', 'INVARIANTS AT RISK:', 'TEST COVERAGE GAPS',
       'BLOCKING ITEMS', 'NITS'] },
+  { name: 'POLICY RESPONSE', open: '---POLICY RESPONSE TRIGGERED---', close: '---END POLICY RESPONSE---',
+    producer: null, inFormats: true, // emitted by §6a Health Synthesis when an Axis B category triggers; homed in Handoff Block Formats
+    fields: ['Category:', 'Consecutive poor cycles:', 'Current score:', 'Root pattern:', 'Prescribed policy fix', 'Scope addition:'] },
+  { name: 'SEAMS & INVARIANTS AUDIT BLOCK', open: '---SEAMS & INVARIANTS AUDIT BLOCK---', close: '---END SEAMS & INVARIANTS AUDIT BLOCK---',
+    producer: null, inFormats: true, // produced by the §1s Seams audit cycle-type (not a slash command); homed in Handoff Block Formats
+    fields: ['Audit date:', 'SEAM INVENTORY:', 'INVARIANT LIBRARY UPDATE:', 'Proposed additions:', 'Proposed retirements:', 'HORIZONTAL OBSERVATIONS', 'RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:'] },
   { name: 'VERIFICATION BLOCK', open: '---VERIFICATION BLOCK---', close: '---END VERIFICATION BLOCK---',
     producer: null, inFormats: true, // produced by the Verification Pass section, not a slash command
     fields: ['Verified scope:', 'Verification date:', 'INVARIANT PROBE RESULTS:',

@@ -2,11 +2,33 @@
 
 ## Current
 Cycle: 4 — SYNTHESIZED (overall 8.8/10). Post-synthesis roadmap work in progress: R16 (dynamic-builder lock).
-Phase: idle (R16 COMPLETE v1.16.0 — engine + §T1/§T2a/§6b locked, §T2b resolved report-only-by-design)
+Phase: idle (R16-full + HTML Console Correctness COMPLETE v1.18.0 — 6/7 dynamic builders textually locked; render+FSA paths headless-tested)
 Scope: Interactive Console (HTML builders) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
 Updated: 2026-06-16
+
+## R16-full + HTML Console Correctness — ✅ COMPLETE (v1.18.0)
+Closed both 8.5 synthesis priorities. Shipped in 6 phases (one commit each) on branch claude/stoic-hypatia-gf4y5u.
+- W2 phase 1: check-html captures innerHTML per id → asserts render OUTPUT (subsys/invariant/cycle/dashboard), not just no-throw. Mutation-proven fail-closed.
+- W2 phase 2: factored duplicated state-import logic (importStateFile + loadStateFromRepo) into shared stateBackupKeys/applyStateKeys; headless round-trip test (serialize→wipe→restore, ccg:*-scoped both sides). Mutation-proven.
+- W1 phases 3-5: full textual lock of §4v, §1s, §6a. New sectionBody() extracts canonical body from a fenced block under a non-slash ### heading (no /command minted). Each carries its full canonical body in CLAUDE.md; 6/7 dynamic builders now --assert-locked at 100% coverage (only §T2b report-only). §6a lock pins the P1 metrics-ownership rule (the Cycle-4 F1 class) — mutation-proven fail-closed.
+- Registered SEAMS & INVARIANTS AUDIT BLOCK + POLICY RESPONSE in check-output-blocks + homed in Handoff Block Formats (shape-guarded).
+- Phase 6: sectionBody unit tests; check-template-sync markers kept as documented secondary layer; INV-36 updated (6 locked) + INV-38 added (blocks); roadmap reconciled (R4/R6/R8 DONE, R16-full DONE); VERSION 1.17.0→1.18.0.
+- Engine generalization: DYNAMIC_MANIFEST entries resolve body via section OR command (dynBody/dynLabel).
+- Follow-ons: none required. The marker pins could be fully retired later, but are cheap defense-in-depth.
+
+## R17 (hosted-console UX) — ✅ COMPLETE (v1.17.0)
+- Console now hosted on GitHub Pages (public repo → free); index.html redirect merged.
+- DONE Dashboard — new landing section; live per-project status from GitHub (PROJECT_HEALTH.md + .cycle/STATE.md),
+  fallback chain live→cached→self-reported→none; optional local-only PAT for private repos; per-card ⚙ repo/manual
+  editor. Network deferred via setTimeout so headless check-html / --assert stubs never call fetch. Verified
+  end-to-end against THIS repo's real files (parsed 8.8 + phase). Parsers locked by check-html (INV-37).
+- DONE light/dark theme (chrome-only [data-theme] flip; persists ccg:theme; respects prefers-color-scheme).
+- DONE mobile nav drawer (replaced nav{display:none} dead-end with hamburger + slide-in + backdrop).
+- New localStorage keys: ccg:theme, ccg:dashRepos, ccg:dashCache, ccg:dashManual, ccg:ghToken.
+- Follow-ons (not done): scroll-spy active-state on deep links; a11y keyboard pass on custom controls;
+  Dashboard worst-first sort. Light mode needs an eyeball for contrast nits (no headless way to verify layout).
 
 ## R16 (dynamic-builder lock) — ✅ COMPLETE (v1.14.0–1.16.0)
 - DONE engine — gen-html-prompts.mjs: renderDynamicPrompt (headless DOM-stub render) + canonicalCoverage
@@ -102,6 +124,16 @@ Updated: 2026-06-16
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
 ## Where I left off
+v1.18.0; full Test Command green (13 stages); 38 invariants (INV-36 now covers 6 locked builders, INV-38 = registered
+output blocks). R16-full + HTML Console Correctness COMPLETE: both 8.5 synthesis priorities closed — 6/7 dynamic
+builders textually locked (sectionBody lets §4v/§1s/§6a lock without minting commands; §6a pins the Cycle-4 F1
+metrics-ownership rule), and the browser-only render + FSA/state-round-trip paths are now headless-tested in check-html
+(all mutation-proven fail-closed). Shipped in 6 commits on branch claude/stoic-hypatia-gf4y5u, on top of the v1.17.0
+hosted-console UX work (Dashboard + light mode + mobile nav). NOTE: light mode + mobile layout are still browser-
+verified only — worth an eyeball before merge. Next: merge the branch. The Cycle-4 audit work is fully drained; a
+fresh /broad-scan (Cycle 5) would re-baseline with fresh eyes.
+
+## (prior) R16 left-off
 v1.16.0; full Test Command green (13 stages); invariant-check 23/23 runnable PASS (36 total). R16 is COMPLETE:
 the dynamic-builder lock engine + 3 of 4 builders LOCKED to 100% canonical coverage by --assert (INV-36) — §T1
 (/broad-scan), §T2a (/targeted-audit), §6b (/health-pulse) — and §T2b (/targeted-implement) RESOLVED report-only

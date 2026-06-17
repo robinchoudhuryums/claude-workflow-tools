@@ -183,15 +183,15 @@ if (metricsFail) failures += metricsFail;
 else console.log('  ✓ Metrics-row ownership + defensive_count schema parity (P1 + P11)');
 
 // ── Structural check 7 (R16): per-builder parity for the DYNAMIC console
-// prompt builders. R14 generated + locked the STATIC §-prompts, but the
-// per-project dynamic builders (buildP6aText/§6a, buildP6bText/§6b,
-// buildSeamsText/§1s, buildVerificationText/§4v, buildTier1/Tier2Text) are
-// hand-written and were only marker-pinned for known divergence points —
-// Cycle-4 F1 was a drift instance this couldn't see. Pin each builder's
-// load-bearing contract markers so they must co-occur in BOTH the canonical
-// source (CLAUDE.md) and the HTML console; a dropped/renamed contract fails
-// closed instead of silently drifting. (S half of R16 — markers, not full
-// generation of the dynamic builders.)
+// prompt builders. As of W1 (full textual lock) SIX of these builders —
+// §T1, §T2a, §6b, §4v, §1s, §6a — are now gated by gen-html-prompts --assert
+// against a canonical body in CLAUDE.md (100% line coverage; drift fails CI);
+// only §T2b stays report-only-by-design. These markers are therefore a cheap
+// SECONDARY layer now (defense-in-depth + a human-readable contract): they pin
+// each builder's load-bearing phrases so they must co-occur in BOTH the
+// canonical source (CLAUDE.md) and the HTML console, catching gross drift even
+// if the --assert lock were bypassed. (Cycle-4 F1 — a §6a drift instance the
+// markers alone couldn't see — is now caught by the textual lock.)
 const DYNAMIC_BUILDERS = [
   { name: '§6a Health Synthesis (buildP6aText)',      markers: ['two-axis grid', 'policy response'] },
   { name: '§6b Health Pulse (buildP6bText)',          markers: ['investigate first', 'horizontal bug-shape'] },

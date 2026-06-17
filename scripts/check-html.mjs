@@ -37,9 +37,28 @@ const dummy = new Proxy(
   { style: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } }, querySelectorAll: () => [], addEventListener() {} },
   { get(t, p) { return p in t ? t[p] : (() => {}); } }
 );
+// Per-id capturing elements: render* functions assign innerHTML/textContent; we
+// keep them so the test can assert the rendered OUTPUT, not just that init didn't
+// throw (W2 — browser-only render paths were previously only smoke-tested).
+const elStore = {};
+function makeEl() {
+  const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } } };
+  return new Proxy(t, {
+    get(o, p) {
+      if (p === 'innerHTML') return o._html;
+      if (p === 'textContent') return o._text;
+      if (p in o) return o[p];
+      if (p === 'querySelector') return () => makeEl();
+      if (p === 'querySelectorAll') return () => [];
+      return () => {};
+    },
+    set(o, p, v) { if (p === 'innerHTML') o._html = String(v); else if (p === 'textContent') o._text = String(v); else o[p] = v; return true; },
+  });
+}
+const getEl = id => (elStore[id] || (elStore[id] = makeEl()));
 const ctx = {
   localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; }, get length() { return Object.keys(store).length; }, key: i => Object.keys(store)[i] },
-  document: { getElementById: () => dummy, querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, appendChild() {} }) },
+  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, appendChild() {} }) },
   navigator: { clipboard: { writeText: () => Promise.resolve() } },
   window: { addEventListener() {} },
   IntersectionObserver: class { observe() {} disconnect() {} },
@@ -123,6 +142,64 @@ if (loaded && typeof ctx.connectRepoFolder === 'function') {
   if (/file system access/i.test(msg)) ok('connectRepoFolder falls back gracefully without the FSA API (R3)');
   else bad('R3 fallback path did not show the expected message (got: ' + JSON.stringify(msg).slice(0, 70) + ')');
 } else if (loaded) bad('connectRepoFolder not defined (R3 draft missing)');
+
+// Dashboard live-status parsers — the GitHub-backed dashboard renders from these
+// pure parsers; lock them so a regex regression can't silently blank the board.
+if (loaded && typeof ctx.parseHealth === 'function' && typeof ctx.parseRepoSpec === 'function') {
+  const h = ctx.parseHealth('## Current Standing\nOverall (weighted avg): 8.8/10\nOne-line summary: solid.\nTop vertical priority: HTML.\n');
+  if (h.overall === '8.8' && h.summary === 'solid.' && h.topVertical === 'HTML.') ok('parseHealth extracts overall/summary/priority from PROJECT_HEALTH.md');
+  else bad('parseHealth did not extract expected fields (got ' + JSON.stringify(h) + ')');
+  const s = ctx.parseState('Cycle: 4\nPhase: idle (done)\nUpdated: 2026-06-16\n');
+  if (s.phase === 'idle (done)' && s.updated === '2026-06-16') ok('parseState extracts phase/updated from STATE.md');
+  else bad('parseState did not extract phase/updated (got ' + JSON.stringify(s) + ')');
+  const r = ctx.parseRepoSpec('owner/repo@dev');
+  if (r && r.owner === 'owner' && r.repo === 'repo' && r.branch === 'dev') ok('parseRepoSpec parses owner/repo@branch');
+  else bad('parseRepoSpec failed on owner/repo@branch');
+  if (ctx.parseRepoSpec('garbage') === null) ok('parseRepoSpec rejects a malformed spec'); else bad('parseRepoSpec accepted a malformed spec');
+  if (typeof ctx.scoreColor === 'function' && /green/.test(ctx.scoreColor('8.8')) && /red/.test(ctx.scoreColor('3'))) ok('scoreColor maps score bands'); else bad('scoreColor band mapping wrong');
+} else if (loaded) bad('dashboard parsers (parseHealth/parseRepoSpec) not defined');
+
+// W2 — render OUTPUT assertions. INIT ran every render* under the capturing stub;
+// assert the load-bearing ones produced the right markup (not just no-throw). A
+// safe substring (split on &/<>) sidesteps HTML-escaping of names.
+if (loaded) {
+  const out = id => (elStore[id] ? elStore[id].innerHTML : '');
+  const safe = s => String(s).split(/[&<>]/)[0].trim();
+  const proj = typeof ctx.getProject === 'function' ? ctx.getProject() : null;
+  if (proj && proj.subsystems && proj.subsystems[0]) {
+    if (out('subsysTableBody').includes(safe(proj.subsystems[0].name))) ok('renderSubsysTable emits the active project’s subsystems');
+    else bad('renderSubsysTable output missing subsystem "' + safe(proj.subsystems[0].name) + '"');
+  } else bad('getProject()/subsystems unavailable — cannot check renderSubsysTable output');
+  if (proj && proj.invariants && proj.invariants[0]) {
+    if (out('invariantTableBody').includes(proj.invariants[0].id)) ok('renderInvariantTable emits library invariants');
+    else bad('renderInvariantTable output missing invariant "' + proj.invariants[0].id + '"');
+  }
+  if (/setPhase\(/.test(out('ctItems'))) ok('renderCycle emits interactive phase dots');
+  else bad('renderCycle output has no phase dots (ctItems empty/blank)');
+  if (proj && out('dashCards').includes('dcard') && out('dashCards').includes(safe(proj.name))) ok('renderDashboard emits a card per project');
+  else bad('renderDashboard output missing cards or the active project name');
+}
+
+// W2 — state backup round-trip (the FSA/import data-integrity path, previously
+// only smoke-tested via the connect fallback). collectState() serialized then
+// re-applied through the shared helpers must restore every ccg:* key losslessly
+// and drop foreign keys on BOTH the serialize and apply sides.
+if (loaded && typeof ctx.collectState === 'function' && typeof ctx.stateBackupKeys === 'function' && typeof ctx.applyStateKeys === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  store['ccg:rt:a'] = '1';
+  store['ccg:rt:b'] = JSON.stringify({ x: 2 });
+  store['other:rt'] = 'nope';                       // foreign key — must never survive
+  const snap = ctx.collectState();                   // serialize side scopes to ccg:*
+  const serializeScoped = 'ccg:rt:a' in snap && 'ccg:rt:b' in snap && !('other:rt' in snap);
+  for (const k of Object.keys(store)) delete store[k];                       // wipe
+  const { data, keys, reason } = ctx.stateBackupKeys({ data: { ...snap, 'evil:x': 'y' } });
+  const n = reason ? 0 : ctx.applyStateKeys(data, keys);                     // apply side scopes again
+  const lossless = store['ccg:rt:a'] === '1' && store['ccg:rt:b'] === JSON.stringify({ x: 2 });
+  const applyScoped = !('other:rt' in store) && !('evil:x' in store) && n === keys.length;
+  if (serializeScoped && lossless && applyScoped) ok('state backup round-trips losslessly and stays ccg:*-scoped on both sides (R3 integrity)');
+  else bad(`state round-trip failed (serializeScoped=${serializeScoped} lossless=${lossless} applyScoped=${applyScoped})`);
+  for (const k of Object.keys(store)) delete store[k];
+} else if (loaded) bad('state backup helpers (stateBackupKeys/applyStateKeys) not defined');
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');
 console.log(log.join('\n'));

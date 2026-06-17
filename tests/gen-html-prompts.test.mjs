@@ -3,7 +3,7 @@
 // Unit-tests the pure helpers (commandBody extraction, usage-guard drop,
 // placeholder replacement, HTML escaping) on fixtures.
 
-import { commandBody, transform, esc, unesc, norm, canonicalCoverage, renderDynamicPrompt } from '../scripts/gen-html-prompts.mjs';
+import { commandBody, sectionBody, transform, esc, unesc, norm, canonicalCoverage, renderDynamicPrompt } from '../scripts/gen-html-prompts.mjs';
 
 let failures = 0;
 const log = [];
@@ -21,6 +21,19 @@ const md = [
 const body = commandBody(md, 'audit');
 if (body && body.includes('Audit $ARGUMENTS across') && !body.includes('### /other')) ok('commandBody extracts the right fenced block'); else bad('commandBody extraction wrong');
 if (commandBody(md, 'nope') === null) ok('commandBody returns null for a missing command'); else bad('missing command not null');
+
+// sectionBody: extracts the first fenced block under a NON-slash ### heading
+// (the §4v/§1s/§6a lock source — must NOT mint a /command).
+const secMd = [
+  '### Verification Pass (Section 4v in HTML tool)', '',
+  'Some descriptive prose with bullets.', '- a bullet', '',
+  '```', 'CANONICAL BODY LINE 1', 'CANONICAL BODY LINE 2', '```', '',
+  '### Next Section', '', '```', 'other', '```',
+].join('\n');
+const sb = sectionBody(secMd, 'Verification Pass');
+if (sb === 'CANONICAL BODY LINE 1\nCANONICAL BODY LINE 2') ok('sectionBody extracts the fenced block under a ### heading (past intro prose)'); else bad('sectionBody extraction wrong: ' + JSON.stringify(sb));
+if (sectionBody(secMd, 'Nope') === null) ok('sectionBody returns null for a missing heading'); else bad('sectionBody missing-heading not null');
+if (sectionBody(['### Bare Heading', '', 'no fence here', '', '### Other'].join('\n'), 'Bare Heading') === null) ok('sectionBody returns null when no fenced body precedes the next heading'); else bad('sectionBody did not null a fence-less section');
 
 const m = { drop: true, replace: [['$ARGUMENTS', '[SUBSYSTEM GROUP NAME]']] };
 const out = transform(body, m);
