@@ -120,6 +120,10 @@ main{margin-left:var(--nav-w);flex:1;max-width:880px;padding:40px 44px 80px}
 
 /* SECTION */
 section{margin-bottom:52px}
+/* TABBED PANELS — only the active section shows; nav switches tabs */
+main > .panel{display:none}
+main > .panel.active{display:block;animation:panelIn .18s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 .sh{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
 .snum{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;white-space:nowrap;margin-top:2px}
 .stitle{font-size:18px;font-weight:600;color:var(--text)}
@@ -161,6 +165,14 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .fill-form.open{display:block}
 .fill-form-title{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .fill-form-title span{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px}
+/* EXTRACTED UTILITIES (inline-style → class cleanup) */
+.lbl-note{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0}
+.sublabel{margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em}
+.flex-g8{display:flex;gap:8px;flex-shrink:0}
+.mb12{margin-bottom:12px}
+.note-mut{font-size:11px;color:var(--text-muted)}
+.hint-mut{font-size:11px;color:var(--text-muted);margin-top:2px}
+.pf-err{font-size:11px;color:var(--red);margin-top:3px;display:none}
 .fill-row{margin-bottom:9px}
 .fill-label{font-size:11px;color:var(--text-sec);margin-bottom:3px;display:flex;align-items:center;gap:6px}
 .fill-label .opt{font-size:10px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:0 4px}
@@ -301,7 +313,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div style="padding:10px 12px 6px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
       <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:6px">Active Project</div>
       <select id="projectSelect" onchange="switchProject(this.value)"
-        style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-size:12px;font-weight:500;padding:5px 8px;cursor:pointer;outline:none;font-family:inherit">
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;font-weight:500;padding:5px 8px;cursor:pointer;outline:none;font-family:inherit">
       </select>
     </div>
 
@@ -323,7 +335,15 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 <main>
 
   <!-- DASHBOARD -->
-  <section id="dashboard">
+  <section id="dashboard" class="panel active">
+  <div style="margin-bottom:30px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Claude Code · Structured Workflow</div>
+    <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
+    <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:7px;padding:10px 13px">
+      <strong style="color:var(--text-sec);font-weight:600">How this relates to your repo:</strong> these prompts mirror the canonical commands in <code>CLAUDE.md</code>, which install as slash commands from <code>.claude/commands/</code> (copy that folder, or run <code>/sync-commands</code> to pull updates). Per-project subsystems, dimensions, Axis&nbsp;B categories and invariants come from each project's <strong>Cycle Workflow Config</strong>. Cross-session state can persist in a <code>.cycle/</code> directory (read by <code>/cycle-status</code> and <code>/cycle-resume</code>) — and this console's own state can be backed up via <strong>Projects → Export state</strong>.
+    </p>
+  </div>
     <div class="sh"><div class="snum">★</div><div>
       <div class="stitle">Dashboard — Active Projects</div>
       <div class="spurp"><strong>At a glance:</strong> live status pulled from each project's <code>PROJECT_HEALTH.md</code> and <code>.cycle/STATE.md</code> on GitHub, with cached and self-reported fallback when a repo is private, offline, or unconfigured.</div>
@@ -333,7 +353,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
         <button class="dash-btn" onclick="refreshDashboard(true)">↻ Refresh</button>
         <button class="dash-btn sec" onclick="toggleDashToken()">GitHub token</button>
       </div>
-      <div id="dashStatus" style="font-size:11px;color:var(--text-muted)"></div>
+      <div id="dashStatus" class="note-mut"></div>
     </div>
     <div class="dash-token" id="dashToken">
       <label style="font-size:11.5px;color:var(--text-sec);font-weight:500">Personal access token <span style="color:var(--text-muted);font-weight:400">— optional, for private repos &amp; higher rate limits</span></label>
@@ -347,17 +367,8 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div class="dash-cards" id="dashCards"></div>
   </section>
 
-  <div style="margin-bottom:30px">
-    <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Claude Code · Structured Workflow</div>
-    <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
-    <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
-    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:7px;padding:10px 13px">
-      <strong style="color:var(--text-sec);font-weight:600">How this relates to your repo:</strong> these prompts mirror the canonical commands in <code>CLAUDE.md</code>, which install as slash commands from <code>.claude/commands/</code> (copy that folder, or run <code>/sync-commands</code> to pull updates). Per-project subsystems, dimensions, Axis&nbsp;B categories and invariants come from each project's <strong>Cycle Workflow Config</strong>. Cross-session state can persist in a <code>.cycle/</code> directory (read by <code>/cycle-status</code> and <code>/cycle-resume</code>) — and this console's own state can be backed up via <strong>Projects → Export state</strong>.
-    </p>
-  </div>
-
   <!-- SETUP-CYCLE -->
-  <section id="setup">
+  <section id="setup" class="panel">
     <div class="sh"><div class="snum">Setup</div><div>
       <div class="stitle">Setup Cycle — Project Configuration</div>
       <div class="spurp"><strong>Purpose:</strong> Thorough, multi-phase analysis that defines the foundation for the entire cycle workflow: subsystem boundaries, file lists, health dimensions, invariant library seed, and policy thresholds. Run once when onboarding a new project, or re-run after major restructures.</div>
@@ -610,7 +621,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </section>
 
   <!-- TIER 1 — BROAD SCAN -->
-  <section id="t1">
+  <section id="t1" class="panel">
     <div class="sh"><div class="snum">T1</div><div>
       <div class="stitle">Tier 1 — Broad Scan</div>
       <div class="spurp"><strong>Purpose:</strong> Fast, whole-codebase discovery. One session, audit-then-implement with your approval gate in between. Use when the project still has obvious issues, during rapid development, or for a quick pulse between formal cycles.</div>
@@ -631,7 +642,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </section>
 
   <!-- TIER 2 — TARGETED CYCLE -->
-  <section id="t2">
+  <section id="t2" class="panel">
     <div class="sh"><div class="snum">T2</div><div>
       <div class="stitle">Tier 2 — Targeted Subsystem Cycle</div>
       <div class="spurp"><strong>Purpose:</strong> Deep audit of one subsystem across two sessions — audit+plan in Session 1, implement+check+reflect in Session 2. Keeps the audit/implement separation without the full Tier 3 ceremony.</div>
@@ -650,7 +661,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
       </table>
     </div>
 
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Session 1 — Scoped Audit + Plan</div>
+    <div class="sublabel">Session 1 — Scoped Audit + Plan</div>
     <div class="pb" id="block-t2a">
       <div class="pb-header">
         <div class="pb-label">Tier 2 — Audit + Plan Prompt</div>
@@ -665,7 +676,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
     </div>
 
     <hr class="dv">
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Session 2 — Implement + Check + Reflect</div>
+    <div class="sublabel">Session 2 — Implement + Check + Reflect</div>
     <div class="inote"><div class="ic">📌</div><div>Open a <strong>new session</strong>. Paste the <strong>Tier 2 Handoff Block</strong> from Session 1.</div></div>
     <div class="pb" id="block-t2b">
       <div class="pb-header">
@@ -680,7 +691,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </section>
 
   <!-- FLOW -->
-  <div class="flow-box" id="flow">
+  <div class="flow-box panel" id="flow">
     <h2>Session Flow</h2>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-b">§0 Systems Map</div><div class="farr">→</div><div class="flbl">run once at project start or after major refactor</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-t">§1 Layered Audit</div><div class="farr">→</div><div class="flbl">one subsystem per session</div><div class="farr">→</div><div class="fn fn-a">Session Handoff Block</div></div>
@@ -708,7 +719,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </div>
 
   <!-- §0 SYSTEMS MAP -->
-  <section id="s0">
+  <section id="s0" class="panel">
     <div class="sh"><div class="snum">§0</div><div>
       <div class="stitle">Systems Map</div>
       <div class="spurp"><strong>Purpose:</strong> Orient Claude Code to the codebase before any deep audit. Entry points and relationships only — no deep implementation dives. Run once at project start or after a major restructure. Do not audit in this session.</div>
@@ -745,7 +756,7 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
   </section>
 
   <!-- §1 LAYERED AUDIT -->
-  <section id="s1">
+  <section id="s1" class="panel">
     <div class="sh"><div class="snum">§1</div><div>
       <div class="stitle">Layered Audit</div>
       <div class="spurp"><strong>Purpose:</strong> Deep audit of one scoped subsystem group per session. Reference the systems map from §0 each time. Produces a <strong>Session Handoff Block</strong> used as input for §2 Planning.</div>
@@ -888,7 +899,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
   </section>
 
   <!-- §1s SEAMS & INVARIANTS AUDIT -->
-  <section id="s1s">
+  <section id="s1s" class="panel">
     <div class="sh"><div class="snum">§1s</div><div>
       <div class="stitle">Seams &amp; Invariants Audit</div>
       <div class="spurp"><strong>Purpose:</strong> Audit the seams between subsystems and the invariants that must hold across them — the things no vertical subsystem audit can own. Runs every 3–4 subsystem cycles. <strong>No implementation phase.</strong> Produces an updated invariant library instead of code changes.</div>
@@ -923,7 +934,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
   </section>
 
   <!-- §2 PLANNING -->
-  <section id="s2">
+  <section id="s2" class="panel">
     <div class="sh"><div class="snum">§2</div><div>
       <div class="stitle">Planning &amp; Recommendations</div>
       <div class="spurp"><strong>Purpose:</strong> Translate audit findings into a prioritized action plan. Run at the end of the same audit session or in a fresh session. Produces an <strong>Implementation Handoff Block</strong>.</div>
@@ -1002,7 +1013,7 @@ ORDERING RATIONALE: [1–2 sentences]
   </section>
 
   <!-- §3 IMPLEMENTATION -->
-  <section id="s3">
+  <section id="s3" class="panel">
     <div class="sh"><div class="snum">§3</div><div>
       <div class="stitle">Implementation Session</div>
       <div class="spurp"><strong>Purpose:</strong> Dedicated session for writing, editing, and deleting code. Always a separate session from audit/planning — starts with the systems map and Implementation Handoff Block. Produces an <strong>Implementation Summary Block</strong>.</div>
@@ -1101,14 +1112,14 @@ After completing the change, note: what was modified, whether anything unexpecte
   </section>
 
   <!-- §4 DEPENDENCY -->
-  <section id="s4">
+  <section id="s4" class="panel">
     <div class="sh"><div class="snum">§4</div><div>
       <div class="stitle">Cross-Module Dependency Management</div>
       <div class="spurp"><strong>Purpose:</strong> Prevent implementation changes from silently breaking other modules. <strong>Pre-check</strong> runs before High/Very High risk changes. <strong>Regression check</strong> runs after changes, before merging.</div>
     </div></div>
     <div class="wnote"><div class="ic">⚠</div><div><strong>Treat the Pre-Implementation Check as mandatory</strong> for any High or Very High risk change. Discovering breakage after the fact in a 100k+ line codebase costs significantly more than a 5-minute check beforehand.</div></div>
 
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Pre-Implementation Dependency Check</div>
+    <div class="sublabel">Pre-Implementation Dependency Check</div>
     <div class="inote"><div class="ic">📌</div><div>Input: <strong>Systems Map</strong> summary + the specific planned changes from the Implementation Handoff Block.</div></div>
     <div class="pb" id="block-p4pre">
       <div class="pb-header">
@@ -1137,7 +1148,7 @@ Do not begin implementation until this check is complete.</pre>
     </div>
 
     <hr class="dv">
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Post-Implementation Regression Check</div>
+    <div class="sublabel">Post-Implementation Regression Check</div>
     <div class="inote"><div class="ic">📌</div><div>Input: <strong>Systems Map</strong> summary + a summary of what was actually changed (from the Implementation Summary Block).</div></div>
     <div class="pb" id="block-p4post">
       <div class="pb-header">
@@ -1273,7 +1284,7 @@ reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</
   </section>
 
   <!-- §4v VERIFICATION PASS -->
-  <section id="s4v">
+  <section id="s4v" class="panel">
     <div class="sh"><div class="snum">§4v</div><div>
       <div class="stitle">Independent Verification Pass</div>
       <div class="spurp"><strong>Purpose:</strong> Independent verification of the cycle's work in a <strong>fresh session with no memory of the implementation</strong>. Probes invariants, counts regressions with a hard definition, checks test coverage quality, and produces a <strong>VERIFICATION BLOCK</strong> used as input for §6a Health Synthesis.</div>
@@ -1379,7 +1390,7 @@ Category D ratio: [X%]
   </section>
 
   <!-- §5 ROADMAP -->
-  <section id="s5">
+  <section id="s5" class="panel">
     <div class="sh"><div class="snum">§5</div><div>
       <div class="stitle">Roadmap &amp; Future Possibilities</div>
       <div class="spurp"><strong>Purpose:</strong> Strategic planning across four time horizons. Run after 2–3 audit sessions or at natural milestones. Tiers 1–3 must be grounded in actual audit findings. Tier 4 is explicitly exploratory.</div>
@@ -1430,7 +1441,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
   </section>
 
   <!-- §6a SYNTHESIS -->
-  <section id="s6a">
+  <section id="s6a" class="panel">
     <div class="sh"><div class="snum">§6a</div><div>
       <div class="stitle">Project Health Synthesis</div>
       <div class="spurp"><strong>Purpose:</strong> The accurate, benchmarkable holistic score on two axes. <strong>Axis A (Vertical)</strong> scores subsystem health. <strong>Axis B (Horizontal)</strong> scores cross-cutting bug-shape posture. Takes three inputs per subsystem: Session Handoff + Cycle Summary + Verification Block. Run only after a full audit cycle — this is your progress benchmark. Never compare Pulse scores to Synthesis scores.</div>
@@ -1445,8 +1456,8 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
           <button class="copy-btn" id="copy-p6a" onclick="doCopy('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div id="p6a-dims-note" style="font-size:12px;color:#4e5e7a;padding:8px 12px;background:#1e2435;border:1px solid #2a3142;border-radius:6px;margin-bottom:14px;line-height:1.6">
-        <strong style="color:#8899b3;font-weight:500">Active project — two-axis dimensions:</strong>
+      <div id="p6a-dims-note" style="font-size:12px;color:var(--text-muted);padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:14px;line-height:1.6">
+        <strong style="color:var(--text-sec);font-weight:500">Active project — two-axis dimensions:</strong>
         <span id="p6a-dims-text" style="font-family:monospace;font-size:11px;margin-left:4px"></span>
       </div>
       <div class="fill-form" id="fill-p6a"></div>
@@ -1455,13 +1466,13 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
   </section>
 
   <!-- §6b PULSE -->
-  <section id="s6b">
+  <section id="s6b" class="panel">
     <div class="sh"><div class="snum">§6b</div><div>
       <div class="stitle">Health Pulse</div>
       <div class="spurp"><strong>Purpose:</strong> Fast, lower-precision directional check. Does not require completed audits. Useful between cycles, before stakeholder conversations, or for a quick sense of whether things have improved. Treat as directional — not benchmarks.</div>
     </div></div>
-    <div style="font-size:12px;color:#4e5e7a;padding:8px 12px;background:#1e2435;border:1px solid #2a3142;border-radius:6px;margin-bottom:14px;line-height:1.6">
-      <strong style="color:#8899b3;font-weight:500">Active project dimensions:</strong>
+    <div style="font-size:12px;color:var(--text-muted);padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:14px;line-height:1.6">
+      <strong style="color:var(--text-sec);font-weight:500">Active project dimensions:</strong>
       <span id="healthDimsNote" style="font-family:monospace;font-size:11px;margin-left:4px"></span>
     </div>
     <div class="pb" id="block-p6b">
@@ -1479,7 +1490,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
   </section>
 
   <!-- §7 TRACKING -->
-  <section id="s7">
+  <section id="s7" class="panel">
     <div class="sh"><div class="snum">§7</div><div>
       <div class="stitle">Score Tracking — PROJECT_HEALTH.md</div>
       <div class="spurp">A persistent score log at the project root that Claude Code can reference during synthesis sessions to automatically compare against prior cycles.</div>
@@ -1534,7 +1545,7 @@ Policy responses triggered: [list categories, or "None"]
   </section>
 
   <!-- TIPS -->
-  <section id="tips">
+  <section id="tips" class="panel">
     <div class="sh"><div class="snum">Tips</div><div>
       <div class="stitle">Best Practices</div>
       <div class="spurp">Key habits that compound across sessions.</div>
@@ -1555,30 +1566,30 @@ Policy responses triggered: [list categories, or "None"]
 
   <!-- ARCHIVE -->
   <!-- PROJECTS SECTION -->
-  <section id="projects">
+  <section id="projects" class="panel">
     <div class="sh"><div class="snum">Projects</div><div>
       <div class="stitle">Project Manager</div>
       <div class="spurp">Manage projects available in the selector. Built-in projects are read-only. Custom projects can be added, edited, and deleted.</div>
     </div></div>
-    <div style="background:#161b27;border:1px solid #2a3142;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
-          <div style="font-size:12px;font-weight:600;color:#dde4f0">Backup &amp; Restore</div>
-          <div style="font-size:11px;color:#4e5e7a;margin-top:2px">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">Backup &amp; Restore</div>
+          <div class="hint-mut">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
-          <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
-          <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
+        <div class="flex-g8">
+          <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
+          <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
           <input id="importStateFile" type="file" accept="application/json,.json" style="display:none" onchange="importStateFile(this)">
         </div>
       </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a3142">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div style="font-size:11px;color:#4e5e7a">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
-          <div style="display:flex;gap:8px;flex-shrink:0">
-            <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
-            <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
-            <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
+          <div class="note-mut">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
+          <div class="flex-g8">
+            <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
+            <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
+            <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
           </div>
         </div>
       </div>
@@ -1587,61 +1598,61 @@ Policy responses triggered: [list categories, or "None"]
     <div id="projectsBuiltIn"></div>
     <div id="projectsCustom"></div>
     <button onclick="openProjectForm()" id="addProjectBtn"
-      style="width:100%;margin-top:12px;padding:10px;border-radius:7px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.35);color:#4f8ef7;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
+      style="width:100%;margin-top:12px;padding:10px;border-radius:7px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.35);color:var(--accent);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
       + Add custom project
     </button>
-    <div id="projectForm" style="display:none;margin-top:16px;padding:20px;background:#161b27;border:1px solid #2a3142;border-radius:8px">
-      <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#22c55e;margin-bottom:16px">New Project</div>
-      <div style="margin-bottom:12px">
+    <div id="projectForm" style="display:none;margin-top:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+      <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:16px">New Project</div>
+      <div class="mb12">
         <div class="fill-label">Project name</div>
         <input id="pf-name" type="text" placeholder="e.g. My Internal Tool"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box">
-        <div id="pf-name-preview" style="font-size:11px;color:#4e5e7a;margin-top:3px"></div>
-        <div id="pf-name-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box">
+        <div id="pf-name-preview" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
+        <div id="pf-name-err" class="pf-err"></div>
       </div>
-      <div style="margin-bottom:12px">
-        <div class="fill-label">Health dimensions <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(comma-separated)</span></div>
+      <div class="mb12">
+        <div class="fill-label">Health dimensions <span class="lbl-note">(comma-separated)</span></div>
         <textarea id="pf-dims" rows="3"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5">Overall, Architecture &amp; Code Quality (incl. test coverage), Security &amp; Compliance, Operational Integrity, Operational Readiness</textarea>
-        <div id="pf-dims-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5">Overall, Architecture &amp; Code Quality (incl. test coverage), Security &amp; Compliance, Operational Integrity, Operational Readiness</textarea>
+        <div id="pf-dims-err" class="pf-err"></div>
       </div>
-      <div style="margin-bottom:12px">
-        <div class="fill-label">Horizontal (Axis B) categories <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(one per line — format: name | what it measures | policy playbook)</span></div>
+      <div class="mb12">
+        <div class="fill-label">Horizontal (Axis B) categories <span class="lbl-note">(one per line — format: name | what it measures | policy playbook)</span></div>
         <textarea id="pf-axisb" rows="5"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:monospace;font-size:11px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
-        <div style="font-size:10.5px;color:#4e5e7a;margin-top:3px">Prefilled with the standard 5. Leave as-is for most projects; adapt the names/measures for domain-specific bug shapes. Clearing this restores the defaults.</div>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
+        <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">Prefilled with the standard 5. Leave as-is for most projects; adapt the names/measures for domain-specific bug shapes. Clearing this restores the defaults.</div>
       </div>
       <div style="margin-bottom:8px">
-        <div class="fill-label">Subsystems <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(used for cycle tracker, audit dropdown, /audit scope)</span></div>
+        <div class="fill-label">Subsystems <span class="lbl-note">(used for cycle tracker, audit dropdown, /audit scope)</span></div>
         <div id="pf-subs"></div>
         <button onclick="addSubRow()"
-          style="width:100%;margin-top:6px;padding:6px;border-radius:5px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.3);color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit">
+          style="width:100%;margin-top:6px;padding:6px;border-radius:5px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.3);color:var(--accent);font-size:12px;cursor:pointer;font-family:inherit">
           + Add subsystem
         </button>
-        <div id="pf-subs-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
+        <div id="pf-subs-err" class="pf-err"></div>
       </div>
-      <div style="margin-bottom:12px">
-        <div class="fill-label">Invariants <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
+      <div class="mb12">
+        <div class="fill-label">Invariants <span class="lbl-note">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
         <textarea id="pf-invs" rows="4" placeholder="e.g. PHI redactor runs before any external API call | Security&#10;Rate limiter state survives restart | Core Architecture"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
       </div>
       <div style="margin-bottom:8px;display:flex;gap:12px">
         <div style="flex:1">
-          <div class="fill-label">Policy threshold <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(Axis B score ≤ N triggers policy)</span></div>
+          <div class="fill-label">Policy threshold <span class="lbl-note">(Axis B score ≤ N triggers policy)</span></div>
           <input id="pf-thresh" type="number" min="1" max="10" value="4"
-            style="width:80px;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
+            style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
         <div style="flex:1">
-          <div class="fill-label">Consecutive cycles <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(before trigger)</span></div>
+          <div class="fill-label">Consecutive cycles <span class="lbl-note">(before trigger)</span></div>
           <input id="pf-consec" type="number" min="1" max="10" value="2"
-            style="width:80px;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
+            style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
         <button onclick="cancelProjectForm()"
-          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid #4e5e7a;color:#4e5e7a;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Cancel</button>
+          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Cancel</button>
         <button onclick="saveProjectForm()"
-          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">
+          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">
           <span id="pf-save-label">Create project</span>
         </button>
       </div>
@@ -1649,7 +1660,7 @@ Policy responses triggered: [list categories, or "None"]
   </section>
 
   <!-- ARCHIVE SECTION -->
-  <section id="archive">
+  <section id="archive" class="panel">
     <div class="sh"><div class="snum">Archive</div><div>
       <div class="stitle">Session Log</div>
       <div class="spurp">Archived outputs from completed sessions. Referenced when running Roadmap or Health Synthesis prompts. Add entries after each cycle completes.</div>
@@ -1660,22 +1671,22 @@ Policy responses triggered: [list categories, or "None"]
     </div>
     <div id="archiveEntries"></div>
     <button onclick="openArchiveForm()" id="addArchiveBtn"
-      style="width:100%;margin-top:8px;padding:9px;border-radius:7px;background:rgba(167,139,250,.06);border:1px dashed rgba(167,139,250,.3);color:#a78bfa;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
+      style="width:100%;margin-top:8px;padding:9px;border-radius:7px;background:rgba(167,139,250,.06);border:1px dashed rgba(167,139,250,.3);color:var(--purple);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
       + Add entry
     </button>
-    <div id="archiveForm" style="display:none;margin-top:12px;padding:16px;background:#161b27;border:1px solid #2a3142;border-radius:8px">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin-bottom:12px">New Archive Entry</div>
-      <div style="font-size:11px;color:#8899b3;margin-bottom:4px">Title (e.g. "Observatory — Security & HIPAA Audit")</div>
+    <div id="archiveForm" style="display:none;margin-top:12px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:12px">New Archive Entry</div>
+      <div style="font-size:11px;color:var(--text-sec);margin-bottom:4px">Title (e.g. "Observatory — Security & HIPAA Audit")</div>
       <input id="af-title" type="text" placeholder="Project — Subsystem Scope"
-        style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box;margin-bottom:8px">
-      <div style="font-size:11px;color:#8899b3;margin-bottom:4px">Content — paste handoff block, implementation summary, or key findings</div>
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box;margin-bottom:8px">
+      <div style="font-size:11px;color:var(--text-sec);margin-bottom:4px">Content — paste handoff block, implementation summary, or key findings</div>
       <textarea id="af-content" rows="8" placeholder="Paste session output here..."
-        style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:monospace;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea>
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea>
       <div style="display:flex;gap:10px">
         <button onclick="cancelArchiveForm()"
-          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid #4e5e7a;color:#4e5e7a;font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>
+          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>
         <button onclick="saveArchiveEntry()"
-          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Save entry</button>
+          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Save entry</button>
       </div>
     </div>
   </section>
@@ -1920,7 +1931,7 @@ function renderCustomInvariantsList(){
       <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${esc(inv.id)}</span>
       <span style="font-size:12px;color:var(--text-sec);flex:1">${esc(inv.text)}</span>
       <span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0">${esc(inv.subsystem)}</span>
-      <button onclick="deleteInvariant('${inv.id}')" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
+      <button onclick="deleteInvariant('${inv.id}')" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
     </div>`).join('');
 }
 
@@ -2366,16 +2377,16 @@ function renderProjectsTab(){
 function renderBuiltInProjects(){
   const el=document.getElementById('projectsBuiltIn');
   if(!el)return;
-  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#4e5e7a;margin-bottom:10px">Built-in projects</div>'+
+  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:10px">Built-in projects</div>'+
     PROJECTS.map(p=>`
-      <div style="background:#161b27;border:1px solid #2a3142;border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#dde4f0">${esc(p.name)}</div>
-          <div style="font-size:11px;color:#4e5e7a;margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
+          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
-          <div style="font-size:10.5px;padding:2px 8px;border-radius:3px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:#4e5e7a">built-in</div>
-          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+        <div class="flex-g8">
+          <div style="font-size:10.5px;padding:2px 8px;border-radius:3px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:var(--text-muted)">built-in</div>
+          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
         </div>
       </div>`).join('');
 }
@@ -2385,17 +2396,17 @@ function renderCustomProjects(){
   if(!el)return;
   const custom=loadCustomProjects();
   if(!custom.length){el.innerHTML='';return;}
-  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#4e5e7a;margin:20px 0 10px">Custom projects</div>'+
+  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:20px 0 10px">Custom projects</div>'+
     custom.map(p=>`
-      <div style="background:#161b27;border:1px solid #2a3142;border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#dde4f0">${esc(p.name)}</div>
-          <div style="font-size:11px;color:#4e5e7a;margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
+          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
-          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
-          <button onclick="openEditProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
-          <button onclick="deleteProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
+        <div class="flex-g8">
+          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+          <button onclick="openEditProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
+          <button onclick="deleteProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
         </div>
       </div>`).join('');
 }
@@ -2453,16 +2464,16 @@ function renderSubRows(){
   const c=document.getElementById('pf-subs');
   if(!c)return;
   c.innerHTML=pfSubRows.map((s,i)=>`
-    <div style="background:#1e2435;border:1px solid #2a3142;border-radius:6px;padding:10px 12px;margin-bottom:8px">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:11px;color:#4e5e7a;font-weight:500">Subsystem ${i+1}</span>
-        ${pfSubRows.length>1?`<button onclick="removeSubRow(${i})" style="font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-family:inherit">Remove</button>`:''}
+        <span style="font-size:11px;color:var(--text-muted);font-weight:500">Subsystem ${i+1}</span>
+        ${pfSubRows.length>1?`<button onclick="removeSubRow(${i})" style="font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">Remove</button>`:''}
       </div>
       <input type="text" value="${esc(s.name)}" placeholder="Subsystem name (e.g. Core Architecture & Pipeline)"
-        style="width:100%;background:#0e1117;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:5px"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:5px"
         oninput="pfSubRows[${i}].name=this.value">
       <textarea rows="2" placeholder="Files (e.g. server/index.ts, server/routes.ts)"
-        style="width:100%;background:#0e1117;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:monospace;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;resize:vertical"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;resize:vertical"
         oninput="pfSubRows[${i}].files=this.value">${esc(s.files)}</textarea>
     </div>`).join('');
 }
@@ -2697,26 +2708,26 @@ function renderArchive(){
   const seeds=project.seeds||[];
   const entries=loadArchiveEntries();
   const all=[...seeds,...entries];
-  if(!all.length){el.innerHTML='<div style="padding:14px;font-size:13px;color:#4e5e7a;text-align:center">No entries yet. Add one after each cycle completes.</div>';return;}
+  if(!all.length){el.innerHTML='<div style="padding:14px;font-size:13px;color:var(--text-muted);text-align:center">No entries yet. Add one after each cycle completes.</div>';return;}
   el.innerHTML=all.map((e,i)=>{
     const isSeed=seeds.find(s=>s.id===e.id);
-    return `<div style="border:1px solid #2a3142;border-radius:8px;overflow:hidden;margin-bottom:10px">
-      <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1e2435;cursor:pointer">
+    return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
+      <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
         <div style="display:flex;align-items:center;gap:8px;min-width:0">
-          <span style="color:#4f8ef7;font-size:11px;flex-shrink:0">▶</span>
-          <span style="font-size:13px;font-weight:600;color:#dde4f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
+          <span style="color:var(--accent);font-size:11px;flex-shrink:0">▶</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
-          <span style="font-size:11px;color:#4e5e7a;font-family:monospace">${esc(e.date)}</span>
-          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${esc(JSON.stringify(e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-family:inherit">×</button>`:''}
-          <span style="color:#4e5e7a;font-size:10px">▼</span>
+          <span style="font-size:11px;color:var(--text-muted);font-family:monospace">${esc(e.date)}</span>
+          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${esc(JSON.stringify(e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
+          <span style="color:var(--text-muted);font-size:10px">▼</span>
         </div>
       </div>
       <div class="log-body" id="arlog-${i}">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <button onclick="navigator.clipboard.writeText(${esc(JSON.stringify(e.content))})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;cursor:pointer;font-family:inherit">Copy content</button>
+          <button onclick="navigator.clipboard.writeText(${esc(JSON.stringify(e.content))})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Copy content</button>
         </div>
-        <pre style="font-family:monospace;font-size:12px;color:#8899b3;line-height:1.65;white-space:pre-wrap;word-break:break-word;margin:0">${esc(e.content)}</pre>
+        <pre style="font-family:monospace;font-size:12px;color:var(--text-sec);line-height:1.65;white-space:pre-wrap;word-break:break-word;margin:0">${esc(e.content)}</pre>
       </div>
     </div>`;
   }).join('');
@@ -3465,12 +3476,12 @@ function dashboardCard(p){
   const active=(p.id===activeProjectId)?' active':'';
   return '<div class="dcard'+active+'">'
     +'<div class="dcard-top"><div class="dcard-name">'+esc(p.name)+(active?' <span class="dchip" style="color:var(--accent);border-color:rgba(79,142,247,.4)">active</span>':'')+'</div>'
-    +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span style="font-size:11px;color:var(--text-muted)">/10</span>':'')+'</div></div>'
+    +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span class="note-mut">/10</span>':'')+'</div></div>'
     +'<div class="dcard-row"><span class="dsrc">'+icon+' '+esc(src)+'</span>'+(phase?'<span class="dchip" title="'+esc(phase)+'">'+esc(phase.split('(')[0].trim().slice(0,30))+'</span>':'')+'</div>'
     +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
     +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
     +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
-    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+ghUrl+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span style="font-size:11px;color:var(--text-muted)">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">⚙ source</button></div>'
+    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+ghUrl+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">⚙ source</button></div>'
     +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
     +'<label>GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
     +'<label>Fallback when no GitHub data (overall / phase / note)</label>'
@@ -3497,19 +3508,30 @@ function toggleDashToken(){ const t=document.getElementById('dashToken'); if(t) 
 function saveDashToken(){ const i=document.getElementById('dashTokenInput'); if(i&&i.value){ try{localStorage.setItem('ccg:ghToken',i.value.trim())}catch(e){storageWarn(e)} i.value=''; } toggleDashToken(); setTimeout(refreshDashboard,0); }
 function clearDashToken(){ try{localStorage.removeItem('ccg:ghToken')}catch(e){} const i=document.getElementById('dashTokenInput'); if(i){i.value='';i.placeholder='ghp_…';} renderDashboard(); }
 
-const sections=document.querySelectorAll('section[id], div#flow');
+// ─── TABBED NAVIGATION — show one panel at a time ────────────
 const navLinks=document.querySelectorAll('nav a');
-navLinks.forEach(l=>l.addEventListener('click',closeNav));
-const observer=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      navLinks.forEach(l=>l.classList.remove('active'));
-      const a=document.querySelector(`nav a[href="#${e.target.id}"]`);
-      if(a)a.classList.add('active');
-    }
+function showPanel(id){
+  const panels=document.querySelectorAll('main > .panel');
+  let target=null;
+  panels.forEach(p=>{ if(p.id===id) target=p; });
+  if(!target){ target=panels[0]; if(target) id=target.id; }   // fall back to first panel
+  panels.forEach(p=>p.classList.toggle('active',p===target));
+  document.querySelectorAll('nav a').forEach(a=>{
+    const on=a.getAttribute('href')==='#'+id;
+    a.classList.toggle('active',on);
+    if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');
   });
-},{threshold:0.15,rootMargin:'-60px 0px -60% 0px'});
-sections.forEach(s=>observer.observe(s));
+  try{ if(typeof window.scrollTo==='function') window.scrollTo(0,0); }catch(e){}
+}
+function handleHash(){ let h=''; try{ h=(location.hash||'').replace(/^#/,''); }catch(e){} showPanel(h); closeNav(); }
+navLinks.forEach(a=>a.addEventListener('click',e=>{
+  const href=a.getAttribute('href')||'';
+  if(!href.startsWith('#')) return;
+  e.preventDefault();
+  try{ if(location.hash===href) showPanel(href.slice(1)); else location.hash=href; }catch(err){ showPanel(href.slice(1)); }
+  closeNav();
+}));
+try{ window.addEventListener('hashchange',handleHash); }catch(e){}
 
 // ─── INIT ────────────────────────────────────────────────────
 initTheme();
@@ -3532,6 +3554,7 @@ renderInvariantTable();
 renderCustomInvariantsList();
 renderSubsysTable();
 restoreRepoFolder();
+handleHash();   // open the panel named by the URL hash, else the default (Dashboard)
 </script>
 </body>
 </html>
