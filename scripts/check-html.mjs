@@ -37,9 +37,28 @@ const dummy = new Proxy(
   { style: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } }, querySelectorAll: () => [], addEventListener() {} },
   { get(t, p) { return p in t ? t[p] : (() => {}); } }
 );
+// Per-id capturing elements: render* functions assign innerHTML/textContent; we
+// keep them so the test can assert the rendered OUTPUT, not just that init didn't
+// throw (W2 — browser-only render paths were previously only smoke-tested).
+const elStore = {};
+function makeEl() {
+  const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } } };
+  return new Proxy(t, {
+    get(o, p) {
+      if (p === 'innerHTML') return o._html;
+      if (p === 'textContent') return o._text;
+      if (p in o) return o[p];
+      if (p === 'querySelector') return () => makeEl();
+      if (p === 'querySelectorAll') return () => [];
+      return () => {};
+    },
+    set(o, p, v) { if (p === 'innerHTML') o._html = String(v); else if (p === 'textContent') o._text = String(v); else o[p] = v; return true; },
+  });
+}
+const getEl = id => (elStore[id] || (elStore[id] = makeEl()));
 const ctx = {
   localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; }, get length() { return Object.keys(store).length; }, key: i => Object.keys(store)[i] },
-  document: { getElementById: () => dummy, querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, appendChild() {} }) },
+  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, appendChild() {} }) },
   navigator: { clipboard: { writeText: () => Promise.resolve() } },
   window: { addEventListener() {} },
   IntersectionObserver: class { observe() {} disconnect() {} },
@@ -139,6 +158,27 @@ if (loaded && typeof ctx.parseHealth === 'function' && typeof ctx.parseRepoSpec 
   if (ctx.parseRepoSpec('garbage') === null) ok('parseRepoSpec rejects a malformed spec'); else bad('parseRepoSpec accepted a malformed spec');
   if (typeof ctx.scoreColor === 'function' && /green/.test(ctx.scoreColor('8.8')) && /red/.test(ctx.scoreColor('3'))) ok('scoreColor maps score bands'); else bad('scoreColor band mapping wrong');
 } else if (loaded) bad('dashboard parsers (parseHealth/parseRepoSpec) not defined');
+
+// W2 — render OUTPUT assertions. INIT ran every render* under the capturing stub;
+// assert the load-bearing ones produced the right markup (not just no-throw). A
+// safe substring (split on &/<>) sidesteps HTML-escaping of names.
+if (loaded) {
+  const out = id => (elStore[id] ? elStore[id].innerHTML : '');
+  const safe = s => String(s).split(/[&<>]/)[0].trim();
+  const proj = typeof ctx.getProject === 'function' ? ctx.getProject() : null;
+  if (proj && proj.subsystems && proj.subsystems[0]) {
+    if (out('subsysTableBody').includes(safe(proj.subsystems[0].name))) ok('renderSubsysTable emits the active project’s subsystems');
+    else bad('renderSubsysTable output missing subsystem "' + safe(proj.subsystems[0].name) + '"');
+  } else bad('getProject()/subsystems unavailable — cannot check renderSubsysTable output');
+  if (proj && proj.invariants && proj.invariants[0]) {
+    if (out('invariantTableBody').includes(proj.invariants[0].id)) ok('renderInvariantTable emits library invariants');
+    else bad('renderInvariantTable output missing invariant "' + proj.invariants[0].id + '"');
+  }
+  if (/setPhase\(/.test(out('ctItems'))) ok('renderCycle emits interactive phase dots');
+  else bad('renderCycle output has no phase dots (ctItems empty/blank)');
+  if (proj && out('dashCards').includes('dcard') && out('dashCards').includes(safe(proj.name))) ok('renderDashboard emits a card per project');
+  else bad('renderDashboard output missing cards or the active project name');
+}
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');
 console.log(log.join('\n'));
