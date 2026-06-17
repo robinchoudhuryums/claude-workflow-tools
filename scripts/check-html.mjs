@@ -180,6 +180,27 @@ if (loaded) {
   else bad('renderDashboard output missing cards or the active project name');
 }
 
+// W2 — state backup round-trip (the FSA/import data-integrity path, previously
+// only smoke-tested via the connect fallback). collectState() serialized then
+// re-applied through the shared helpers must restore every ccg:* key losslessly
+// and drop foreign keys on BOTH the serialize and apply sides.
+if (loaded && typeof ctx.collectState === 'function' && typeof ctx.stateBackupKeys === 'function' && typeof ctx.applyStateKeys === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  store['ccg:rt:a'] = '1';
+  store['ccg:rt:b'] = JSON.stringify({ x: 2 });
+  store['other:rt'] = 'nope';                       // foreign key — must never survive
+  const snap = ctx.collectState();                   // serialize side scopes to ccg:*
+  const serializeScoped = 'ccg:rt:a' in snap && 'ccg:rt:b' in snap && !('other:rt' in snap);
+  for (const k of Object.keys(store)) delete store[k];                       // wipe
+  const { data, keys, reason } = ctx.stateBackupKeys({ data: { ...snap, 'evil:x': 'y' } });
+  const n = reason ? 0 : ctx.applyStateKeys(data, keys);                     // apply side scopes again
+  const lossless = store['ccg:rt:a'] === '1' && store['ccg:rt:b'] === JSON.stringify({ x: 2 });
+  const applyScoped = !('other:rt' in store) && !('evil:x' in store) && n === keys.length;
+  if (serializeScoped && lossless && applyScoped) ok('state backup round-trips losslessly and stays ccg:*-scoped on both sides (R3 integrity)');
+  else bad(`state round-trip failed (serializeScoped=${serializeScoped} lossless=${lossless} applyScoped=${applyScoped})`);
+  for (const k of Object.keys(store)) delete store[k];
+} else if (loaded) bad('state backup helpers (stateBackupKeys/applyStateKeys) not defined');
+
 console.log('HTML console check (claude-code-guide-v2.html):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} HTML check(s) failed.`); process.exit(1); }

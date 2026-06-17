@@ -2567,6 +2567,27 @@ function exportState(){
   }
 }
 
+// Validate a parsed backup and return the ccg:*-scoped keys it would import.
+// Shared by file-import and load-from-repo so the parse/validate/scope rule
+// lives in ONE place (was duplicated — the Parallel Source-of-Truth shape the
+// tool itself polices). Returns {data, keys, reason}: reason is 'no-data' (not
+// a recognized backup) or 'no-keys' (no ccg:* state) when keys is null.
+function stateBackupKeys(parsed){
+  const data=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:null;
+  if(!data) return {data:null,keys:null,reason:'no-data'};
+  const keys=Object.keys(data).filter(k=>k.indexOf('ccg:')===0);
+  if(!keys.length) return {data,keys:null,reason:'no-keys'};
+  return {data,keys,reason:null};
+}
+// Write the validated keys and re-derive the active project. Caller owns the
+// confirm prompt, switchProject(), re-render, and status message. Returns count.
+function applyStateKeys(data,keys){
+  keys.forEach(k=>localStorage.setItem(k,data[k]));
+  activeProjectId=loadActiveProjectId();
+  if(!getAllProjects().map(p=>p.id).includes(activeProjectId)){ activeProjectId=PROJECTS[0].id; saveActiveProjectId(activeProjectId); }
+  return keys.length;
+}
+
 function importStateFile(input){
   const file=input&&input.files&&input.files[0];
   if(!file)return;
@@ -2575,15 +2596,12 @@ function importStateFile(input){
     let parsed;
     try{ parsed=JSON.parse(ev.target.result); }
     catch(e){ setStateIoMsg('Import failed: file is not valid JSON.','error'); input.value=''; return; }
-    const data=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:null;
-    if(!data){ setStateIoMsg('Import failed: not a recognized state backup (missing "data").','error'); input.value=''; return; }
-    const keys=Object.keys(data).filter(k=>k.indexOf('ccg:')===0);
-    if(!keys.length){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
+    const {data,keys,reason}=stateBackupKeys(parsed);
+    if(reason==='no-data'){ setStateIoMsg('Import failed: not a recognized state backup (missing "data").','error'); input.value=''; return; }
+    if(reason==='no-keys'){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
     if(!confirm(`Import ${keys.length} stored item(s)? This OVERWRITES matching projects, invariants, archive entries, and tracker state in this browser.`)){ input.value=''; return; }
     try{
-      keys.forEach(k=>localStorage.setItem(k,data[k]));
-      activeProjectId=loadActiveProjectId();
-      if(!getAllProjects().map(p=>p.id).includes(activeProjectId)){ activeProjectId=PROJECTS[0].id; saveActiveProjectId(activeProjectId); }
+      applyStateKeys(data,keys);
       switchProject(activeProjectId);
       renderProjectsTab();
       setStateIoMsg(`Imported ${keys.length} stored item${keys.length===1?'':'s'}.`,'ok');
@@ -2657,14 +2675,11 @@ async function loadStateFromRepo(){
     const cycle = await repoDirHandle.getDirectoryHandle('.cycle');
     const fh = await cycle.getFileHandle('console-state.json');
     const parsed = JSON.parse(await (await fh.getFile()).text());
-    const data = parsed && parsed.data && typeof parsed.data==='object' ? parsed.data : null;
-    if(!data){ setStateIoMsg('No recognizable state in .cycle/console-state.json.','error'); return; }
-    const keys = Object.keys(data).filter(k=>k.indexOf('ccg:')===0);
-    if(!keys.length){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
+    const {data,keys,reason} = stateBackupKeys(parsed);
+    if(reason==='no-data'){ setStateIoMsg('No recognizable state in .cycle/console-state.json.','error'); return; }
+    if(reason==='no-keys'){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
     if(!confirm(`Load ${keys.length} item(s) from the connected repo? This OVERWRITES matching state in this browser.`)) return;
-    keys.forEach(k=>localStorage.setItem(k,data[k]));
-    activeProjectId=loadActiveProjectId();
-    if(!getAllProjects().map(p=>p.id).includes(activeProjectId)){ activeProjectId=PROJECTS[0].id; saveActiveProjectId(activeProjectId); }
+    applyStateKeys(data,keys);
     switchProject(activeProjectId); renderProjectsTab();
     setStateIoMsg(`Loaded ${keys.length} item(s) from the connected repo.`,'ok');
   }catch(e){ setStateIoMsg('Load from repo failed: '+((e&&e.message)||'error'),'error'); }
