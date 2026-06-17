@@ -1615,6 +1615,132 @@ Full benchmarkable assessment after a complete cycle. Takes 3 inputs per subsyst
 - Delta summary vs prior cycle
 - Policy response triggers (Axis B category at threshold for consecutive cycles)
 
+Canonical prompt body — the §6a console builder (`buildP6aText`) is locked to this
+verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16). The subsystem list,
+vertical dimensions, and Axis B categories/playbooks are injected at render time;
+bracketed lines are render-time placeholders. (This is the builder Cycle-4 F1
+silently broke — the metrics-ownership rule in step 8 is now locked.)
+
+```
+Do not make any changes to any files during this session.
+
+PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
+(Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
+
+[one entry per project subsystem — three blocks each, injected at render time]
+[OPTIONAL: PASTE PRIOR SYNTHESIS SCORE HERE FOR DELTA COMPARISON]
+
+[OPTIONAL: PASTE SEAMS & INVARIANTS AUDIT BLOCK — if a Seams audit ran this cycle, its horizontal observations feed directly into Axis B scoring and its invariant library updates should be reflected in invariant probe results]
+
+Using these inputs as your primary source of truth, produce a Project Health Report scored on two orthogonal axes.
+
+Important: The Verification Block is an independent check — its regression counts, invariant probe results, and coverage gap data take precedence over the cycle's self-reported results where they conflict.
+
+If a Verification Block is missing for a subsystem: mark Axis B confidence as "Low — no independent verification" for that subsystem's contributions. Score Axis B categories using only the Cycle Summary Block and Session Handoff Block, but note that these are self-reported and unverified. Do NOT skip Axis B scoring entirely — provide best-effort scores with the low-confidence flag.
+
+═══════════════════════════════════════════════════
+AXIS A — VERTICAL (Subsystem Health)
+═══════════════════════════════════════════════════
+
+For each dimension below, provide:
+- A score out of 10, OR "Not assessed this cycle" if no direct signal exists from the cycle inputs
+  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. RAG, Business Viability, or any domain-specific dimension without direct signal this cycle).
+- Coverage confidence: High (full cycle with verification block) / Medium (cycle summary only, no verification) / Low (inferred from adjacent signals)
+- 2–3 sentences of reasoning grounded in specific findings from the cycle inputs, not general impressions
+- The single most important finding or unresolved item driving the score
+- One concrete action that would most improve this score
+
+Vertical dimensions:
+[the project health dimensions are injected here per project]
+
+═══════════════════════════════════════════════════
+AXIS B — HORIZONTAL (Bug-Shape Posture)
+═══════════════════════════════════════════════════
+
+Score each of the following cross-cutting categories. These measure systemic bug patterns that span subsystems — no single vertical audit owns them. Evidence comes from all subsystem inputs combined, especially the Verification Blocks.
+
+[the project Axis B categories + their "Measured by" definitions are injected here]
+For each Axis B category provide:
+- Score 1–10
+- Trend vs. prior cycle: Improving / Stable / Degrading (or "First measurement" if no prior data)
+- 1–2 sentences of key evidence from this cycle's inputs
+- One specific action that would improve this category
+
+═══════════════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════════════
+
+Produce the following sections in order:
+
+1. TWO-AXIS GRID (this is the primary output):
+
+AXIS A — VERTICAL              Score     Confidence
+────────────────────────────────────────────────────
+[each dimension]                X/10      High/Med/Low
+                                ...or "Not assessed"
+
+AXIS B — HORIZONTAL             Score     Trend
+────────────────────────────────────────────────────
+[one grid row per Axis B category, injected at render time]
+
+Reading the grid:
+- Vertical axis tells you which subsystem to audit next (lowest-scoring assessed dimension).
+- Horizontal axis tells you which bug class needs policy intervention (lowest-scoring category, especially if trending down).
+
+2. OVERALL WEIGHTED AVERAGE (secondary signal only — do not use as the primary assessment):
+   A single X/10 score. State the weights used. This exists for quick comparison across cycles, not for decision-making.
+
+3. DELTA SUMMARY (if prior score provided):
+   Which dimensions improved, declined, or held steady on BOTH axes, and why.
+
+4. PRIORITY CALLS:
+- Vertical: the dimension most in need of attention before the next development cycle
+- Horizontal: the category most in need of policy intervention
+- Any subsystem where the Verification Block signals failed invariants or unresolved Critical/High findings
+- Any Axis B category at ≤5/10 for 2 consecutive cycles — this triggers an automatic policy response (see section 7 below)
+- The dimension closest to a meaningful threshold (nearly production-ready, or at risk of regression)
+
+5. PLAIN-LANGUAGE SUMMARY:
+One paragraph summarizing where the project stands, written for a technical stakeholder who hasn't read the full report.
+
+6. PROJECT_HEALTH.md UPDATE BLOCK:
+Produce a ready-to-paste block containing the Current Standing section and a new Cycle entry with both axes formatted for the score history.
+
+7. POLICY RESPONSE TRIGGERS:
+Check each Axis B category against its prior cycle score. If any category scored ≤5/10 in BOTH this cycle and the prior cycle (2 consecutive cycles), it triggers a mandatory policy response in the next cycle's scope.
+
+For each triggered category, produce a POLICY RESPONSE entry:
+
+---POLICY RESPONSE TRIGGERED---
+Category: [Axis B category name]
+Consecutive poor cycles: [N]
+Current score: [X/10] | Prior score: [X/10]
+Root pattern: [one-sentence description of the systemic pattern causing the persistent low score]
+
+Prescribed policy fix (include in next cycle scope):
+- [specific, concrete action — not "improve X" but "add ESLint rule for Y" or "write test for Z"]
+- [second action if needed]
+
+Scope addition: Add these policy fixes to the next subsystem cycle's Implementation Handoff Block as mandatory actions alongside the subsystem-specific findings.
+---END POLICY RESPONSE---
+
+Use these category-specific playbooks as starting points:
+
+[per-Axis-B-category policy playbooks injected here]
+If no categories are triggered, output: "No policy responses triggered this cycle."
+
+8. METRICS (optional — only if the project uses .cycle/ state):
+If a .cycle/ directory exists at the project root, append one row to
+.cycle/metrics.csv (create it with the header row if absent):
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
+Fill phase=synthesis with the Category D ratio from the Verification
+Block and axis_b_lowest = the lowest-scoring Axis B category this cycle.
+Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK
+— those columns are owned ONLY by the phase=reflect rows (/reflect is
+their sole writer), so a synthesis row must not repeat them or the
+cumulative trend double-counts. If .cycle/ does not exist, skip this step.
+```
+
 ---
 
 ## Per-Change Review
@@ -2047,6 +2173,22 @@ Test Coverage: [observations]
 RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
 [Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
 ---END SEAMS & INVARIANTS AUDIT BLOCK---
+```
+
+### POLICY RESPONSE
+```
+---POLICY RESPONSE TRIGGERED---
+Category: [Axis B category name]
+Consecutive poor cycles: [N]
+Current score: [X/10] | Prior score: [X/10]
+Root pattern: [one-sentence description of the systemic pattern causing the persistent low score]
+
+Prescribed policy fix (include in next cycle scope):
+- [specific, concrete action — not "improve X" but "add ESLint rule for Y" or "write test for Z"]
+- [second action if needed]
+
+Scope addition: Add these policy fixes to the next subsystem cycle's Implementation Handoff Block as mandatory actions alongside the subsystem-specific findings.
+---END POLICY RESPONSE---
 ```
 
 ### PR REVIEW BLOCK

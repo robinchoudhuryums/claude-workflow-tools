@@ -109,6 +109,7 @@ export const DYNAMIC_MANIFEST = [
   // them doesn't mint a /command file (W1 full textual lock — ROADMAP R16).
   { id: 'buildVerificationText', section: 'Verification Pass', label: '§4v Verification Pass', drop: false, project: 'obs', locked: true },
   { id: 'buildSeamsText',        section: 'Seams & Invariants Audit', label: '§1s Seams & Invariants', drop: false, project: 'obs', locked: true },
+  { id: 'buildP6aText',          section: 'Health Synthesis', label: '§6a Health Synthesis', drop: false, project: 'obs', locked: true },
 ];
 
 // Resolve a manifest entry's canonical body + label, whether sourced from a
