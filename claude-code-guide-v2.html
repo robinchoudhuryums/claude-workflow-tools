@@ -17,6 +17,25 @@
   --ph-bg:rgba(245,158,11,0.1); --ph-border:rgba(245,158,11,0.35); --ph-text:#fbbf24;
   --nav-w:256px; --r:8px; --r-sm:5px;
 }
+/* LIGHT THEME — flips chrome only; prompt/code blocks (--prompt-bg) and accent
+   colors stay as-is, so dark code blocks + the hardcoded prompt text color
+   (#c5cfe0) remain legible in both themes. */
+[data-theme="light"]{
+  --bg:#f4f7fb; --surface:#ffffff; --surface2:#eef2f8; --surface3:#e2e9f3;
+  --border:#d6deea; --border-light:#e7ecf4;
+  --text:#1d2433; --text-sec:#475066; --text-muted:#8a94a8;
+  --tag-bg:#e4f3e9; --tag-text:#157f49;
+  --ph-bg:rgba(245,158,11,0.12); --ph-border:rgba(245,158,11,0.45); --ph-text:#b45309;
+}
+[data-theme="light"] .fill-form{background:var(--surface2)}
+[data-theme="light"] #projectSelect{background:var(--surface2)!important;color:var(--text)!important;border-color:var(--border)!important}
+[data-theme="light"] body{background:var(--bg)}
+/* MOBILE TOP BAR + NAV DRAWER + ICON BUTTONS */
+.iconbtn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--r-sm);background:var(--surface2);border:1px solid var(--border);color:var(--text-sec);cursor:pointer;flex-shrink:0;padding:0;font-size:15px;line-height:1;transition:all .15s}
+.iconbtn:hover{color:var(--text);border-color:var(--accent)}
+.iconbtn svg{width:18px;height:18px}
+.mobilebar{display:none;align-items:center;gap:12px;position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px}
+.navbackdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:'IBM Plex Sans',-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.65;display:flex;min-height:100vh}
@@ -194,16 +213,33 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 .abar-btn{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-sec);font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
 .abar-btn:hover{color:var(--text);border-color:var(--text-muted)}
 
-@media(max-width:768px){nav{display:none}main{margin-left:0;padding:24px 18px 60px}.tips-grid{grid-template-columns:1fr}}
+@media(max-width:768px){
+  .mobilebar{display:flex}
+  nav{transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+  nav.open{transform:translateX(0)}
+  nav.open ~ .navbackdrop{display:block}
+  main{margin-left:0;padding:18px 16px 60px}
+  .tips-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 
+<!-- MOBILE TOP BAR -->
+<div class="mobilebar">
+  <button class="iconbtn" aria-label="Open navigation" onclick="toggleNav()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  <div style="font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;flex:1">Session Guide</div>
+  <button class="iconbtn" aria-label="Toggle light or dark theme" title="Toggle theme" id="themeBtnMobile" onclick="toggleTheme()">☀</button>
+</div>
+
 <!-- NAV -->
 <nav id="sidebar">
-  <div class="nav-logo">
-    <div class="t">Session Guide</div>
-    <div class="s">Claude Code Workflow</div>
+  <div class="nav-logo" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <div>
+      <div class="t">Session Guide</div>
+      <div class="s">Claude Code Workflow</div>
+    </div>
+    <button class="iconbtn" aria-label="Toggle light or dark theme" title="Toggle theme" id="themeBtn" onclick="toggleTheme()" style="width:30px;height:30px">☀</button>
   </div>
   <div style="flex:1;overflow-y:auto">
     <div class="nav-group">Setup</div>
@@ -252,6 +288,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     </div>
   </div>
 </nav>
+<div class="navbackdrop" id="navBackdrop" onclick="closeNav()"></div>
 
 <!-- MAIN -->
 <main>
@@ -3276,8 +3313,32 @@ function toggleLog(id,hdr){
 }
 
 // ─── NAV ACTIVE STATE ────────────────────────────────────────
+// ─── THEME (light / dark) ────────────────────────────────────
+function applyTheme(t){
+  try{ const r=document.documentElement; if(r){ if(t==='light') r.setAttribute('data-theme','light'); else r.removeAttribute('data-theme'); } }catch(e){}
+  const lbl=(t==='light'?'☾':'☀');
+  ['themeBtn','themeBtnMobile'].forEach(id=>{ const b=document.getElementById(id); if(b) b.textContent=lbl; });
+}
+function initTheme(){
+  let t=null;
+  try{ t=localStorage.getItem('ccg:theme'); }catch(e){}
+  if(t!=='light'&&t!=='dark'){ try{ t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; }catch(e){ t='dark'; } }
+  applyTheme(t);
+}
+function toggleTheme(){
+  let cur='dark';
+  try{ const r=document.documentElement; cur=(r&&r.getAttribute('data-theme')==='light')?'light':'dark'; }catch(e){}
+  const next=cur==='light'?'dark':'light';
+  applyTheme(next);
+  try{ localStorage.setItem('ccg:theme',next); }catch(e){ storageWarn(e); }
+}
+// ─── MOBILE NAV DRAWER ───────────────────────────────────────
+function toggleNav(){ const n=document.getElementById('sidebar'); if(n) n.classList.toggle('open'); }
+function closeNav(){ const n=document.getElementById('sidebar'); if(n) n.classList.remove('open'); }
+
 const sections=document.querySelectorAll('section[id], div#flow');
 const navLinks=document.querySelectorAll('nav a');
+navLinks.forEach(l=>l.addEventListener('click',closeNav));
 const observer=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
     if(e.isIntersecting){
@@ -3290,6 +3351,7 @@ const observer=new IntersectionObserver(entries=>{
 sections.forEach(s=>observer.observe(s));
 
 // ─── INIT ────────────────────────────────────────────────────
+initTheme();
 renderProjectSelector();
 renderCycle();
 renderProjectsTab();
