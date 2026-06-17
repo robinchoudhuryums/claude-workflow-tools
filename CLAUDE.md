@@ -1395,6 +1395,102 @@ Independent verification in a fresh session with no implementation context. Prod
 - Cycle execution quality (3 yes/no facts with evidence)
 - Coverage gap report (Category D candidates — fixes without regression tests)
 
+Canonical prompt body — the §4v console builder (`buildVerificationText`) is
+locked to this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16, full
+textual lock). The per-project invariant library and the 5 rotation probes are
+injected at render time; bracketed lines are render-time placeholders.
+
+```
+Do not make any changes to any files during this session.
+
+IMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.
+
+You are verifying the output of a complete audit-implement cycle.
+
+INPUTS — paste these from the completed cycle:
+[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]
+
+[PASTE CYCLE SUMMARY BLOCK FROM /REFLECT HERE]
+
+[INVARIANT LIBRARY — the current library is injected here per project]
+
+---
+
+Conduct the following verification in four parts. Use code reads and targeted test executions — not prose assessments or trust in the cycle's self-reported results. (If the project's Test Command is `manual`, substitute the relevant Regression Scenarios from CLAUDE.md for test executions and rely on close code reads; treat a failed scenario as a failed probe.)
+
+PART 1 — INVARIANT PROBE RESULTS
+Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected at copy time — do NOT substitute your own picks):
+
+MANDATORY ROTATION PROBES:
+[5 mandatory rotation probes — pre-selected from the library at render time]
+
+For each invariant probed:
+- Read the relevant code directly (do not rely on the cycle's description of what changed)
+- If a test exists for this invariant, run it and report the result
+- If no test exists, verify by code inspection and explain what you checked
+- Result: PASS / FAIL / UNVERIFIED (with reason for each)
+
+PART 2 — REGRESSION COUNT
+Count regressions using this hard definition: any behavior change where the post-cycle state is worse under any realistic load than the pre-cycle state — whether the cycle documented it as a "tradeoff" or not. A tradeoff that makes things worse in a realistic scenario IS a regression.
+
+For each regression found:
+- Describe the behavior that is now worse
+- Cite the specific code change that caused it
+- Note whether the cycle documented it (as a tradeoff or otherwise)
+- Rate severity: Critical / High / Medium / Low
+
+Calculate: Net score = (findings fixed) − (regressions introduced)
+
+PART 3 — CYCLE EXECUTION QUALITY
+Answer three yes/no questions with concrete evidence (not just the cycle's claims):
+1. Did the cycle run tests to completion? (Check for test output artifacts, not just assertions that tests passed)
+2. Did the cycle cross-check against the Common Gotchas section of CLAUDE.md? (Look for evidence in implementation decisions)
+3. Did the cycle introduce new entries to Common Gotchas? (Check CLAUDE.md for recent additions — this is a lagging indicator of operator-only state gaps)
+
+PART 4 — COVERAGE GAP REPORT
+For every fix claimed in the Implementation Summary Block:
+- Does a test exist that would fail if the bug came back?
+- If yes: cite the test file and what it asserts
+- If no: flag as a Category D candidate (fix without regression test)
+
+Calculate: Category D ratio = (fixes without regression tests) / (total fixes)
+
+---
+
+Produce a VERIFICATION BLOCK formatted exactly as shown below:
+
+---VERIFICATION BLOCK---
+Verified scope: [subsystem group name from implementation summary]
+Verification date: [today's date]
+Cycle being verified: [subsystem + cycle reference]
+
+INVARIANT PROBE RESULTS:
+INV-XX | [invariant description] | PASS / FAIL / UNVERIFIED | [evidence summary]
+(repeat for each probed invariant)
+Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
+
+REGRESSION COUNT:
+Regressions found: [N]
+R1 | [description] | [severity] | Documented by cycle: Y/N | [code location]
+(repeat for each regression, or "None found")
+Net score: [findings fixed] − [regressions] = [net]
+
+CYCLE EXECUTION QUALITY:
+Tests run to completion: YES/NO — [evidence]
+Common Gotchas cross-checked: YES/NO — [evidence]
+New Common Gotchas added: YES/NO — [what was added, or N/A]
+
+COVERAGE GAP REPORT:
+Fixes with regression tests: [N of M]
+Category D candidates (fixes without regression tests):
+[action ID] | [fix description] | [what test is needed]
+(repeat for each, or "None — all fixes have regression tests")
+Category D ratio: [X%]
+---END VERIFICATION BLOCK---
+
+Finally, answer: "What invariants should be added to the library based on what this cycle revealed?" List any new invariants discovered during verification that should be probed in future cycles.
+```
+
 ### Seams & Invariants Audit (Section 1s in HTML tool)
 
 Runs on the Seams Audit Cadence from the Cycle Workflow Config (default

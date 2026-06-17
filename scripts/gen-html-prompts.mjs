@@ -32,6 +32,26 @@ export function commandBody(md, name) {
   }
   return null;
 }
+// Like commandBody, but extracts the first fenced block under a NON-slash
+// heading (### <prefix>…). The cycle-type prompts §4v/§1s/§6a are not slash
+// commands, so this gives them a lockable canonical body without minting a
+// .claude/commands/ file. Scans to the first ``` fence before the next ###.
+export function sectionBody(md, headingPrefix) {
+  const lines = md.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].startsWith('### ') || !lines[i].slice(4).startsWith(headingPrefix)) continue;
+    let j = i + 1;
+    for (; j < lines.length; j++) {
+      if (lines[j].startsWith('### ')) return null;   // hit next heading — no fenced body
+      if (lines[j].trim() === '```') break;
+    }
+    if (lines[j]?.trim() !== '```') return null;
+    const body = [];
+    for (j++; j < lines.length && lines[j].trim() !== '```'; j++) body.push(lines[j]);
+    return body.join('\n').trim();
+  }
+  return null;
+}
 export const unesc = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 export const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 export function preBody(html, id) {
@@ -84,7 +104,16 @@ export const DYNAMIC_MANIFEST = [
   // prompt) — legitimately diverges. Resolved via option (b): keep it report-only,
   // guarded by the R16-S parity markers, not the textual lock (ROADMAP R16).
   { id: 'buildTier2ImplText',  command: 'targeted-implement', drop: true,  project: null,   locked: false },
+  // §4v/§1s/§6a are cycle-type prompts, NOT slash commands — their canonical body
+  // lives in a fenced block under a ### section heading (sectionBody), so locking
+  // them doesn't mint a /command file (W1 full textual lock — ROADMAP R16).
+  { id: 'buildVerificationText', section: 'Verification Pass', label: '§4v Verification Pass', drop: false, project: 'obs', locked: true },
 ];
+
+// Resolve a manifest entry's canonical body + label, whether sourced from a
+// slash command (commandBody) or a ### section (sectionBody).
+export const dynBody = (md, d) => (d.section ? sectionBody(md, d.section) : commandBody(md, d.command));
+export const dynLabel = d => d.label || ('/' + d.command);
 
 // Coverage of a canonical command body by a rendered builder's output: every
 // canonical line must be present (set membership after norm()).
@@ -153,11 +182,11 @@ function main(argv) {
     // Locked dynamic builders (R16): require 100% canonical-line coverage.
     const locked = DYNAMIC_MANIFEST.filter(d => d.locked);
     for (const d of locked) {
-      const body = commandBody(claudeMd, d.command);
+      const body = dynBody(claudeMd, d);
       const rendered = renderDynamicPrompt(html, d.id, d.project);
-      if (body == null || rendered == null) { console.error(`  ! ${d.id} ← /${d.command}: ${body == null ? 'command body' : 'render'} not found`); drift++; continue; }
+      if (body == null || rendered == null) { console.error(`  ! ${d.id} ← ${dynLabel(d)}: ${body == null ? 'canonical body' : 'render'} not found`); drift++; continue; }
       const cov = canonicalCoverage(body, rendered, d);
-      if (cov.missing.length) { console.error(`  ✗ ${d.id} is missing ${cov.missing.length}/${cov.total} canonical lines from /${d.command} (locked):\n      - ${cov.missing.slice(0, 3).join('\n      - ')}`); drift++; }
+      if (cov.missing.length) { console.error(`  ✗ ${d.id} is missing ${cov.missing.length}/${cov.total} canonical lines from ${dynLabel(d)} (locked):\n      - ${cov.missing.slice(0, 3).join('\n      - ')}`); drift++; }
     }
     if (drift) { console.error(`\n${drift} console prompt(s) drifted from CLAUDE.md — run: node scripts/gen-html-prompts.mjs --write (static) or reconcile the builder (dynamic)`); return 1; }
     console.log(`All ${MANIFEST.length} console §-prompts match CLAUDE.md. ✓`);
@@ -184,12 +213,12 @@ function main(argv) {
   // Dynamic builders (R16): render headlessly + report canonical-line coverage.
   console.log('\nDynamic builder ↔ canonical command coverage (R16):');
   for (const d of DYNAMIC_MANIFEST) {
-    const body = commandBody(claudeMd, d.command);
+    const body = dynBody(claudeMd, d);
     const rendered = renderDynamicPrompt(html, d.id, d.project);
-    if (body == null || rendered == null) { console.log(`  ? ${d.id} ← /${d.command}: not found`); continue; }
+    if (body == null || rendered == null) { console.log(`  ? ${d.id} ← ${dynLabel(d)}: not found`); continue; }
     const cov = canonicalCoverage(body, rendered, d);
     const pct = cov.total ? Math.round(100 * cov.present / cov.total) : 100;
-    console.log(`  ${d.locked ? '🔒' : '  '} ${d.id} ← /${d.command}: ${pct}% of ${cov.total} canonical lines present | ${cov.missing.length} missing${d.locked ? ' [LOCKED]' : ' (report-only BY DESIGN — canonical delegates to a sibling; console stays standalone, R16-S-marker-guarded — ROADMAP R16)'}`);
+    console.log(`  ${d.locked ? '🔒' : '  '} ${d.id} ← ${dynLabel(d)}: ${pct}% of ${cov.total} canonical lines present | ${cov.missing.length} missing${d.locked ? ' [LOCKED]' : ' (report-only BY DESIGN — canonical delegates to a sibling; console stays standalone, R16-S-marker-guarded — ROADMAP R16)'}`);
   }
   return 0;
 }
