@@ -14,7 +14,11 @@ Updated: 2026-06-16
   drift report shows per-builder coverage. 6 new test cases.
 - DONE §T1 — buildTier1Text reconciled to 100% of /broad-scan (restored the canonical ratings sentence +
   frozen-subsystem line; injected dim list now follows the canonical sentence) and LOCKED (INV-36).
-- PAUSED §T2a (56%) / §T2b (4%) / §6b (0%) — DECISION NEEDED. Measurement found canonical /targeted-implement &
+- DONE §T2a (v1.15.0) — buildTier2AuditText synced to 100% of /targeted-audit and LOCKED. It was a paraphrased,
+  OLDER copy: had dropped the OPERATOR ACTIONS SURFACED block (P7) + the [IF TRIGGERED: policy-response] trigger,
+  and reworded the rest. Both restored; manifest gained a `replace` map ($ARGUMENTS → [SUBSYSTEM GROUP NAME]) so
+  the placeholder-substituting builder compares clean. 2 of 4 dynamic builders now locked.
+- PAUSED §T2b (4%) / §6b (0%) — DECISION NEEDED. Measurement found canonical /targeted-implement &
   /health-pulse DELEGATE to sibling commands ("see /broad-implement Step 1"), so locking them as-is regresses the
   console's standalone prompts. Options: (a) expand those canonical bodies to standalone (changes slash-command
   text for ALL consumers + downstream re-pull) then lock; (b) keep richer console prompts, R16-S-marker-guarded only.
@@ -90,9 +94,10 @@ Updated: 2026-06-16
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
 ## Where I left off
-v1.14.0; full Test Command green (13 stages); invariant-check 23/23 runnable PASS (36 total). R16 first increment
-shipped: the dynamic-builder lock ENGINE (renderDynamicPrompt + canonicalCoverage in gen-html-prompts) + §T1
-reconciled to 100% of /broad-scan and LOCKED by --assert (INV-36). §T2a/§T2b/§6b PAUSED on a real decision —
-canonical /targeted-implement & /health-pulse delegate to sibling commands, so locking them as-is regresses the
-console's standalone prompts (see the R16 section above + ROADMAP). Next options: settle the (a) expand-canonical /
-(b) keep-console decision for §T2b/§6b; or lock §T2a now (standalone, just a reword); or open a PR for the branch.
+v1.15.0; full Test Command green (13 stages); invariant-check 23/23 runnable PASS (36 total). R16: engine + §T1
++ §T2a all shipped — 2 of 4 dynamic builders LOCKED by --assert (INV-36). §T2b (/targeted-implement, 4%) and §6b
+(/health-pulse, 0%) remain report-only, PAUSED on the standalone-vs-canonical decision: both canonical commands
+DELEGATE to siblings ("see /broad-implement Step 1"), so locking the console as-is would either (a) require
+expanding the canonical bodies to standalone (changes the slash-command text for ALL consumers + a downstream
+re-pull) or (b) keep the richer console prompts guarded only by the R16-S markers. Recommendation given to user:
+option (b) for §6b, defer §T2b. Next: await the (a)/(b) call, or open a PR for the branch (8 commits).

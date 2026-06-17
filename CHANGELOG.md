@@ -5,6 +5,28 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.15.0 — 2026-06-16
+
+R16 (increment 2) — §T2a locked to /targeted-audit.
+
+### Added
+- `buildTier2AuditText` (§T2a) synced to 100% of `/targeted-audit` and **locked**
+  (INV-36, now covering both locked builders). The console prompt was a
+  paraphrased, **older** copy that had dropped two later canonical additions —
+  the `OPERATOR ACTIONS SURFACED` block (P7) and the `[IF TRIGGERED: …POLICY
+  RESPONSE BLOCKS…]` scope trigger — and reworded the rest; both are now restored
+  and the wording matches canonical.
+- `DYNAMIC_MANIFEST` entries may carry a `replace` map (same shape as the static
+  MANIFEST) so a builder that substitutes `$ARGUMENTS` → `[SUBSYSTEM GROUP NAME]`
+  is compared against the canonical body with the same substitution applied.
+
+### Downstream impact
+- The §T2a console prompt text changed (restores operator-actions surfacing +
+  policy-response trigger) — re-copy the HTML console if you use it. No
+  `.claude/commands/` body, config schema, or output-block schema changed → no
+  `/sync-commands` re-pull. §T2b/§6b remain report-only, paused on the R16
+  standalone-vs-canonical decision.
+
 ## 1.14.0 — 2026-06-16
 
 R16 (first increment) — dynamic-builder lock engine + §T1 locked to /broad-scan.

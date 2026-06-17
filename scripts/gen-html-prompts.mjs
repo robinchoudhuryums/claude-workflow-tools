@@ -74,7 +74,7 @@ export const MANIFEST = [
 //                  (ROADMAP R16: §T2a/§T2b/§6b paused on that decision).
 export const DYNAMIC_MANIFEST = [
   { id: 'buildTier1Text',      command: 'broad-scan',         drop: false, project: 'obs',  locked: true  },
-  { id: 'buildTier2AuditText', command: 'targeted-audit',     drop: true,  project: 'obs',  locked: false },
+  { id: 'buildTier2AuditText', command: 'targeted-audit',     drop: true,  project: 'obs',  locked: true,  replace: [['$ARGUMENTS', '[SUBSYSTEM GROUP NAME]']] },
   { id: 'buildTier2ImplText',  command: 'targeted-implement', drop: true,  project: null,   locked: false },
   { id: 'buildP6bText',        command: 'health-pulse',       drop: false, project: 'obs',  locked: false },
 ];
