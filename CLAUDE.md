@@ -173,11 +173,18 @@ And one helper operates on the invariant library:
   `Verify:` as a runnable command and the invariant becomes a test.
   `--list` shows the classification without running.
 
-And one operates across projects:
+And two operate across projects:
 - `scripts/portfolio.mjs` — aggregates several projects' `PROJECT_HEALTH.md`
   "Current Standing" sections into one portfolio board (lowest overall
   first = audit next), with the portfolio average. Pass the
   `PROJECT_HEALTH.md` paths; `--out FILE` writes.
+- `scripts/portfolio-status.mjs` — the development-*status* sibling: joins
+  each project's health score with the `.cycle/` data it already writes
+  (STATE.md phase / in-progress / seams counter, metrics.csv net trend)
+  into one board (`Project | Overall | Phase | In-progress | Net Δ | Seams
+  | Updated`), so you see where your next action is (resume in-progress
+  work, run a DUE Seams audit), not just which project is unhealthiest.
+  Same args; projects without a `.cycle/` still list (status columns `—`).
 
 This is **fully optional and additive**: if `.cycle/` does not exist, every
 command behaves exactly as it always has (emit the handoff/summary block in

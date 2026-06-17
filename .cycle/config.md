@@ -8,7 +8,7 @@ are the template/schema for consuming projects, not this repo's config.
 ## Cycle Workflow Config
 
 ### Test Command
-node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
+node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 
 ### Health Dimensions
 Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
@@ -61,6 +61,10 @@ INV-29 | the console's static §-prompts (p0,p1,p2,p3,p4post,p4reflect,p5) are g
 INV-30 | the R3 File System Access flow degrades gracefully (connectRepoFolder shows a fallback message, does not throw) when window.showDirectoryPicker is absent | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (R3 fallback check)
 INV-31 | every workflow output block in CLAUDE.md is shape-valid (balanced open/close delimiters, all required fields present) and is emitted by its producing command | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-output-blocks.mjs
 INV-32 | the R13 output-block harness fails closed on injected drift (dropped field, broken/renamed delimiter, non-emitting producer, unregistered new block) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/check-output-blocks.test.mjs
+INV-33 | the phase=synthesis metrics row never writes net_score/prod_fixes/new_failure_modes (owned only by phase=reflect — P1), and every metrics.csv header in CLAUDE.md/HTML carries the trailing defensive_count column (P11) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 6)
+INV-34 | each dynamic console prompt builder (§6a/§6b/§1s/§4v/Tier1/Tier2) keeps its load-bearing contract markers co-present in CLAUDE.md and the HTML console | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 7)
+INV-35 | portfolio-status.mjs joins PROJECT_HEALTH.md health with each project's .cycle/ STATE.md (phase, in-progress, seams K/N + DUE) and metrics.csv (net trend), ranks lowest-overall first, and degrades to "—" when a project has no .cycle/ | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/portfolio-status.test.mjs
+INV-36 | every `locked` dynamic console builder (DYNAMIC_MANIFEST: §T1 buildTier1Text ← /broad-scan, §T2a buildTier2AuditText ← /targeted-audit, §6b buildP6bText ← /health-pulse) contains 100% of its canonical command's lines — the R16 lock fails closed via headless render + canonicalCoverage. §T2b buildTier2ImplText is report-only by design (canonical /targeted-implement delegates to /broad-implement Step 1; the console stays standalone, guarded by the R16-S parity markers) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
 
 ### Policy Configuration
 Policy threshold: 4/10

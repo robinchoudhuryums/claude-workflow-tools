@@ -2189,10 +2189,13 @@ If no categories are triggered, output: "No policy responses triggered this cycl
 8. METRICS (optional — only if the project uses .cycle/ state):
 If a .cycle/ directory exists at the project root, append one row to
 .cycle/metrics.csv (create it with the header row if absent):
-date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes
-Fill phase=synthesis with the overall net_score, the Category D ratio
-from the Verification Block, and axis_b_lowest = the lowest-scoring
-Axis B category this cycle. If .cycle/ does not exist, skip this step.`;
+date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
+Fill phase=synthesis with the Category D ratio from the Verification
+Block and axis_b_lowest = the lowest-scoring Axis B category this cycle.
+Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK
+— those columns are owned ONLY by the phase=reflect rows (/reflect is
+their sole writer), so a synthesis row must not repeat them or the
+cumulative trend double-counts. If .cycle/ does not exist, skip this step.`;
 }
 
 function renderP6a(){
@@ -2210,37 +2213,37 @@ function renderP6a(){
 function buildP6bText(project){
   const dims=project.healthDimensions;
   const axisBPulse=getAxisB(project).map((c,i)=>`${i+1}. ${c.name} — ${c.pulse||c.measures||'Look for evidence of this bug-shape in CLAUDE.md, recent commits, and code structure.'}`).join('\n');
-  return `Do not make any changes to any files during this session.
+  return `Read CLAUDE.md (Cycle Workflow Config) before starting. Do not make any
+changes to any files during this session.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
+[OPTIONAL: PRIOR SYNTHESIS SCORE OR KEY FINDINGS FOR REFERENCE]
 
-[OPTIONAL: PASTE ANY PRIOR SYNTHESIS SCORE OR KEY FINDINGS FOR REFERENCE]
+Provide a Health Pulse — a directional snapshot on both axes. This is
+lower-precision than a synthesis; never compare pulse scores to synthesis
+scores.
 
-Read the following to orient yourself: CLAUDE.md, README, roadmap, and any recently modified files.
+AXIS A — VERTICAL (subsystem health): for each Health Dimension in the
+Cycle Workflow Config, give a score /10 (or "Not assessed"), confidence
+(High / Med / Low), one sentence of reasoning, and flag any
+Low-confidence dimension whose audit is overdue.
 
-[OPTIONAL: NOTE ANY AREAS THAT HAVE CHANGED SIGNIFICANTLY SINCE THE LAST AUDIT]
+Dimensions for this project: ${dims}
 
-Provide a Health Pulse — a directional snapshot of overall project standing on both axes.
+AXIS B — HORIZONTAL (bug-shape posture): for each Axis B category in the
+Cycle Workflow Config (default: Silent Degradation, Startup Ordering,
+Operator-Only Gaps, Parallel Drift, Test Coverage Quality), give a quick
+1–10 directional score and one sentence of evidence from CLAUDE.md,
+recent commits, and code structure. Flag these as lower-confidence.
 
-AXIS A — VERTICAL (Subsystem Health):
-For each dimension, provide:
-- A score out of 10 (or "Not assessed" if no signal)
-- Confidence: High / Medium / Low
-- One sentence of reasoning
-- Flag any dimension where confidence is Low and a proper audit session is overdue
-
-Dimensions: ${dims}
-
-AXIS B — HORIZONTAL (Bug-Shape Posture — lightweight scan):
-For each category below, provide a quick directional score (1–10) and one sentence of evidence based on what you can observe from CLAUDE.md, recent commits, and code structure. These are lower-confidence than synthesis scores — flag that explicitly.
-
+Axis B categories for this project:
 ${axisBPulse}
 
-Then answer:
-- Has anything changed significantly since the last assessment (if provided)?
-- Is there any dimension on either axis that looks materially worse and warrants moving up in the audit queue?
-- What is the one thing most likely to cause a problem before the next full audit cycle?
-- Which Axis B category would you investigate first if you had one hour?`;
+Close with:
+- Anything materially worse since the last assessment?
+- Which dimension/category should move up the audit queue?
+- The one thing most likely to cause a problem before the next full cycle
+- Which Axis B category you'd investigate first with one hour`;
 }
 
 function renderP6b(){
@@ -2670,8 +2673,7 @@ Flag:
 - Silent degradation paths: places where failure is swallowed and the
   app continues with wrong results rather than surfacing an error
 
-For findings in any Frozen Subsystem (see the Frozen Subsystems section
-of CLAUDE.md's Cycle Workflow Config, if present):
+For findings in any Frozen Subsystem (see CLAUDE.md Cycle Workflow Config):
 - Prefix the finding with [FROZEN: subsystem-name]
 - Consider whether the finding is worth fixing given retirement —
   Critical/High findings still warrant a fix; Medium/Low findings
@@ -2681,7 +2683,9 @@ DO NOT flag code for "simplification" or "cleanup" unless the current
 code is actively wrong or creates a maintenance trap. Working code
 that could be written differently is not a finding.
 
-After the broad pass, provide ratings out of 10 with reasoning:
+After the broad pass, provide ratings out of 10 with reasoning for
+each dimension listed in the "Health Dimensions" section of CLAUDE.md's
+Cycle Workflow Config. One bullet per dimension.
 ${dimList}
 
 For each rating include:
@@ -2768,52 +2772,54 @@ Do not implement anything until then.`;
 }
 
 function buildTier2AuditText(project){
-  return `Read CLAUDE.md (especially Common Gotchas and Key Design Decisions)
-before starting. Do not make any changes to any files during this session.
+  return `Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
+the Cycle Workflow Config) before starting. Do not make any changes
+to any files during this session.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 
 This session's scope: [SUBSYSTEM GROUP NAME]
-Relevant files: [LIST RELEVANT FILES AND DIRECTORIES]
+Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
+identify the relevant files for this subsystem.
 
-If this scope is listed under Frozen Subsystems in CLAUDE.md's Cycle
-Workflow Config, print this banner at the top of your output before
-continuing, then proceed with the audit as normal:
+If [SUBSYSTEM GROUP NAME] names a subsystem listed in \`Frozen Subsystems\`:
+print this banner at the top of your output before continuing, then
+proceed with the audit as normal:
 
   ╔══════════════════════════════════════════════════════════════╗
-  ║ FROZEN SUBSYSTEM — proceeding because explicitly named.       ║
-  ║ Reason: [reason from Frozen Subsystems config]                ║
+  ║ FROZEN SUBSYSTEM — proceeding because explicitly named.      ║
+  ║ Reason: [reason from Frozen Subsystems config]               ║
   ╚══════════════════════════════════════════════════════════════╝
 
-[OPTIONAL: PASTE FOLLOW-ON ITEMS FROM A PRIOR SESSION THAT FLAGGED THIS SUBSYSTEM]
+[OPTIONAL: PASTE ANY FOLLOW-ON ITEMS FROM A PRIOR SESSION]
+
+[IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS FROM THE LAST HEALTH
+SYNTHESIS — these are MANDATORY scope additions for this cycle]
 
 Audit this subsystem thoroughly. For each finding:
 - State the issue, cite file and function/line
 - Severity: Critical / High / Medium / Low
 - Confidence: High / Medium / Low
-- Would this bug actually fire in production this month? YES (describe
-  the trigger) or NO (explain why)
+- Would this bug actually fire in production this month? YES/NO
 - Effort to fix: S (< 2 hours) / M (half-day to 2 days) / L (3+ days)
 
 Focus on:
 - Bugs and logic errors in currently-reachable code paths
 - Security concerns specific to this module
 - Inconsistencies between CLAUDE.md and actual implementation
-- Cross-module dependencies this subsystem has — what would break
-  in OTHER modules if we change things here
-- Silent degradation paths: places where failure is swallowed and the
-  app continues with wrong results rather than surfacing an error
+- Cross-module dependencies — what would break in OTHER modules
+- Silent degradation paths
 
 DO NOT flag style preferences, speculative improvements, or "could be
 cleaner" refactoring unless the current code is actively wrong.
 
-After the audit, produce an implementation plan. For each action:
+After the audit, produce an implementation plan:
 - Action ID (A1, A2, A3...)
-- What specifically to do (concrete, not "improve error handling")
+- What specifically to do (concrete)
 - Which finding(s) it addresses
 - Effort: S / M / L
 - Cross-module risk: Low / High
-- Prerequisites: other actions that must complete first
+- Prerequisites
 
 Organize into:
 1. Fix now — production bugs, security issues, blocking problems
@@ -2825,7 +2831,7 @@ End with a TIER 2 HANDOFF BLOCK:
 ---TIER 2 HANDOFF BLOCK---
 Scope: [subsystem]
 Findings: [count] total — [critical/high/medium/low breakdown]
-Production bugs (would fire this month): [count of YES answers]
+Production bugs (would fire this month): [count]
 
 ACTIONS (implement in this order):
 [ID] | [File: area] | [Effort] | [Risk] | [Description]
@@ -2834,9 +2840,12 @@ CROSS-MODULE RISKS:
 - [what could break outside this scope and where to verify]
 (or "None identified")
 
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps — env vars, IaC, console/dashboard, migrations):
+- [action] | BLOCKS DEPLOY: Y/N
+(or "None")
+
 DO NOT TOUCH:
-- [any files/functions that are high-risk to modify without deeper
-  investigation — explain why]
+- [high-risk files/functions — explain why]
 ---END TIER 2 HANDOFF BLOCK---`;
 }
 

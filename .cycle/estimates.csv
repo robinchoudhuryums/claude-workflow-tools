@@ -1,0 +1,2 @@
+date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
+2026-06-16,4,F1-F5 broad-implement,S,1.5,1,"S accurate — small well-scoped console + guard + doc fixes, ~1h incl. new tests + full suite"

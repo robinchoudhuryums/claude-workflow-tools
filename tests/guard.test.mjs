@@ -75,6 +75,24 @@ expectFail('detects command-pair parity drift (shared behavior dropped from one 
   d => { const f = join(d, '.claude', 'commands', 'broad-implement.md'); writeFileSync(f, readFileSync(f, 'utf8').replace(/test doubles/i, 'TEST-DOUBLES-REMOVED')); },
   /shared behavior|drift across the pair/i);
 
+// 7) Metrics schema parity (P11): a metrics.csv header that drops the
+// trailing defensive_count column is caught.
+expectFail('detects a metrics.csv header missing defensive_count',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(',axis_b_lowest,notes,defensive_count', ',axis_b_lowest,notes')); },
+  /defensive_count/i);
+
+// 8) Metrics-row ownership (P1): re-introducing "phase=synthesis with the
+// overall net_score" (the double-count footgun) is caught.
+expectFail('detects the §6a synthesis double-count footgun (net_score on a synthesis row)',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace('Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score')); },
+  /double-count|net_score/i);
+
+// 9) Dynamic-builder parity (R16): a dropped contract marker in a dynamic
+// console builder (here §6a's "TWO-AXIS GRID") is caught.
+expectFail('detects dynamic console builder drift (a dropped contract marker)',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(/TWO-AXIS GRID/i, 'TWO-PLANE GRID')); },
+  /two-axis grid/i);
+
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} guard test case(s) failed.`); process.exit(1); }

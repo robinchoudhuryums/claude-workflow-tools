@@ -5,6 +5,169 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.16.0 — 2026-06-16
+
+R16 (increment 3 — **COMPLETE**) — §6b locked, §T2b resolved by design.
+
+### Added
+- `buildP6bText` (§6b) synced to 100% of `/health-pulse` and **locked** (INV-36).
+  Canonical `/health-pulse` is standalone (no delegation), so this was the §T1
+  pattern: mirror the canonical prose, keep the console's injected concrete data
+  (`Dimensions for this project: …`, the project's Axis B categories) as extras.
+  The prior console copy had drifted in wording and added its own scaffolding.
+
+### Resolved
+- §T2b (`buildTier2ImplText` ← `/targeted-implement`) is **report-only by design**,
+  not paused. Canonical `/targeted-implement` deliberately delegates to
+  `/broad-implement` Step 1, while the console prompt must be standalone (a console
+  user copies one prompt with no sibling in front of them) — so the divergence is
+  intentional. Locking it would force the Step-1 detail to be duplicated into the
+  canonical command, contradicting the repo's "parity-guard, not factoring"
+  decision. It stays guarded by the R16-S parity markers (a dropped/renamed
+  contract still fails closed) rather than the textual lock.
+
+### R16 outcome
+3 of 4 dynamic builders locked (§T1, §T2a, §6b); 1 report-only by design (§T2b).
+The dynamic console builders are now contract-locked to CLAUDE.md — closing the
+gap R14 left (it covered only the static `<pre>` §-prompts).
+
+### Downstream impact
+- The §6b console prompt text changed — re-copy the HTML console if you use it. No
+  `.claude/commands/` body, config schema, or output-block schema changed → no
+  `/sync-commands` re-pull.
+
+## 1.15.0 — 2026-06-16
+
+R16 (increment 2) — §T2a locked to /targeted-audit.
+
+### Added
+- `buildTier2AuditText` (§T2a) synced to 100% of `/targeted-audit` and **locked**
+  (INV-36, now covering both locked builders). The console prompt was a
+  paraphrased, **older** copy that had dropped two later canonical additions —
+  the `OPERATOR ACTIONS SURFACED` block (P7) and the `[IF TRIGGERED: …POLICY
+  RESPONSE BLOCKS…]` scope trigger — and reworded the rest; both are now restored
+  and the wording matches canonical.
+- `DYNAMIC_MANIFEST` entries may carry a `replace` map (same shape as the static
+  MANIFEST) so a builder that substitutes `$ARGUMENTS` → `[SUBSYSTEM GROUP NAME]`
+  is compared against the canonical body with the same substitution applied.
+
+### Downstream impact
+- The §T2a console prompt text changed (restores operator-actions surfacing +
+  policy-response trigger) — re-copy the HTML console if you use it. No
+  `.claude/commands/` body, config schema, or output-block schema changed → no
+  `/sync-commands` re-pull. §T2b/§6b remain report-only, paused on the R16
+  standalone-vs-canonical decision.
+
+## 1.14.0 — 2026-06-16
+
+R16 (first increment) — dynamic-builder lock engine + §T1 locked to /broad-scan.
+Extends the R14 generation lock from the static §-prompts to the runtime
+prompt builders.
+
+### Added
+- `gen-html-prompts.mjs`: a headless render-and-compare engine for the dynamic
+  builders. `renderDynamicPrompt()` executes the console's inline `<script>`
+  under a stubbed DOM and returns a builder's output; `canonicalCoverage()`
+  requires 100% of a canonical command's lines to be present (injected config =
+  ignored extra lines). A `DYNAMIC_MANIFEST` marks each builder `locked` (gated
+  by `--assert`) or report-only. `--assert` now also gates locked builders; the
+  default drift report shows per-builder canonical coverage.
+- `buildTier1Text` (§T1) reconciled to 100% of `/broad-scan` and **locked**
+  (INV-36) — the canonical "rate each Health Dimensions entry" sentence is
+  restored (the injected dimension list follows it) and the frozen-subsystem
+  line matches canonical.
+- `tests/gen-html-prompts.test.mjs`: 6 new cases (canonicalCoverage fail-closed +
+  extra-line tolerance + drop; renderDynamicPrompt project/no-arg/missing paths).
+
+### Notes / paused
+- Measured coverage exposed that §T2a (56%), §T2b (4%), §6b (0%) materially
+  diverge — and that canonical `/targeted-implement` & `/health-pulse` delegate
+  to sibling commands, so locking them as-is would regress the console's
+  standalone prompts. They are tracked report-only in the drift report and
+  **paused** pending the ROADMAP R16 decision (expand canonical to standalone vs.
+  keep the richer console prompts). check 6/7 (R16-S markers) still guard them.
+
+### Downstream impact
+- The §T1 console prompt text was refined toward canonical — re-copy the HTML
+  console if you use it. No `.claude/commands/` body, config schema, or
+  output-block schema changed → no `/sync-commands` re-pull for commands. The
+  engine is maintainer tooling.
+
+## 1.13.0 — 2026-06-16
+
+R15 — cross-project development-status board. The status sibling of the R8
+health dashboard.
+
+### Added
+- `scripts/portfolio-status.mjs`: joins each project's `PROJECT_HEALTH.md`
+  health score with the `.cycle/` data it already writes — `STATE.md`
+  (phase, in-progress, "Subsystem cycles since last Seams audit" K vs the
+  cadence N → DUE) and `metrics.csv` (net-score trend) — into one board:
+  `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated`. Ranks
+  lowest-overall first; surfaces in-progress projects to /cycle-resume and
+  DUE seams audits; projects without a `.cycle/` directory still list (status
+  columns degrade to `—`). Same args as `portfolio.mjs`; `--out FILE` writes.
+- `tests/portfolio-status.test.mjs` (INV-35): fixture projects prove the
+  join, ranking, seams-DUE/cadence, net trend (comma-in-notes safe), and the
+  no-`.cycle/` degradation. Wired into the Test Command + CI.
+
+### Downstream impact
+- Additive helper — copy `scripts/portfolio-status.mjs` if you want it. No
+  command body, config schema, or output-block schema changed → no
+  `/sync-commands` re-pull needed for commands.
+
+## 1.12.2 — 2026-06-16
+
+R16 (S half) — per-builder parity guard for the DYNAMIC console prompt builders.
+Closes the residual that Cycle-4 F1 exposed: R14 locked the static §-prompts,
+but the per-project dynamic builders were only marker-pinned for known points.
+
+### Added
+- `check-template-sync.mjs` structural check 7: pins each dynamic builder
+  (`buildP6aText` §6a, `buildP6bText` §6b, `buildSeamsText` §1s,
+  `buildVerificationText` §4v, `buildTier1Text`, `buildTier2*Text`) to a small
+  set of load-bearing contract markers that must co-occur in BOTH CLAUDE.md and
+  the HTML console — a dropped/renamed contract now fails closed (6 builders).
+- `guard.test.mjs` 9th case proving the new check fails closed on a dropped
+  contract marker (§6a "TWO-AXIS GRID").
+
+### Notes
+- Maintainer-only repo tooling (like `check-html`/`check-template-sync`); no
+  command body, config schema, or output-block schema changed — no downstream
+  re-pull. The `S` half of R16; full generation of the dynamic builders (M–L)
+  stays open on the roadmap.
+
+## 1.12.1 — 2026-06-16
+
+Cycle 4 dogfood broad-scan — fixes a cross-artifact drift the guard couldn't
+see: the non-R14-generated HTML §6a synthesis prompt still violated the P1
+metrics-ownership rule.
+
+### Fixed
+- HTML §6a Health Synthesis prompt (`buildP6aText`): the `phase=synthesis`
+  metrics row was instructed to write `net_score`/`prod_fixes`, contradicting
+  the canonical P1 rule (those columns are owned ONLY by `phase=reflect` rows,
+  v1.6.0). `render-metrics` sums every row, so this double-counted the trend.
+  Now it writes only `category_d_ratio` + `axis_b_lowest` and leaves the
+  reflect-owned columns blank (F1).
+- HTML §6a metrics header updated to the 11-column P11 schema (adds the
+  trailing `defensive_count`) — it was the stale pre-v1.9.0 10-column header (F2).
+- This repo's `.cycle/metrics.csv` Cycle-1 synthesis row had the double-count
+  baked in (`net_score=2,prod_fixes=2` duplicating the two reflect rows);
+  blanked those fields. Cumulative net 10 → 8 (true 9 fixes − 1) (F3).
+- `README.md` "What's in this repo" listed only 2 of 9 scripts; now lists all (F5).
+
+### Added
+- `check-template-sync.mjs` structural check 6 (F4): fails closed if any
+  `metrics.csv` header in CLAUDE.md/HTML drops `defensive_count`, or if the
+  §6a synthesis step is told to write `net_score` (the double-count footgun).
+  Two fail-closed cases added to `guard.test.mjs`.
+
+### Downstream impact
+- None requiring a re-pull: §6a is HTML-console-only (not a slash command),
+  and no `.claude/commands/` body, config schema, or output-block schema
+  changed. Maintainer-side correctness + guard hardening.
+
 ## 1.12.0 — 2026-06-08
 
 R13 — prompt-output regression harness. Extends the sync guard from

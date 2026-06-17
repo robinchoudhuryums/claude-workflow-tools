@@ -69,6 +69,19 @@ Item IDs (R#) are stable references for planning sessions.
   subsystem across my whole portfolio most needs attention this week."
   The HTML already has a project selector; this is the roll-up above it.
 
+- **R15 — Portfolio *status* board (extends R8).** `effort: S–M (~½ day)` — ✅ DONE (v1.13.0). `scripts/portfolio-status.mjs` joins health with `.cycle/` STATE + metrics into a `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated` board; fail-closed test (INV-35) wired into the Test Command + CI.
+  `portfolio.mjs` (R8) ranks projects by *health score* (it reads only the
+  `Current Standing` block), but not by *development status*. Join it with
+  the `.cycle/` data every project already writes — `STATE.md` (`Phase`,
+  "Where I left off", `Updated`, the seams counter) and `metrics.csv`
+  (trend) — to emit a board with columns: Project | Overall | Phase |
+  In-progress? | Trend | Seams DUE? | Last updated. Turns "which is
+  unhealthiest" into "what's the state of each, and where's my next
+  action." Lean toward a separate `portfolio-status.mjs` so R8's
+  health-only board and its test stay untouched; ship with a fail-closed
+  test + an invariant. (Surfaced by the Cycle-4 reflect Q: cross-project
+  status tracking.)
+
 ## Tier 3 — Long-term (months+)
 
 - **R3 — Converge the HTML's two state stores.** `effort: M–L` — ✅ DONE (v1.4.0–1.5.0; browser-verified). File System Access "Connect repo folder" syncs console state to `.cycle/console-state.json`, handle persisted via IndexedDB, Export/Import fallback.
@@ -96,6 +109,20 @@ Item IDs (R#) are stable references for planning sessions.
   close the last unguarded gap (§1-audit parity). The hard part is the
   transform: console prompts use `[PASTE …]` placeholders + inline
   per-project config, so it's a templating job, not a copy.
+
+- **R16 — Finish R14 for the *dynamic* console builders.** `effort: M–L` — ✅ DONE (v1.14.0–1.16.0). Dynamic-builder lock engine shipped (`renderDynamicPrompt` + `canonicalCoverage` in `gen-html-prompts.mjs`); **3 of 4 dynamic builders locked** to 100% canonical coverage by `--assert` (INV-36): §T1 (`buildTier1Text` ← /broad-scan), §T2a (`buildTier2AuditText` ← /targeted-audit), §6b (`buildP6bText` ← /health-pulse).
+  **§T2b resolved via option (b):** canonical `/targeted-implement` deliberately *delegates* to `/broad-implement` Step 1, while the console prompt must be standalone — an intentional divergence. Rather than duplicate the Step-1 detail into canonical (which would contradict the repo's "parity-guard, not factoring" decision), `buildTier2ImplText` stays **report-only, guarded by the R16-S parity markers** (a dropped/renamed contract still fails closed). The earlier measurement (§T2a 56%, §T2b 4%, §6b 0%) is what surfaced that only §T2b genuinely delegates; §T2a and §6b were standalone reword-drift and are now locked.
+  R14 generated + locked only the static §-prompts (`p0,p1,p2,p3,p4post,
+  p4reflect,p5`). The per-project *dynamic* builders — `buildP6aText` (§6a
+  synthesis), `buildP6bText` (§6b pulse), `buildSeamsText`,
+  `buildVerificationText`, `buildTier1/Tier2Text` — are still hand-written
+  JS, guarded only by marker-pins, not full equivalence. **Cycle 4 (F1)
+  found exactly this class:** §6a silently violated the P1 metrics-ownership
+  rule and had corrupted this repo's own trend. Either extend the
+  transform to cover these builders, or (cheaper) add per-builder parity
+  markers/structural checks so each stays aligned with its canonical rule.
+  Closes the last residual of the fourth-copy drift class. `S` for targeted
+  markers, `M–L` for full generation of the dynamic builders.
 
 ## Tier 4 — Future possibilities (exploratory)
 

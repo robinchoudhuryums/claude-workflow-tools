@@ -158,6 +158,59 @@ for (const g of COMMAND_GROUPS) {
 if (parityFail) failures += parityFail;
 else console.log(`  ✓ Command-pair parity — shared behaviors consistent across ${COMMAND_GROUPS.length} command groups`);
 
+// ── Structural check 6: metrics-row ownership + schema parity. Guards the
+// non-R14-generated HTML §6a synthesis prompt (and CLAUDE.md) against the
+// two ways the metrics schema has silently drifted before:
+//   (a) every metrics.csv header emitted anywhere must carry the trailing
+//       defensive_count column (P11, v1.9.0); and
+//   (b) the phase=synthesis row must NOT be told to write net_score —
+//       net_score/prod_fixes/new_failure_modes are owned ONLY by phase=reflect
+//       rows (P1, v1.6.0), or the render-metrics cumulative trend double-counts.
+const htmlRaw = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
+const HEADER_PREFIX = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes';
+let metricsFail = 0;
+for (const [f, raw] of [['CLAUDE.md', claudeRaw], ['claude-code-guide-v2.html', htmlRaw]]) {
+  const re = new RegExp(HEADER_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(,defensive_count)?', 'g');
+  let m, stale = 0;
+  while ((m = re.exec(raw)) !== null) { if (!m[1]) stale++; }
+  if (stale) { metricsFail++; console.log(`  ✗ ${f}: ${stale} metrics.csv header(s) missing the trailing defensive_count column (P11)`); }
+}
+if (/phase=synthesis with the overall net_score/i.test(htmlRaw)) {
+  metricsFail++;
+  console.log('  ✗ HTML §6a tells the phase=synthesis row to write net_score — owned only by phase=reflect (P1 double-count footgun)');
+}
+if (metricsFail) failures += metricsFail;
+else console.log('  ✓ Metrics-row ownership + defensive_count schema parity (P1 + P11)');
+
+// ── Structural check 7 (R16): per-builder parity for the DYNAMIC console
+// prompt builders. R14 generated + locked the STATIC §-prompts, but the
+// per-project dynamic builders (buildP6aText/§6a, buildP6bText/§6b,
+// buildSeamsText/§1s, buildVerificationText/§4v, buildTier1/Tier2Text) are
+// hand-written and were only marker-pinned for known divergence points —
+// Cycle-4 F1 was a drift instance this couldn't see. Pin each builder's
+// load-bearing contract markers so they must co-occur in BOTH the canonical
+// source (CLAUDE.md) and the HTML console; a dropped/renamed contract fails
+// closed instead of silently drifting. (S half of R16 — markers, not full
+// generation of the dynamic builders.)
+const DYNAMIC_BUILDERS = [
+  { name: '§6a Health Synthesis (buildP6aText)',      markers: ['two-axis grid', 'policy response'] },
+  { name: '§6b Health Pulse (buildP6bText)',          markers: ['investigate first', 'horizontal bug-shape'] },
+  { name: '§1s Seams audit (buildSeamsText)',         markers: ['seam inventory', 'invariant validation'] },
+  { name: '§4v Verification (buildVerificationText)', markers: ['independent verification', 'category d'] },
+  { name: 'Tier 1 Broad Scan (buildTier1Text)',       markers: ['stage 1 — broad pass', 'production readiness assessment', 'effectiveness & strategic review'] },
+  { name: 'Tier 2 (buildTier2AuditText/ImplText)',    markers: ['do not touch', 'cross-module risk'] },
+];
+let builderFail = 0;
+for (const b of DYNAMIC_BUILDERS) {
+  const missing = b.markers.filter(m => !contents['CLAUDE.md'].includes(m) || !contents['claude-code-guide-v2.html'].includes(m));
+  if (missing.length) {
+    builderFail++;
+    console.log(`  ✗ ${b.name}: contract marker(s) not in both CLAUDE.md and the HTML console: ${missing.map(m => `"${m}"`).join(', ')}`);
+  }
+}
+if (builderFail) failures += builderFail;
+else console.log(`  ✓ Dynamic console builder parity — ${DYNAMIC_BUILDERS.length} builders pinned to their canonical contracts (R16)`);
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');
