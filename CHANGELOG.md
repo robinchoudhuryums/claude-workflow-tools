@@ -5,6 +5,37 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.16.0 — 2026-06-16
+
+R16 (increment 3 — **COMPLETE**) — §6b locked, §T2b resolved by design.
+
+### Added
+- `buildP6bText` (§6b) synced to 100% of `/health-pulse` and **locked** (INV-36).
+  Canonical `/health-pulse` is standalone (no delegation), so this was the §T1
+  pattern: mirror the canonical prose, keep the console's injected concrete data
+  (`Dimensions for this project: …`, the project's Axis B categories) as extras.
+  The prior console copy had drifted in wording and added its own scaffolding.
+
+### Resolved
+- §T2b (`buildTier2ImplText` ← `/targeted-implement`) is **report-only by design**,
+  not paused. Canonical `/targeted-implement` deliberately delegates to
+  `/broad-implement` Step 1, while the console prompt must be standalone (a console
+  user copies one prompt with no sibling in front of them) — so the divergence is
+  intentional. Locking it would force the Step-1 detail to be duplicated into the
+  canonical command, contradicting the repo's "parity-guard, not factoring"
+  decision. It stays guarded by the R16-S parity markers (a dropped/renamed
+  contract still fails closed) rather than the textual lock.
+
+### R16 outcome
+3 of 4 dynamic builders locked (§T1, §T2a, §6b); 1 report-only by design (§T2b).
+The dynamic console builders are now contract-locked to CLAUDE.md — closing the
+gap R14 left (it covered only the static `<pre>` §-prompts).
+
+### Downstream impact
+- The §6b console prompt text changed — re-copy the HTML console if you use it. No
+  `.claude/commands/` body, config schema, or output-block schema changed → no
+  `/sync-commands` re-pull.
+
 ## 1.15.0 — 2026-06-16
 
 R16 (increment 2) — §T2a locked to /targeted-audit.

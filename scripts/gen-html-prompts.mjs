@@ -67,16 +67,23 @@ export const MANIFEST = [
 // config, so they can't be byte-compared. Instead we render a builder headlessly
 // and require 100% of the (transformed) canonical command lines to be PRESENT in
 // its output — injected config shows up as extra, ignored lines.
-//   locked:true  → gated by --assert (drift fails CI)
+//   locked:true  → gated by --assert (drift fails CI). §T1, §T2a, §6b.
 //   locked:false → report-only (tracked in the drift report, never fails CI),
-//                  for builders whose canonical command delegates to siblings
-//                  and so can't be locked without first making it standalone
-//                  (ROADMAP R16: §T2a/§T2b/§6b paused on that decision).
+//                  for a builder whose canonical command DELEGATES to a sibling
+//                  ("see /broad-implement Step 1"), so the console — which must be
+//                  standalone — legitimately diverges. Guarded by the R16-S parity
+//                  markers instead of the textual lock. §T2b only (ROADMAP R16,
+//                  resolved via option (b)).
 export const DYNAMIC_MANIFEST = [
   { id: 'buildTier1Text',      command: 'broad-scan',         drop: false, project: 'obs',  locked: true  },
   { id: 'buildTier2AuditText', command: 'targeted-audit',     drop: true,  project: 'obs',  locked: true,  replace: [['$ARGUMENTS', '[SUBSYSTEM GROUP NAME]']] },
+  { id: 'buildP6bText',        command: 'health-pulse',       drop: false, project: 'obs',  locked: true  },
+  // §T2b is intentionally NOT locked: canonical /targeted-implement delegates to
+  // /broad-implement Step 1 ("see /broad-implement Step 1 for the full branching
+  // detail"), so the console — which must be standalone (a console user copies one
+  // prompt) — legitimately diverges. Resolved via option (b): keep it report-only,
+  // guarded by the R16-S parity markers, not the textual lock (ROADMAP R16).
   { id: 'buildTier2ImplText',  command: 'targeted-implement', drop: true,  project: null,   locked: false },
-  { id: 'buildP6bText',        command: 'health-pulse',       drop: false, project: 'obs',  locked: false },
 ];
 
 // Coverage of a canonical command body by a rendered builder's output: every
@@ -182,7 +189,7 @@ function main(argv) {
     if (body == null || rendered == null) { console.log(`  ? ${d.id} ← /${d.command}: not found`); continue; }
     const cov = canonicalCoverage(body, rendered, d);
     const pct = cov.total ? Math.round(100 * cov.present / cov.total) : 100;
-    console.log(`  ${d.locked ? '🔒' : '  '} ${d.id} ← /${d.command}: ${pct}% of ${cov.total} canonical lines present | ${cov.missing.length} missing${d.locked ? ' [LOCKED]' : ' (report-only — paused on R16 standalone-vs-canonical decision)'}`);
+    console.log(`  ${d.locked ? '🔒' : '  '} ${d.id} ← /${d.command}: ${pct}% of ${cov.total} canonical lines present | ${cov.missing.length} missing${d.locked ? ' [LOCKED]' : ' (report-only BY DESIGN — canonical delegates to a sibling; console stays standalone, R16-S-marker-guarded — ROADMAP R16)'}`);
   }
   return 0;
 }
