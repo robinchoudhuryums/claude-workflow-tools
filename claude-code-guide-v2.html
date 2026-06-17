@@ -120,6 +120,10 @@ main{margin-left:var(--nav-w);flex:1;max-width:880px;padding:40px 44px 80px}
 
 /* SECTION */
 section{margin-bottom:52px}
+/* TABBED PANELS — only the active section shows; nav switches tabs */
+main > .panel{display:none}
+main > .panel.active{display:block;animation:panelIn .18s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 .sh{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
 .snum{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;white-space:nowrap;margin-top:2px}
 .stitle{font-size:18px;font-weight:600;color:var(--text)}
@@ -323,7 +327,15 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 <main>
 
   <!-- DASHBOARD -->
-  <section id="dashboard">
+  <section id="dashboard" class="panel active">
+  <div style="margin-bottom:30px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Claude Code · Structured Workflow</div>
+    <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
+    <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:7px;padding:10px 13px">
+      <strong style="color:var(--text-sec);font-weight:600">How this relates to your repo:</strong> these prompts mirror the canonical commands in <code>CLAUDE.md</code>, which install as slash commands from <code>.claude/commands/</code> (copy that folder, or run <code>/sync-commands</code> to pull updates). Per-project subsystems, dimensions, Axis&nbsp;B categories and invariants come from each project's <strong>Cycle Workflow Config</strong>. Cross-session state can persist in a <code>.cycle/</code> directory (read by <code>/cycle-status</code> and <code>/cycle-resume</code>) — and this console's own state can be backed up via <strong>Projects → Export state</strong>.
+    </p>
+  </div>
     <div class="sh"><div class="snum">★</div><div>
       <div class="stitle">Dashboard — Active Projects</div>
       <div class="spurp"><strong>At a glance:</strong> live status pulled from each project's <code>PROJECT_HEALTH.md</code> and <code>.cycle/STATE.md</code> on GitHub, with cached and self-reported fallback when a repo is private, offline, or unconfigured.</div>
@@ -347,17 +359,8 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div class="dash-cards" id="dashCards"></div>
   </section>
 
-  <div style="margin-bottom:30px">
-    <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Claude Code · Structured Workflow</div>
-    <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
-    <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
-    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:7px;padding:10px 13px">
-      <strong style="color:var(--text-sec);font-weight:600">How this relates to your repo:</strong> these prompts mirror the canonical commands in <code>CLAUDE.md</code>, which install as slash commands from <code>.claude/commands/</code> (copy that folder, or run <code>/sync-commands</code> to pull updates). Per-project subsystems, dimensions, Axis&nbsp;B categories and invariants come from each project's <strong>Cycle Workflow Config</strong>. Cross-session state can persist in a <code>.cycle/</code> directory (read by <code>/cycle-status</code> and <code>/cycle-resume</code>) — and this console's own state can be backed up via <strong>Projects → Export state</strong>.
-    </p>
-  </div>
-
   <!-- SETUP-CYCLE -->
-  <section id="setup">
+  <section id="setup" class="panel">
     <div class="sh"><div class="snum">Setup</div><div>
       <div class="stitle">Setup Cycle — Project Configuration</div>
       <div class="spurp"><strong>Purpose:</strong> Thorough, multi-phase analysis that defines the foundation for the entire cycle workflow: subsystem boundaries, file lists, health dimensions, invariant library seed, and policy thresholds. Run once when onboarding a new project, or re-run after major restructures.</div>
@@ -610,7 +613,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </section>
 
   <!-- TIER 1 — BROAD SCAN -->
-  <section id="t1">
+  <section id="t1" class="panel">
     <div class="sh"><div class="snum">T1</div><div>
       <div class="stitle">Tier 1 — Broad Scan</div>
       <div class="spurp"><strong>Purpose:</strong> Fast, whole-codebase discovery. One session, audit-then-implement with your approval gate in between. Use when the project still has obvious issues, during rapid development, or for a quick pulse between formal cycles.</div>
@@ -631,7 +634,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </section>
 
   <!-- TIER 2 — TARGETED CYCLE -->
-  <section id="t2">
+  <section id="t2" class="panel">
     <div class="sh"><div class="snum">T2</div><div>
       <div class="stitle">Tier 2 — Targeted Subsystem Cycle</div>
       <div class="spurp"><strong>Purpose:</strong> Deep audit of one subsystem across two sessions — audit+plan in Session 1, implement+check+reflect in Session 2. Keeps the audit/implement separation without the full Tier 3 ceremony.</div>
@@ -680,7 +683,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </section>
 
   <!-- FLOW -->
-  <div class="flow-box" id="flow">
+  <div class="flow-box panel" id="flow">
     <h2>Session Flow</h2>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-b">§0 Systems Map</div><div class="farr">→</div><div class="flbl">run once at project start or after major refactor</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-t">§1 Layered Audit</div><div class="farr">→</div><div class="flbl">one subsystem per session</div><div class="farr">→</div><div class="fn fn-a">Session Handoff Block</div></div>
@@ -708,7 +711,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
   </div>
 
   <!-- §0 SYSTEMS MAP -->
-  <section id="s0">
+  <section id="s0" class="panel">
     <div class="sh"><div class="snum">§0</div><div>
       <div class="stitle">Systems Map</div>
       <div class="spurp"><strong>Purpose:</strong> Orient Claude Code to the codebase before any deep audit. Entry points and relationships only — no deep implementation dives. Run once at project start or after a major restructure. Do not audit in this session.</div>
@@ -745,7 +748,7 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
   </section>
 
   <!-- §1 LAYERED AUDIT -->
-  <section id="s1">
+  <section id="s1" class="panel">
     <div class="sh"><div class="snum">§1</div><div>
       <div class="stitle">Layered Audit</div>
       <div class="spurp"><strong>Purpose:</strong> Deep audit of one scoped subsystem group per session. Reference the systems map from §0 each time. Produces a <strong>Session Handoff Block</strong> used as input for §2 Planning.</div>
@@ -888,7 +891,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
   </section>
 
   <!-- §1s SEAMS & INVARIANTS AUDIT -->
-  <section id="s1s">
+  <section id="s1s" class="panel">
     <div class="sh"><div class="snum">§1s</div><div>
       <div class="stitle">Seams &amp; Invariants Audit</div>
       <div class="spurp"><strong>Purpose:</strong> Audit the seams between subsystems and the invariants that must hold across them — the things no vertical subsystem audit can own. Runs every 3–4 subsystem cycles. <strong>No implementation phase.</strong> Produces an updated invariant library instead of code changes.</div>
@@ -923,7 +926,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
   </section>
 
   <!-- §2 PLANNING -->
-  <section id="s2">
+  <section id="s2" class="panel">
     <div class="sh"><div class="snum">§2</div><div>
       <div class="stitle">Planning &amp; Recommendations</div>
       <div class="spurp"><strong>Purpose:</strong> Translate audit findings into a prioritized action plan. Run at the end of the same audit session or in a fresh session. Produces an <strong>Implementation Handoff Block</strong>.</div>
@@ -1002,7 +1005,7 @@ ORDERING RATIONALE: [1–2 sentences]
   </section>
 
   <!-- §3 IMPLEMENTATION -->
-  <section id="s3">
+  <section id="s3" class="panel">
     <div class="sh"><div class="snum">§3</div><div>
       <div class="stitle">Implementation Session</div>
       <div class="spurp"><strong>Purpose:</strong> Dedicated session for writing, editing, and deleting code. Always a separate session from audit/planning — starts with the systems map and Implementation Handoff Block. Produces an <strong>Implementation Summary Block</strong>.</div>
@@ -1101,7 +1104,7 @@ After completing the change, note: what was modified, whether anything unexpecte
   </section>
 
   <!-- §4 DEPENDENCY -->
-  <section id="s4">
+  <section id="s4" class="panel">
     <div class="sh"><div class="snum">§4</div><div>
       <div class="stitle">Cross-Module Dependency Management</div>
       <div class="spurp"><strong>Purpose:</strong> Prevent implementation changes from silently breaking other modules. <strong>Pre-check</strong> runs before High/Very High risk changes. <strong>Regression check</strong> runs after changes, before merging.</div>
@@ -1273,7 +1276,7 @@ reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</
   </section>
 
   <!-- §4v VERIFICATION PASS -->
-  <section id="s4v">
+  <section id="s4v" class="panel">
     <div class="sh"><div class="snum">§4v</div><div>
       <div class="stitle">Independent Verification Pass</div>
       <div class="spurp"><strong>Purpose:</strong> Independent verification of the cycle's work in a <strong>fresh session with no memory of the implementation</strong>. Probes invariants, counts regressions with a hard definition, checks test coverage quality, and produces a <strong>VERIFICATION BLOCK</strong> used as input for §6a Health Synthesis.</div>
@@ -1379,7 +1382,7 @@ Category D ratio: [X%]
   </section>
 
   <!-- §5 ROADMAP -->
-  <section id="s5">
+  <section id="s5" class="panel">
     <div class="sh"><div class="snum">§5</div><div>
       <div class="stitle">Roadmap &amp; Future Possibilities</div>
       <div class="spurp"><strong>Purpose:</strong> Strategic planning across four time horizons. Run after 2–3 audit sessions or at natural milestones. Tiers 1–3 must be grounded in actual audit findings. Tier 4 is explicitly exploratory.</div>
@@ -1430,7 +1433,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
   </section>
 
   <!-- §6a SYNTHESIS -->
-  <section id="s6a">
+  <section id="s6a" class="panel">
     <div class="sh"><div class="snum">§6a</div><div>
       <div class="stitle">Project Health Synthesis</div>
       <div class="spurp"><strong>Purpose:</strong> The accurate, benchmarkable holistic score on two axes. <strong>Axis A (Vertical)</strong> scores subsystem health. <strong>Axis B (Horizontal)</strong> scores cross-cutting bug-shape posture. Takes three inputs per subsystem: Session Handoff + Cycle Summary + Verification Block. Run only after a full audit cycle — this is your progress benchmark. Never compare Pulse scores to Synthesis scores.</div>
@@ -1455,7 +1458,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
   </section>
 
   <!-- §6b PULSE -->
-  <section id="s6b">
+  <section id="s6b" class="panel">
     <div class="sh"><div class="snum">§6b</div><div>
       <div class="stitle">Health Pulse</div>
       <div class="spurp"><strong>Purpose:</strong> Fast, lower-precision directional check. Does not require completed audits. Useful between cycles, before stakeholder conversations, or for a quick sense of whether things have improved. Treat as directional — not benchmarks.</div>
@@ -1479,7 +1482,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
   </section>
 
   <!-- §7 TRACKING -->
-  <section id="s7">
+  <section id="s7" class="panel">
     <div class="sh"><div class="snum">§7</div><div>
       <div class="stitle">Score Tracking — PROJECT_HEALTH.md</div>
       <div class="spurp">A persistent score log at the project root that Claude Code can reference during synthesis sessions to automatically compare against prior cycles.</div>
@@ -1534,7 +1537,7 @@ Policy responses triggered: [list categories, or "None"]
   </section>
 
   <!-- TIPS -->
-  <section id="tips">
+  <section id="tips" class="panel">
     <div class="sh"><div class="snum">Tips</div><div>
       <div class="stitle">Best Practices</div>
       <div class="spurp">Key habits that compound across sessions.</div>
@@ -1555,7 +1558,7 @@ Policy responses triggered: [list categories, or "None"]
 
   <!-- ARCHIVE -->
   <!-- PROJECTS SECTION -->
-  <section id="projects">
+  <section id="projects" class="panel">
     <div class="sh"><div class="snum">Projects</div><div>
       <div class="stitle">Project Manager</div>
       <div class="spurp">Manage projects available in the selector. Built-in projects are read-only. Custom projects can be added, edited, and deleted.</div>
@@ -1649,7 +1652,7 @@ Policy responses triggered: [list categories, or "None"]
   </section>
 
   <!-- ARCHIVE SECTION -->
-  <section id="archive">
+  <section id="archive" class="panel">
     <div class="sh"><div class="snum">Archive</div><div>
       <div class="stitle">Session Log</div>
       <div class="spurp">Archived outputs from completed sessions. Referenced when running Roadmap or Health Synthesis prompts. Add entries after each cycle completes.</div>
@@ -3497,19 +3500,30 @@ function toggleDashToken(){ const t=document.getElementById('dashToken'); if(t) 
 function saveDashToken(){ const i=document.getElementById('dashTokenInput'); if(i&&i.value){ try{localStorage.setItem('ccg:ghToken',i.value.trim())}catch(e){storageWarn(e)} i.value=''; } toggleDashToken(); setTimeout(refreshDashboard,0); }
 function clearDashToken(){ try{localStorage.removeItem('ccg:ghToken')}catch(e){} const i=document.getElementById('dashTokenInput'); if(i){i.value='';i.placeholder='ghp_…';} renderDashboard(); }
 
-const sections=document.querySelectorAll('section[id], div#flow');
+// ─── TABBED NAVIGATION — show one panel at a time ────────────
 const navLinks=document.querySelectorAll('nav a');
-navLinks.forEach(l=>l.addEventListener('click',closeNav));
-const observer=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      navLinks.forEach(l=>l.classList.remove('active'));
-      const a=document.querySelector(`nav a[href="#${e.target.id}"]`);
-      if(a)a.classList.add('active');
-    }
+function showPanel(id){
+  const panels=document.querySelectorAll('main > .panel');
+  let target=null;
+  panels.forEach(p=>{ if(p.id===id) target=p; });
+  if(!target){ target=panels[0]; if(target) id=target.id; }   // fall back to first panel
+  panels.forEach(p=>p.classList.toggle('active',p===target));
+  document.querySelectorAll('nav a').forEach(a=>{
+    const on=a.getAttribute('href')==='#'+id;
+    a.classList.toggle('active',on);
+    if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');
   });
-},{threshold:0.15,rootMargin:'-60px 0px -60% 0px'});
-sections.forEach(s=>observer.observe(s));
+  try{ if(typeof window.scrollTo==='function') window.scrollTo(0,0); }catch(e){}
+}
+function handleHash(){ let h=''; try{ h=(location.hash||'').replace(/^#/,''); }catch(e){} showPanel(h); closeNav(); }
+navLinks.forEach(a=>a.addEventListener('click',e=>{
+  const href=a.getAttribute('href')||'';
+  if(!href.startsWith('#')) return;
+  e.preventDefault();
+  try{ if(location.hash===href) showPanel(href.slice(1)); else location.hash=href; }catch(err){ showPanel(href.slice(1)); }
+  closeNav();
+}));
+try{ window.addEventListener('hashchange',handleHash); }catch(e){}
 
 // ─── INIT ────────────────────────────────────────────────────
 initTheme();
@@ -3532,6 +3546,7 @@ renderInvariantTable();
 renderCustomInvariantsList();
 renderSubsysTable();
 restoreRepoFolder();
+handleHash();   // open the panel named by the URL hash, else the default (Dashboard)
 </script>
 </body>
 </html>
