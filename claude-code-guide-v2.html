@@ -305,7 +305,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div style="padding:10px 12px 6px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
       <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:6px">Active Project</div>
       <select id="projectSelect" onchange="switchProject(this.value)"
-        style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-size:12px;font-weight:500;padding:5px 8px;cursor:pointer;outline:none;font-family:inherit">
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;font-weight:500;padding:5px 8px;cursor:pointer;outline:none;font-family:inherit">
       </select>
     </div>
 
@@ -1448,8 +1448,8 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
           <button class="copy-btn" id="copy-p6a" onclick="doCopy('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div id="p6a-dims-note" style="font-size:12px;color:#4e5e7a;padding:8px 12px;background:#1e2435;border:1px solid #2a3142;border-radius:6px;margin-bottom:14px;line-height:1.6">
-        <strong style="color:#8899b3;font-weight:500">Active project — two-axis dimensions:</strong>
+      <div id="p6a-dims-note" style="font-size:12px;color:var(--text-muted);padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:14px;line-height:1.6">
+        <strong style="color:var(--text-sec);font-weight:500">Active project — two-axis dimensions:</strong>
         <span id="p6a-dims-text" style="font-family:monospace;font-size:11px;margin-left:4px"></span>
       </div>
       <div class="fill-form" id="fill-p6a"></div>
@@ -1463,8 +1463,8 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
       <div class="stitle">Health Pulse</div>
       <div class="spurp"><strong>Purpose:</strong> Fast, lower-precision directional check. Does not require completed audits. Useful between cycles, before stakeholder conversations, or for a quick sense of whether things have improved. Treat as directional — not benchmarks.</div>
     </div></div>
-    <div style="font-size:12px;color:#4e5e7a;padding:8px 12px;background:#1e2435;border:1px solid #2a3142;border-radius:6px;margin-bottom:14px;line-height:1.6">
-      <strong style="color:#8899b3;font-weight:500">Active project dimensions:</strong>
+    <div style="font-size:12px;color:var(--text-muted);padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:14px;line-height:1.6">
+      <strong style="color:var(--text-sec);font-weight:500">Active project dimensions:</strong>
       <span id="healthDimsNote" style="font-family:monospace;font-size:11px;margin-left:4px"></span>
     </div>
     <div class="pb" id="block-p6b">
@@ -1563,25 +1563,25 @@ Policy responses triggered: [list categories, or "None"]
       <div class="stitle">Project Manager</div>
       <div class="spurp">Manage projects available in the selector. Built-in projects are read-only. Custom projects can be added, edited, and deleted.</div>
     </div></div>
-    <div style="background:#161b27;border:1px solid #2a3142;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
-          <div style="font-size:12px;font-weight:600;color:#dde4f0">Backup &amp; Restore</div>
-          <div style="font-size:11px;color:#4e5e7a;margin-top:2px">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">Backup &amp; Restore</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0">
-          <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
-          <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
+          <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
+          <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
           <input id="importStateFile" type="file" accept="application/json,.json" style="display:none" onchange="importStateFile(this)">
         </div>
       </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a3142">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div style="font-size:11px;color:#4e5e7a">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
+          <div style="font-size:11px;color:var(--text-muted)">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
           <div style="display:flex;gap:8px;flex-shrink:0">
-            <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
-            <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
-            <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:#a78bfa;font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
+            <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
+            <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
+            <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
           </div>
         </div>
       </div>
@@ -1590,61 +1590,61 @@ Policy responses triggered: [list categories, or "None"]
     <div id="projectsBuiltIn"></div>
     <div id="projectsCustom"></div>
     <button onclick="openProjectForm()" id="addProjectBtn"
-      style="width:100%;margin-top:12px;padding:10px;border-radius:7px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.35);color:#4f8ef7;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
+      style="width:100%;margin-top:12px;padding:10px;border-radius:7px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.35);color:var(--accent);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
       + Add custom project
     </button>
-    <div id="projectForm" style="display:none;margin-top:16px;padding:20px;background:#161b27;border:1px solid #2a3142;border-radius:8px">
-      <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#22c55e;margin-bottom:16px">New Project</div>
+    <div id="projectForm" style="display:none;margin-top:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+      <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:16px">New Project</div>
       <div style="margin-bottom:12px">
         <div class="fill-label">Project name</div>
         <input id="pf-name" type="text" placeholder="e.g. My Internal Tool"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box">
-        <div id="pf-name-preview" style="font-size:11px;color:#4e5e7a;margin-top:3px"></div>
-        <div id="pf-name-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box">
+        <div id="pf-name-preview" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
+        <div id="pf-name-err" style="font-size:11px;color:var(--red);margin-top:3px;display:none"></div>
       </div>
       <div style="margin-bottom:12px">
-        <div class="fill-label">Health dimensions <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(comma-separated)</span></div>
+        <div class="fill-label">Health dimensions <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(comma-separated)</span></div>
         <textarea id="pf-dims" rows="3"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5">Overall, Architecture &amp; Code Quality (incl. test coverage), Security &amp; Compliance, Operational Integrity, Operational Readiness</textarea>
-        <div id="pf-dims-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5">Overall, Architecture &amp; Code Quality (incl. test coverage), Security &amp; Compliance, Operational Integrity, Operational Readiness</textarea>
+        <div id="pf-dims-err" style="font-size:11px;color:var(--red);margin-top:3px;display:none"></div>
       </div>
       <div style="margin-bottom:12px">
-        <div class="fill-label">Horizontal (Axis B) categories <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(one per line — format: name | what it measures | policy playbook)</span></div>
+        <div class="fill-label">Horizontal (Axis B) categories <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(one per line — format: name | what it measures | policy playbook)</span></div>
         <textarea id="pf-axisb" rows="5"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:monospace;font-size:11px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
-        <div style="font-size:10.5px;color:#4e5e7a;margin-top:3px">Prefilled with the standard 5. Leave as-is for most projects; adapt the names/measures for domain-specific bug shapes. Clearing this restores the defaults.</div>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
+        <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">Prefilled with the standard 5. Leave as-is for most projects; adapt the names/measures for domain-specific bug shapes. Clearing this restores the defaults.</div>
       </div>
       <div style="margin-bottom:8px">
-        <div class="fill-label">Subsystems <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(used for cycle tracker, audit dropdown, /audit scope)</span></div>
+        <div class="fill-label">Subsystems <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(used for cycle tracker, audit dropdown, /audit scope)</span></div>
         <div id="pf-subs"></div>
         <button onclick="addSubRow()"
-          style="width:100%;margin-top:6px;padding:6px;border-radius:5px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.3);color:#4f8ef7;font-size:12px;cursor:pointer;font-family:inherit">
+          style="width:100%;margin-top:6px;padding:6px;border-radius:5px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.3);color:var(--accent);font-size:12px;cursor:pointer;font-family:inherit">
           + Add subsystem
         </button>
-        <div id="pf-subs-err" style="font-size:11px;color:#ef4444;margin-top:3px;display:none"></div>
+        <div id="pf-subs-err" style="font-size:11px;color:var(--red);margin-top:3px;display:none"></div>
       </div>
       <div style="margin-bottom:12px">
-        <div class="fill-label">Invariants <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
+        <div class="fill-label">Invariants <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
         <textarea id="pf-invs" rows="4" placeholder="e.g. PHI redactor runs before any external API call | Security&#10;Rate limiter state survives restart | Core Architecture"
-          style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
       </div>
       <div style="margin-bottom:8px;display:flex;gap:12px">
         <div style="flex:1">
-          <div class="fill-label">Policy threshold <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(Axis B score ≤ N triggers policy)</span></div>
+          <div class="fill-label">Policy threshold <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(Axis B score ≤ N triggers policy)</span></div>
           <input id="pf-thresh" type="number" min="1" max="10" value="4"
-            style="width:80px;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
+            style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
         <div style="flex:1">
-          <div class="fill-label">Consecutive cycles <span style="color:#4e5e7a;font-weight:400;text-transform:none;letter-spacing:0">(before trigger)</span></div>
+          <div class="fill-label">Consecutive cycles <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(before trigger)</span></div>
           <input id="pf-consec" type="number" min="1" max="10" value="2"
-            style="width:80px;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
+            style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
         <button onclick="cancelProjectForm()"
-          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid #4e5e7a;color:#4e5e7a;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Cancel</button>
+          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Cancel</button>
         <button onclick="saveProjectForm()"
-          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">
+          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">
           <span id="pf-save-label">Create project</span>
         </button>
       </div>
@@ -1663,22 +1663,22 @@ Policy responses triggered: [list categories, or "None"]
     </div>
     <div id="archiveEntries"></div>
     <button onclick="openArchiveForm()" id="addArchiveBtn"
-      style="width:100%;margin-top:8px;padding:9px;border-radius:7px;background:rgba(167,139,250,.06);border:1px dashed rgba(167,139,250,.3);color:#a78bfa;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
+      style="width:100%;margin-top:8px;padding:9px;border-radius:7px;background:rgba(167,139,250,.06);border:1px dashed rgba(167,139,250,.3);color:var(--purple);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
       + Add entry
     </button>
-    <div id="archiveForm" style="display:none;margin-top:12px;padding:16px;background:#161b27;border:1px solid #2a3142;border-radius:8px">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin-bottom:12px">New Archive Entry</div>
-      <div style="font-size:11px;color:#8899b3;margin-bottom:4px">Title (e.g. "Observatory — Security & HIPAA Audit")</div>
+    <div id="archiveForm" style="display:none;margin-top:12px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:12px">New Archive Entry</div>
+      <div style="font-size:11px;color:var(--text-sec);margin-bottom:4px">Title (e.g. "Observatory — Security & HIPAA Audit")</div>
       <input id="af-title" type="text" placeholder="Project — Subsystem Scope"
-        style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box;margin-bottom:8px">
-      <div style="font-size:11px;color:#8899b3;margin-bottom:4px">Content — paste handoff block, implementation summary, or key findings</div>
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box;margin-bottom:8px">
+      <div style="font-size:11px;color:var(--text-sec);margin-bottom:4px">Content — paste handoff block, implementation summary, or key findings</div>
       <textarea id="af-content" rows="8" placeholder="Paste session output here..."
-        style="width:100%;background:#1e2435;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:monospace;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea>
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea>
       <div style="display:flex;gap:10px">
         <button onclick="cancelArchiveForm()"
-          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid #4e5e7a;color:#4e5e7a;font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>
+          style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>
         <button onclick="saveArchiveEntry()"
-          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Save entry</button>
+          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Save entry</button>
       </div>
     </div>
   </section>
@@ -1923,7 +1923,7 @@ function renderCustomInvariantsList(){
       <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${esc(inv.id)}</span>
       <span style="font-size:12px;color:var(--text-sec);flex:1">${esc(inv.text)}</span>
       <span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0">${esc(inv.subsystem)}</span>
-      <button onclick="deleteInvariant('${inv.id}')" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
+      <button onclick="deleteInvariant('${inv.id}')" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
     </div>`).join('');
 }
 
@@ -2369,16 +2369,16 @@ function renderProjectsTab(){
 function renderBuiltInProjects(){
   const el=document.getElementById('projectsBuiltIn');
   if(!el)return;
-  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#4e5e7a;margin-bottom:10px">Built-in projects</div>'+
+  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:10px">Built-in projects</div>'+
     PROJECTS.map(p=>`
-      <div style="background:#161b27;border:1px solid #2a3142;border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#dde4f0">${esc(p.name)}</div>
-          <div style="font-size:11px;color:#4e5e7a;margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0">
-          <div style="font-size:10.5px;padding:2px 8px;border-radius:3px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:#4e5e7a">built-in</div>
-          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+          <div style="font-size:10.5px;padding:2px 8px;border-radius:3px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:var(--text-muted)">built-in</div>
+          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
         </div>
       </div>`).join('');
 }
@@ -2388,17 +2388,17 @@ function renderCustomProjects(){
   if(!el)return;
   const custom=loadCustomProjects();
   if(!custom.length){el.innerHTML='';return;}
-  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#4e5e7a;margin:20px 0 10px">Custom projects</div>'+
+  el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:20px 0 10px">Custom projects</div>'+
     custom.map(p=>`
-      <div style="background:#161b27;border:1px solid #2a3142;border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#dde4f0">${esc(p.name)}</div>
-          <div style="font-size:11px;color:#4e5e7a;margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0">
-          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
-          <button onclick="openEditProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
-          <button onclick="deleteProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
+          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+          <button onclick="openEditProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
+          <button onclick="deleteProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
         </div>
       </div>`).join('');
 }
@@ -2456,16 +2456,16 @@ function renderSubRows(){
   const c=document.getElementById('pf-subs');
   if(!c)return;
   c.innerHTML=pfSubRows.map((s,i)=>`
-    <div style="background:#1e2435;border:1px solid #2a3142;border-radius:6px;padding:10px 12px;margin-bottom:8px">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:11px;color:#4e5e7a;font-weight:500">Subsystem ${i+1}</span>
-        ${pfSubRows.length>1?`<button onclick="removeSubRow(${i})" style="font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-family:inherit">Remove</button>`:''}
+        <span style="font-size:11px;color:var(--text-muted);font-weight:500">Subsystem ${i+1}</span>
+        ${pfSubRows.length>1?`<button onclick="removeSubRow(${i})" style="font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">Remove</button>`:''}
       </div>
       <input type="text" value="${esc(s.name)}" placeholder="Subsystem name (e.g. Core Architecture & Pipeline)"
-        style="width:100%;background:#0e1117;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:inherit;font-size:12px;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:5px"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:5px"
         oninput="pfSubRows[${i}].name=this.value">
       <textarea rows="2" placeholder="Files (e.g. server/index.ts, server/routes.ts)"
-        style="width:100%;background:#0e1117;border:1px solid #2a3142;border-radius:5px;color:#dde4f0;font-family:monospace;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;resize:vertical"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;resize:vertical"
         oninput="pfSubRows[${i}].files=this.value">${esc(s.files)}</textarea>
     </div>`).join('');
 }
@@ -2700,26 +2700,26 @@ function renderArchive(){
   const seeds=project.seeds||[];
   const entries=loadArchiveEntries();
   const all=[...seeds,...entries];
-  if(!all.length){el.innerHTML='<div style="padding:14px;font-size:13px;color:#4e5e7a;text-align:center">No entries yet. Add one after each cycle completes.</div>';return;}
+  if(!all.length){el.innerHTML='<div style="padding:14px;font-size:13px;color:var(--text-muted);text-align:center">No entries yet. Add one after each cycle completes.</div>';return;}
   el.innerHTML=all.map((e,i)=>{
     const isSeed=seeds.find(s=>s.id===e.id);
-    return `<div style="border:1px solid #2a3142;border-radius:8px;overflow:hidden;margin-bottom:10px">
-      <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1e2435;cursor:pointer">
+    return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
+      <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
         <div style="display:flex;align-items:center;gap:8px;min-width:0">
-          <span style="color:#4f8ef7;font-size:11px;flex-shrink:0">▶</span>
-          <span style="font-size:13px;font-weight:600;color:#dde4f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
+          <span style="color:var(--accent);font-size:11px;flex-shrink:0">▶</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
-          <span style="font-size:11px;color:#4e5e7a;font-family:monospace">${esc(e.date)}</span>
-          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${esc(JSON.stringify(e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;font-family:inherit">×</button>`:''}
-          <span style="color:#4e5e7a;font-size:10px">▼</span>
+          <span style="font-size:11px;color:var(--text-muted);font-family:monospace">${esc(e.date)}</span>
+          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${esc(JSON.stringify(e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
+          <span style="color:var(--text-muted);font-size:10px">▼</span>
         </div>
       </div>
       <div class="log-body" id="arlog-${i}">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <button onclick="navigator.clipboard.writeText(${esc(JSON.stringify(e.content))})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:#4f8ef7;cursor:pointer;font-family:inherit">Copy content</button>
+          <button onclick="navigator.clipboard.writeText(${esc(JSON.stringify(e.content))})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Copy content</button>
         </div>
-        <pre style="font-family:monospace;font-size:12px;color:#8899b3;line-height:1.65;white-space:pre-wrap;word-break:break-word;margin:0">${esc(e.content)}</pre>
+        <pre style="font-family:monospace;font-size:12px;color:var(--text-sec);line-height:1.65;white-space:pre-wrap;word-break:break-word;margin:0">${esc(e.content)}</pre>
       </div>
     </div>`;
   }).join('');
