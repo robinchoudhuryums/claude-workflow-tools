@@ -165,6 +165,14 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .fill-form.open{display:block}
 .fill-form-title{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .fill-form-title span{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px}
+/* EXTRACTED UTILITIES (inline-style → class cleanup) */
+.lbl-note{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0}
+.sublabel{margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em}
+.flex-g8{display:flex;gap:8px;flex-shrink:0}
+.mb12{margin-bottom:12px}
+.note-mut{font-size:11px;color:var(--text-muted)}
+.hint-mut{font-size:11px;color:var(--text-muted);margin-top:2px}
+.pf-err{font-size:11px;color:var(--red);margin-top:3px;display:none}
 .fill-row{margin-bottom:9px}
 .fill-label{font-size:11px;color:var(--text-sec);margin-bottom:3px;display:flex;align-items:center;gap:6px}
 .fill-label .opt{font-size:10px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:0 4px}
@@ -345,7 +353,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
         <button class="dash-btn" onclick="refreshDashboard(true)">↻ Refresh</button>
         <button class="dash-btn sec" onclick="toggleDashToken()">GitHub token</button>
       </div>
-      <div id="dashStatus" style="font-size:11px;color:var(--text-muted)"></div>
+      <div id="dashStatus" class="note-mut"></div>
     </div>
     <div class="dash-token" id="dashToken">
       <label style="font-size:11.5px;color:var(--text-sec);font-weight:500">Personal access token <span style="color:var(--text-muted);font-weight:400">— optional, for private repos &amp; higher rate limits</span></label>
@@ -653,7 +661,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
       </table>
     </div>
 
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Session 1 — Scoped Audit + Plan</div>
+    <div class="sublabel">Session 1 — Scoped Audit + Plan</div>
     <div class="pb" id="block-t2a">
       <div class="pb-header">
         <div class="pb-label">Tier 2 — Audit + Plan Prompt</div>
@@ -668,7 +676,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
     </div>
 
     <hr class="dv">
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Session 2 — Implement + Check + Reflect</div>
+    <div class="sublabel">Session 2 — Implement + Check + Reflect</div>
     <div class="inote"><div class="ic">📌</div><div>Open a <strong>new session</strong>. Paste the <strong>Tier 2 Handoff Block</strong> from Session 1.</div></div>
     <div class="pb" id="block-t2b">
       <div class="pb-header">
@@ -1111,7 +1119,7 @@ After completing the change, note: what was modified, whether anything unexpecte
     </div></div>
     <div class="wnote"><div class="ic">⚠</div><div><strong>Treat the Pre-Implementation Check as mandatory</strong> for any High or Very High risk change. Discovering breakage after the fact in a 100k+ line codebase costs significantly more than a 5-minute check beforehand.</div></div>
 
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Pre-Implementation Dependency Check</div>
+    <div class="sublabel">Pre-Implementation Dependency Check</div>
     <div class="inote"><div class="ic">📌</div><div>Input: <strong>Systems Map</strong> summary + the specific planned changes from the Implementation Handoff Block.</div></div>
     <div class="pb" id="block-p4pre">
       <div class="pb-header">
@@ -1140,7 +1148,7 @@ Do not begin implementation until this check is complete.</pre>
     </div>
 
     <hr class="dv">
-    <div style="margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em">Post-Implementation Regression Check</div>
+    <div class="sublabel">Post-Implementation Regression Check</div>
     <div class="inote"><div class="ic">📌</div><div>Input: <strong>Systems Map</strong> summary + a summary of what was actually changed (from the Implementation Summary Block).</div></div>
     <div class="pb" id="block-p4post">
       <div class="pb-header">
@@ -1567,9 +1575,9 @@ Policy responses triggered: [list categories, or "None"]
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
           <div style="font-size:12px;font-weight:600;color:var(--text)">Backup &amp; Restore</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
+          <div class="hint-mut">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
+        <div class="flex-g8">
           <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
           <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
           <input id="importStateFile" type="file" accept="application/json,.json" style="display:none" onchange="importStateFile(this)">
@@ -1577,8 +1585,8 @@ Policy responses triggered: [list categories, or "None"]
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div style="font-size:11px;color:var(--text-muted)">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
-          <div style="display:flex;gap:8px;flex-shrink:0">
+          <div class="note-mut">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
+          <div class="flex-g8">
             <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
             <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
             <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
@@ -1595,47 +1603,47 @@ Policy responses triggered: [list categories, or "None"]
     </button>
     <div id="projectForm" style="display:none;margin-top:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
       <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:16px">New Project</div>
-      <div style="margin-bottom:12px">
+      <div class="mb12">
         <div class="fill-label">Project name</div>
         <input id="pf-name" type="text" placeholder="e.g. My Internal Tool"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box">
         <div id="pf-name-preview" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
-        <div id="pf-name-err" style="font-size:11px;color:var(--red);margin-top:3px;display:none"></div>
+        <div id="pf-name-err" class="pf-err"></div>
       </div>
-      <div style="margin-bottom:12px">
-        <div class="fill-label">Health dimensions <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(comma-separated)</span></div>
+      <div class="mb12">
+        <div class="fill-label">Health dimensions <span class="lbl-note">(comma-separated)</span></div>
         <textarea id="pf-dims" rows="3"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5">Overall, Architecture &amp; Code Quality (incl. test coverage), Security &amp; Compliance, Operational Integrity, Operational Readiness</textarea>
-        <div id="pf-dims-err" style="font-size:11px;color:var(--red);margin-top:3px;display:none"></div>
+        <div id="pf-dims-err" class="pf-err"></div>
       </div>
-      <div style="margin-bottom:12px">
-        <div class="fill-label">Horizontal (Axis B) categories <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(one per line — format: name | what it measures | policy playbook)</span></div>
+      <div class="mb12">
+        <div class="fill-label">Horizontal (Axis B) categories <span class="lbl-note">(one per line — format: name | what it measures | policy playbook)</span></div>
         <textarea id="pf-axisb" rows="5"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
         <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">Prefilled with the standard 5. Leave as-is for most projects; adapt the names/measures for domain-specific bug shapes. Clearing this restores the defaults.</div>
       </div>
       <div style="margin-bottom:8px">
-        <div class="fill-label">Subsystems <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(used for cycle tracker, audit dropdown, /audit scope)</span></div>
+        <div class="fill-label">Subsystems <span class="lbl-note">(used for cycle tracker, audit dropdown, /audit scope)</span></div>
         <div id="pf-subs"></div>
         <button onclick="addSubRow()"
           style="width:100%;margin-top:6px;padding:6px;border-radius:5px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.3);color:var(--accent);font-size:12px;cursor:pointer;font-family:inherit">
           + Add subsystem
         </button>
-        <div id="pf-subs-err" style="font-size:11px;color:var(--red);margin-top:3px;display:none"></div>
+        <div id="pf-subs-err" class="pf-err"></div>
       </div>
-      <div style="margin-bottom:12px">
-        <div class="fill-label">Invariants <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
+      <div class="mb12">
+        <div class="fill-label">Invariants <span class="lbl-note">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
         <textarea id="pf-invs" rows="4" placeholder="e.g. PHI redactor runs before any external API call | Security&#10;Rate limiter state survives restart | Core Architecture"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
       </div>
       <div style="margin-bottom:8px;display:flex;gap:12px">
         <div style="flex:1">
-          <div class="fill-label">Policy threshold <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(Axis B score ≤ N triggers policy)</span></div>
+          <div class="fill-label">Policy threshold <span class="lbl-note">(Axis B score ≤ N triggers policy)</span></div>
           <input id="pf-thresh" type="number" min="1" max="10" value="4"
             style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
         <div style="flex:1">
-          <div class="fill-label">Consecutive cycles <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(before trigger)</span></div>
+          <div class="fill-label">Consecutive cycles <span class="lbl-note">(before trigger)</span></div>
           <input id="pf-consec" type="number" min="1" max="10" value="2"
             style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
@@ -2374,9 +2382,9 @@ function renderBuiltInProjects(){
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
+        <div class="flex-g8">
           <div style="font-size:10.5px;padding:2px 8px;border-radius:3px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:var(--text-muted)">built-in</div>
           <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
         </div>
@@ -2393,9 +2401,9 @@ function renderCustomProjects(){
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
+        <div class="flex-g8">
           <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
           <button onclick="openEditProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
           <button onclick="deleteProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
@@ -3468,12 +3476,12 @@ function dashboardCard(p){
   const active=(p.id===activeProjectId)?' active':'';
   return '<div class="dcard'+active+'">'
     +'<div class="dcard-top"><div class="dcard-name">'+esc(p.name)+(active?' <span class="dchip" style="color:var(--accent);border-color:rgba(79,142,247,.4)">active</span>':'')+'</div>'
-    +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span style="font-size:11px;color:var(--text-muted)">/10</span>':'')+'</div></div>'
+    +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span class="note-mut">/10</span>':'')+'</div></div>'
     +'<div class="dcard-row"><span class="dsrc">'+icon+' '+esc(src)+'</span>'+(phase?'<span class="dchip" title="'+esc(phase)+'">'+esc(phase.split('(')[0].trim().slice(0,30))+'</span>':'')+'</div>'
     +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
     +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
     +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
-    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+ghUrl+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span style="font-size:11px;color:var(--text-muted)">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">⚙ source</button></div>'
+    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+ghUrl+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">⚙ source</button></div>'
     +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
     +'<label>GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
     +'<label>Fallback when no GitHub data (overall / phase / note)</label>'
