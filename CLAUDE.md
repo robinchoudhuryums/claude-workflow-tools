@@ -1504,6 +1504,109 @@ No implementation phase. Produces:
 On completion, reset "Subsystem cycles since last Seams audit" to 0 in
 `.cycle/STATE.md` (if the project uses `.cycle/`).
 
+Canonical prompt body — the §1s console builder (`buildSeamsText`) is locked to
+this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16). The project
+subsystem list and the current invariant library are injected at render time;
+bracketed lines are render-time placeholders.
+
+```
+Do not make any changes to any files during this session.
+
+[PASTE SYSTEMS MAP SUMMARY HERE]
+
+This is a Seams & Invariants Audit. It runs every 3–4 subsystem cycles and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
+
+Project subsystems for reference:
+[the project subsystem list is injected here per project]
+
+INPUTS — read these before starting:
+1. CLAUDE.md — especially the Common Gotchas section and Key Design Decisions
+2. The Operator State Checklist (manual setup steps, env vars, one-time migrations)
+3. The current invariant library below
+
+[CURRENT INVARIANT LIBRARY — the current library is injected here per project]
+
+---
+
+Conduct the following audit in four parts:
+
+PART 1 — SEAM INVENTORY
+Identify every seam (boundary, interface, or handoff point) between the subsystems listed above. For each seam:
+- Which two subsystems does it connect?
+- What data or control crosses the boundary? (function calls, shared state, events, DB tables, config values)
+- What assumptions does each side make about the other?
+- Is the contract explicit (typed interface, schema, documented API) or implicit (convention, coincidence)?
+
+Focus especially on seams where:
+- One side was recently modified by a subsystem audit but the other side wasn't
+- The contract is implicit rather than explicit
+- Failure on one side would silently degrade the other (no error, just wrong results)
+
+PART 2 — INVARIANT VALIDATION
+For each invariant in the current library:
+- Probe it via code read and/or test execution. Result: PASS / FAIL / STALE / UNVERIFIABLE
+- STALE means the invariant references code that has been refactored or removed — it needs rewording or retirement
+- If FAIL: describe what broke and which subsystem cycle likely caused it
+- If UNVERIFIABLE: explain what would need to exist (test, assertion, monitoring) to make it verifiable
+
+PART 3 — INVARIANT DISCOVERY
+Based on Part 1 (seam inventory), identify new invariants that should be added to the library. These are rules that:
+- Must hold across subsystem boundaries (not internal to one subsystem)
+- Would cause silent degradation or data corruption if violated
+- Are not currently tested or asserted anywhere
+
+For each proposed invariant:
+- State the rule clearly in one sentence
+- Identify which seam it guards
+- Note whether it is currently testable or would need new infrastructure
+
+Also review the Common Gotchas section of CLAUDE.md and the Operator State Checklist for any rules that should be promoted to formal invariants.
+
+PART 4 — HORIZONTAL BUG-SHAPE OBSERVATIONS
+Provide cross-cutting observations relevant to the five Axis B categories from Health Synthesis. This is not a score — it is evidence for the next synthesis:
+- Silent Degradation: any new silent-failure paths discovered at seams
+- Startup Ordering: any ordering dependencies between subsystems that lack validation
+- Operator-Only State Gaps: any manual steps that affect multiple subsystems but have no automated check
+- Parallel Source-of-Truth Drift: any definitions, configs, or types duplicated across subsystem boundaries
+- Test Coverage Quality: any seams that have zero test coverage
+
+---
+
+Produce the following output:
+
+---SEAMS & INVARIANTS AUDIT BLOCK---
+Audit date: [today's date]
+Subsystem cycles since last seams audit: [N or "First audit"]
+
+SEAM INVENTORY:
+[seam-ID] | [Subsystem A] ↔ [Subsystem B] | [What crosses] | Contract: explicit/implicit | Risk: [High/Med/Low]
+(repeat for each seam identified)
+
+INVARIANT LIBRARY UPDATE:
+[Validated — one PASS/FAIL/STALE/UNVERIFIABLE line per current invariant, injected at render time]
+[INV-XX] | [PASS/FAIL/STALE/UNVERIFIABLE] | [one-line evidence]
+(repeat for each existing invariant)
+
+Proposed additions:
+[INV-NEW-XX] | [invariant rule] | Guards seam: [seam-ID] | Testable: Yes/No
+(repeat for each proposed invariant)
+
+Proposed retirements:
+[INV-XX] | [reason — stale, subsumed, or no longer applicable]
+(or "None")
+
+HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring):
+Silent Degradation: [observations]
+Startup Ordering: [observations]
+Operator-Only Gaps: [observations]
+Parallel Drift: [observations]
+Test Coverage: [observations]
+
+RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
+[Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
+---END SEAMS & INVARIANTS AUDIT BLOCK---
+```
+
 ### Health Synthesis (Section 6a in HTML tool)
 
 Full benchmarkable assessment after a complete cycle. Takes 3 inputs per subsystem (Session Handoff + Cycle Summary + Verification Block). Produces:
@@ -1909,6 +2012,41 @@ COVERAGE GAP REPORT:
 Fixes with regression tests: [N of M]
 Category D ratio: [X%]
 ---END VERIFICATION BLOCK---
+```
+
+### SEAMS & INVARIANTS AUDIT BLOCK
+```
+---SEAMS & INVARIANTS AUDIT BLOCK---
+Audit date: [today's date]
+Subsystem cycles since last seams audit: [N or "First audit"]
+
+SEAM INVENTORY:
+[seam-ID] | [Subsystem A] ↔ [Subsystem B] | [What crosses] | Contract: explicit/implicit | Risk: [High/Med/Low]
+(repeat for each seam identified)
+
+INVARIANT LIBRARY UPDATE:
+[Validated — one PASS/FAIL/STALE/UNVERIFIABLE line per current invariant, injected at render time]
+[INV-XX] | [PASS/FAIL/STALE/UNVERIFIABLE] | [one-line evidence]
+(repeat for each existing invariant)
+
+Proposed additions:
+[INV-NEW-XX] | [invariant rule] | Guards seam: [seam-ID] | Testable: Yes/No
+(repeat for each proposed invariant)
+
+Proposed retirements:
+[INV-XX] | [reason — stale, subsumed, or no longer applicable]
+(or "None")
+
+HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring):
+Silent Degradation: [observations]
+Startup Ordering: [observations]
+Operator-Only Gaps: [observations]
+Parallel Drift: [observations]
+Test Coverage: [observations]
+
+RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
+[Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
+---END SEAMS & INVARIANTS AUDIT BLOCK---
 ```
 
 ### PR REVIEW BLOCK
