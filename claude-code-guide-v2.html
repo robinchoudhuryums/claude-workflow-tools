@@ -36,6 +36,33 @@
 .iconbtn svg{width:18px;height:18px}
 .mobilebar{display:none;align-items:center;gap:12px;position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px}
 .navbackdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90}
+/* DASHBOARD */
+.dash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.dash-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dash-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);border-radius:var(--r-sm);color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.dash-btn:hover{background:rgba(79,142,247,.2)}
+.dash-btn.sec{background:var(--surface2);border-color:var(--border);color:var(--text-sec)}
+.dash-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:12px}
+.dcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;display:flex;flex-direction:column;gap:8px}
+.dcard.active{border-color:rgba(79,142,247,.5)}
+.dcard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.dcard-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.3}
+.dcard-score{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;line-height:1;white-space:nowrap}
+.dcard-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dchip{font-size:10.5px;padding:2px 7px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text-sec);white-space:nowrap}
+.dsrc{font-size:10.5px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--text-muted)}
+.dcard-summary{font-size:12px;color:var(--text-sec);line-height:1.5}
+.dcard-pri{font-size:11px;color:var(--text-muted);line-height:1.45}
+.dcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:1px}
+.dlink{font-size:11px;color:var(--accent);text-decoration:none;cursor:pointer;background:none;border:none;font-family:inherit;padding:0}
+.dlink:hover{text-decoration:underline}
+.dedit{display:none;margin-top:6px;padding-top:9px;border-top:1px solid var(--border-light);flex-direction:column;gap:6px}
+.dedit.open{display:flex}
+.dedit input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:5px 8px;outline:none}
+.dedit label{font-size:10px;color:var(--text-muted);line-height:1.4}
+.dash-token{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px}
+.dash-token.open{display:block}
+.dash-note{font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:7px}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:'IBM Plex Sans',-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.65;display:flex;min-height:100vh}
@@ -242,6 +269,8 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <button class="iconbtn" aria-label="Toggle light or dark theme" title="Toggle theme" id="themeBtn" onclick="toggleTheme()" style="width:30px;height:30px">☀</button>
   </div>
   <div style="flex:1;overflow-y:auto">
+    <div class="nav-group">Overview</div>
+    <a href="#dashboard">Dashboard <span class="nbadge nb-p">Status</span></a>
     <div class="nav-group">Setup</div>
     <a href="#setup">Setup Cycle <span class="nbadge nb-g">Once</span></a>
     <div class="nav-group">Quick Cycles</div>
@@ -292,6 +321,32 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 
 <!-- MAIN -->
 <main>
+
+  <!-- DASHBOARD -->
+  <section id="dashboard">
+    <div class="sh"><div class="snum">★</div><div>
+      <div class="stitle">Dashboard — Active Projects</div>
+      <div class="spurp"><strong>At a glance:</strong> live status pulled from each project's <code>PROJECT_HEALTH.md</code> and <code>.cycle/STATE.md</code> on GitHub, with cached and self-reported fallback when a repo is private, offline, or unconfigured.</div>
+    </div></div>
+    <div class="dash-head">
+      <div class="dash-actions">
+        <button class="dash-btn" onclick="refreshDashboard(true)">↻ Refresh</button>
+        <button class="dash-btn sec" onclick="toggleDashToken()">GitHub token</button>
+      </div>
+      <div id="dashStatus" style="font-size:11px;color:var(--text-muted)"></div>
+    </div>
+    <div class="dash-token" id="dashToken">
+      <label style="font-size:11.5px;color:var(--text-sec);font-weight:500">Personal access token <span style="color:var(--text-muted);font-weight:400">— optional, for private repos &amp; higher rate limits</span></label>
+      <input id="dashTokenInput" type="password" placeholder="ghp_… (read-only contents scope)" style="width:100%;margin-top:7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 9px;outline:none">
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="dash-btn" onclick="saveDashToken()">Save token</button>
+        <button class="dash-btn" onclick="clearDashToken()" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171">Clear</button>
+      </div>
+      <div class="dash-note">Stored only in this browser's <code>localStorage</code> and sent only to <code>api.github.com</code>. Prefer a fine-grained, read-only token. Public repos need no token.</div>
+    </div>
+    <div class="dash-cards" id="dashCards"></div>
+  </section>
+
   <div style="margin-bottom:30px">
     <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Claude Code · Structured Workflow</div>
     <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
@@ -3336,6 +3391,97 @@ function toggleTheme(){
 function toggleNav(){ const n=document.getElementById('sidebar'); if(n) n.classList.toggle('open'); }
 function closeNav(){ const n=document.getElementById('sidebar'); if(n) n.classList.remove('open'); }
 
+// ─── DASHBOARD (live project status: GitHub primary, cache + self-reported fallback) ──
+function dashLoad(key){ try{return JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}} }
+function dashSave(key,obj){ try{localStorage.setItem(key,JSON.stringify(obj))}catch(e){storageWarn(e)} }
+function dashRepos(){ return dashLoad('ccg:dashRepos'); }
+function dashCache(){ return dashLoad('ccg:dashCache'); }
+function dashManual(){ return dashLoad('ccg:dashManual'); }
+function dashToken(){ try{return localStorage.getItem('ccg:ghToken')||''}catch(e){return ''} }
+
+function scoreColor(v){ const n=parseFloat(v); if(isNaN(n))return 'var(--text-muted)'; if(n>=8.5)return 'var(--green)'; if(n>=7)return 'var(--teal)'; if(n>=5)return 'var(--amber)'; return 'var(--red)'; }
+function relTime(iso){ if(!iso)return ''; const d=Date.now()-new Date(iso).getTime(); if(isNaN(d))return ''; const m=Math.round(d/60000); if(m<1)return 'just now'; if(m<60)return m+'m ago'; const h=Math.round(m/60); if(h<24)return h+'h ago'; return Math.round(h/24)+'d ago'; }
+function parseRepoSpec(spec){ if(!spec)return null; const at=String(spec).split('@'); const branch=at[1]||'HEAD'; const parts=at[0].split('/'); if(parts.length<2||!parts[0].trim()||!parts[1].trim())return null; return {owner:parts[0].trim(),repo:parts[1].trim(),branch:branch.trim()}; }
+function parseHealth(md){ const g=re=>{const m=md.match(re);return m?m[1].trim():'';}; return { overall:g(/Overall[^:\n]*:\s*([\d.]+)\s*\/\s*10/i), lastSynthesis:g(/Last synthesis:\s*([^\n]+)/i), summary:g(/One-line summary:\s*([^\n]+)/i), topVertical:g(/Top vertical priority:\s*([^\n]+)/i), topHorizontal:g(/Top horizontal priority:\s*([^\n]+)/i) }; }
+function parseState(md){ const g=re=>{const m=md.match(re);return m?m[1].trim():'';}; return { phase:g(/^Phase:\s*([^\n]+)/im), updated:g(/^Updated:\s*([^\n]+)/im), cycle:g(/^Cycle:\s*([^\n]+)/im) }; }
+
+async function ghFetchFile(spec,path){
+  const r=parseRepoSpec(spec); if(!r||typeof fetch!=='function')return null;
+  const tok=dashToken(); let url, opts={headers:{}};
+  if(tok){ url='https://api.github.com/repos/'+r.owner+'/'+r.repo+'/contents/'+path+'?ref='+encodeURIComponent(r.branch); opts.headers['Accept']='application/vnd.github.raw'; opts.headers['Authorization']='Bearer '+tok; }
+  else { url='https://raw.githubusercontent.com/'+r.owner+'/'+r.repo+'/'+r.branch+'/'+path; }
+  const resp=await fetch(url,opts);
+  if(!resp.ok) throw new Error(path+' → HTTP '+resp.status);
+  return await resp.text();
+}
+async function fetchProjectStatus(spec){
+  const health=await ghFetchFile(spec,'PROJECT_HEALTH.md');
+  const status=parseHealth(health||'');
+  try{ const st=await ghFetchFile(spec,'.cycle/STATE.md'); if(st) Object.assign(status,parseState(st)); }catch(e){}
+  return status;
+}
+let dashRefreshing=false;
+async function refreshDashboard(){
+  if(typeof fetch!=='function'||dashRefreshing)return;
+  dashRefreshing=true;
+  const repos=dashRepos(), cache=dashCache();
+  const ids=Object.keys(repos).filter(id=>repos[id]);
+  const st=document.getElementById('dashStatus'); if(st) st.textContent=ids.length?'Refreshing…':'No repos configured — add one per card below (⚙ source)';
+  let okN=0, failN=0;
+  for(const id of ids){
+    try{ const status=await fetchProjectStatus(repos[id]); cache[id]={status,fetchedAt:new Date().toISOString(),ok:true}; okN++; }
+    catch(e){ if(cache[id]){ cache[id].ok=false; } else { cache[id]={status:null,fetchedAt:null,ok:false,error:String(e&&e.message||e)}; } failN++; }
+  }
+  dashSave('ccg:dashCache',cache); dashRefreshing=false; renderDashboard();
+  if(st&&ids.length) st.textContent='Updated '+okN+' live'+(failN?(', '+failN+' from cache/fallback'):'');
+}
+function dashboardCard(p){
+  const repos=dashRepos(), cache=dashCache(), manual=dashManual();
+  const spec=repos[p.id]||'', c=cache[p.id], man=manual[p.id]||{};
+  let status=null, src='', icon='○';
+  if(c&&c.ok&&c.status){ status=c.status; src='Live · '+relTime(c.fetchedAt); icon='🟢'; }
+  else if(c&&c.status){ status=c.status; src='Cached · '+relTime(c.fetchedAt); icon='🟡'; }
+  else if(man.overall||man.phase||man.note){ status={overall:man.overall,phase:man.phase,summary:man.note}; src='Self-reported'; icon='✎'; }
+  else { src=spec?'No data yet':'No source — add a repo'; }
+  const overall=(status&&status.overall)||'—';
+  const phase=(status&&status.phase)||'';
+  const summary=(status&&status.summary)||'';
+  const r=parseRepoSpec(spec), ghUrl=r?('https://github.com/'+r.owner+'/'+r.repo):'';
+  const active=(p.id===activeProjectId)?' active':'';
+  return '<div class="dcard'+active+'">'
+    +'<div class="dcard-top"><div class="dcard-name">'+esc(p.name)+(active?' <span class="dchip" style="color:var(--accent);border-color:rgba(79,142,247,.4)">active</span>':'')+'</div>'
+    +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span style="font-size:11px;color:var(--text-muted)">/10</span>':'')+'</div></div>'
+    +'<div class="dcard-row"><span class="dsrc">'+icon+' '+esc(src)+'</span>'+(phase?'<span class="dchip" title="'+esc(phase)+'">'+esc(phase.split('(')[0].trim().slice(0,30))+'</span>':'')+'</div>'
+    +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
+    +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
+    +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
+    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+ghUrl+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span style="font-size:11px;color:var(--text-muted)">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">⚙ source</button></div>'
+    +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
+    +'<label>GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
+    +'<label>Fallback when no GitHub data (overall / phase / note)</label>'
+    +'<input id="dman-o-'+esc(p.id)+'" value="'+esc(man.overall||'')+'" placeholder="overall e.g. 8.5">'
+    +'<input id="dman-p-'+esc(p.id)+'" value="'+esc(man.phase||'')+'" placeholder="phase e.g. idle">'
+    +'<input id="dman-n-'+esc(p.id)+'" value="'+esc(man.note||'')+'" placeholder="one-line note">'
+    +'<div style="display:flex;gap:8px"><button class="dash-btn" onclick="saveDashCard(\''+esc(p.id)+'\')">Save</button><button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">Cancel</button></div></div></div>';
+}
+function renderDashboard(){
+  const el=document.getElementById('dashCards'); if(!el)return;
+  el.innerHTML=getAllProjects().map(dashboardCard).join('');
+  const ti=document.getElementById('dashTokenInput'); if(ti&&dashToken()) ti.placeholder='•••••••• (token saved)';
+}
+function toggleDashEdit(id){ const e=document.getElementById('dedit-'+id); if(e) e.classList.toggle('open'); }
+function saveDashCard(id){
+  const v=i=>{const e=document.getElementById(i);return e&&e.value?e.value.trim():'';};
+  const spec=v('dspec-'+id), repos=dashRepos();
+  if(spec) repos[id]=spec; else delete repos[id]; dashSave('ccg:dashRepos',repos);
+  const o=v('dman-o-'+id), ph=v('dman-p-'+id), nt=v('dman-n-'+id), manual=dashManual();
+  if(o||ph||nt) manual[id]={overall:o,phase:ph,note:nt}; else delete manual[id]; dashSave('ccg:dashManual',manual);
+  renderDashboard(); setTimeout(refreshDashboard,0);
+}
+function toggleDashToken(){ const t=document.getElementById('dashToken'); if(t) t.classList.toggle('open'); }
+function saveDashToken(){ const i=document.getElementById('dashTokenInput'); if(i&&i.value){ try{localStorage.setItem('ccg:ghToken',i.value.trim())}catch(e){storageWarn(e)} i.value=''; } toggleDashToken(); setTimeout(refreshDashboard,0); }
+function clearDashToken(){ try{localStorage.removeItem('ccg:ghToken')}catch(e){} const i=document.getElementById('dashTokenInput'); if(i){i.value='';i.placeholder='ghp_…';} renderDashboard(); }
+
 const sections=document.querySelectorAll('section[id], div#flow');
 const navLinks=document.querySelectorAll('nav a');
 navLinks.forEach(l=>l.addEventListener('click',closeNav));
@@ -3352,6 +3498,8 @@ sections.forEach(s=>observer.observe(s));
 
 // ─── INIT ────────────────────────────────────────────────────
 initTheme();
+renderDashboard();
+setTimeout(refreshDashboard,0);
 renderProjectSelector();
 renderCycle();
 renderProjectsTab();

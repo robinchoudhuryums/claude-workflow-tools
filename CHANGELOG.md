@@ -5,6 +5,39 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.17.0 — 2026-06-17
+
+Hosted-console UX: a project Dashboard, light mode, and working mobile nav.
+All in `claude-code-guide-v2.html` (the GitHub Pages tool) — no command body,
+config schema, or output-block change, so no `/sync-commands` re-pull.
+
+### Added
+- **Dashboard** — a new landing section showing live status for each configured
+  project. Data source is GitHub-primary with a fallback chain: live fetch of
+  `PROJECT_HEALTH.md` + `.cycle/STATE.md` (raw URL for public repos, contents
+  API for private when a token is set) → last-cached (with relative timestamp)
+  → self-reported → "no source". Per-card ⚙ editor sets the `owner/repo[@branch]`
+  mapping and a manual fallback; an optional read-only GitHub token (stored only
+  in `localStorage`, sent only to `api.github.com`) covers private repos and
+  rate limits. All network calls are deferred via `setTimeout`, so the headless
+  `check-html` / `gen-html-prompts --assert` stubs never touch `fetch`.
+- **Light / dark theme** — a `[data-theme="light"]` chrome flip (prompt/code
+  blocks stay dark in both themes for legibility); toggle in the sidebar + mobile
+  bar; persists to `localStorage` (`ccg:theme`); first load respects
+  `prefers-color-scheme`.
+- **Mobile navigation** — the 768px breakpoint used to do `nav{display:none}`,
+  leaving phones with no nav at all. Replaced with a slide-in drawer + hamburger
+  in a sticky top bar + tap-backdrop; nav links close the drawer.
+
+### Guarded
+- INV-37: the Dashboard's pure parsers (`parseHealth` / `parseState` /
+  `parseRepoSpec` / `scoreColor`) are locked by `check-html`, verified against
+  real `PROJECT_HEALTH.md` / `STATE.md` shapes, so a regex regression can't
+  silently blank the board.
+
+### New localStorage keys
+`ccg:theme`, `ccg:dashRepos`, `ccg:dashCache`, `ccg:dashManual`, `ccg:ghToken`.
+
 ## 1.16.0 — 2026-06-16
 
 R16 (increment 3 — **COMPLETE**) — §6b locked, §T2b resolved by design.

@@ -124,6 +124,18 @@ Item IDs (R#) are stable references for planning sessions.
   Closes the last residual of the fourth-copy drift class. `S` for targeted
   markers, `M–L` for full generation of the dynamic builders.
 
+- **R17 — Hosted-console UX (GitHub Pages tool).** `effort: M` — ✅ DONE (v1.17.0).
+  Followed from hosting the console at `https://robinchoudhuryums.github.io/claude-workflow-tools/`:
+  (a) a **Dashboard** landing showing live per-project status — GitHub-primary
+  (`PROJECT_HEALTH.md` + `.cycle/STATE.md`) with cache → self-reported fallback,
+  optional local-only token for private repos; parsers locked by `check-html`
+  (INV-37); (b) **light/dark theme** (chrome-only flip, persists, respects
+  `prefers-color-scheme`); (c) **mobile nav drawer** replacing the prior
+  `nav{display:none}` dead-end. All network deferred via `setTimeout` so headless
+  checks stay green. Possible follow-ons: scroll-spy/active-state sync on deep
+  links, an accessibility (keyboard) pass on custom controls, and a cross-project
+  "worst-first" sort on the Dashboard.
+
 ## Tier 4 — Future possibilities (exploratory)
 
 - **R11 — Dynamic Workflows orchestrator reference.** ⏸️ HELD — BLOCKED ON DW GA (decision 2026-06-08).

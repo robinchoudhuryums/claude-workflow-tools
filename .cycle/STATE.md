@@ -2,11 +2,23 @@
 
 ## Current
 Cycle: 4 — SYNTHESIZED (overall 8.8/10). Post-synthesis roadmap work in progress: R16 (dynamic-builder lock).
-Phase: idle (R16 COMPLETE v1.16.0 — engine + §T1/§T2a/§6b locked, §T2b resolved report-only-by-design)
+Phase: idle (R17 COMPLETE v1.17.0 — hosted-console UX: Dashboard + light mode + mobile nav; GitHub Pages live)
 Scope: Interactive Console (HTML builders) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
 Updated: 2026-06-16
+
+## R17 (hosted-console UX) — ✅ COMPLETE (v1.17.0)
+- Console now hosted on GitHub Pages (public repo → free); index.html redirect merged.
+- DONE Dashboard — new landing section; live per-project status from GitHub (PROJECT_HEALTH.md + .cycle/STATE.md),
+  fallback chain live→cached→self-reported→none; optional local-only PAT for private repos; per-card ⚙ repo/manual
+  editor. Network deferred via setTimeout so headless check-html / --assert stubs never call fetch. Verified
+  end-to-end against THIS repo's real files (parsed 8.8 + phase). Parsers locked by check-html (INV-37).
+- DONE light/dark theme (chrome-only [data-theme] flip; persists ccg:theme; respects prefers-color-scheme).
+- DONE mobile nav drawer (replaced nav{display:none} dead-end with hamburger + slide-in + backdrop).
+- New localStorage keys: ccg:theme, ccg:dashRepos, ccg:dashCache, ccg:dashManual, ccg:ghToken.
+- Follow-ons (not done): scroll-spy active-state on deep links; a11y keyboard pass on custom controls;
+  Dashboard worst-first sort. Light mode needs an eyeball for contrast nits (no headless way to verify layout).
 
 ## R16 (dynamic-builder lock) — ✅ COMPLETE (v1.14.0–1.16.0)
 - DONE engine — gen-html-prompts.mjs: renderDynamicPrompt (headless DOM-stub render) + canonicalCoverage
@@ -102,6 +114,15 @@ Updated: 2026-06-16
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
 ## Where I left off
+v1.17.0; full Test Command green (13 stages); invariant-check now 37 invariants (INV-37 = Dashboard parsers, locked
+by check-html). R17 COMPLETE: the hosted console got a live-status Dashboard (GitHub primary + cache/self-reported
+fallback, deferred fetch so headless checks stay green), light/dark theme, and a working mobile nav drawer — all in
+claude-code-guide-v2.html, no command/config/block change so no downstream re-pull. Shipped in 2 commits on branch
+claude/stoic-hypatia-gf4y5u (Stage 1 nav+theme, Stage 2 dashboard). NOTE: light mode + mobile layout are
+browser-verified only (no headless layout test) — worth an eyeball before merge. Next: merge the branch; optional
+follow-ons in ROADMAP R17 (scroll-spy, a11y, worst-first sort).
+
+## (prior) R16 left-off
 v1.16.0; full Test Command green (13 stages); invariant-check 23/23 runnable PASS (36 total). R16 is COMPLETE:
 the dynamic-builder lock engine + 3 of 4 builders LOCKED to 100% canonical coverage by --assert (INV-36) — §T1
 (/broad-scan), §T2a (/targeted-audit), §6b (/health-pulse) — and §T2b (/targeted-implement) RESOLVED report-only
