@@ -3,3 +3,5 @@ date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
 2026-07-27,5,R18 (D1-D4 + T1 reconcile + guard),M,6,5,M accurate; the T1 canonical-lock reconcile was the long pole as predicted
 2026-07-27,5,F01/F04/F05/F08 batch,S,4,4,"S accurate at batch level, but F04 was under-scoped: 4 sinks estimated, 6 found, and the 6th needed a new class of assertion (decode-then-execute)"
 2026-07-27,5,F03/F21/F02/F17 (Batch 1+2),M,11,6,"M over-estimated ~45%: F02 was forecast at 4-5h and took ~1h once F21 removed the delegation premise - the blocker was a false assumption, not work"
+2026-07-27,5,Batch 3 + Batch 4,M,8,5,M over-estimated ~35%; F11's mutation audit was the long pole and was worth it - it found the one false green (INV-23) that inspection had missed twice
+2026-07-27,5,F12 + auto-vivify + Batch 6,M,5,4,M accurate. Batch 6's keyboard fix was mechanical once the control set was derived rather than hand-listed

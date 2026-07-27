@@ -129,6 +129,14 @@ expectFail('detects a registry block with no console representation (F17)',
   },
   /brand new block/i);
 
+// 14) VERSION↔CHANGELOG consistency (F09): presence alone was a false green —
+// VERSION could disagree with the newest CHANGELOG entry and the guard stayed
+// silent. This is what made INV-23's "bumped when semantics change" clause
+// unverified (proven by the F11 mutation audit).
+expectFail('detects VERSION disagreeing with the newest CHANGELOG entry (F09)',
+  d => writeFileSync(join(d, 'VERSION'), '9.9.9\n'),
+  /does not match the newest CHANGELOG entry/i);
+
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} guard test case(s) failed.`); process.exit(1); }

@@ -134,14 +134,26 @@ if (blockMissing.length) {
   console.log(`  ✓ All ${WORKFLOW_BLOCKS.length} workflow output blocks present in both CLAUDE.md and the HTML console`);
 }
 
-// ── Structural check 4: version + changelog present (R5). ──
-let versionOk = true;
-for (const f of ['VERSION', 'CHANGELOG.md']) {
-  try { if (!readFileSync(new URL(f, root), 'utf8').trim()) versionOk = false; }
-  catch (e) { versionOk = false; }
+// ── Structural check 4: version + changelog present AND CONSISTENT (R5/F09).
+// Presence alone was a false green: VERSION could say 9.9.9 while CHANGELOG's
+// top entry said 1.20.0 and the guard stayed silent — proven by mutation, and
+// the reason INV-23 ("bumped when semantics change") was only half-verified.
+// /sync-commands reports both to consuming repos, so they must agree.
+let versionOk = true, versionRaw = '', changelogRaw = '';
+try { versionRaw = readFileSync(new URL('VERSION', root), 'utf8').trim(); } catch (e) { versionOk = false; }
+try { changelogRaw = readFileSync(new URL('CHANGELOG.md', root), 'utf8'); } catch (e) { versionOk = false; }
+if (!versionRaw || !changelogRaw.trim()) versionOk = false;
+if (!versionOk) { failures++; console.log('  ✗ VERSION and/or CHANGELOG.md missing or empty (R5 — bump on every template change)'); }
+else if (!/^\d+\.\d+\.\d+$/.test(versionRaw)) {
+  failures++; console.log(`  ✗ VERSION is not semver: "${versionRaw}"`);
+} else {
+  const top = (changelogRaw.match(/^##\s+(\d+\.\d+\.\d+)/m) || [])[1];
+  if (!top) { failures++; console.log('  ✗ CHANGELOG.md has no "## <semver>" entry heading to compare against VERSION'); }
+  else if (top !== versionRaw) {
+    failures++;
+    console.log(`  ✗ VERSION (${versionRaw}) does not match the newest CHANGELOG entry (${top}) — bump both together (R5)`);
+  } else console.log(`  ✓ VERSION and CHANGELOG.md present and consistent (${versionRaw})`);
 }
-if (versionOk) console.log('  ✓ VERSION and CHANGELOG.md present');
-else { failures++; console.log('  ✗ VERSION and/or CHANGELOG.md missing or empty (R5 — bump on every template change)'); }
 
 // ── Structural check 5: command-pair parity (P4) — the near-duplicate
 // command groups must keep their SHARED behaviors in sync, so updating one

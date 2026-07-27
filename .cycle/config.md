@@ -11,7 +11,13 @@ are the template/schema for consuming projects, not this repo's config.
 node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 
 ### Health Dimensions
-Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
+Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Console UI/UX & Accessibility, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
+(Console UI/UX & Accessibility added in Cycle 5 per R18/D2 — the console is a
+ hosted, user-facing surface and had no dimension scoring it, which is exactly
+ the gap R18 was written to stop. Scores keyboard/assistive access, empty and
+ error states, responsive posture and theme completeness. NOTE: this is a NEW
+ dimension, so §6a should mark it "First measurement", not compare it to a
+ prior score.)
 
 ### Horizontal (Axis B) Categories
 Cross-Artifact Drift | same content diverging across CLAUDE.md / HTML / README / .claude/commands
@@ -55,7 +61,7 @@ INV-19 | The HTML console's prompts stay behaviorally aligned with the canonical
 INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, cycle tracker, project selector, dashboard cards, project-form rows); attribute-context JS args are esc(JSON.stringify(...)) — esc() ALONE is insufficient there, since it renders ' as &#39; which the browser decodes back to ' before parsing the handler | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (hostile-fixture render: substring scan for the text half + entity-decode-then-execute for inline handlers — proves esc() is APPLIED, not merely that esc() works)
 INV-21 | A failed localStorage write surfaces via storageWarn (console.warn + one-shot alert) rather than being silently swallowed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (storageWarn check)
 INV-22 | The sync guard fails closed on injected drift (removed capability marker, stale .claude/commands file, README command without a CLAUDE.md template, workflow block dropped from the HTML) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
-INV-23 | VERSION (semver) and CHANGELOG.md exist and are non-empty; bumped when command semantics, the config schema, or tooling change | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (VERSION/CHANGELOG check)
+INV-23 | VERSION is semver, CHANGELOG.md is non-empty, and VERSION EQUALS the newest `## <semver>` CHANGELOG heading — presence alone was a false green (VERSION could read 9.9.9 against a 1.20.0 changelog and the guard stayed silent), which left the "bumped when semantics change" clause unverified | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
 INV-24 | The SessionStart hook (cycle-context.mjs) emits the substrate block when .cycle/ exists and stays silent + exits 0 when it does not (never breaks a session) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/cycle-context.test.mjs
 INV-25 | render-metrics.mjs parses metrics.csv (incl. quoted comma fields) and reports correct cumulative totals + sparklines | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/render-metrics.test.mjs
 INV-26 | invariant-check.mjs runs command-style Verify fields (stripping trailing annotations), FAILs on a failing command, classifies prose/test-name Verify as MANUAL, and dedupes identical commands | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/invariant-check.test.mjs
@@ -71,6 +77,13 @@ INV-35 | portfolio-status.mjs joins PROJECT_HEALTH.md health with each project's
 INV-37 | the console Dashboard's pure parsers (parseHealth, parseState, parseRepoSpec, scoreColor) extract overall/summary/priority/phase/updated and reject malformed repo specs — locked by check-html so a regex regression can't silently blank the live-status board | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-36 | every dynamic console builder contains 100% of its canonical body's lines — the R16 lock fails closed via headless render + canonicalCoverage. ALL NINE are locked, with no report-only tier remaining: §T1 buildTier1Text ← /broad-scan, §T1i buildTier1ImplText ← /broad-implement, §T2a buildTier2AuditText ← /targeted-audit, §T2b buildTier2ImplText ← /targeted-implement, §PR buildPrReviewText ← /pr-review, §6b buildP6bText ← /health-pulse (slash-command bodies via commandBody); §4v buildVerificationText ← "Verification Pass", §1s buildSeamsText ← "Seams & Invariants Audit", §6a buildP6aText ← "Health Synthesis" (fenced ### section bodies via sectionBody — no /command minted). §T2b's former exemption rested on canonical delegating to a /broad-implement prompt the console lacked; adding that prompt (F21) removed the premise, and since canonicalCoverage ignores EXTRA rendered lines a builder can carry expanded detail and still be locked | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
 INV-38 | the cycle-type output blocks SEAMS & INVARIANTS AUDIT BLOCK (§1s) and POLICY RESPONSE (§6a) are registered in check-output-blocks (producer:null, inFormats:true), homed in the Handoff Block Formats section, and shape-guarded (balanced delimiters + required fields present in every CLAUDE.md occurrence) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-output-blocks.mjs
+INV-49 | every click-only control built on a non-interactive element (div/span/tr) is keyboard-reachable — role="button" + tabindex="0" + a key handler, or it delegates to a nested native <button>. The check derives the control set from the markup rather than a hand-listed set | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-50 | every element a render writes to during init exists in the markup — the headless stub returns a live element for ANY id, so a render writing to a mistyped id used to pass CI and render an empty box in the browser | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-html.mjs
+INV-51 | render-metrics never reports a synthesis row's net_score (blank by P1/INV-33); the summary line reports the columns a synthesis row owns and sources that cycle's net from its reflect rows | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/render-metrics.test.mjs
+INV-45 | no `on*=` inline handler builds a JS argument with esc() — attribute-context args go through jsArg() (JSON.stringify supplies the quoting, esc() makes it attribute-safe). esc() alone renders ' as &#39;, which the browser decodes back before parsing the handler, so the guarded-looking form is the vulnerable one | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-46 | Axis B round-trips through the project form without losing `pulse` — the serializer emits four fields (name|measures|pulse|playbook), the parser reads four, and a legacy three-field line is still read as name|measures|playbook | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-47 | a project name with no ASCII alphanumerics (e.g. a non-Latin name) still produces a SELECTABLE project — saveProjectForm falls back to a generated unique id rather than saving a falsy one | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-48 | a state backup's envelope is validated, not just its `data` key: a foreign `app` and a `version` newer than this console are rejected with a visible message, while an absent envelope (older backups) is still accepted | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-43 | check-template-sync's WORKFLOW_BLOCKS is DERIVED from check-output-blocks' BLOCKS registry, never hand-listed — every registered output block must appear in both CLAUDE.md and the HTML console, so a console gap cannot hide behind an omission from the list (it hid F02, F03 and F21 for four releases) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
 INV-44 | every `nav a href="#id"` resolves to a real `main > .panel` id — showPanel falls back to the first panel for an unknown id, so an orphaned nav link silently lands the user on the Dashboard rather than erroring | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-40 | credentials never leave the browser: a key matching isSecretKey (ccg:ghToken, or any ccg:secret:*) is excluded from collectState() AND from stateBackupKeys(), so it can be neither written into an Export/`.cycle/console-state.json` backup nor installed from someone else's backup; new secrets must use the ccg:secret: prefix so the denial is default-on | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
@@ -104,6 +117,31 @@ S4 | Copy a filled command prompt | Subsystem: Interactive Console (HTML)
   Steps:
     - On a Tier-1/Tier-3 prompt, Fill fields, then Copy
   Expected: clipboard holds the fully-substituted prompt with no [PLACEHOLDER] or ${} left
+S5 | VISUAL — light mode legibility | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Open the console, toggle to light mode (☀/☾ in the sidebar)
+    - Walk Dashboard, a prompt section, the Projects tab and the Archive
+  Expected: body text, muted text and the semantic colors (green/amber/red/teal
+    score chips, "Copy failed" state) are all readable on the light surfaces.
+    Known deliberate design: --prompt-bg and the accent/semantic colors are NOT
+    flipped ("chrome only" — see the CSS comment), so this walk is the only
+    thing standing between that decision and an unreadable chip.
+S6 | VISUAL — mobile drawer + tabbed nav | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Narrow the viewport below 768px; open the hamburger, pick a section, close
+    - Deep-link to #s6a and #prreview directly; use browser back/forward
+  Expected: drawer slides in over a backdrop and closes on selection; exactly
+    one panel is visible at a time; deep links open the named panel; back/forward
+    move between panels. (showPanel/handleHash are headless-tested; the drawer
+    animation and layout are not.)
+S7 | VISUAL — keyboard-only pass | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Without touching the mouse, Tab through a prompt section, the subsystem
+      table, the cycle tracker and an archive entry; activate with Enter/Space
+  Expected: every control is reachable and shows a visible focus ring; the
+    cycle-tracker dots, variant toggles, archive headers and "Use ↗" buttons all
+    activate. (R18 (a)1 is now guarded structurally — this walk covers whether
+    the focus indicator is actually VISIBLE, which code cannot tell you.)
 
 ### Deploy Command
 Interactive Console (HTML): merge to `main` — GitHub Pages republishes

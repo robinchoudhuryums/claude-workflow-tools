@@ -81,10 +81,19 @@ out.push('```', '');
 const sum = key => data.reduce((a, d) => a + (num(d[key]) || 0), 0);
 const totalProd = sum('prod_fixes'), totalNFM = sum('new_failure_modes'), cumNet = sum('net_score');
 const lastSynth = [...data].reverse().find(d => d.phase === 'synthesis');
+// F12: a synthesis row's net_score is ALWAYS blank by rule (P1/INV-33 — those
+// columns are owned only by phase=reflect), so this line used to render
+// "Latest synthesis: net ," forever. Report the columns a synthesis row
+// actually owns, and take that cycle's net from its own reflect rows.
+const synthNet = lastSynth
+  ? data.filter(d => d.cycle === lastSynth.cycle && d.phase === 'reflect').reduce((a, d) => a + (num(d.net_score) || 0), 0)
+  : 0;
 out.push('## Summary',
   `- Cumulative net score: **${cumNet}** (${totalProd} production fixes − ${totalNFM} new failure modes)`,
   `- Cycles recorded: ${new Set(data.map(d => d.cycle)).size}`,
-  lastSynth ? `- Latest synthesis: net ${lastSynth.net_score}, Category D ${lastSynth.category_d_ratio || 'n/a'}, lowest Axis B = ${lastSynth.axis_b_lowest || 'n/a'}` : '- No synthesis row yet.');
+  lastSynth
+    ? `- Latest synthesis (cycle ${lastSynth.cycle}): Category D ${lastSynth.category_d_ratio || 'n/a'}, lowest Axis B = ${lastSynth.axis_b_lowest || 'n/a'} · that cycle's net ${synthNet} (summed from its reflect rows)`
+    : '- No synthesis row yet.');
 if (hasDef) out.push(`- Defensive/structural items (secondary — not in net score): **${sum('defensive_count')}** — hardening work that the strict net-score gate excludes.`);
 out.push('');
 

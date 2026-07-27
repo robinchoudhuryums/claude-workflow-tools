@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
-Phase: reflect COMPLETE (R18 v1.19.0 + F01/F04/F05/F08 v1.19.1 + F03/F21/F02/F17 v1.20.0 shipped; /regression + /reflect + /sync-docs done — §4v then §6a remain)
+Phase: reflect COMPLETE — ALL 21 Cycle-5 findings closed (v1.19.0 → v1.22.0) and ALL batches reflected. Cycle-5 net +10 across 5 reflect rows. ONLY §4v (FRESH session) then §6a remain.
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
@@ -182,25 +182,71 @@ console gaps had to close FIRST or the batch merges a red CI. Sequence run: F03 
   every nav href resolves to a panel (showPanel silently falls back to Dashboard otherwise).
 - INV-36 rewritten; INV-43/44 added → 44 invariants, 31 runnable PASS. New guards mutation-proven.
 
+## Cycle 5 — Batch 3 (console correctness) + Batch 4 (make green mean green) — ✅ COMPLETE (v1.21.0)
+- F06 Axis B round-trip dropped `pulse` (serializer 3 fields, parser re-read pulse from measures) → 4-field
+  format, legacy 3-field still parsed. Fired on the COMMON path: the form pre-fills from DEFAULT_AXIS_B.
+- F07 non-Latin name → deriveId '' → falsy id → project listed but unselectable → generated fallback id.
+- F16 getFilledText string-replacement honored $&/$`/$'/$1 → function replacement.
+- F20 backup envelope (app/kind/version) never read → foreign app + newer version rejected visibly; absent
+  envelope still accepted (older backups).
+- F11 MUTATION-AUDITED all 17 script-verified invariants (violate rule → run its own Verify → must fail).
+  16 honest, 1 FALSE GREEN: INV-23 claimed "bumped when semantics change" but only tested non-emptiness.
+- F09 closed it (VERSION must equal the newest ## <semver> CHANGELOG heading) → re-audit 17/17, 0 false greens.
+- jsArg() helper (14 call sites) + STATIC guard: no on*= handler may build a JS arg with esc(). The
+  hostile-fixture check only proves sinks the fixture reaches; this covers every handler in the file.
+- F15 CI permissions: contents: read. F14 was already closed in the docs sync.
+- INV-23 rewritten; INV-45..48 added → 48 invariants, 36 runnable PASS.
+- WORTH REMEMBERING: my first F07 assertion was itself a false green — it tested deriveId/fallbackProjectId
+  and still passed when the fix was removed from saveProjectForm. Unit-testing the helper does not prove the
+  wiring. Rewritten to drive the form end to end. Same defect class F11 exists to find.
+
+## Cycle 5 — F12 + auto-vivify gap + Batch 6 (R18 dogfood) — ✅ COMPLETE (v1.22.0)
+- F12 render-metrics reported a field blank BY RULE ("net ,"). Now reports what a synthesis row owns + sums that
+  cycle's net from its reflect rows. Its existing test asserted the old string against a fixture whose synthesis
+  row had net_score=3 — data P1 forbids — so a P1-compliant case was added beside it.
+- AUTO-VIVIFY GAP CLOSED: check-html's getElementById stub returned a live element for ANY id, so a render
+  writing to a mistyped id passed CI and rendered empty in the browser (this really happened: pr-prompt vs pr in
+  v1.20.0). Writes are recorded; every element written during init must exist in the markup. Reads of unknown
+  ids stay allowed (browser returns null; code guards).
+- BATCH 6 = the first R18 lens run on its own host, and the lens GATED CORRECTLY: the light theme deliberately
+  flips "chrome only" (documented in CSS), so un-flipped semantic colors were NOT reported as a finding — that
+  is perceptual, and went to an operator check instead of being guessed at.
+  - (a)1 keyboard: 9 controls on div/span/tr were mouse-only (6 variant toggles, archive headers, cycle-tracker
+    items, phase dots). kbdActivate() + role/tabindex added; subsystem-table action moved onto the native
+    "Use ↗" button. Guard DERIVES the control set from markup.
+  - (a)2: two renders blanked their container when empty → real empty states.
+  - Added "Console UI/UX & Accessibility" health dimension (NEW → §6a must mark it "First measurement").
+  - Promoted S5 (light mode), S6 (mobile drawer + tabbed nav), S7 (keyboard-only) into Regression Scenarios.
+- INV-49/50/51 added → 51 invariants, 39 runnable PASS.
+- F09 PROVED ITSELF: bumping VERSION without a CHANGELOG entry turned 8 invariants red mid-session.
+
+## DECISION INPUT for the R18 deferral (/audit + /pr-review)
+Batch 6 was the experiment that was supposed to decide this. Result: the lens found ONE real structural class
+(keyboard access) and correctly refused to guess at the perceptual half. That is a good signal, but it is ONE
+run on a small single-file console — not enough to justify widening to /audit and /pr-review yet. Recommend
+running the lens on a genuinely UI-heavy consuming project (Observatory's Frontend subsystem) before deciding.
+Keep the deferral.
+
 ## Where I left off
-v1.20.0; full Test Command green (13 stages); 44 invariants; invariant-check 31/31 runnable PASS. Cycle 5 has
-now shipped R18 (v1.19.0), the F01/F04/F05/F08 security+reliability batch (v1.19.1), and the F03/F21/F02/F17
-parity batch (v1.20.0). Both High findings are closed and every dynamic builder is locked.
-REMAINING, in the batch order from the prioritised backlog:
-- Batch 3 (~3h, S) console correctness: F06 Axis B round-trip drops `pulse` (every UI-created project gets the
-  measures text as its pulse question — fires on the common path since the form pre-fills from DEFAULT_AXIS_B),
-  F07 deriveId returns '' for non-Latin/punctuation-only names, F16 getFilledText $&-pattern corruption,
-  F20 backup app/kind/version never validated.
-- Batch 4 (~5h, M) make green mean green: F11 audit ALL 31 runnable Verify fields for false greens (INV-20 was
-  one and was found BY HAND, not by tooling — unknown how many others lie), a jsArg() helper + a guard grep for
-  the esc()-inside-quotes footgun, F09 VERSION↔CHANGELOG consistency, F15 CI permissions, F14 INV-11 count.
-- Batch 5 (~5–6h, M) substrate: F18 Common Gotchas + Key Design Decisions (28 references resolve to nothing;
-  §4v Part 3 Q2/Q3 unanswerable — CONSIDER DOING FIRST, every later batch's session benefits), F10
-  PROJECT_HEALTH stale (Dashboard fetches it live), F13 README R3→R14, F12 render-metrics blank net, F19 Deploy
-  Command for the Pages republish.
-- Batch 6 (~4h, M) dogfood R18 on this repo: 12 click-only tr/div/span controls, 0 role, 0 key handlers → the
-  console's own controls are keyboard-unreachable; add an interface Health Dimension; promote OPERATOR VISUAL
-  CHECKS into Regression Scenarios. This run also decides whether /audit and /pr-review get the R18 lens.
+v1.22.0; full Test Command green (13 stages); 51 invariants; invariant-check 39/39 runnable PASS. Cycle 5 is
+FEATURE-COMPLETE: R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, Batch 3+4
+(v1.21.0), and F12 + the auto-vivify gap + Batch 6 (v1.22.0). All 21 findings closed; all 17 script-verified
+invariants mutation-proven fail-closed.
+/regression + /reflect are now COMPLETE for all five batches. Cycle-5 totals: 10 production fixes, 2 new
+capabilities, 14 defensive/structural, 0 new failure modes, net +10 across 5 reflect rows. Cumulative net 19.
+Two more self-report corrections were made in reflect (F20 is defensive, not a fix; F08/F17/F03 corrected
+earlier) — the batch summaries have over-reported production fixes EVERY time, always by counting capabilities
+or test/guard work as fixes. That is the single most repeated error of this cycle.
+The regression pass NEGATED the one feared new failure mode: making 9 controls focusable could have made them
+focusable-but-invisible, but all 17 outline:none rules are on form inputs, so the default focus ring survives.
+INV-52 (visible focus indicator) is a MANUAL candidate — perceptual, only S7 can answer it.
+ALL 21 Cycle-5 findings are now CLOSED (F01-F21). Remaining work is strategic / non-finding:
+- Walk S5/S6/S7 in a browser — the three new visual scenarios have never been performed. S7 (keyboard-only)
+  matters most: the code path is guarded but whether the FOCUS RING is visible is unknowable from code.
+- The F11 mutation audit lives in scratchpad, not CI. It found a real false green; a permanent version would
+  keep the library honest as it grows (~17 node spawns, so likely outside the 13-stage gate).
+- The 12 MANUAL invariants have never been audited for correctness at all — F11 covered only runnable ones.
+- legacyCopy()'s SUCCESS path is still unexercised (stub execCommand returns false).
 - Strategic: CSP (needs event delegation, L), no LICENSE file, R9, R12, R17 follow-ons.
 CYCLE HYGIENE — /regression, /reflect and /sync-docs are DONE for Cycle 5. metrics.csv now carries 3 phase=reflect
 rows (net +5; the batch summaries had over-reported 8 — F08/F17 are defensive, F03 is a capability), estimates.csv

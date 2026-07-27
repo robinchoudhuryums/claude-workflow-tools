@@ -5,6 +5,106 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.22.0 — 2026-07-27
+
+Cycle-5 closeout: F12, the headless stub's auto-vivify gap, and Batch 6 — the
+first run of the R18 interface lens against its own host. Console and tooling
+only — **no command semantics or config-schema change, so no `/sync-commands`
+re-pull is required**.
+
+### F12 — the metrics summary reported a permanently blank field
+`render-metrics` printed `Latest synthesis: net ,` for every real project,
+because a synthesis row's `net_score` is blank *by rule* (P1/INV-33 — those
+columns are owned only by `phase=reflect`). It now reports the columns a
+synthesis row actually owns and sources that cycle's net from its reflect rows.
+The existing test asserted the old string against a fixture whose synthesis row
+carried `net_score=3` — data the repo's own rule forbids — so a P1-compliant
+case was added alongside it.
+
+### The auto-vivify gap — a mistyped element id passed CI
+`check-html`'s `getElementById` stub returned a live element for **any** id, so
+a `render*()` writing to a mistyped id wrote to a phantom element, passed the
+harness, and rendered an empty box in the browser. Not hypothetical: it happened
+during v1.20.0 (`pr-prompt` vs `pr`) and was caught by reading, not tooling.
+Writes are now recorded and every element written during init must exist in the
+markup. Reads of unknown ids stay allowed — in a browser they return `null` and
+the code already guards.
+
+### Batch 6 — R18 dogfooded on the console
+The lens's own gating worked as designed: the light-theme token set deliberately
+flips "chrome only" (documented in the CSS), so the un-flipped semantic colors
+are **not** reported as a finding — the contrast question is perceptual and was
+routed to an operator check instead of guessed at.
+
+- **(a)1 keyboard access — the real finding.** Nine controls built on
+  `div`/`span`/`tr` had no `role`, no `tabindex` and no key handler: six variant
+  toggles, the archive entry headers, the cycle-tracker items and the phase
+  dots. All were mouse-only. Added `kbdActivate()` + `role="button"` +
+  `tabindex="0"`, and moved the subsystem tables' action onto their existing
+  `Use ↗` button, which is natively keyboard-reachable. Guarded by a check that
+  **derives** the control set from the markup.
+- **(a)2 missing states.** `renderCustomProjects` and `renderCustomInvariantsList`
+  blanked their container when empty; both now render an empty state.
+- Added a **Console UI/UX & Accessibility** health dimension — the console is a
+  hosted user-facing surface and had no dimension scoring it, which is precisely
+  the gap R18 exists to close. §6a should treat it as "First measurement".
+- Promoted three **OPERATOR VISUAL CHECKS** into `Regression Scenarios` (S5
+  light-mode legibility, S6 mobile drawer + tabbed nav, S7 keyboard-only pass),
+  so the perceptual half is scheduled rather than assumed.
+
+### Invariants
+`INV-49` (keyboard reachability), `INV-50` (no writes to phantom elements),
+`INV-51` (no blank synthesis net) — 51 total, 39 runnable.
+
+## 1.21.0 — 2026-07-27
+
+Cycle-5 Batch 3 (console correctness) and Batch 4 (make green mean green).
+Console and tooling only — **no command semantics or config-schema change, so no
+`/sync-commands` re-pull is required**.
+
+### Batch 3 — console correctness
+- **F06** — Axis B round-trip silently dropped `pulse`. `axisBToText` emitted
+  three fields and `saveProjectForm` then re-read `pulse` from the *measures*
+  column, so every project created through the form asked the wrong §6b pulse
+  question. It fired on the common path, because the form pre-fills from
+  `axisBToText(DEFAULT_AXIS_B)`. Now four fields (`name|measures|pulse|playbook`);
+  a legacy three-field line is still read as `name|measures|playbook`.
+- **F07** — a project name with no ASCII alphanumerics (`日本語プロジェクト`,
+  `!!!`) derived to `''`, and the project saved with a falsy id: `getProject('')`
+  fell through to the active project and `switchProject('')` reset to the first
+  built-in, so it appeared in the list and could never be selected, edited or
+  deleted. Falls back to a generated unique id.
+- **F16** — `getFilledText` used `replaceAll(needle, string)`, which honors `$&`,
+  `` $` ``, `$'` and `$1` in the replacement, silently mangling any pasted value
+  containing them. Now a function replacement.
+- **F20** — the backup envelope carried `app`/`kind`/`version` and nothing read
+  them. A foreign file or a newer format is now rejected with a visible message;
+  an absent envelope (older backups) is still accepted.
+
+### Batch 4 — make green mean green
+- **F11** — mutation-audited **every** script-verified invariant: violate the
+  rule, run its own `Verify` command, check it fails. **16 of 17 were honest; one
+  was a false green** — INV-23 claimed VERSION/CHANGELOG were "bumped when
+  semantics change" while the check only tested that both files were non-empty.
+- **F09** — closes that hole: VERSION must be semver and must equal the newest
+  `## <semver>` CHANGELOG heading. Re-running the audit gives **17/17
+  fail-closed, 0 false greens**. `guard.test.mjs` +1 case (now 14).
+- **`jsArg()`** — a named helper for attribute-context JS arguments, replacing 14
+  `esc(JSON.stringify(...))` call sites, plus a **static** guard: no `on*=`
+  handler may call `esc()` to build a JS argument. The hostile-fixture check
+  proves escaping only where the fixture reaches; this covers every handler in
+  the file. (`esc()` in non-handler attribute text stays correct and allowed.)
+- **F15** — `sync-check.yml` now declares `permissions: contents: read`.
+- **F14** — already closed in the preceding docs sync; INV-11's `Verify` went
+  from prose ("all 18", actually 20) to a runnable command.
+
+### Invariants
+`INV-23` rewritten; `INV-45`–`INV-48` added (48 total, 36 runnable). Every new
+assertion in both batches is mutation-proven — including one of my own that was
+initially a false green: the first F07 test asserted on the two helper functions
+and still passed when the fix was removed from `saveProjectForm`, so it was
+rewritten to drive the form end to end.
+
 ## 1.20.0 — 2026-07-27
 
 Closes the console↔canonical parity gap and the guard hole that hid it (Cycle-5
