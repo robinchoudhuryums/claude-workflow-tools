@@ -5,6 +5,48 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.23.0 — 2026-07-27
+
+**R19 — verification-pack assembly.** Command semantics change (the CHECKPOINT
+steps now persist their block), so consuming projects should
+**`/sync-commands` re-pull**. Fully additive: with no `.cycle/` directory every
+command behaves exactly as before.
+
+### Why
+Assembling the Cycle-5 §4v prompt by hand exposed that **the handoff blocks live
+nowhere.** Five Implementation Summary Blocks and two Cycle Summary Blocks
+existed only in chat scrollback — `.cycle/STATE.md` carries prose *about* them,
+not the blocks. The entire handoff design assumes they survive between sessions,
+and the only thing persisting them was the operator copy-pasting; a fresh
+`/cycle-resume` could not have reassembled them.
+
+### `.cycle/blocks/`
+The three implement commands and `/reflect` now write their summary block
+verbatim to `.cycle/blocks/` at CHECKPOINT. `/audit` deliberately does **not** —
+its first instruction is "Do not make any changes to any files", and a file
+write would contradict it, so §6a still takes the Session Handoff Block by paste.
+
+### `scripts/verification-pack.mjs`
+Assembles a ready-to-paste §4v prompt:
+- Body from CLAUDE.md via the same `sectionBody()` the `--assert` lock uses —
+  no fourth copy.
+- Live invariant library, parsed permissively so a rule whose text contains a
+  pipe is not dropped (`INV-08` and `INV-46` are).
+- **Rotation probes seeded from the commit sha.** The prompt says "pre-selected
+  — do NOT substitute your own picks", which has no force if the implementer
+  picks them; seeding makes the selection reproducible and auditable.
+- Cycle totals from `metrics.csv`, **plus an automatic warning when a reflect
+  row recorded a correction** — Cycle 5's three self-report corrections now
+  reach the verifier without anyone remembering them.
+
+Same lesson as R16/F17 and the panel fixture: a hand-assembled artifact drifts;
+a derived one cannot.
+
+### Guard
+`tests/verification-pack.test.mjs` (14 assertions) wired into the Test Command
+and CI — now **14 stages**. `INV-52` added (52 total, 40 runnable). R19 marker
+pinned across CLAUDE.md + README.
+
 ## 1.22.0 — 2026-07-27
 
 Cycle-5 closeout: F12, the headless stub's auto-vivify gap, and Batch 6 — the

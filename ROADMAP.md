@@ -114,6 +114,35 @@ Item IDs (R#) are stable references for planning sessions.
   "accessibility (keyboard) pass on custom controls" follow-on by making it a
   standing audit lens rather than a one-off.
 
+- **R19 — Verification pack assembly (`scripts/verification-pack.mjs`).** `effort: M` — ✅ DONE (v1.23.0).
+  Assembling the Cycle-5 §4v prompt by hand exposed four frictions, and the
+  first is structural: **the handoff blocks live nowhere.** Five Implementation
+  Summary Blocks and two Cycle Summary Blocks existed only in chat scrollback —
+  `.cycle/STATE.md` carries *prose about* them, not the blocks themselves. The
+  entire handoff design assumes those blocks survive between sessions, and the
+  only thing persisting them was the operator copy-pasting. A fresh
+  `/cycle-resume` could not have reassembled them.
+  The other three: this repo is not a project in its own console, so the console
+  cannot inject its invariant library into §4v (it only knows `obs`/`cla`);
+  rotation-probe selection has a conflict of interest with no mechanism (the
+  prompt says "pre-selected — do NOT substitute your own picks", but nothing
+  stops the implementer picking them); and the "don't trust the self-report"
+  signal had to be written from memory, when `/reflect` already knows which
+  batch summaries it corrected.
+  Shipped as: a `.cycle/blocks/` convention (the implement commands and
+  `/reflect` persist their block verbatim at CHECKPOINT — additive, skipped with
+  no `.cycle/`), plus a script that derives the §4v body via the existing
+  `sectionBody()` (no fourth copy), injects the live invariant library, seeds
+  the rotation probes from the HEAD sha so they are reproducible rather than
+  chosen, and reads `metrics.csv` to emit the cycle totals **and an automatic
+  warning when a reflect row records a correction**.
+  Same lesson as R16/F17 and the panel fixture: *a hand-assembled artifact
+  drifts; a derived one cannot.* The §4v pack was the most hand-assembled thing
+  left in the workflow.
+  Deliberately out of scope: `/audit` does NOT persist its Session Handoff Block
+  — that command's first line is "Do not make any changes to any files", and a
+  file write would contradict it. §6a still takes the handoff block by paste.
+
 ## Tier 3 — Long-term (months+)
 
 - **R3 — Converge the HTML's two state stores.** `effort: M–L` — ✅ DONE (v1.4.0–1.5.0; browser-verified). File System Access "Connect repo folder" syncs console state to `.cycle/console-state.json`, handle persisted via IndexedDB, Export/Import fallback.

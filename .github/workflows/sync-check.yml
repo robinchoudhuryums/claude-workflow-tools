@@ -44,3 +44,5 @@ jobs:
         run: node tests/gen-html-prompts.test.mjs
       - name: R13 output-block harness regression test
         run: node tests/check-output-blocks.test.mjs
+      - name: R19 verification-pack assembler regression test
+        run: node tests/verification-pack.test.mjs

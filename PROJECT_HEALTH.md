@@ -1,15 +1,42 @@
 # Project Health
 
 ## Current Standing
-Last synthesis: 2026-06-16 (Cycle 4) — **scores below are NOT current; Cycle 5 shipped three releases and has not been synthesized**
-Overall (weighted avg): 8.8/10 — as of Cycle 4; §6a has not run since
-Unsynthesized since: Cycle 5 (v1.19.0 → v1.20.0), net +5 across three implement batches, 0 new failure modes, 0 regressions. Both Cycle-4 priorities below are CLOSED. Run §4v (fresh session) then §6a to re-score.
-One-line summary: Cycle 5 ran a fresh-eyes /broad-scan (F01–F20), then shipped the R18 interface/visual audit lens, a security batch (a GitHub PAT was being serialized into state backups and into `.cycle/console-state.json`; six unescaped render sinks; silent clipboard failure), and a parity batch that put `/pr-review` and a Tier-1 implement prompt into the console and retired the last builder exemption — all nine dynamic builders are now locked with no report-only tier.
-Top vertical priority: HTML Console Correctness — the Cycle-4 concern (browser-only render/FSA paths untested) is CLOSED, but Cycle 5 found the replacement: the test doubles are more permissive than reality. `check-html`'s element stub auto-creates any id, so a render writing to a mistyped element passes CI and renders empty in the browser (proven by mutation).
-Top horizontal priority: Guard / Test Coverage Quality — an invariant with a runnable `Verify:` that exercises a helper rather than the rule reports a false PASS (INV-20 did, and was caught by hand, not by tooling). 31 runnable invariants have not been audited for the same defect.
-Note: Cross-Artifact Drift's Cycle-4 concern ("dynamic builders marker-pinned, not generated; R16-full open") is CLOSED — R16-full shipped in v1.18.0 and the last exemption went in v1.20.0.
+Last synthesis: 2026-07-27 (Cycle 5)
+Overall (weighted avg): 9.0/10
+One-line summary: The most productive cycle this project has run — 21 findings closed across six releases, net +10, zero regressions, independently verified — including a Critical credential leak that was writing a GitHub token into the user's own repository. Coverage is now DERIVED rather than hand-listed in three places where hand-listing was the root cause. But independent verification found the cycle's confidence in its own guards was misplaced: an invariant it declared proven is a false green, one fix was only partially applied, and a fifth of the fixes have no regression test.
+Top vertical priority: Console UI/UX & Accessibility (7.0, First measurement) — structural keyboard access is fixed and guarded, but there are zero `:focus-visible` rules, 16 of 18 outline-suppressing controls have no replacement, and S5/S6/S7 have never been walked. INV-56 is correct that Batch 6 routed focus visibility entirely to the perceptual bucket when half of it is structurally checkable today.
+Top horizontal priority: Guard / Test Coverage Quality (7.0, ↓ from 9.0) — SECOND consecutive cycle where this class was declared closed and wasn't. §4v found INV-20 is a false green at field level (the hostile fixture poisons only some fields per record); F11's "17/17, 0 false greens" was scoped to command-level mutation and does not hold one level down. Category D 20%.
+Open live defect: archive "Copy content" (claude-code-guide-v2.html:2888) calls navigator.clipboard.writeText() inline, bypassing copyToClipboard() — F05's exact bug still present in one sink. Fix first in Cycle 6.
 
 ## Score History
+
+### Cycle 5 — 2026-07-27 — Synthesis
+Scope this cycle: Tier-1 dogfood — /broad-scan (F01–F21) → five implement batches (v1.19.0 → v1.22.0) → /regression → /reflect ×2 → /sync-docs → R19 (v1.23.0) → §4v in a genuinely fresh session. No Session Handoff Block (Tier 1, not Tier 3); the finding set served that role.
+
+AXIS A — VERTICAL (Subsystem Health):
+Overall: 9.0/10 (↑ from 8.8) | Prompt Quality & Efficacy: 9.5/10 | Cross-Artifact Consistency: 9.5/10 (↑ from 9)
+HTML Console Correctness: 8.5/10 (held — Cycle-4 concern closed, replaced by a live defect of the class the cycle claimed fixed)
+Console UI/UX & Accessibility: 7.0/10 (NEW — First measurement)
+Command Completeness & Coverage: 9.5/10 (↑) | Documentation Accuracy: 9.5/10 (↑) | Config-Schema Robustness: 9.5/10 (↑)
+Guard & Tooling Coverage: 8.0/10 (↓ from 9.5) | Adaptability / Project-Agnosticism: 9.5/10 (↑)
+Onboarding & Adoption Friction: 9.0/10 | Backward Compatibility: 9.5/10 (↑) | State & Memory Integrity: 9.0/10
+
+AXIS B — HORIZONTAL (Bug-Shape Posture):
+Cross-Artifact Drift: 9.5/10 (↑ from 8.5 — four real drift instances closed AND coverage derived rather than enumerated)
+Silent Prompt Degradation: 9.0/10 (↑ from 8.5 — §T2b's pre-P7 prompt and F06's Axis B pulse loss both fixed + locked)
+Generated-Artifact Staleness: 9.0/10 (stable) | Backward-Compatibility Breakage: 9.0/10 (stable)
+Guard / Test Coverage Quality: 7.0/10 (↓ from 9.0 — declared closed, found open by verification, second cycle running)
+
+Overall (weighted avg): 9.0/10 (equal weights across the 12 non-Overall dimensions, unchanged).
+NOTE: the average rose while the cycle's most important dimension fell. Read the grid, not the average.
+Verification: independent §4v in a fresh session — 24 invariants probed BY MUTATION (not by reading test names),
+23 PASS / 1 FAIL (INV-20, false green at field level); 0 regressions, with the one feared regression
+independently re-derived and rejected; all 13 stages re-run by the verifier; Category D 20%.
+Self-report accuracy: the implementer over-reported production fixes in EVERY batch summary (four corrections
+across the cycle — three caught by /reflect, one by §4v). Always in the same direction, always by counting
+capabilities or guard work as fixes.
+Policy: none triggered (lowest Axis B 7.0 vs threshold 4/10). Flagged as a rubric weakness — a category
+over-scored twice running is invisible to a fixed threshold.
 
 ### Cycle 4 — 2026-06-16 — Synthesis
 Scope this cycle: a fresh-eyes /broad-scan (Interactive Console §6a + Tooling & Sync Infra + Canonical Docs) → /broad-implement F1–F5 → /reflect, plus R16(S) and R15. Tier-1 dogfood flow (no separate §4v fresh-session verification; the implementer scored the qualitative axes, so Axis B confidence is Medium — the executable checks are objective).

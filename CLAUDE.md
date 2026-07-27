@@ -180,6 +180,12 @@ Two optional helpers operate on this state (both fail-safe and additive):
   markdown trend report (per-row table + net-score / Category-D
   sparklines + cumulative summary). Run it anytime; `--out FILE` writes.
 
+- `.cycle/blocks/` — the handoff/summary blocks themselves, written verbatim
+  by the implement commands and `/reflect` at CHECKPOINT. §4v and §6a run in a
+  FRESH session with none of the implementation context, so a block that exists
+  only in a chat transcript cannot reach them; `STATE.md` carries prose *about*
+  the work, not the block. Optional like the rest of `.cycle/`.
+
 And one helper operates on the invariant library:
 - `scripts/invariant-check.mjs` — the executable invariant runner. Reads
   the library (`.cycle/config.md` or CLAUDE.md), runs every invariant
@@ -188,6 +194,17 @@ And one helper operates on the invariant library:
   MANUAL. This is the automated half of the §4v invariant probe — write
   `Verify:` as a runnable command and the invariant becomes a test.
   `--list` shows the classification without running.
+
+And one assembles the independent-verification input:
+- `scripts/verification-pack.mjs` — builds a ready-to-paste §4v prompt: the
+  canonical body via the same `sectionBody()` the lock uses (no fourth copy),
+  the live invariant library, the cycle's blocks from `.cycle/blocks/`, and the
+  **rotation probes seeded from the commit sha** so they are reproducible rather
+  than chosen by the implementer — the prompt's "do NOT substitute your own
+  picks" rule has no force if the implementer picks them. It also reads
+  `metrics.csv` and warns the verifier automatically when `/reflect` recorded a
+  correction to a self-reported count.
+  `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]`
 
 And two operate across projects:
 - `scripts/portfolio.mjs` — aggregates several projects' `PROJECT_HEALTH.md`
@@ -776,6 +793,12 @@ and a "Where I left off" line. This lets /cycle-resume continue cleanly
 in a fresh session if context runs out. If .cycle/ does not exist, skip
 this step — the summary block above is the record, as usual.
 
+ALSO write the summary block VERBATIM to
+.cycle/blocks/<cycle>-<version-or-scope>-broad-implement.md (create the
+directory if needed). §4v and §6a consume these blocks in a FRESH session
+that has none of this context, so a block that exists only in chat cannot
+reach them — STATE.md carries prose ABOUT the work, not the block itself.
+
 After the summary, suggest running /test-sync if any test failures remain,
 and /sync-docs if any documentation updates are needed.
 ```
@@ -950,6 +973,10 @@ If a .cycle/ directory exists at the project root, create or update
 not finished, open follow-on items, decisions made, and a "Where I left
 off" line. This lets /cycle-resume continue cleanly in a fresh session
 if context runs out. If .cycle/ does not exist, skip this step.
+
+ALSO write the summary block VERBATIM to
+.cycle/blocks/<cycle>-<version-or-scope>-targeted-implement.md (create the
+directory if needed) — §4v and §6a read these in a fresh session.
 
 Suggest /test-sync and /sync-docs if applicable.
 ```
@@ -1194,7 +1221,10 @@ DOCUMENTATION UPDATES NEEDED:
 
 3. CHECKPOINT (optional — only if .cycle/ exists): create/update
    .cycle/STATE.md (completed/pending actions, follow-ons, decisions,
-   "Where I left off") so /cycle-resume can continue. Skip if no .cycle/.
+   "Where I left off") so /cycle-resume can continue, AND write the
+   summary block verbatim to
+   .cycle/blocks/<cycle>-<version-or-scope>-implement.md so §4v and §6a
+   can read it in a fresh session. Skip both if no .cycle/.
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.
 ```
@@ -1313,6 +1343,15 @@ that carried an effort estimate, append a row to .cycle/estimates.csv
 recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
+
+BLOCKS (optional — only if .cycle/ exists): write the CYCLE SUMMARY BLOCK
+verbatim to .cycle/blocks/<cycle>-<letter>-reflect.md. §4v and §6a consume it
+in a FRESH session with none of this context, so a block that lives only in
+chat cannot reach them. If you CORRECTED a count that an implementation
+summary reported, say so in the metrics `notes` field — the pack assembler
+(scripts/verification-pack.mjs) surfaces that to the verifier automatically,
+so the "don't trust the self-report" signal is generated rather than
+remembered. Skip if no .cycle/.
 
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection

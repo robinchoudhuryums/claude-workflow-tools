@@ -1112,7 +1112,10 @@ DOCUMENTATION UPDATES NEEDED:
 
 3. CHECKPOINT (optional — only if .cycle/ exists): create/update
    .cycle/STATE.md (completed/pending actions, follow-ons, decisions,
-   "Where I left off") so /cycle-resume can continue. Skip if no .cycle/.
+   "Where I left off") so /cycle-resume can continue, AND write the
+   summary block verbatim to
+   .cycle/blocks/&lt;cycle&gt;-&lt;version-or-scope&gt;-implement.md so §4v and §6a
+   can read it in a fresh session. Skip both if no .cycle/.
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
@@ -1297,6 +1300,15 @@ that carried an effort estimate, append a row to .cycle/estimates.csv
 recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
+
+BLOCKS (optional — only if .cycle/ exists): write the CYCLE SUMMARY BLOCK
+verbatim to .cycle/blocks/&lt;cycle&gt;-&lt;letter&gt;-reflect.md. §4v and §6a consume it
+in a FRESH session with none of this context, so a block that lives only in
+chat cannot reach them. If you CORRECTED a count that an implementation
+summary reported, say so in the metrics `notes` field — the pack assembler
+(scripts/verification-pack.mjs) surfaces that to the verifier automatically,
+so the "don't trust the self-report" signal is generated rather than
+remembered. Skip if no .cycle/.
 
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
@@ -3242,6 +3254,10 @@ not finished, open follow-on items, decisions made, and a "Where I left
 off" line. This lets /cycle-resume continue cleanly in a fresh session
 if context runs out. If .cycle/ does not exist, skip this step.
 
+ALSO write the summary block VERBATIM to
+.cycle/blocks/<cycle>-<version-or-scope>-targeted-implement.md (create the
+directory if needed) — §4v and §6a read these in a fresh session.
+
 Suggest /test-sync and /sync-docs if applicable.
 
 ── Expanded Step 1 (the console keeps this inline so one copied prompt is
@@ -3362,6 +3378,12 @@ selected findings not finished, open follow-on items, decisions made,
 and a "Where I left off" line. This lets /cycle-resume continue cleanly
 in a fresh session if context runs out. If .cycle/ does not exist, skip
 this step — the summary block above is the record, as usual.
+
+ALSO write the summary block VERBATIM to
+.cycle/blocks/<cycle>-<version-or-scope>-broad-implement.md (create the
+directory if needed). §4v and §6a consume these blocks in a FRESH session
+that has none of this context, so a block that exists only in chat cannot
+reach them — STATE.md carries prose ABOUT the work, not the block itself.
 
 After the summary, suggest running /test-sync if any test failures remain,
 and /sync-docs if any documentation updates are needed.`;

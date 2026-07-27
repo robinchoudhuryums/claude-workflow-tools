@@ -1,10 +1,10 @@
 # Cycle State
 
 ## Current
-Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
-Phase: reflect COMPLETE — ALL 21 Cycle-5 findings closed (v1.19.0 → v1.22.0) and ALL batches reflected. Cycle-5 net +10 across 5 reflect rows. ONLY §4v (FRESH session) then §6a remain.
+Cycle: 5 — COMPLETE AND SYNTHESIZED (overall 9.0/10). Full Tier-1 dogfood: broad-scan → 5 implement batches → regression → reflect ×2 → sync-docs → R19 → §4v (fresh session) → §6a.
+Phase: idle — Cycle 5 fully closed. Cycle 6 opens with the §4v findings as scope (see below).
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs
 Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
 Updated: 2026-07-27
 
@@ -227,6 +227,43 @@ run on a small single-file console — not enough to justify widening to /audit 
 running the lens on a genuinely UI-heavy consuming project (Observatory's Frontend subsystem) before deciding.
 Keep the deferral.
 
+## R19 — verification-pack assembly — ✅ COMPLETE (v1.23.0)
+Origin: assembling the Cycle-5 §4v prompt by hand. The finding underneath it is structural — THE HANDOFF BLOCKS
+LIVE NOWHERE. 5 implementation summaries + 2 cycle summaries existed only in chat scrollback; STATE.md carries
+prose ABOUT them, not the blocks. The handoff design assumes they survive sessions and nothing persisted them.
+- .cycle/blocks/ convention: the 3 implement commands + /reflect write their block VERBATIM at CHECKPOINT.
+  /audit deliberately does NOT — "Do not make any changes to any files" is its first line, so §6a still takes
+  the Session Handoff Block by paste. Seeded with Cycle 5's 7 blocks.
+- scripts/verification-pack.mjs: body via sectionBody() (no fourth copy), live invariant library (PERMISSIVE
+  parse — the strict one drops INV-08/INV-46, whose rule text contains a pipe), rotation probes SEEDED FROM THE
+  COMMIT SHA (the prompt's "do NOT substitute your own picks" has no force if the implementer picks them), and
+  cycle totals + an AUTOMATIC warning when a reflect row recorded a correction.
+- tests/verification-pack.test.mjs (14 assertions) → Test Command and CI are now 14 STAGES. INV-52 added (52
+  total, 40 runnable). 4 mutations proven fail-closed.
+- Command bodies changed → downstream /sync-commands re-pull needed (additive; no .cycle/ = unchanged behavior).
+- NOTE: built BEFORE §4v has ever run. The block format is deliberately loose; expect the first real
+  verification pass to reshape it.
+
+## §4v + §6a — Cycle 5 CLOSED (overall 8.8 → 9.0)
+§4v ran in a genuinely fresh session and probed 24 invariants BY MUTATION: 23 PASS, 1 FAIL, 0 regressions.
+It independently re-derived and rejected the one feared regression (focusable-but-invisible controls).
+- **INV-20 is a FALSE GREEN at field level.** The hostile fixture poisons only SOME fields per record
+  (text:'imported', subsystem:'s'), so dropping esc() from ${esc(inv.text)} or ${esc(inv.subsystem)} passes all
+  14 stages. Reproduced locally by mutation. F11's "17/17, 0 false greens" was scoped to COMMAND-level mutation
+  and does not hold one level down. The rule still holds in code — this is a coverage gap, not a live hole.
+- **LIVE DEFECT: archive "Copy content" (claude-code-guide-v2.html:2888)** calls navigator.clipboard.writeText()
+  inline, bypassing copyToClipboard(). F05's exact bug, still present in one sink → F05 was a PARTIAL fix.
+- Console static <pre> block displays have NO shape check (check-output-blocks never reads the console).
+- 17 outline:none, 3 :focus, ZERO :focus-visible — INV-56 is right that Batch 6 routed focus visibility wholly
+  to the perceptual bucket when half is structurally checkable.
+- Common Gotchas did not exist for the first three releases (created at 18ba010, after v1.20.0), so batches 1–3
+  ran under commands telling them to check a section that wasn't there.
+§6a scored it: Guard & Tooling 9.5→8.0 and Guard/Test Coverage Quality 9→7.0 (SECOND cycle declared closed and
+found open). Console UI/UX & Accessibility 7.0 First measurement. Seven dimensions rose. Overall 9.0 — but the
+average rose while the most important dimension fell; read the grid.
+No policy triggers (lowest 7.0 vs threshold 4/10) — flagged as a rubric weakness: a category over-scored twice
+running is invisible to a fixed threshold.
+
 ## Where I left off
 v1.22.0; full Test Command green (13 stages); 51 invariants; invariant-check 39/39 runnable PASS. Cycle 5 is
 FEATURE-COMPLETE: R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, Batch 3+4
@@ -240,7 +277,19 @@ or test/guard work as fixes. That is the single most repeated error of this cycl
 The regression pass NEGATED the one feared new failure mode: making 9 controls focusable could have made them
 focusable-but-invisible, but all 17 outline:none rules are on form inputs, so the default focus ring survives.
 INV-52 (visible focus indicator) is a MANUAL candidate — perceptual, only S7 can answer it.
-ALL 21 Cycle-5 findings are now CLOSED (F01-F21). Remaining work is strategic / non-finding:
+CYCLE 6 OPENING SCOPE — the §4v findings, in order (~half a day total):
+- LIVE FIRST: archive Copy → route through copyToClipboard() + INV-54 static scan (no inline
+  navigator.clipboard in any handler). S ≈ 30m.
+- INV-53: DERIVE the hostile fixture's payload set from the sinks' interpolated fields instead of hand-picking
+  it. This is the fix for the one FAIL, and it is the FOURTH time this cycle that hand-listing was the root
+  cause (WORKFLOW_BLOCKS, panel fixture, element stub, now the payload set). S ≈ 1–2h.
+- INV-55: extend check-output-blocks to the console's static <pre> displays. S ≈ 1h.
+- INV-56: the structural half of focus visibility (outline:none without a replacement). S ≈ 1h.
+- F15: assert the CI permissions block. S ≈ 15m.
+Then: walk S5/S6/S7 in a browser; audit the 12 MANUAL invariants (never checked); promote the F11 mutation
+audit out of scratchpad — §4v just proved it needs a field-level tier.
+
+Other remaining strategic / non-finding work:
 - Walk S5/S6/S7 in a browser — the three new visual scenarios have never been performed. S7 (keyboard-only)
   matters most: the code path is guarded but whether the FOCUS RING is visible is unknowable from code.
 - The F11 mutation audit lives in scratchpad, not CI. It found a real false green; a permanent version would
