@@ -35,8 +35,10 @@ Tooling & Sync Infrastructure:
   scripts/gen-commands.mjs, scripts/gen-html-prompts.mjs, scripts/check-template-sync.mjs,
   scripts/check-html.mjs, scripts/check-output-blocks.mjs, scripts/cycle-context.mjs,
   scripts/render-metrics.mjs, scripts/invariant-check.mjs, scripts/portfolio.mjs,
-  scripts/portfolio-status.mjs, tests/ (8 regression tests), .github/workflows/sync-check.yml,
-  .claude/commands/ (generated), .claude/settings.json, .gitignore
+  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, tests/ (9 regression tests),
+  .github/workflows/sync-check.yml, .claude/commands/ (generated), .claude/settings.json, .gitignore
+Cycle state (not audited as source, but read/written by the tooling above):
+  .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/
 
 ### Invariant Library
 INV-01 | .claude/commands/*.md are byte-identical to the command blocks extracted from CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
@@ -58,7 +60,7 @@ INV-16 | The CLAUDE.md /setup-cycle config schema and the HTML setup <pre> list 
 INV-17 | gen-commands.mjs is idempotent — running it twice produces no git diff | Subsystem: Tooling & Sync Infrastructure | Verify: run twice + git diff --quiet
 INV-18 | Deleting .cycle/ returns a consuming project to pure copy-paste behavior (no command hard-depends on it) | Subsystem: Canonical Templates & Docs | Verify: code read of all CHECKPOINT/metrics steps
 INV-19 | The HTML console's prompts stay behaviorally aligned with the canonical CLAUDE.md commands — every workflow output block appears in both, the reflect prompt emits a Cycle Summary Block, and the regression prompt carries the invariant-Verify and deploy-verified notes | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-template-sync.mjs (HTML prompt-behavior parity + workflow-block checks)
-INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, cycle tracker, project selector, dashboard cards, project-form rows); attribute-context JS args are esc(JSON.stringify(...)) — esc() ALONE is insufficient there, since it renders ' as &#39; which the browser decodes back to ' before parsing the handler | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (hostile-fixture render: substring scan for the text half + entity-decode-then-execute for inline handlers — proves esc() is APPLIED, not merely that esc() works)
+INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, cycle tracker, project selector, dashboard cards, project-form rows); attribute-context JS args are esc(JSON.stringify(...)) — esc() ALONE is insufficient there, since it renders ' as &#39; which the browser decodes back to ' before parsing the handler | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (hostile-fixture render: substring scan for the text half + entity-decode-then-execute for inline handlers). SCOPE LIMIT — Cycle-5 §4v proved this is a FALSE GREEN at field level: the fixture poisons only the fields it names, so a sink reading an un-poisoned field (inv.text, inv.subsystem) is unguarded. INV-53 (derive the payload set from the sinks' interpolated fields) is the fix; until it lands, this Verify proves APPLICATION only for poisoned fields
 INV-21 | A failed localStorage write surfaces via storageWarn (console.warn + one-shot alert) rather than being silently swallowed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (storageWarn check)
 INV-22 | The sync guard fails closed on injected drift (removed capability marker, stale .claude/commands file, README command without a CLAUDE.md template, workflow block dropped from the HTML) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
 INV-23 | VERSION is semver, CHANGELOG.md is non-empty, and VERSION EQUALS the newest `## <semver>` CHANGELOG heading — presence alone was a false green (VERSION could read 9.9.9 against a 1.20.0 changelog and the guard stayed silent), which left the "bumped when semantics change" clause unverified | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
@@ -202,6 +204,18 @@ Cycle Workflow Config.
   ONLY by `phase=reflect` rows.** A synthesis row repeating them
   double-counts the cumulative trend — it silently corrupted this repo's own
   history once (Cycle-4 F1).
+- **A hostile fixture proves escaping only for the fields someone remembered
+  to poison.** Cycle-5 §4v found INV-20 was a false green at FIELD level: the
+  fixture made `inv.id` hostile but left `inv.text` and `inv.subsystem` benign,
+  so dropping `esc()` from those two sinks passed all 14 stages. The rule held
+  in code; the guard did not enforce it. Derive the payload set from the sink's
+  interpolated fields. **This is the same hand-listing trap one level down** —
+  a mutation sweep that only violates a rule in one place proves one place.
+- **A fix applied at the helper is not applied at every call site.** F05
+  routed copying through `copyToClipboard()`, but the archive "Copy content"
+  button still called `navigator.clipboard.writeText()` inline — the exact bug
+  F05 fixed, left live in one sink. After centralising a behaviour, scan for
+  callers that bypass the centre.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
@@ -223,10 +237,15 @@ so treat these as settled unless the reasoning below is what changed.
 - **`net_score` stays a strict gate.** Hardening visibility comes from the
   separate `defensive_count` secondary signal, never by loosening what
   counts as a production fix.
-- **Guard coverage is DERIVED, not enumerated.** `WORKFLOW_BLOCKS` comes
-  from the `check-output-blocks` registry; the console panel fixture comes
-  from the markup. Hand-maintained lists drift toward omitting whatever is
-  inconvenient.
+- **Guard coverage is DERIVED, not enumerated — at every level.**
+  `WORKFLOW_BLOCKS` comes from the `check-output-blocks` registry; the console
+  panel fixture and the keyboard-control set come from the markup. Hand-
+  maintained lists drift toward omitting whatever is inconvenient. This has now
+  been the root cause **four times in one cycle** (F17's block list, the panel
+  fixture, the element stub, and §4v's finding that the hostile fixture's
+  payload set is hand-picked). Treat "I will list the cases" as a design smell:
+  derive the set from the artifact under test, or the guard proves only the
+  cases someone thought of.
 - **R11 (Dynamic Workflows orchestrator) is HELD until DW leaves research
   preview** — a live integration cannot meet the verification bar in this
   environment. This is the same discipline that kept visual assessment out
@@ -245,7 +264,9 @@ machine or after a release.
   machine; it is deliberately excluded from backups.
 - **Run `/sync-commands` in consuming projects** whenever a command body
   changes. v1.19.0 changed `/broad-scan`, `/reflect` and `/setup-cycle`;
-  v1.19.1 and v1.20.0 changed none.
+  **v1.23.0 changed the three implement commands and `/reflect`** (they now
+  persist their block to `.cycle/blocks/`). v1.19.1, v1.20.0, v1.21.0 and
+  v1.22.0 changed none — those were console/tooling only.
 - **Browser-verify console changes.** Rendering, light-mode contrast, the
   mobile drawer and `legacyCopy()`'s success path have no headless coverage.
 - **`§4v` must run in a fresh session** with no implementation context.
