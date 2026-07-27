@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
-Phase: implement (R18 v1.19.0 + Cycle-5 F01/F04/F05/F08 v1.19.1 COMPLETE; /regression + /reflect pending)
+Phase: implement (R18 v1.19.0 + F01/F04/F05/F08 v1.19.1 + F03/F21/F02/F17 v1.20.0 COMPLETE; /regression + /reflect pending)
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
@@ -165,19 +165,45 @@ Closed both 8.5 synthesis priorities. Shipped in 6 phases (one commit each) on b
   the &#39; case). This retires INV-20's false green.
 - INV-09 reworded; INV-40/41/42 added → 42 invariants, 29 runnable PASS.
 
+## Cycle 5 — broad-implement Batch 1 (F03/F21) + Batch 2 (F02/F17) — ✅ COMPLETE (v1.20.0)
+Ordering was load-bearing and is worth remembering: F17 turns three previously-unguarded blocks red, so the
+console gaps had to close FIRST or the batch merges a red CI. Sequence run: F03 → F21 → F02 → F17.
+- F03 — PR Review console section + buildPrReviewText (invariant library injected). Was absent for 4 releases.
+- F21 — Tier 1 broad-implement prompt + buildTier1ImplText. The section promised an approval gate and shipped
+  only the audit half, so console Tier 1 could never emit a BROAD SCAN IMPLEMENTATION SUMMARY.
+- F02 — §T2b exemption RETIRED. It was hiding a pre-P7 prompt (no OPERATOR ACTIONS, still said "6. DEPLOY STEP",
+  no test-doubles scan, never emitted TARGETED IMPLEMENTATION SUMMARY). Dissolved by two facts: F21 gave the
+  delegation a real in-console target, and canonicalCoverage ignores EXTRA lines so a builder can be standalone
+  AND locked — the tradeoff the original decision assumed was never forced. ALL NINE builders now locked; no
+  report-only tier remains.
+- F17 — WORKFLOW_BLOCKS derived from check-output-blocks' BLOCKS (7 → 12). The five omitted blocks were exactly
+  the ones hiding F02/F03/F21. guard.test +2 (13 total); setup() now copies check-output-blocks.mjs.
+- check-html panel fixture derived from markup (the hardcoded list had already gone stale); new assertion that
+  every nav href resolves to a panel (showPanel silently falls back to Dashboard otherwise).
+- INV-36 rewritten; INV-43/44 added → 44 invariants, 31 runnable PASS. New guards mutation-proven.
+
 ## Where I left off
-v1.19.1; full Test Command green (13 stages); 42 invariants; invariant-check 29/29 runnable PASS. Done this
-cycle: R18 (D1–D4 + §T1 reconcile + guard markers, v1.19.0) and the F01/F04/F05/F08 security+reliability batch
-(v1.19.1). STILL OPEN from the Cycle-5 /broad-scan — the structural batch, recommended next in this order:
-F17 (check-template-sync's WORKFLOW_BLOCKS covers only 7 of the 12 registered blocks — derive it from BLOCKS
-and F02/F03 turn from invisible into CI-red, so do this FIRST), then F02 (§T2b is a pre-P7 stale prompt wrongly
-exempted as "report-only by design": no OPERATOR ACTIONS, no test-doubles scan, never emits TARGETED
-IMPLEMENTATION SUMMARY) and F03 (/pr-review has zero presence in the console). Then the long tail: F06 (Axis B
-round-trip drops `pulse`), F07 (deriveId '' for non-Latin names), F09 (VERSION/CHANGELOG consistency unguarded),
-F10 (PROJECT_HEALTH Current Standing stale — the Dashboard fetches it live), F11 (audit ALL runnable Verify
-fields for false greens — INV-20 was one, now fixed, but it was found by hand), F12–F16, F18 (no Common Gotchas
-section despite 28 references), F19, F20. Also pending: /regression and /reflect have not run for Cycle 5, and
-the R18 lens has not been exercised on a real UI project — that run decides whether /audit and /pr-review get it.
+v1.20.0; full Test Command green (13 stages); 44 invariants; invariant-check 31/31 runnable PASS. Cycle 5 has
+now shipped R18 (v1.19.0), the F01/F04/F05/F08 security+reliability batch (v1.19.1), and the F03/F21/F02/F17
+parity batch (v1.20.0). Both High findings are closed and every dynamic builder is locked.
+REMAINING, in the batch order from the prioritised backlog:
+- Batch 3 (~3h, S) console correctness: F06 Axis B round-trip drops `pulse` (every UI-created project gets the
+  measures text as its pulse question — fires on the common path since the form pre-fills from DEFAULT_AXIS_B),
+  F07 deriveId returns '' for non-Latin/punctuation-only names, F16 getFilledText $&-pattern corruption,
+  F20 backup app/kind/version never validated.
+- Batch 4 (~5h, M) make green mean green: F11 audit ALL 31 runnable Verify fields for false greens (INV-20 was
+  one and was found BY HAND, not by tooling — unknown how many others lie), a jsArg() helper + a guard grep for
+  the esc()-inside-quotes footgun, F09 VERSION↔CHANGELOG consistency, F15 CI permissions, F14 INV-11 count.
+- Batch 5 (~5–6h, M) substrate: F18 Common Gotchas + Key Design Decisions (28 references resolve to nothing;
+  §4v Part 3 Q2/Q3 unanswerable — CONSIDER DOING FIRST, every later batch's session benefits), F10
+  PROJECT_HEALTH stale (Dashboard fetches it live), F13 README R3→R14, F12 render-metrics blank net, F19 Deploy
+  Command for the Pages republish.
+- Batch 6 (~4h, M) dogfood R18 on this repo: 12 click-only tr/div/span controls, 0 role, 0 key handlers → the
+  console's own controls are keyboard-unreachable; add an interface Health Dimension; promote OPERATOR VISUAL
+  CHECKS into Regression Scenarios. This run also decides whether /audit and /pr-review get the R18 lens.
+- Strategic: CSP (needs event delegation, L), no LICENSE file, R9, R12, R17 follow-ons.
+Also pending: /regression and /reflect have NOT run for Cycle 5 — three implement batches are now unreflected,
+so metrics.csv has no Cycle-5 row yet. §4v must run in a FRESH session (not the implementer).
 
 ## (prior) v1.18.0 left-off
 v1.18.0; full Test Command green (13 stages); 38 invariants (INV-36 now covers 6 locked builders, INV-38 = registered
