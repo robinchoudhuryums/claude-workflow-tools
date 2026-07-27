@@ -159,6 +159,13 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .copy-btn:hover{background:rgba(79,142,247,.2)}
 .copy-btn.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:var(--green)}
 .copy-btn.fail{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--red);white-space:normal}
+/* FOCUS VISIBILITY (INV-56). 17 rules set outline:none — 15 of them inline on
+   form controls, where a stylesheet :focus rule can never win on specificity.
+   box-shadow is the escape: inline outline:none cannot suppress it, so this
+   restores a visible indicator everywhere including those controls. Cycle-5
+   Batch 6 made 9 elements focusable and routed focus VISIBILITY entirely to the
+   perceptual bucket; half of it is structural, and this is that half. */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:0 0 0 3px rgba(79,142,247,.35);border-radius:var(--r-sm)}
 .copy-btn svg,.fill-btn svg{width:11px;height:11px;flex-shrink:0}
 
 /* FILL FORM */
@@ -2161,11 +2168,20 @@ const COPIED_ICON=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" st
 
 function copyFeedback(btn,ok){
   if(!btn)return;
+  // Restore whatever label the button actually had, not a hardcoded one. The
+  // prompt buttons show the copy icon; the archive button says "Copy content".
+  // Resetting every caller to COPY_ICON is why this helper could not be reused
+  // for the archive button, which is how that sink kept its own inline
+  // clipboard call — the F05 bug, left live in one place (Cycle-5 §4v).
+  let orig=COPY_ICON;
+  try{
+    if(btn.dataset){ if(btn.dataset.origLabel===undefined) btn.dataset.origLabel=btn.innerHTML; orig=btn.dataset.origLabel; }
+  }catch(e){}
   btn.classList.remove('ok','fail');
   btn.classList.add(ok?'ok':'fail');
-  btn.innerHTML=ok?COPIED_ICON:'Copy failed — select the prompt and copy manually';
+  btn.innerHTML=ok?COPIED_ICON:'Copy failed — select the text and copy manually';
   if(!ok){ try{console.warn('claude-workflow-tools: clipboard write failed');}catch(_){} }
-  setTimeout(()=>{btn.classList.remove('ok','fail');btn.innerHTML=COPY_ICON;},ok?2000:4000);
+  setTimeout(()=>{btn.classList.remove('ok','fail');btn.innerHTML=orig;},ok?2000:4000);
 }
 
 // Last-resort copy for browsers with no async clipboard (file://, http, older).
@@ -2885,7 +2901,7 @@ function renderArchive(){
       </div>
       <div class="log-body" id="arlog-${i}">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <button onclick="navigator.clipboard.writeText(${jsArg((e.content))})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Copy content</button>
+          <button onclick="copyToClipboard(${jsArg((e.content))},this)" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Copy content</button>
         </div>
         <pre style="font-family:monospace;font-size:12px;color:var(--text-sec);line-height:1.65;white-space:pre-wrap;word-break:break-word;margin:0">${esc(e.content)}</pre>
       </div>

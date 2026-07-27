@@ -161,15 +161,60 @@ export function validate(claudeMd, loadCmd) {
   return failures;
 }
 
+// INV-55 — the console renders these same blocks, in static <pre> displays and
+// in builder template literals, and NOTHING checked their shape: dropping
+// `Net score:` from the console's VERIFICATION BLOCK, or renaming its END
+// delimiter, passed every stage (Cycle-5 §4v). check-template-sync only asks
+// whether the block's NAME appears. A block that IS rendered must be well
+// formed; a block the console doesn't render is not an error here (that is
+// check-template-sync's derived presence check, not this one).
+export function validateHtml(htmlText) {
+  const failures = [];
+  const unesc = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+  // The console carries these blocks in two containers, and BOTH put syntax on
+  // the delimiter line: a builder ends its template literal as "---END X---`;",
+  // and a static display ends as "---END X---</pre>". Strip the container
+  // punctuation before comparing, or every block in the file reads as
+  // unbalanced — a defect in the checker, not in the console. (First run of
+  // this check reported 5 such false positives; they were all this.)
+  const strip = l => l.trim()
+    .replace(/^<pre\b[^>]*>/, '')      // static display opens on the delimiter line
+    .replace(/^`/, '')                 // builder opens its template literal there
+    .replace(/<\/pre>\s*$/, '')        // …and closes it there too
+    .replace(/`\s*;?\s*$/, '')
+    .trim();
+  const text = unesc(htmlText).split('\n').map(strip).join('\n');
+  for (const b of BLOCKS) {
+    const opens = text.split('\n').filter(l => l === b.open).length;
+    if (!opens) continue;                                  // not rendered in the console — fine
+    const closes = text.split('\n').filter(l => l === b.close).length;
+    if (opens !== closes) { failures.push(`${b.name}: console has ${opens} open vs ${closes} close ("${b.close}")`); continue; }
+    const spans = findSpans(text, b.open, b.close);
+    if (!spans.length) { failures.push(`${b.name}: console has the open delimiter but no well-formed span`); continue; }
+    spans.forEach((s, i) => {
+      const missing = b.fields.filter(f => !s.body.includes(f));
+      if (missing.length) failures.push(`${b.name} (console occurrence ${i + 1} of ${spans.length}): missing field(s): ${missing.join(', ')}`);
+    });
+  }
+  return failures;
+}
+
 function main() {
   const root = new URL('..', import.meta.url);
   const claudeMd = readFileSync(new URL('CLAUDE.md', root), 'utf8');
   const loadCmd = name => { try { return readFileSync(new URL(`.claude/commands/${name}.md`, root), 'utf8'); } catch { return null; } };
   const failures = validate(claudeMd, loadCmd);
+  let htmlBlocks = 0;
+  try {
+    const htmlText = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
+    htmlBlocks = BLOCKS.filter(b => htmlText.includes(b.open)).length;
+    failures.push(...validateHtml(htmlText));
+  } catch (e) { failures.push('could not read the console for block-shape validation: ' + e.message); }
 
   console.log('Output-block shape check (R13 — CLAUDE.md ↔ .claude/commands/):\n');
   if (!failures.length) {
-    console.log(`  ✓ ${BLOCKS.length} output blocks well-formed (delimiters balanced, required fields present, producers emit them)`);
+    console.log(`  ✓ ${BLOCKS.length} output blocks well-formed in CLAUDE.md + .claude/commands/ (delimiters balanced, required fields present, producers emit them)`);
+    console.log(`  ✓ ${htmlBlocks} of them are also rendered by the console, and are shape-valid there too (INV-55)`);
     console.log('\nAll prompt-output blocks are shape-valid. ✓');
     return 0;
   }

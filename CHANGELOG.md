@@ -5,6 +5,61 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.24.0 — 2026-07-27
+
+Closes every finding from the Cycle-5 §4v independent verification pass. Console
+and tooling only — **no command semantics or config-schema change, so no
+`/sync-commands` re-pull is required**.
+
+### The live defect
+The archive **"Copy content"** button called `navigator.clipboard.writeText()`
+inline, bypassing `copyToClipboard()` — F05's exact silent-failure bug, left
+alive in one sink for four releases. Now routed through the helper.
+`copyFeedback()` also restores each button's *own* label instead of hardcoding
+the prompt-copy icon, which is **why** the helper could not be reused there and
+so how that sink kept its own call. `INV-54` adds a static scan: no inline
+handler may touch `navigator.clipboard`.
+
+### INV-53 — the false green §4v found
+The hostile fixture hand-picked which fields to poison, so dropping `esc()` from
+`inv.text` or `inv.subsystem` passed all 14 stages. The payload set is now
+**derived from the sinks' own `${…obj.field…}` interpolations**, and the check
+reports both what it derived and what it held back as non-string — it can never
+silently narrow again. The archive sinks are covered for the first time.
+- The first implementation was itself wrong in the same way: an unqualified
+  `.field` structural test excluded `inv.text`, because `getFile().text()`
+  exists elsewhere in the file. The derivation is now alias-scoped, and an
+  assertion fails if the two fields §4v named ever drop out of the set.
+
+### INV-55 — console block shapes
+`check-output-blocks` validated CLAUDE.md and `.claude/commands/` only, so
+dropping `Net score:` from the console's VERIFICATION BLOCK display passed
+everything. It now validates the console too — **12 of 12 blocks**, in both
+static `<pre>` displays and builder template literals.
+- Getting this right took three passes. The first reported five failures that
+  were all the checker's fault: a block's delimiter line carries its container's
+  punctuation (`` ---END X---`; `` in a builder, `---END X---</pre>` in a
+  display, `<pre id="…">---X---` on the open). Those are stripped before
+  comparison; the five "findings" were artifacts, and the console was correct.
+
+### INV-56 — focus visibility, the structural half
+17 rules set `outline:none`, 15 of them inline on form controls where a
+stylesheet `:focus` rule can never win on specificity, and the file had **zero**
+`:focus-visible` rules. Added a global `:focus-visible` using `box-shadow` —
+the one property inline `outline:none` cannot suppress. Batch 6 routed focus
+visibility entirely to the perceptual bucket; this is the half that was
+checkable from code all along. Contrast remains perceptual (S7/INV-52).
+
+### F15 — CI least privilege
+The `permissions: contents: read` block shipped in v1.21.0 with nothing
+asserting it. `check-template-sync` now validates it (present, read-only, no
+write scope), with a fail-closed `guard.test` case — which also required the
+test's temp copy to include `.github/`.
+
+### Invariants
+`INV-20`'s scope-limit note retired (the gap is closed); `INV-53`–`INV-57`
+added — 57 total, 45 runnable.
+
 ## 1.23.0 — 2026-07-27
 
 **R19 — verification-pack assembly.** Command semantics change (the CHECKPOINT

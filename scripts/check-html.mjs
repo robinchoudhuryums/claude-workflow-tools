@@ -293,17 +293,65 @@ if (loaded && typeof ctx.collectState === 'function' && typeof ctx.stateBackupKe
 if (loaded && typeof ctx.switchProject === 'function') {
   for (const k of Object.keys(store)) delete store[k];
   const PAYLOADS = ['<img src=x onerror=alert(1)>', '" onmouseover="alert(2)', "'); alert(3); //"];
-  store['ccg:customProjects'] = JSON.stringify([{
-    id: "x'); alert(4); //", name: 'Proj <img src=x onerror=alert(1)>', healthDimensions: 'A, B',
-    subsystems: [{ name: 'Core " onmouseover="alert(2)', files: "a.ts'); alert(3); //" }],
-    cycleGroups: ['Core " onmouseover="alert(2)'], invariants: [], seeds: [],
-  }]);
-  store["ccg:x'); alert(4); //:invariants"] = JSON.stringify([{ id: "INV-99'); alert(3); //", text: 'imported', subsystem: 's' }]);
-  store['ccg:dashRepos'] = JSON.stringify({ "x'); alert(4); //": 'own"er/re"po' });
+
+  // INV-53 — DERIVE which fields to poison from the sinks themselves. Cycle-5
+  // §4v found this fixture was a false green: it hand-picked hostile fields
+  // (inv.id) and left others benign (inv.text, inv.subsystem), so dropping
+  // esc() from an un-poisoned sink passed every stage. A hand-picked payload
+  // set proves escaping only for the fields someone remembered — the same
+  // hand-listing trap as F17's block list, one level down.
+  //
+  // Scan the source for `${…obj.field…}` interpolations, then poison every
+  // STRING-rendered field found. Fields used structurally (.length/.map/.split)
+  // are excluded and REPORTED, so the check never silently narrows itself.
+  const interp = new Map();                       // alias -> Set(field)
+  for (const m of src.matchAll(/\$\{[^}]*?\b([a-z]+)\.([a-zA-Z]+)/g)) {
+    const [, alias, field] = m;
+    if (!interp.has(alias)) interp.set(alias, new Set());
+    interp.get(alias).add(field);
+  }
+  // Alias-SCOPED. An unqualified `.field` test excludes a string field whenever
+  // any unrelated object anywhere calls `.field()` — `inv.text` was dropped
+  // because `getFile().text()` exists in the FSA code, silently un-poisoning the
+  // exact sink §4v caught. The derivation must narrow only on the alias it means.
+  const structural = (alias, f) =>
+    new RegExp(`\\b${alias}\\.${f}\\s*(\\.(length|map|filter|join|split|forEach|find|slice|padEnd)\\b|\\()`).test(src);
+  const fieldsFor = (alias, skip = []) =>
+    [...(interp.get(alias) || [])].filter(f => !structural(alias, f) && !skip.includes(f));
+
+  const hostile = (alias, skip) => {
+    const o = {};
+    fieldsFor(alias, skip).forEach((f, i) => { o[f] = PAYLOADS[i % PAYLOADS.length] + ` [${alias}.${f}]`; });
+    return o;
+  };
+  // Structural fields are supplied concretely; every other interpolated field
+  // is hostile. `id` stays a payload — it is an attribute-context arg.
+  const invFields = fieldsFor('inv');
+  const projFields = fieldsFor('p', ['subsystems', 'invariants', 'seeds', 'axisB', 'cycleGroups']);
+  const subFields = fieldsFor('s');
+  const entFields = fieldsFor('e');
+  // Report BOTH what was derived and what was deliberately held back, so the
+  // fixture can never silently narrow the way the hand-picked one did.
+  const SKIPPED = 'p.{subsystems,invariants,seeds,axisB,cycleGroups} (arrays), e.id (numeric identity)';
+  log.push(`  · INV-53 payload set DERIVED from the sinks: inv{${invFields}} p{${projFields}} s{${subFields}} e{${entFields}}`);
+  log.push(`  · INV-53 held back as non-string: ${SKIPPED}`);
+  if (!invFields.includes('text') || !invFields.includes('subsystem'))
+    bad(`INV-53: the fields §4v proved unguarded (inv.text/inv.subsystem) are NOT in the derived payload set — derivation narrowed itself`);
+
+  const hostileProject = Object.assign(hostile('p', ['subsystems', 'invariants', 'seeds', 'axisB', 'cycleGroups']), {
+    subsystems: [hostile('s')], cycleGroups: [PAYLOADS[1] + ' [cycleGroup]'], invariants: [], seeds: [],
+    axisB: [], healthDimensions: PAYLOADS[0] + ' [p.healthDimensions]',
+  });
+  if (!hostileProject.id) hostileProject.id = PAYLOADS[2] + ' [p.id]';
+  store['ccg:customProjects'] = JSON.stringify([hostileProject]);
+  store[`ccg:${hostileProject.id}:invariants`] = JSON.stringify([hostile('inv')]);
+  store[`ccg:${hostileProject.id}:archive`] = JSON.stringify([Object.assign(hostile('e'), { id: 1 })]);
+  store['ccg:dashRepos'] = JSON.stringify({ [hostileProject.id]: 'own"er/re"po' });
   try {
-    ctx.switchProject("x'); alert(4); //");
+    ctx.switchProject(hostileProject.id);
     ctx.renderDashboard();
-    const sinks = ['ctItems', 'subsysTableBody', 't2SubsysBody', 'projectSelect', 'customInvariantsList', 'projectsCustom', 'dashCards'];
+    if (typeof ctx.renderArchive === 'function') ctx.renderArchive();
+    const sinks = ['ctItems', 'subsysTableBody', 't2SubsysBody', 'projectSelect', 'customInvariantsList', 'projectsCustom', 'dashCards', 'archiveEntries'];
     const dirty = [];
     for (const id of sinks) {
       const h = elStore[id] ? elStore[id].innerHTML : '';
@@ -373,6 +421,15 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   const offenders = [...noComments.matchAll(/on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
   if (!offenders.length) ok('no inline handler builds a JS argument with esc() — jsArg() only (F04/F11)');
   else bad(`inline handler(s) using esc() as a JS argument (use jsArg): ${offenders.join(' | ')}`);
+
+  // INV-54 — every clipboard write goes through copyToClipboard(). F05 fixed the
+  // silent-failure bug at the helper, and the archive "Copy content" button kept
+  // its own inline navigator.clipboard call, so the bug stayed live in that one
+  // sink for four releases. Centralising a behaviour does not apply it; scan for
+  // callers that bypass the centre.
+  const inlineClip = [...noComments.matchAll(/on[a-z]+="[^"]*navigator\.clipboard[^"]*"/gi)].map(m => m[0].slice(0, 80));
+  if (!inlineClip.length) ok('no inline handler calls navigator.clipboard directly — copyToClipboard() only (INV-54)');
+  else bad(`inline handler(s) bypassing copyToClipboard(): ${inlineClip.join(' | ')}`);
 }
 
 // R18 (a)1 — keyboard access. A control built on a non-interactive element
@@ -399,6 +456,23 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   }
   if (!bad_.length) ok('every click-only control is keyboard-reachable (role+tabindex+keydown, or a native button) — R18 (a)1');
   else bad(`mouse-only control(s), unreachable by keyboard: ${bad_.join(' | ')}`);
+}
+
+// INV-56 — focus VISIBILITY, the structural half. Suppressing the UA focus ring
+// with outline:none and supplying nothing in its place makes every focusable
+// control invisible to keyboard users — strictly worse than not being focusable.
+// 15 of the 17 suppressions are INLINE on form controls, where a stylesheet
+// :focus rule can never win on specificity, so the replacement must use
+// box-shadow (which inline outline:none cannot suppress). Whether the indicator
+// has adequate CONTRAST is perceptual and stays with S7/INV-52.
+{
+  const suppressors = (html.match(/outline:\s*none/g) || []).length;
+  const fv = html.match(/:focus-visible\s*\{[^}]*\}/g) || [];
+  const usesBoxShadow = fv.some(r => /box-shadow\s*:/.test(r));
+  if (!suppressors) ok('no outline:none in the file — UA focus ring intact everywhere (INV-56)');
+  else if (fv.length && usesBoxShadow) ok(`${suppressors} outline:none suppression(s) are covered by a :focus-visible rule using box-shadow (INV-56)`);
+  else if (fv.length) bad(`:focus-visible exists but sets no box-shadow — inline outline:none (${suppressors} of them) will win, leaving those controls focusable but invisible`);
+  else bad(`${suppressors} outline:none suppression(s) with NO :focus-visible replacement — focusable but invisible to keyboard users (INV-56)`);
 }
 
 // F06 — Axis B must round-trip through the project form WITHOUT losing `pulse`.

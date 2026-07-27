@@ -237,6 +237,21 @@ for (const b of DYNAMIC_BUILDERS) {
 if (builderFail) failures += builderFail;
 else console.log(`  ✓ Dynamic console builder parity — ${DYNAMIC_BUILDERS.length} builders pinned to their canonical contracts (R16)`);
 
+// ── Structural check 8 (F15): the CI workflow declares least privilege. Every
+// step only reads the checkout — no step posts, pushes or publishes — so
+// without an explicit block the job inherits whatever the repository default
+// grants. §4v flagged this as a Category D candidate: the permissions block
+// shipped in v1.21.0 with no test asserting it, so a later edit could drop it
+// silently.
+try {
+  const wf = readFileSync(new URL('.github/workflows/sync-check.yml', root), 'utf8');
+  const perms = wf.match(/^permissions:\s*\n((?:\s+\S.*\n)+)/m);
+  if (!perms) { failures++; console.log('  ✗ CI workflow declares no permissions: block — the job inherits the repo default (F15)'); }
+  else if (!/contents:\s*read/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow permissions do not grant read-only contents: ${perms[1].trim().replace(/\n/g, ', ')}`); }
+  else if (/write/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow requests write permission it does not need: ${perms[1].trim().replace(/\n/g, ', ')}`); }
+  else console.log('  ✓ CI workflow declares least-privilege permissions (contents: read)');
+} catch (e) { failures++; console.log('  ✗ could not read .github/workflows/sync-check.yml: ' + e.message); }
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

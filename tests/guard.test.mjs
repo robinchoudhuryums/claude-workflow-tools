@@ -25,6 +25,10 @@ function setup() {
   // BLOCKS from it (F17) — the guard cannot run in the temp dir without it.
   for (const s of ['gen-commands.mjs', 'check-template-sync.mjs', 'check-output-blocks.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
   cpSync(join(repo, '.claude'), join(dir, '.claude'), { recursive: true });
+  // The guard now asserts the CI workflow's permissions block (F15), so the
+  // temp copy needs it — without this the baseline case fails for a reason
+  // unrelated to any injected drift.
+  cpSync(join(repo, '.github'), join(dir, '.github'), { recursive: true });
   return dir;
 }
 function runGuard(dir) {
@@ -136,6 +140,13 @@ expectFail('detects a registry block with no console representation (F17)',
 expectFail('detects VERSION disagreeing with the newest CHANGELOG entry (F09)',
   d => writeFileSync(join(d, 'VERSION'), '9.9.9\n'),
   /does not match the newest CHANGELOG entry/i);
+
+// 15) CI least privilege (F15): dropping the permissions block is caught. §4v
+// listed this as a Category D candidate — the block shipped with no assertion,
+// so a later edit could silently restore the inherited default.
+expectFail('detects the CI workflow losing its least-privilege permissions (F15)',
+  d => { const f = join(d, '.github', 'workflows', 'sync-check.yml'); writeFileSync(f, readFileSync(f, 'utf8').replace(/^permissions:\s*\n\s+contents: read\n/m, '')); },
+  /permissions/i);
 
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
