@@ -76,6 +76,15 @@ recording the original S/M/L + estimated hours against the actual time
 spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
 
+BLOCKS (optional — only if .cycle/ exists): write the CYCLE SUMMARY BLOCK
+verbatim to .cycle/blocks/<cycle>-<letter>-reflect.md. §4v and §6a consume it
+in a FRESH session with none of this context, so a block that lives only in
+chat cannot reach them. If you CORRECTED a count that an implementation
+summary reported, say so in the metrics `notes` field — the pack assembler
+(scripts/verification-pack.mjs) surfaces that to the verifier automatically,
+so the "don't trust the self-report" signal is generated rather than
+remembered. Skip if no .cycle/.
+
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
 completes a subsystem cycle, and the count drives /audit's seams-cadence

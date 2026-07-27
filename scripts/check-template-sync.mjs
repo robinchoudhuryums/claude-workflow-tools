@@ -70,6 +70,9 @@ const CHECKS = [
   // pins the routing target, not just the heading.
   { feature: 'Interface & visual layer lens (R18)', marker: 'interface & visual layer', files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
   { feature: 'Perceptual checks routed to operator (R18)', marker: 'operator visual checks', files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
+  // R19 — the §4v pack assembler. Script + the .cycle/blocks/ convention it
+  // reads; console-independent, so it is pinned in the canonical docs only.
+  { feature: 'Verification pack assembler (R19)', marker: 'verification-pack', files: ['CLAUDE.md', 'README.md'] },
 ];
 
 // Every workflow output block must be representable in BOTH the canonical
