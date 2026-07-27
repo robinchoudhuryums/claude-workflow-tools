@@ -186,7 +186,7 @@ Two optional helpers operate on this state (both fail-safe and additive):
   only in a chat transcript cannot reach them; `STATE.md` carries prose *about*
   the work, not the block. Optional like the rest of `.cycle/`.
 
-And one helper operates on the invariant library:
+And two helpers operate on the invariant library:
 - `scripts/invariant-check.mjs` — the executable invariant runner. Reads
   the library (`.cycle/config.md` or CLAUDE.md), runs every invariant
   whose `Verify:` field is a command (`node …`, `npm …`, `./…`, …) and
@@ -194,6 +194,19 @@ And one helper operates on the invariant library:
   MANUAL. This is the automated half of the §4v invariant probe — write
   `Verify:` as a runnable command and the invariant becomes a test.
   `--list` shows the classification without running.
+- `tests/mutation-audit.mjs` — the **other half of that proof**. A
+  `Verify:` command passing on a clean tree is not evidence it would FAIL
+  if the rule were violated; a command that cannot see its own invariant
+  reports PASS forever. For every runnable invariant this violates the
+  rule in a throwaway copy of the repo, runs that invariant's own Verify
+  command, and requires it to fail *via that invariant's own assertion* —
+  so a mutation caught by a neighbour sharing the same command is not
+  counted as proof. Coverage is DERIVED from the live library (a runnable
+  invariant with no mutation case is a failure, not a smaller proven set)
+  and a case whose find string has rotted away fails rather than
+  reporting a neutral skip. `--only INV-05,INV-20` narrows it;
+  `--jobs N` sets concurrency. Prerequisite for trusting any
+  "invariants: N/N PASS" line, including the §4v probe's.
 
 And one assembles the independent-verification input:
 - `scripts/verification-pack.mjs` — builds a ready-to-paste §4v prompt: the

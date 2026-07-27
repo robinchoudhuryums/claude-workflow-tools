@@ -58,6 +58,7 @@ const CHECKS = [
   { feature: 'SessionStart context hook',  marker: 'sessionstart',                files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Metrics report renderer',    marker: 'render-metrics',              files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Executable invariant runner', marker: 'invariant-check',            files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Invariant mutation audit',    marker: 'mutation-audit',              files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Portfolio dashboard',        marker: 'portfolio',                   files: ['CLAUDE.md', 'README.md'] },
   { feature: 'File System Access draft (R3)', marker: 'file system access',        files: ['README.md', 'claude-code-guide-v2.html'] },
   { feature: 'Seams audit cadence (P10)',  marker: 'seams audit cadence',         files: ['CLAUDE.md', 'README.md'] },
@@ -250,7 +251,94 @@ try {
   else if (!/contents:\s*read/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow permissions do not grant read-only contents: ${perms[1].trim().replace(/\n/g, ', ')}`); }
   else if (/write/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow requests write permission it does not need: ${perms[1].trim().replace(/\n/g, ', ')}`); }
   else console.log('  ✓ CI workflow declares least-privilege permissions (contents: read)');
+
+  // INV-14 — the workflow must actually RUN the guard, on both triggers. The
+  // invariant said "CI runs check-template-sync.mjs on push and PR" and its
+  // Verify field pointed at the YAML file as prose, so nothing asserted it: the
+  // trigger list or the step could have been dropped and only INV-57's
+  // permissions clause was being read out of this file.
+  const on = wf.match(/^on:\s*\n((?:\s+\S.*\n)+)/m);
+  const triggers = on ? on[1] : '';
+  const missingTrigger = ['push', 'pull_request'].filter(t => !new RegExp(`^\\s+${t}\\s*:`, 'm').test(triggers));
+  if (missingTrigger.length) { failures++; console.log(`  ✗ CI workflow does not trigger on: ${missingTrigger.join(', ')} (INV-14)`); }
+  else if (!/run:\s*node scripts\/check-template-sync\.mjs/.test(wf)) {
+    failures++; console.log('  ✗ CI workflow has no step running scripts/check-template-sync.mjs (INV-14)');
+  } else console.log('  ✓ CI runs check-template-sync.mjs on push and pull_request (INV-14)');
 } catch (e) { failures++; console.log('  ✗ could not read .github/workflows/sync-check.yml: ' + e.message); }
+
+// ── Structural check 9 (INV-16): the /setup-cycle config SCHEMA is written out
+// in three places — CLAUDE.md's "Cycle Workflow Config" template, CLAUDE.md's
+// /setup-cycle OUTPUT 1, and the console's Setup <pre>. INV-16 claimed they
+// "list the same optional sections" and its Verify field pointed at the
+// capability markers above, which only prove a phrase appears SOMEWHERE in each
+// file. That was a false green: the console's schema was missing
+// `### Seams Audit Cadence` entirely and its Invariant Library line omitted the
+// `| Verify:` field — so an operator who ran §Setup from the console got a
+// config whose invariants could never become executable, while the marker for
+// "test name or code ref" passed because the phrase appears elsewhere in the
+// HTML. Compare the actual section lists, derived from each copy.
+{
+  const sections = (text, startRe, endRe) => {
+    const s = text.search(startRe);
+    if (s === -1) return null;
+    const rest = text.slice(s + 1);
+    const e = rest.search(endRe);
+    const body = e === -1 ? rest : rest.slice(0, e);
+    return { set: new Set([...body.matchAll(/^###\s+(.+)$/gm)].map(m => m[1].split('←')[0].trim().toLowerCase())), body };
+  };
+  const COPIES = [
+    ['CLAUDE.md config template', sections(claudeRaw, /^## Cycle Workflow Config$/m, /^```/m)],
+    ['CLAUDE.md /setup-cycle OUTPUT 1', sections(claudeRaw, /OUTPUT 1 — CYCLE WORKFLOW CONFIG/, /OUTPUT 2 —/)],
+    ['console Setup <pre>', sections(htmlRaw, /^## Cycle Workflow Config$/m, /OUTPUT 2 —/)],
+  ];
+  const unreadable = COPIES.filter(([, r]) => !r || !r.set.size).map(([n]) => n);
+  if (unreadable.length) {
+    failures++;
+    console.log(`  ✗ could not extract the config schema from: ${unreadable.join(', ')} — the parity check would be vacuous (INV-16)`);
+  } else {
+    const union = new Set(COPIES.flatMap(([, r]) => [...r.set]));
+    const drift = [];
+    for (const name of union) {
+      const absent = COPIES.filter(([, r]) => !r.set.has(name)).map(([n]) => n);
+      if (absent.length) drift.push(`"${name}" missing from ${absent.join(' + ')}`);
+    }
+    // The `| Verify:` field is what makes an invariant executable
+    // (invariant-check.mjs). A schema that omits it teaches operators to write
+    // libraries that can never run, so it is pinned as well as the headings.
+    const noVerify = COPIES.filter(([, r]) => !/^INV-\S+ \|.*\| Verify:/m.test(r.body)).map(([n]) => n);
+    if (noVerify.length) drift.push(`Invariant Library line has no "| Verify:" field in ${noVerify.join(' + ')}`);
+    if (drift.length) { failures++; console.log(`  ✗ /setup-cycle config schema drift (INV-16): ${drift.join('; ')}`); }
+    else console.log(`  ✓ /setup-cycle config schema identical across all 3 copies — ${union.size} sections + the Verify field (INV-16)`);
+  }
+}
+
+// ── Structural check 10 (INV-12 / INV-18): every step that writes to .cycle/
+// must be gated on .cycle/ existing. This is what makes the state directory
+// OPTIONAL — deleting it returns a consuming project to the pure copy-paste
+// workflow with no loss. Both invariants' Verify fields read "code read of
+// command text", i.e. nothing was checking it; an ungated CHECKPOINT would
+// silently make .cycle/ mandatory for every consumer.
+{
+  const STEP = /^(?:\d+\.\s*)?(CHECKPOINT|METRICS|ESTIMATE CALIBRATION|BLOCKS|SEAM COUNTER)\b(.*)$/;
+  const GATE = /optional\s*—\s*only if|if a \.cycle\/ directory exists|skip if no \.cycle\//i;
+  const ungated = [];
+  let stepCount = 0;
+  for (const name of tableCmds) {
+    const txt = (() => { try { return readFileSync(new URL(`.claude/commands/${name}.md`, root), 'utf8'); } catch { return null; } })();
+    if (!txt) continue;
+    const lines = txt.split('\n');
+    lines.forEach((line, i) => {
+      const m = line.match(STEP);
+      if (!m) return;
+      stepCount++;
+      // The gate may sit on the heading line or the sentence immediately under it.
+      if (!GATE.test(lines.slice(i, i + 3).join(' '))) ungated.push(`${name}.md: "${m[1]}"`);
+    });
+  }
+  if (!stepCount) { failures++; console.log('  ✗ no .cycle/-writing steps found in any command — the gating check is vacuous (INV-12)'); }
+  else if (ungated.length) { failures++; console.log(`  ✗ .cycle/-writing step(s) not gated on the directory existing: ${ungated.join(', ')} (INV-12/INV-18)`); }
+  else console.log(`  ✓ all ${stepCount} .cycle/-writing command steps are gated on .cycle/ existing (INV-12/INV-18)`);
+}
 
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);

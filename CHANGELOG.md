@@ -5,6 +5,74 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.25.0 — 2026-07-27
+
+Audits the 12 MANUAL invariants and promotes the F11 mutation audit into CI.
+**Config-schema change** — the console's `/setup-cycle` output was missing two
+things, so consuming projects generated from it should re-check their config
+(see below); the command bodies themselves are unchanged.
+
+### The MANUAL tier was a notation artifact, not a limit
+Twelve invariants reported MANUAL because their `Verify:` field was written as
+prose (`code read of PROJECTS`, `importStateFile logic`) rather than a command.
+Auditing them found **ten were mechanically verifiable all along** and two —
+INV-02 and INV-06 — were *already being enforced on every push* by a check that
+had been running for releases, while the library reported them unverified. All
+twelve are now runnable: the library is **58 invariants, 0 manual**.
+
+Four had no assertion anywhere and now do (`check-html.mjs`): INV-07 (built-ins
+resolve to the shipped Axis B defaults), INV-08 (the `| Verify:` suffix tracks
+the value), INV-10 (the whole import path), INV-15 (§6a/§6b ask about the
+project's *configured* categories). Three became structural checks in
+`check-template-sync.mjs`: INV-14 (CI triggers + the guard step), INV-16 (config
+schema parity), INV-12/INV-18 (every `.cycle/`-writing command step is gated on
+the directory existing).
+
+### Two real defects the audit surfaced
+**INV-16 was false.** Its `Verify:` pointed at the capability markers, which only
+prove a phrase appears *somewhere* in a file. Under that, the console's Setup
+schema had been missing `### Seams Audit Cadence` entirely and its Invariant
+Library line omitted the `| Verify:` field — so an operator who ran `/setup-cycle`
+from the **console** got a config whose invariants could never become executable,
+which is the one field this repo's whole invariant toolchain depends on. Both are
+restored, and check 9 now compares the actual section lists across all three
+copies of the schema. **If you generated a config from the console, add a
+`Verify:` field to your invariants and a `Seams Audit Cadence` section.**
+
+**INV-10 had never executed.** Its `Verify:` read "importStateFile logic", and the
+headless `FileReader` stub never fired `onload` — so no clause of it (JSON
+rejection, envelope rejection, the confirm gate, `ccg:*`-only writes) had ever
+run. All four now do.
+
+Also recorded, deliberately **not** fixed: Axis B configurability stops at
+§6a/§6b. `buildSeamsText` PART 4 and the SEAMS & INVARIANTS AUDIT BLOCK still
+enumerate the five default categories by name, so a project with custom
+categories gets a Seams audit asking about ones it does not use. Fixing it means
+editing an `--assert`-locked canonical body *and* the block's registered field
+names. The check reports the gap rather than quietly passing.
+
+### The mutation audit is now a CI stage
+`tests/mutation-audit.mjs` — promoted from the Cycle-5 scratchpad script that
+found a real false green. `invariant-check.mjs` proves each `Verify:` command
+passes on a clean tree; that is not evidence it would **fail** if the rule were
+violated. This violates each rule in a throwaway copy and requires the command
+to fail. Three things changed on the way in, each closing a way the scratchpad
+version could lie:
+
+- **Coverage is derived** from the live library (through `invariant-check.mjs`'s
+  exported parse — not a second copy). A runnable invariant with no mutation case
+  is a failure, not a quietly smaller proven set.
+- **A stale case fails.** The scratchpad scored a rotted find string as a neutral
+  `?` and still reported "16/17 proven, 0 false greens".
+- **Signals are per-invariant** — the field-level tier §4v asked for. Twenty
+  invariants share `check-html.mjs`; under exit-code-only scoring a mutation for
+  INV-06 that tripped INV-07's assertion still read as proof. Each case names the
+  message its *own* assertion emits.
+
+`tests/mutation-audit.test.mjs` guards the guard against all three. Result:
+**58/58 invariants proven fail-closed across 60 mutations**, in ~15s. Test
+Command and CI are now 16 stages.
+
 ## 1.24.0 — 2026-07-27
 
 Closes every finding from the Cycle-5 §4v independent verification pass. Console

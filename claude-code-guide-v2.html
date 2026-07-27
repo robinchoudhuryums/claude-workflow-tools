@@ -593,12 +593,16 @@ instead of inlining project-specific content.
 (repeat for each subsystem)
 
 ### Invariant Library
-INV-XX | [rule text] | Subsystem: [name]
-(repeat for each invariant)
+INV-XX | [rule text] | Subsystem: [name] | Verify: [test name or code ref — optional]
+(repeat for each invariant; carry the Phase 5 "How to verify" detail into
+ the optional Verify field when it names a concrete test or assertion)
 
 ### Policy Configuration
 Policy threshold: [N]/10
 Consecutive cycles: [N]
+
+### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles
+every [N] subsystem cycles
 
 ### Regression Scenarios   ← required iff Test Command is `manual`; otherwise optional
 S1 | [short scenario name] | Subsystem: [name]
