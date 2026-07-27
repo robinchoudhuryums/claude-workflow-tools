@@ -82,7 +82,14 @@ function makeNavLink(href) {
     addEventListener() {}, style: {},
   };
 }
-const PANEL_IDS = ['dashboard', 'setup', 't1', 't2', 'flow', 's0', 's1', 's1s', 's2', 's3', 's4', 's4v', 's5', 's6a', 's6b', 's7', 'tips', 'projects', 'archive'];
+// DERIVE the fixture from the real markup rather than hardcoding ids: a
+// hand-listed fixture silently rots the moment a panel is added (it did, the
+// same shift as F17), and a fixture that has drifted from the page it stands in
+// for gives false confidence.
+const PANEL_IDS = [...html.matchAll(/<(?:section|div)\b[^>]*\bclass="[^"]*\bpanel\b[^"]*"[^>]*>|<(?:section|div)\b[^>]*>/g)]
+  .map(m => m[0]).filter(t => /\bclass="[^"]*\bpanel\b/.test(t))
+  .map(t => (t.match(/\bid="([^"]+)"/) || [])[1]).filter(Boolean);
+const NAV_HREFS = [...html.matchAll(/<a\s+href="#([^"]+)"/g)].map(m => m[1]);
 const panels = PANEL_IDS.map(makePanel);
 const navLinks = PANEL_IDS.map(id => makeNavLink('#' + id));
 panels[0].classList.add('active');   // matches the markup's default-active panel
@@ -356,6 +363,15 @@ if (loaded && typeof ctx.showPanel === 'function') {
     delete ctx.location;
   } else bad('handleHash not defined — hash routing unguarded');
   ctx.showPanel('dashboard');
+
+  // Every nav link must resolve to a real panel. showPanel() falls back to the
+  // first panel for an unknown id, so a typo'd or orphaned nav href does not
+  // error — it silently lands the user on the Dashboard. Guards the wiring for
+  // any newly added section (F03/F21).
+  const orphans = NAV_HREFS.filter(h => !PANEL_IDS.includes(h));
+  if (PANEL_IDS.length && NAV_HREFS.length && !orphans.length) ok(`every nav link resolves to a panel — ${PANEL_IDS.length} panels, ${NAV_HREFS.length} links (F03/F21)`);
+  else if (!PANEL_IDS.length || !NAV_HREFS.length) bad('panel/nav fixture derived nothing from the markup — the tab assertions would be vacuous');
+  else bad('nav link(s) pointing at no panel (would silently fall back to Dashboard): ' + orphans.join(', '));
 }
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');

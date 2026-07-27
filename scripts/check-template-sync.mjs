@@ -18,6 +18,7 @@
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { BLOCKS } from './check-output-blocks.mjs';   // single source of truth for the block registry (F17)
 
 const root = new URL('..', import.meta.url);
 const FILES = ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'];
@@ -73,15 +74,15 @@ const CHECKS = [
 
 // Every workflow output block must be representable in BOTH the canonical
 // commands and the HTML console, so a console user can produce/consume each.
-const WORKFLOW_BLOCKS = [
-  'session handoff block',
-  'implementation handoff block',
-  'implementation summary block',
-  'tier 2 handoff block',
-  'cycle summary block',
-  'verification block',
-  'follow-on audit items',
-];
+//
+// F17: this was a hand-maintained list of 7 while check-output-blocks.mjs
+// registered 12 — a parallel source of truth, the exact Axis B category this
+// tool polices. The five it omitted were not an oversight anyone noticed: they
+// were hiding a missing /pr-review console section (F03), a missing Tier 1
+// implement prompt (F21), and a §T2b that never emitted its summary block
+// (F02). DERIVE it instead, so adding a block to the registry automatically
+// requires the console to carry it and no future gap can hide here.
+const WORKFLOW_BLOCKS = BLOCKS.map(b => b.name.toLowerCase());
 
 let failures = 0;
 const lines = [];
@@ -191,11 +192,11 @@ if (metricsFail) failures += metricsFail;
 else console.log('  ✓ Metrics-row ownership + defensive_count schema parity (P1 + P11)');
 
 // ── Structural check 7 (R16): per-builder parity for the DYNAMIC console
-// prompt builders. As of W1 (full textual lock) SIX of these builders —
-// §T1, §T2a, §6b, §4v, §1s, §6a — are now gated by gen-html-prompts --assert
-// against a canonical body in CLAUDE.md (100% line coverage; drift fails CI);
-// only §T2b stays report-only-by-design. These markers are therefore a cheap
-// SECONDARY layer now (defense-in-depth + a human-readable contract): they pin
+// prompt builders. ALL NINE are now gated by gen-html-prompts --assert against
+// a canonical body in CLAUDE.md (100% line coverage; drift fails CI) — F02/F21
+// retired the last report-only builder, so no exemption tier remains. These
+// markers are therefore a cheap SECONDARY layer (defense-in-depth + a
+// human-readable contract): they pin
 // each builder's load-bearing phrases so they must co-occur in BOTH the
 // canonical source (CLAUDE.md) and the HTML console, catching gross drift even
 // if the --assert lock were bypassed. (Cycle-4 F1 — a §6a drift instance the
@@ -207,6 +208,8 @@ const DYNAMIC_BUILDERS = [
   { name: '§4v Verification (buildVerificationText)', markers: ['independent verification', 'category d'] },
   { name: 'Tier 1 Broad Scan (buildTier1Text)',       markers: ['stage 1 — broad pass', 'production readiness assessment', 'effectiveness & strategic review'] },
   { name: 'Tier 2 (buildTier2AuditText/ImplText)',    markers: ['do not touch', 'cross-module risk'] },
+  { name: 'Tier 1 Broad Implement (buildTier1ImplText)', markers: ['---broad scan implementation summary---'] },
+  { name: 'PR Review (buildPrReviewText)',            markers: ['---pr review block---', 'stay inside the diff'] },
 ];
 let builderFail = 0;
 for (const b of DYNAMIC_BUILDERS) {

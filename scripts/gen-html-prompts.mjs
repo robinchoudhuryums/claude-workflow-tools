@@ -98,12 +98,17 @@ export const DYNAMIC_MANIFEST = [
   { id: 'buildTier1Text',      command: 'broad-scan',         drop: false, project: 'obs',  locked: true  },
   { id: 'buildTier2AuditText', command: 'targeted-audit',     drop: true,  project: 'obs',  locked: true,  replace: [['$ARGUMENTS', '[SUBSYSTEM GROUP NAME]']] },
   { id: 'buildP6bText',        command: 'health-pulse',       drop: false, project: 'obs',  locked: true  },
-  // §T2b is intentionally NOT locked: canonical /targeted-implement delegates to
-  // /broad-implement Step 1 ("see /broad-implement Step 1 for the full branching
-  // detail"), so the console — which must be standalone (a console user copies one
-  // prompt) — legitimately diverges. Resolved via option (b): keep it report-only,
-  // guarded by the R16-S parity markers, not the textual lock (ROADMAP R16).
-  { id: 'buildTier2ImplText',  command: 'targeted-implement', drop: true,  project: null,   locked: false },
+  // F21/F03 — added already locked, so neither can decay into another §T2b.
+  { id: 'buildTier1ImplText',  command: 'broad-implement',    drop: true,  project: null,   locked: true,  replace: [['$ARGUMENTS', '[FINDING IDS TO IMPLEMENT]']] },
+  { id: 'buildPrReviewText',   command: 'pr-review',          drop: true,  project: 'obs',  locked: true,  replace: [['$ARGUMENTS', '[PR NUMBER OR URL]']] },
+  // §T2b was the last report-only builder. Its exemption rested on canonical
+  // /targeted-implement delegating to /broad-implement Step 1 while the console
+  // had no /broad-implement prompt to delegate TO — so the console diverged to
+  // stay standalone. F21 added that prompt, so the premise is gone; and because
+  // canonicalCoverage only requires canonical lines to be PRESENT (extras are
+  // ignored), the console can carry the expanded Step-1 detail AND be locked.
+  // Every dynamic builder is now locked — there is no report-only tier left.
+  { id: 'buildTier2ImplText',  command: 'targeted-implement', drop: true,  project: null,   locked: true  },
   // §4v/§1s/§6a are cycle-type prompts, NOT slash commands — their canonical body
   // lives in a fenced block under a ### section heading (sectionBody), so locking
   // them doesn't mint a /command file (W1 full textual lock — ROADMAP R16).

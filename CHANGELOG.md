@@ -5,6 +5,61 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.20.0 — 2026-07-27
+
+Closes the console↔canonical parity gap and the guard hole that hid it (Cycle-5
+F03, F21, F02, F17). Console and tooling only — **no command semantics or
+config-schema change, so no `/sync-commands` re-pull is required**. Two new
+console sections; every dynamic builder is now locked.
+
+### F03 — `/pr-review` reaches the console
+Shipped in v1.11.0 and documented in the README's block table, it had **zero**
+presence in the console for four releases. Added a **PR Review** section +
+`buildPrReviewText`, with the active project's invariant library injected so the
+prompt is standalone for lens 8. Registered `locked:true` from day one.
+
+### F21 — Tier 1 finally has its implement prompt
+The Tier 1 section promised "audit-then-implement with your approval gate in
+between" and shipped only the audit prompt, so a console-driven Tier 1 cycle had
+no way to produce a `BROAD SCAN IMPLEMENTATION SUMMARY`. Added
+`buildTier1ImplText` behind an explicit approval-gate note. Also `locked:true`.
+
+### F02 — the §T2b exemption is retired
+`buildTier2ImplText` was exempted from the R16 lock as "canonical delegates to
+`/broad-implement` Step 1, the console must be standalone." The Cycle-5 audit
+found the exemption had been hiding real rot: no P7 `OPERATOR ACTIONS / DEPLOY`
+(it still read `6. DEPLOY STEP`, retired in v1.7.0 and by then the only surviving
+instance in the repo), no P9 test-doubles scan, and it never emitted
+`TARGETED IMPLEMENTATION SUMMARY` — so console Tier-2 output could not feed
+§4v or §6a. The 4%-coverage number had been read as intentional and never
+re-examined.
+- Two things dissolved the tradeoff: F21 gave the delegation a real target in
+  the console, and `canonicalCoverage` only requires canonical lines to be
+  PRESENT — extras are ignored — so the builder carries its expanded Step-1
+  detail *and* locks. The standalone-vs-locked conflict was never actually
+  forced.
+- **All nine dynamic builders are now locked. There is no report-only tier.**
+
+### F17 — derive the block coverage instead of listing it
+`check-template-sync`'s `WORKFLOW_BLOCKS` was a hand-maintained list of 7 while
+`check-output-blocks` registered 12 — a parallel source of truth, the exact
+Axis B category this tool polices. The five it omitted were not a random
+sample: they were the ones hiding F03, F21 and F02. It is now derived from
+`BLOCKS`, so a registered block that no console section carries fails CI.
+- `guard.test.mjs` +2 cases (now 13), including the PR-REVIEW-BLOCK regression
+  and a registry-block-with-no-console-representation case. Its `setup()` now
+  copies `check-output-blocks.mjs`, which the guard imports.
+
+### Test coverage
+- `check-html`'s panel fixture is now **derived from the markup** rather than a
+  hardcoded id list — it had already gone stale the moment a panel was added,
+  the same failure shape as F17.
+- New assertion: every `nav a href="#id"` resolves to a real panel. `showPanel`
+  falls back to the first panel for an unknown id, so an orphaned nav link
+  silently lands the user on the Dashboard instead of erroring.
+- `INV-36` rewritten (nine locked, no exemptions); `INV-43`/`INV-44` added — 44
+  invariants, 31 runnable PASS.
+
 ## 1.19.1 — 2026-07-27
 
 Console security + reliability fixes from the Cycle-5 `/broad-scan` (F01, F04,

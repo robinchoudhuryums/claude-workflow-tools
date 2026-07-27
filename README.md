@@ -71,7 +71,7 @@ When an Axis B category scores at or below the policy threshold for consecutive 
 A fresh session with no implementation context re-probes invariants, counts regressions with a hard definition (any behavior worse under realistic load = regression, regardless of "tradeoff" label), and checks whether fixes have corresponding regression tests.
 
 ### Health per-change (`/pr-review`)
-The cycle grades health *over time*; `/pr-review` is its sibling for health *per change*. It applies the same rubrics — severity/confidence, "would it fire in production this month," the hard regression definition, plus the test-vs-production-path and test-double probes — to a single PR's diff, and emits a PR REVIEW BLOCK with a verdict and blocking items. It is read-only and runs either by hand (`/pr-review 142`) or off a `subscribe_pr_activity` webhook event; it posts to the PR only when you ask.
+The console carries this prompt too, under **PR Review** in the sidebar (added v1.20.0 — it was missing for four releases). The cycle grades health *over time*; `/pr-review` is its sibling for health *per change*. It applies the same rubrics — severity/confidence, "would it fire in production this month," the hard regression definition, plus the test-vs-production-path and test-double probes — to a single PR's diff, and emits a PR REVIEW BLOCK with a verdict and blocking items. It is read-only and runs either by hand (`/pr-review 142`) or off a `subscribe_pr_activity` webhook event; it posts to the PR only when you ask.
 
 ## Adapting for a New Project
 

@@ -21,7 +21,9 @@ function setup() {
   const dir = mkdtempSync(join(tmpdir(), 'cwt-guard-'));
   for (const f of ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html', 'VERSION', 'CHANGELOG.md']) copyFileSync(join(repo, f), join(dir, f));
   mkdirSync(join(dir, 'scripts'), { recursive: true });
-  for (const s of ['gen-commands.mjs', 'check-template-sync.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
+  // check-output-blocks.mjs is copied because check-template-sync now imports
+  // BLOCKS from it (F17) — the guard cannot run in the temp dir without it.
+  for (const s of ['gen-commands.mjs', 'check-template-sync.mjs', 'check-output-blocks.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
   cpSync(join(repo, '.claude'), join(dir, '.claude'), { recursive: true });
   return dir;
 }
@@ -106,6 +108,26 @@ expectFail('detects the interface lens losing its perceptual routing (R18)',
 expectFail('detects the interface lens dropped from the canonical command (R18)',
   d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('INTERFACE & VISUAL LAYER', 'INTERFACE-LAYER-GONE')); },
   /interface & visual layer/i);
+
+// 12) Derived block coverage (F17): a block that the OLD hand-maintained
+// WORKFLOW_BLOCKS list did not cover must now fail when dropped from the
+// console. PR REVIEW BLOCK is the regression case — it was absent from the
+// console for four releases precisely because this check could not see it.
+expectFail('detects a previously-unguarded block dropped from the console (F17)',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('PR REVIEW BLOCK', 'PR-REVIEW-GONE')); },
+  /pr review block/i);
+
+// 13) Derived block coverage (F17): the derivation itself must hold. If a block
+// is added to the check-output-blocks registry but no console section carries
+// it, the guard fails rather than silently covering 7 of 12 again.
+expectFail('detects a registry block with no console representation (F17)',
+  d => {
+    const f = join(d, 'scripts', 'check-output-blocks.mjs');
+    writeFileSync(f, readFileSync(f, 'utf8').replace(
+      'export const BLOCKS = [',
+      "export const BLOCKS = [\n  { name: 'BRAND NEW BLOCK', open: '---BRAND NEW BLOCK---', close: '---END BRAND NEW BLOCK---', producer: null, inFormats: false, fields: [] },"));
+  },
+  /brand new block/i);
 
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
