@@ -1,12 +1,37 @@
 # Cycle State
 
 ## Current
-Cycle: 4 — SYNTHESIZED (overall 8.8/10). Post-synthesis roadmap work in progress: R16 (dynamic-builder lock).
-Phase: idle (R16-full + HTML Console Correctness COMPLETE v1.18.0 — 6/7 dynamic builders textually locked; render+FSA paths headless-tested)
-Scope: Interactive Console (HTML builders) + Tooling & Sync Infrastructure
+Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
+Phase: implement (R18 COMPLETE v1.19.0 — interface/visual audit lens; /regression + /reflect pending)
+Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
-Updated: 2026-06-16
+Updated: 2026-07-27
+
+## Cycle 5 — R18 interface/visual audit lens — ✅ COMPLETE (v1.19.0)
+Shipped in 5 phases on branch claude/broad-scan-dyw3lo. Origin: operator observed the visual layer was not
+explicitly in /broad-scan. Confirmed — across all 20 templates the entire UI/UX surface was ONE line, and that
+line asks about *workflow* friction. Root causes: the verification bar (no proof surface for appearance — the
+same discipline that HELD R11), origin domain (server-heavy built-ins; all 5 default Axis B categories are
+backend shapes), and no scoring slot (interface defects answered NO to /reflect Q1 → defensive/structural →
+excluded from net_score).
+- P0 ROADMAP R18 recorded, incl. the deferral of the same lens for /audit + /pr-review.
+- P1 (D1) /broad-scan Stage 3 INTERFACE & VISUAL LAYER: gated on a user-facing surface; (a) STRUCTURAL findings
+  vs (b) PERCEPTUAL routed to OPERATOR VISUAL CHECKS in Regression-Scenario format; new INTERFACE FINDINGS +
+  OPERATOR VISUAL CHECKS outputs; Q3 reworded UX→workflow friction. §T1 buildTier1Text mirrored, still
+  --assert-locked at 100% coverage.
+- P2 (D2) schema notes in all THREE copies (template block, /setup-cycle OUTPUT 1, console setup <pre>) —
+  interface Health Dimension, optional "Visual / Interaction Regression Posture" Axis B, visual checks homed
+  in Regression Scenarios. INV-16 parity held.
+- P3 (D3) /setup-cycle Phase 1 profiles user-facing surfaces; Phase 4 proposes the interface dimension.
+- P4 (D4) /reflect Q1 counts a user-visible interface defect as YES. p4reflect regenerated via --write.
+- P5 guard: 2 R18 markers (lens heading AND the perceptual routing target — the (a)/(b) split is the
+  load-bearing part) across CLAUDE.md/console/README; 2 fail-closed guard.test cases (now 11); INV-39 (39
+  total); README "Interface & Visual Layer" section; VERSION 1.18.0→1.19.0 + CHANGELOG.
+- Deliberate: D4 creates a net_score trend discontinuity at the 1.18.0 boundary — documented in CHANGELOG,
+  nothing rewritten retroactively.
+- The 3 unversioned post-1.18.0 console commits (tabbed nav, colour tokens, style classes) are noted as
+  carried in the 1.19.0 entry rather than silently swept in.
 
 ## R16-full + HTML Console Correctness — ✅ COMPLETE (v1.18.0)
 Closed both 8.5 synthesis priorities. Shipped in 6 phases (one commit each) on branch claude/stoic-hypatia-gf4y5u.
@@ -124,6 +149,18 @@ Closed both 8.5 synthesis priorities. Shipped in 6 phases (one commit each) on b
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
 ## Where I left off
+v1.19.0; full Test Command green (13 stages); 39 invariants; invariant-check 26/26 runnable PASS. R18 COMPLETE
+(D1–D4 + §T1 reconcile + guard markers + fail-closed cases). NOT YET DONE, and the bigger queue: the Cycle-5
+/broad-scan raised F01–F20 and NONE are implemented — F01 (Critical: the GitHub PAT is collected by
+collectState() into both Export state and .cycle/console-state.json, contradicting the console's own "stored
+only in this browser" claim; no .gitignore exists), F02 (§T2b is a pre-P7 stale prompt wrongly exempted as
+"report-only by design"), F03 (/pr-review absent from the console), F04 (four unescaped innerHTML/attribute
+sinks — INV-20 reports a false PASS), F05 (silent clipboard failure). Recommended next batch: F01, F04, F05,
+F08 (all S, ~half a day), then F17+F02+F03 as the structural batch. Also pending for R18 itself: /regression
+and /reflect have not run for this cycle, and the new lens has not yet been exercised on a real UI project —
+that run is what decides whether /audit and /pr-review get it too.
+
+## (prior) v1.18.0 left-off
 v1.18.0; full Test Command green (13 stages); 38 invariants (INV-36 now covers 6 locked builders, INV-38 = registered
 output blocks). R16-full + HTML Console Correctness COMPLETE: both 8.5 synthesis priorities closed — 6/7 dynamic
 builders textually locked (sectionBody lets §4v/§1s/§6a lock without minting commands; §6a pins the Cycle-4 F1

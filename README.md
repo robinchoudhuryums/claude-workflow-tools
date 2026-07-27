@@ -15,7 +15,7 @@ A structured workflow system for managing audit-implement-verify cycles on large
 The system supports three levels of ceremony depending on project maturity and the type of work:
 
 ### Tier 1 — Broad Scan (single session)
-Three-stage whole-codebase audit: broad pass, deep dive on low-confidence areas, then effectiveness and strategic review. Produces findings across code quality, feature effectiveness, and completeness gaps. Operator approves which findings to implement before any code changes.
+Three-stage whole-codebase audit: broad pass, deep dive on low-confidence areas, then effectiveness and strategic review. Produces findings across code quality, feature effectiveness, completeness gaps, and — for projects with a user-facing surface — the interface and visual layer (see below). Operator approves which findings to implement before any code changes.
 
 **Command chain:** `/broad-scan` → review → `/broad-implement F03, F07` → `/test-sync` → `/sync-docs`
 
@@ -126,6 +126,19 @@ Two commands navigate it:
 - **`/cycle-resume`** — continues an in-progress *implementation* thread. It carries forward **substrate + facts** (systems map, invariants, what's done/pending) but **never inherits the prior session's findings as authoritative** — a new audit always uses fresh eyes. Resume is for continuation, not re-auditing.
 
 This is **fully additive**: with no `.cycle/` directory every command behaves exactly as before (emit the block in chat, copy-paste into the next session). Deleting `.cycle/` returns you to the pure copy-paste workflow with no loss. See "Cycle State & Memory" in `CLAUDE.md` for the `STATE.md` template and the two-memory-channels rationale.
+
+### Interface & Visual Layer
+
+Stage 3 of `/broad-scan` assesses the interface, not just the logic behind it. It is **gated**: a library, CLI, or service with no client writes "No user-facing surface — not assessed" and skips it, so non-UI projects pay nothing.
+
+The lens splits findings by what an agent can actually verify, and that split is the point:
+
+- **(a) Structural — verifiable by code read**, reported as ordinary findings under the Stage 1 severity/confidence rubric: keyboard and assistive access (click handlers on `div`/`span`/`tr` with no `role`, `tabindex`, or key handler; focus order; focus traps), missing empty/loading/error states, absent responsive breakpoints, incomplete theme/token coverage, design-token bypass, and whether an action that can fail tells the user it failed.
+- **(b) Perceptual — contrast, hierarchy, spacing, whether it looks right.** These cannot be verified from code, so the audit is forbidden from reporting them as findings or guessing at them. They are emitted as **OPERATOR VISUAL CHECKS** instead — written in `Regression Scenarios` format so you can promote them straight into that block and walk them every cycle, rather than leaving "worth an eyeball before merge" in a handoff note.
+
+Two config hooks make it score rather than just report: include an interface Health Dimension (e.g. `UI/UX & Accessibility`) when the project has a client surface — `/setup-cycle` now proposes one — and optionally swap an Axis B category for `Visual / Interaction Regression Posture`. `/reflect` counts a user-visible interface defect as a production fix (its trigger is a user opening the surface, not load), so interface work shows up in `net_score` instead of being flattened into the excluded defensive/structural bucket.
+
+`/audit` and `/pr-review` do **not** carry this lens yet — a deliberate deferral (ROADMAP R18) pending a cycle's experience with it in `/broad-scan`.
 
 ### When Tests Can't Run
 If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.

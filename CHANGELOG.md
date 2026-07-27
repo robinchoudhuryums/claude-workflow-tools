@@ -5,6 +5,76 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.19.0 — 2026-07-27
+
+Adds the interface & visual layer to the audit lens (ROADMAP R18). Command
+semantics and the config schema both change → **`/sync-commands` re-pull
+required**. Backward-compatible: no config field becomes mandatory, no output
+block changes shape, and projects with no user-facing surface skip the new
+section entirely.
+
+### Why it was missing
+Across all 20 command templates the entire UI/UX surface was one line
+(`/broad-scan` Stage 3, "Where is the UX friction?" — and that asks about
+*workflow* friction, not the visual layer). Three causes: the **verification
+bar** (every rubric here is built on what an agent can prove from code + a Test
+Command, and visual correctness has no such proof surface — the same discipline
+that HELD R11); **origin domain** (both built-in projects are server-heavy SaaS
+with UI as one subsystem of 8–12, and all five default Axis B categories are
+backend failure shapes); and **no scoring slot** — a user-visible interface
+defect answered NO to `/reflect` Q1, landed in defensive/structural, and was
+excluded from `net_score`, so it could never appear in the trend.
+
+### D1 — `/broad-scan` Stage 3 interface lens
+- New **INTERFACE & VISUAL LAYER** section, gated on the project having a
+  user-facing surface (a library/CLI/service writes "No user-facing surface —
+  not assessed" and skips it).
+- Splits findings into **(a) STRUCTURAL** — verifiable by code read, reported
+  as findings under the Stage 1 rubric (keyboard/assistive access, missing
+  empty/loading/error states, responsive posture, theme completeness,
+  design-token bypass, feedback on failure) — and **(b) PERCEPTUAL**
+  (contrast, hierarchy, spacing), which the audit is explicitly forbidden from
+  reporting as findings or guessing at.
+- Perceptual items route to a new **OPERATOR VISUAL CHECKS** output, written in
+  `Regression Scenarios` format so they can be promoted into that block and
+  walked every cycle instead of living as a "worth an eyeball" handoff note.
+- New **INTERFACE FINDINGS** output section. Stage 3 question 3 reworded
+  `UX friction` → `workflow friction` so it no longer overlaps the new lens.
+
+### D2/D3 — config schema + `/setup-cycle`
+- Schema notes (all three copies — template block, `/setup-cycle` OUTPUT 1, and
+  the console's setup `<pre>`): include an interface Health Dimension when the
+  project has a client surface; optionally swap an Axis B category for
+  `Visual / Interaction Regression Posture`; visual checks are homed in
+  `Regression Scenarios`.
+- `/setup-cycle` Phase 1 now profiles **user-facing surfaces**, and Phase 4
+  *proposes* the interface dimension rather than hoping it emerges — this
+  repo's own 12 dimensions had none despite the console being its entire face.
+
+### D4 — scoring slot (`/reflect`)
+- Q1 now counts a user-visible interface defect (broken layout, unreachable
+  control, missing error state on a path users hit) as **YES** — its trigger is
+  a user opening the surface, not load.
+- **Trend discontinuity, deliberate:** cycles before 1.19.0 scored these as
+  defensive/structural and excluded them from `net_score`. Cumulative
+  `net_score` across the 1.18.0 boundary is therefore computed on a slightly
+  different rule. Nothing was rewritten retroactively.
+
+### Guard + console
+- `§T1 buildTier1Text` reconciled to the new canonical body; still
+  `--assert`-locked at 100% canonical line coverage (6/7 builders locked).
+- `check-template-sync` gains two R18 markers pinning the lens heading **and**
+  the perceptual routing target across CLAUDE.md / console / README — the
+  (a)/(b) split is the load-bearing part, so the guard pins the routing, not
+  just the heading. Two fail-closed cases added to `guard.test.mjs` (now 11).
+- `INV-39` added (39 invariants).
+- Deferred by decision: the same lens for `/audit` and `/pr-review` — ship
+  `/broad-scan` first, run it on a real UI project, then decide.
+
+> Also carried in this release (shipped to `main` after 1.18.0 without their own
+> version bump): the console's tabbed panel navigation, inline-style colour
+> tokenization, and style-class extraction.
+
 ## 1.18.0 — 2026-06-17
 
 Closes the last unguarded gaps in the HTML console — both 8.5 priorities from

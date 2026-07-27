@@ -93,6 +93,20 @@ expectFail('detects dynamic console builder drift (a dropped contract marker)',
   d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(/TWO-AXIS GRID/i, 'TWO-PLANE GRID')); },
   /two-axis grid/i);
 
+// 10) Interface/visual lens (R18): dropping the perceptual routing target from
+// the console — the half that stops the audit guessing at what it cannot see —
+// is caught. Uses replaceAll: the phrase appears in both the §T1 builder and
+// the console's own copy, and the marker only fails once every copy is gone.
+expectFail('detects the interface lens losing its perceptual routing (R18)',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('OPERATOR VISUAL CHECKS', 'VISUAL-CHECKS-GONE')); },
+  /operator visual checks/i);
+
+// 11) Interface/visual lens (R18): dropping the lens heading from the canonical
+// command is caught (the console-side equivalent is additionally --assert-locked).
+expectFail('detects the interface lens dropped from the canonical command (R18)',
+  d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('INTERFACE & VISUAL LAYER', 'INTERFACE-LAYER-GONE')); },
+  /interface & visual layer/i);
+
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} guard test case(s) failed.`); process.exit(1); }

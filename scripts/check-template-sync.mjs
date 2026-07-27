@@ -61,6 +61,14 @@ const CHECKS = [
   { feature: 'File System Access draft (R3)', marker: 'file system access',        files: ['README.md', 'claude-code-guide-v2.html'] },
   { feature: 'Seams audit cadence (P10)',  marker: 'seams audit cadence',         files: ['CLAUDE.md', 'README.md'] },
   { feature: '/pr-review command (R7)',    marker: 'pr-review',                    files: ['CLAUDE.md', 'README.md'] },
+  // R18 — the interface/visual audit lens. Pinned across all three artifacts:
+  // the canonical /broad-scan Stage 3 body, the console's §T1 builder (which is
+  // additionally --assert-locked at 100% coverage), and the operator docs. The
+  // (a)/(b) split is the load-bearing part — without the perceptual half the
+  // lens invites the agent to guess at things it cannot verify — so the marker
+  // pins the routing target, not just the heading.
+  { feature: 'Interface & visual layer lens (R18)', marker: 'interface & visual layer', files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
+  { feature: 'Perceptual checks routed to operator (R18)', marker: 'operator visual checks', files: ['CLAUDE.md', 'README.md', 'claude-code-guide-v2.html'] },
 ];
 
 // Every workflow output block must be representable in BOTH the canonical

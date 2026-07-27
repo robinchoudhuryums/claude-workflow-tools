@@ -83,6 +83,37 @@ Item IDs (R#) are stable references for planning sessions.
   test + an invariant. (Surfaced by the Cycle-4 reflect Q: cross-project
   status tracking.)
 
+- **R18 — Interface & visual layer in the audit lens.** `effort: M` — ✅ DONE (v1.19.0).
+  Across all 20 command templates the entire UI/UX surface was ONE line
+  (`/broad-scan` Stage 3: "Where is the UX friction?" — and even that is
+  *workflow* friction, not the visual layer). `/audit`'s 12 focus areas,
+  `/targeted-audit`'s 5 and `/pr-review`'s 9 lenses had nothing visual. Three
+  causes, in order of weight: (1) **the verification bar** — every rubric here
+  is built on what an agent can prove from code + a Test Command, and visual
+  correctness has no such proof surface (the same discipline that HELD R11);
+  (2) **origin domain** — both built-in projects are server-heavy SaaS with UI
+  as one subsystem of 8–12, and all five default Axis B categories are backend
+  failure shapes; (3) **the scoring machinery had no slot** — a user-visible
+  interface defect answers NO to /reflect Q1 ("fired under realistic load?"),
+  lands in defensive/structural, and is excluded from `net_score` by design, so
+  it could never show in the trend.
+  Shipped as four coupled parts: **D1** `/broad-scan` Stage 3 gains an
+  INTERFACE & VISUAL LAYER lens, gated on the project having a user-facing
+  surface, splitting findings into (a) STRUCTURAL — verifiable by code read,
+  reported as findings — and (b) PERCEPTUAL — contrast/hierarchy/spacing, which
+  the agent must NOT guess at and instead routes to OPERATOR VISUAL CHECKS in
+  Regression-Scenario format; **D2** config-schema notes (interface Health
+  Dimension, optional `Visual / Interaction Regression Posture` Axis B
+  category, visual checks homed in Regression Scenarios); **D3** `/setup-cycle`
+  proposes the interface dimension instead of hoping it emerges (this repo's
+  own 12 dimensions had none, despite the console being its entire face);
+  **D4** `/reflect` Q1 counts a user-visible interface defect as YES.
+  Deferred by decision: the same lens for `/audit` and `/pr-review` — ship
+  `/broad-scan` first, run it on a real UI project, then decide (per-change
+  review in `/pr-review` is the likelier winner). Subsumes R17's
+  "accessibility (keyboard) pass on custom controls" follow-on by making it a
+  standing audit lens rather than a one-off.
+
 ## Tier 3 — Long-term (months+)
 
 - **R3 — Converge the HTML's two state stores.** `effort: M–L` — ✅ DONE (v1.4.0–1.5.0; browser-verified). File System Access "Connect repo folder" syncs console state to `.cycle/console-state.json`, handle persisted via IndexedDB, Export/Import fallback.

@@ -8,6 +8,10 @@ For each action completed this cycle, answer two binary questions:
 1. Would this bug have actually fired in production this month?
    YES (real, currently-reachable, realistic load) / NO (speculative,
    defensive, dead code, zero-caller). Be specific about the trigger.
+   A user-visible interface defect — broken layout, unreachable
+   control, missing error state on a path users hit — counts YES; its
+   trigger is a user opening the surface, not load. Do not demote it
+   to defensive/structural.
 2. Did this action introduce a new failure mode, documented or not?
    YES (describe it; better or worse than what it replaced; when it
    fires) / NO. If the post-cycle state is worse under any realistic
