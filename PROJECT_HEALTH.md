@@ -1,11 +1,13 @@
 # Project Health
 
 ## Current Standing
-Last synthesis: 2026-06-16
-Overall (weighted avg): 8.8/10
-One-line summary: A fresh-eyes cycle found and fixed a cross-artifact drift the guard couldn't see — the §6a synthesis prompt violated the P1 metrics-ownership rule and had corrupted this repo's own trend — then guard-enforced it (checks 6+7) and shipped the R15 portfolio-status board. Mature and low-drift, now with the metrics pipeline and dynamic-builder contracts under guard.
-Top vertical priority: HTML Console Correctness (8.5, Med-High confidence) — browser-only render/FSA paths are still operator-verified, not headless-tested; the natural next coverage frontier.
-Top horizontal priority: Cross-Artifact Drift / Silent Prompt Degradation (8.5) — re-baselined this cycle (the prior 9 was over-confident); the dynamic console builders are now marker-pinned but not generated from CLAUDE.md (R16-full open).
+Last synthesis: 2026-06-16 (Cycle 4) — **scores below are NOT current; Cycle 5 shipped three releases and has not been synthesized**
+Overall (weighted avg): 8.8/10 — as of Cycle 4; §6a has not run since
+Unsynthesized since: Cycle 5 (v1.19.0 → v1.20.0), net +5 across three implement batches, 0 new failure modes, 0 regressions. Both Cycle-4 priorities below are CLOSED. Run §4v (fresh session) then §6a to re-score.
+One-line summary: Cycle 5 ran a fresh-eyes /broad-scan (F01–F20), then shipped the R18 interface/visual audit lens, a security batch (a GitHub PAT was being serialized into state backups and into `.cycle/console-state.json`; six unescaped render sinks; silent clipboard failure), and a parity batch that put `/pr-review` and a Tier-1 implement prompt into the console and retired the last builder exemption — all nine dynamic builders are now locked with no report-only tier.
+Top vertical priority: HTML Console Correctness — the Cycle-4 concern (browser-only render/FSA paths untested) is CLOSED, but Cycle 5 found the replacement: the test doubles are more permissive than reality. `check-html`'s element stub auto-creates any id, so a render writing to a mistyped element passes CI and renders empty in the browser (proven by mutation).
+Top horizontal priority: Guard / Test Coverage Quality — an invariant with a runnable `Verify:` that exercises a helper rather than the rule reports a false PASS (INV-20 did, and was caught by hand, not by tooling). 31 runnable invariants have not been audited for the same defect.
+Note: Cross-Artifact Drift's Cycle-4 concern ("dynamic builders marker-pinned, not generated; R16-full open") is CLOSED — R16-full shipped in v1.18.0 and the last exemption went in v1.20.0.
 
 ## Score History
 

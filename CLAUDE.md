@@ -9,6 +9,12 @@ Project-agnostic prompt templates for every slash command, and the canonical sou
 > lives in [`.cycle/config.md`](.cycle/config.md). When running any cycle
 > command against THIS repo, read `.cycle/config.md` as the Cycle
 > Workflow Config, not the template blocks below.
+>
+> The same redirect applies to the sections every command asks you to read
+> before starting: this repo's **Common Gotchas**, **Key Design Decisions**
+> and **Operator State Checklist** also live in
+> [`.cycle/config.md`](.cycle/config.md). (A consuming project keeps all of
+> these in its own CLAUDE.md, as the templates below describe.)
 
 ## Adaptation Checklist
 

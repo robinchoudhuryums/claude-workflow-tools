@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
-Phase: implement (R18 v1.19.0 + F01/F04/F05/F08 v1.19.1 + F03/F21/F02/F17 v1.20.0 COMPLETE; /regression + /reflect pending)
+Phase: reflect COMPLETE (R18 v1.19.0 + F01/F04/F05/F08 v1.19.1 + F03/F21/F02/F17 v1.20.0 shipped; /regression + /reflect + /sync-docs done — §4v then §6a remain)
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
@@ -202,8 +202,16 @@ REMAINING, in the batch order from the prioritised backlog:
   console's own controls are keyboard-unreachable; add an interface Health Dimension; promote OPERATOR VISUAL
   CHECKS into Regression Scenarios. This run also decides whether /audit and /pr-review get the R18 lens.
 - Strategic: CSP (needs event delegation, L), no LICENSE file, R9, R12, R17 follow-ons.
-Also pending: /regression and /reflect have NOT run for Cycle 5 — three implement batches are now unreflected,
-so metrics.csv has no Cycle-5 row yet. §4v must run in a FRESH session (not the implementer).
+CYCLE HYGIENE — /regression, /reflect and /sync-docs are DONE for Cycle 5. metrics.csv now carries 3 phase=reflect
+rows (net +5; the batch summaries had over-reported 8 — F08/F17 are defensive, F03 is a capability), estimates.csv
+carries 3 calibration rows, and the seam counter is 2/3 (not due). portfolio-status now reads Net Δ = ↑ (it had
+been reporting ↓ off stale Cycle-3/4 data). /sync-docs created this repo's Common Gotchas + Key Design Decisions +
+Operator State Checklist (partially closing F18), completed the Subsystems file lists, added a Deploy Command
+(F19), fixed INV-11's stale count (F14), rewrote the README defining-risk gotcha (F13) and de-staled
+PROJECT_HEALTH (F10).
+STILL PENDING for Cycle 5: §4v Independent Verification — MUST be a FRESH session with no implementation context
+(three batches were written by the same agent that would otherwise verify them) — then §6a Health Synthesis to
+re-score. Do NOT let the implementer grade its own work.
 
 ## (prior) v1.18.0 left-off
 v1.18.0; full Test Command green (13 stages); 38 invariants (INV-36 now covers 6 locked builders, INV-38 = registered
