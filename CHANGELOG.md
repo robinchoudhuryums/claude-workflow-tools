@@ -5,6 +5,65 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.19.1 — 2026-07-27
+
+Console security + reliability fixes from the Cycle-5 `/broad-scan` (F01, F04,
+F05, F08). Console and tooling only — **no command semantics or config-schema
+change, so no `/sync-commands` re-pull is required**.
+
+### F01 (Critical) — a GitHub token could be written into your repository
+`collectState()` gathered every `ccg:*` key, and R17 had added the Dashboard's
+optional PAT at `ccg:ghToken`. Both **Export state** (a downloadable file) and
+**Save → repo** (which writes `.cycle/console-state.json` *inside* a git repo
+this workflow tells you to commit) therefore serialized the token in plaintext,
+while the console's own UI claimed it was "stored only in this browser."
+- Added `SECRET_KEYS` / `isSecretKey()`. Secrets are excluded from
+  `collectState()` **and** from `stateBackupKeys()` — so a backup can neither
+  carry a credential out nor install one from someone else's file.
+- **Deny by default:** anything under `ccg:secret:*` is excluded automatically,
+  so a future secret cannot silently rejoin the wildcard the way this one did.
+- Corrected the UI note; added `.gitignore` covering
+  `.cycle/console-state.json` as a second layer.
+- **Operator action:** any state file exported or committed before this release
+  may contain a live token — rotate it.
+
+### F04 (High) — stored content reached innerHTML and inline handlers unescaped
+INV-20 was only partly applied. Six sinks interpolated stored values raw:
+`renderCycle` (label + `advancePhase`/`setPhase` args), `renderSubsysTable` and
+`renderT2SubsysTable` (hand-rolled quote escaping that handled `'` but not `"`),
+`renderProjectSelector`, `renderCustomInvariantsList`, and `dashboardCard`
+(`href` plus two handler args). Reachable by typing a subsystem name containing
+`"`, or by importing/loading a state backup, where every field is attacker
+controlled. All now use `esc()` for text and `esc(JSON.stringify(...))` for
+attribute-context JS args.
+- The `dashboardCard` case was the subtle one and was **not** in the original
+  finding: it already called `esc()`, but inside `'...'` in an `onclick` — and
+  `esc()` renders `'` as `&#39;`, which the browser decodes back to `'` before
+  parsing the handler. It looked escaped and was not.
+
+### F05 (Medium) — copy failed silently
+`doCopy`/`doCopyVerification` called `navigator.clipboard.writeText(...).then()`
+with no `.catch()` and no availability guard, so on `file://`, in any non-secure
+context, or on a permission denial the console's primary action did nothing and
+said nothing. Factored into one `copyToClipboard()` with an `execCommand`
+fallback and a visible "Copy failed" state on the button.
+
+### F08 (Medium) — the tabbed navigation had no coverage
+`check-html`'s stub returned `[]` from every `querySelectorAll`, so
+`showPanel()`/`handleHash()` ran against nothing and any assertion about them
+passed vacuously. Added real panel/nav fixtures and assertions for
+single-panel isolation, nav + `aria-current` sync, unknown-id fallback, and
+hash routing.
+
+### Test coverage
+Nine new `check-html` assertions, every one mutation-proven to fail closed. The
+escaping check is now two-layered: a substring scan for the text half, and — for
+inline handlers — **entity-decode-then-execute in a sandbox with a tripwire**,
+because a substring scan structurally cannot see the `&#39;` case above. This
+also retires INV-20's false green: its `Verify` previously ran a check that only
+tested `esc()` in isolation, never that `esc()` was *applied*.
+`INV-09` reworded; `INV-40`/`41`/`42` added (42 total; 29 runnable PASS).
+
 ## 1.19.0 — 2026-07-27
 
 Adds the interface & visual layer to the audit lens (ROADMAP R18). Command

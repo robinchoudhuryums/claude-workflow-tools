@@ -158,6 +158,7 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .copy-btn{display:flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);border-radius:var(--r-sm);color:var(--accent);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
 .copy-btn:hover{background:rgba(79,142,247,.2)}
 .copy-btn.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:var(--green)}
+.copy-btn.fail{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--red);white-space:normal}
 .copy-btn svg,.fill-btn svg{width:11px;height:11px;flex-shrink:0}
 
 /* FILL FORM */
@@ -362,7 +363,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
         <button class="dash-btn" onclick="saveDashToken()">Save token</button>
         <button class="dash-btn" onclick="clearDashToken()" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171">Clear</button>
       </div>
-      <div class="dash-note">Stored only in this browser's <code>localStorage</code> and sent only to <code>api.github.com</code>. Prefer a fine-grained, read-only token. Public repos need no token.</div>
+      <div class="dash-note">Stored only in this browser's <code>localStorage</code> and sent only to <code>api.github.com</code>. It is <strong>excluded from Export state and from Save&nbsp;→&nbsp;repo</strong>, so it is never written into a backup file or into your repository — you will need to re-enter it after restoring state on another machine. Prefer a fine-grained, read-only token. Public repos need no token.</div>
     </div>
     <div class="dash-cards" id="dashCards"></div>
   </section>
@@ -1939,7 +1940,7 @@ function renderCustomInvariantsList(){
       <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${esc(inv.id)}</span>
       <span style="font-size:12px;color:var(--text-sec);flex:1">${esc(inv.text)}</span>
       <span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0">${esc(inv.subsystem)}</span>
-      <button onclick="deleteInvariant('${inv.id}')" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
+      <button onclick="deleteInvariant(${esc(JSON.stringify(inv.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
     </div>`).join('');
 }
 
@@ -2057,15 +2058,51 @@ function getFilledText(pid){
   return text;
 }
 
+// ─── COPY (single implementation — see F05) ──────────────────
+// Copying a prompt is the console's primary action, so it must never fail
+// silently. navigator.clipboard is undefined on file:// and in any non-secure
+// context, and writeText() can reject on a permission denial — previously both
+// left the button doing nothing at all. Falls back to execCommand, and if even
+// that fails, SAYS SO on the button instead of pretending it worked.
+const COPY_ICON=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy`;
+const COPIED_ICON=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><path d="M13.5 4.5l-7 7L3 8"/></svg>Copied`;
+
+function copyFeedback(btn,ok){
+  if(!btn)return;
+  btn.classList.remove('ok','fail');
+  btn.classList.add(ok?'ok':'fail');
+  btn.innerHTML=ok?COPIED_ICON:'Copy failed — select the prompt and copy manually';
+  if(!ok){ try{console.warn('claude-workflow-tools: clipboard write failed');}catch(_){} }
+  setTimeout(()=>{btn.classList.remove('ok','fail');btn.innerHTML=COPY_ICON;},ok?2000:4000);
+}
+
+// Last-resort copy for browsers with no async clipboard (file://, http, older).
+function legacyCopy(text){
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.top='-1000px';
+    document.body.appendChild(ta); ta.select();
+    const ok=document.execCommand&&document.execCommand('copy');
+    document.body.removeChild(ta);
+    return !!ok;
+  }catch(e){ return false; }
+}
+
+function copyToClipboard(text,btn){
+  const cb=(typeof navigator!=='undefined')&&navigator.clipboard;
+  if(cb&&typeof cb.writeText==='function'){
+    try{
+      Promise.resolve(cb.writeText(text))
+        .then(()=>copyFeedback(btn,true))
+        .catch(()=>copyFeedback(btn,legacyCopy(text)));
+      return;
+    }catch(e){ /* fall through to legacy */ }
+  }
+  copyFeedback(btn,legacyCopy(text));
+}
+
 function doCopy(pid){
-  const text=getFilledText(pid);
-  const btn=document.getElementById('copy-'+pid);
-  navigator.clipboard.writeText(text).then(()=>{
-    if(!btn)return;
-    btn.classList.add('ok');
-    btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><path d="M13.5 4.5l-7 7L3 8"/></svg>Copied`;
-    setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy`;},2000);
-  });
+  copyToClipboard(getFilledText(pid),document.getElementById('copy-'+pid));
 }
 
 // ─── SUBSYSTEM TABLE ─────────────────────────────────────────
@@ -2076,12 +2113,14 @@ function renderSubsysTable(){
   if(!tbody)return;
   if(title)title.textContent=`${project.name} — Subsystem Groups`;
   tbody.innerHTML=project.subsystems.map(s=>{
-    // Escape single quotes for inline onclick
-    const safeName=s.name.replace(/'/g,"\\'").replace(/&/g,'&amp;');
-    const safeFiles=s.files.replace(/'/g,"\\'");
+    // Attribute-context JS args go through esc(JSON.stringify(...)) (INV-20).
+    // The old hand-rolled quote escaping only handled ' — a name containing "
+    // broke out of the onclick attribute entirely.
+    const argName=esc(JSON.stringify(s.name));
+    const argFiles=esc(JSON.stringify(s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillSubsystem('${safeName}','${safeFiles}')"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillSubsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 
@@ -2124,14 +2163,14 @@ function renderCycle(){
     const isDone=phase==='verify';
     if(isDone)donePhases+=3;
     else if(phaseIdx>=0)donePhases+=phaseIdx+1;
-    const safeG=g.replace(/'/g,"\\'");
+    const argG=esc(JSON.stringify(g));   // attribute-context JS arg (INV-20)
     const phaseDots=CYCLE_PHASES.map((p,i)=>{
       const active=i<=phaseIdx;
       const color=active?PHASE_COLORS[p]:'var(--border)';
-      return `<span title="${PHASE_TITLES[p]}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'#fff':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase('${safeG}','${p}')">${PHASE_LABELS[p]}</span>`;
+      return `<span title="${PHASE_TITLES[p]}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'#fff':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</span>`;
     }).join('');
-    return `<div class="ct-item${isDone?' done':''}" onclick="advancePhase('${safeG}')" style="justify-content:space-between">
-      <span class="ct-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g}</span>
+    return `<div class="ct-item${isDone?' done':''}" onclick="advancePhase(${argG})" style="justify-content:space-between">
+      <span class="ct-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g)}</span>
       <div style="display:flex;gap:3px;flex-shrink:0;margin-left:6px">${phaseDots}</div>
     </div>`;
   }).join('');
@@ -2173,7 +2212,7 @@ function renderProjectSelector(){
   const sel=document.getElementById('projectSelect');
   if(!sel)return;
   const all=getAllProjects();
-  sel.innerHTML=all.map(p=>`<option value="${p.id}"${p.id===activeProjectId?' selected':''}>${p.name}</option>`).join('');
+  sel.innerHTML=all.map(p=>`<option value="${esc(p.id)}"${p.id===activeProjectId?' selected':''}>${esc(p.name)}</option>`).join('');
 }
 
 // ─── HEALTH SYNTHESIS PROMPT (p6a) — dynamic per project ────
@@ -2390,11 +2429,11 @@ function renderBuiltInProjects(){
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
-          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${esc(p.id)}</span></div>
         </div>
         <div class="flex-g8">
           <div style="font-size:10.5px;padding:2px 8px;border-radius:3px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:var(--text-muted)">built-in</div>
-          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+          <button onclick="switchProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
         </div>
       </div>`).join('');
 }
@@ -2409,12 +2448,12 @@ function renderCustomProjects(){
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(p.name)}</div>
-          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${p.id}</span></div>
+          <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${esc(p.id)}</span></div>
         </div>
         <div class="flex-g8">
-          <button onclick="switchProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
-          <button onclick="openEditProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
-          <button onclick="deleteProject('${p.id}')" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
+          <button onclick="switchProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+          <button onclick="openEditProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
+          <button onclick="deleteProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
         </div>
       </div>`).join('');
 }
@@ -2557,12 +2596,21 @@ function setStateIoMsg(msg,kind){
   el.style.color=kind==='error'?'#ef4444':(kind==='ok'?'#22c55e':'#8899b3');
 }
 
+// SECRETS — keys that live in localStorage but must NEVER be serialized into a
+// backup. Export writes a file the operator may share, and "Save → repo" writes
+// .cycle/console-state.json INSIDE a git repo that is routinely committed, so a
+// credential in the ccg:* wildcard would leak into version control. Deny by
+// DEFAULT: anything under ccg:secret:* is excluded automatically, so a future
+// secret cannot silently rejoin the export the way ccg:ghToken did.
+const SECRET_KEYS=['ccg:ghToken'];
+function isSecretKey(k){ return SECRET_KEYS.indexOf(k)!==-1 || String(k).indexOf('ccg:secret:')===0; }
+
 function collectState(){
   const data={};
   try{
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
-      if(k&&k.indexOf('ccg:')===0) data[k]=localStorage.getItem(k);
+      if(k&&k.indexOf('ccg:')===0&&!isSecretKey(k)) data[k]=localStorage.getItem(k);
     }
   }catch(e){}
   return data;
@@ -2594,7 +2642,10 @@ function exportState(){
 function stateBackupKeys(parsed){
   const data=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:null;
   if(!data) return {data:null,keys:null,reason:'no-data'};
-  const keys=Object.keys(data).filter(k=>k.indexOf('ccg:')===0);
+  // Secrets are filtered on the APPLY side too, not just on export: a backup
+  // handed over by someone else (or loaded from a shared repo) must not be able
+  // to install a credential into this browser.
+  const keys=Object.keys(data).filter(k=>k.indexOf('ccg:')===0&&!isSecretKey(k));
   if(!keys.length) return {data,keys:null,reason:'no-keys'};
   return {data,keys,reason:null};
 }
@@ -3136,11 +3187,11 @@ function renderT2SubsysTable(){
   if(!tbody)return;
   if(title)title.textContent=`${project.name} — Subsystem Groups`;
   tbody.innerHTML=project.subsystems.map(s=>{
-    const safeName=s.name.replace(/'/g,"\\'").replace(/&/g,'&amp;');
-    const safeFiles=s.files.replace(/'/g,"\\'");
+    const argName=esc(JSON.stringify(s.name));
+    const argFiles=esc(JSON.stringify(s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillT2Subsystem('${safeName}','${safeFiles}')"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillT2Subsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 
@@ -3386,14 +3437,7 @@ function doCopyVerification(){
   const project=getProject();
   const pre=document.getElementById('p4v');
   if(pre) pre.textContent=buildVerificationText(project);
-  const text=getFilledText('p4v');
-  const btn=document.getElementById('copy-p4v');
-  navigator.clipboard.writeText(text).then(()=>{
-    if(!btn)return;
-    btn.classList.add('ok');
-    btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><path d="M13.5 4.5l-7 7L3 8"/></svg>Copied`;
-    setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:11px;height:11px"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy`;},2000);
-  });
+  copyToClipboard(getFilledText('p4v'),document.getElementById('copy-p4v'));
 }
 
 function renderVerification(){
@@ -3532,6 +3576,10 @@ function dashboardCard(p){
   const summary=(status&&status.summary)||'';
   const r=parseRepoSpec(spec), ghUrl=r?('https://github.com/'+r.owner+'/'+r.repo):'';
   const active=(p.id===activeProjectId)?' active':'';
+  // Attribute-context JS arg (INV-20). esc() ALONE is not enough here: it turns
+  // ' into &#39;, which HTML-decodes back to ' before the JS is parsed, so
+  // wrapping esc(p.id) in '...' inside onclick still breaks out of the string.
+  const argId=esc(JSON.stringify(p.id));
   return '<div class="dcard'+active+'">'
     +'<div class="dcard-top"><div class="dcard-name">'+esc(p.name)+(active?' <span class="dchip" style="color:var(--accent);border-color:rgba(79,142,247,.4)">active</span>':'')+'</div>'
     +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span class="note-mut">/10</span>':'')+'</div></div>'
@@ -3539,14 +3587,14 @@ function dashboardCard(p){
     +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
     +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
     +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
-    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+ghUrl+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">⚙ source</button></div>'
+    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+esc(ghUrl)+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit('+argId+')">⚙ source</button></div>'
     +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
     +'<label>GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
     +'<label>Fallback when no GitHub data (overall / phase / note)</label>'
     +'<input id="dman-o-'+esc(p.id)+'" value="'+esc(man.overall||'')+'" placeholder="overall e.g. 8.5">'
     +'<input id="dman-p-'+esc(p.id)+'" value="'+esc(man.phase||'')+'" placeholder="phase e.g. idle">'
     +'<input id="dman-n-'+esc(p.id)+'" value="'+esc(man.note||'')+'" placeholder="one-line note">'
-    +'<div style="display:flex;gap:8px"><button class="dash-btn" onclick="saveDashCard(\''+esc(p.id)+'\')">Save</button><button class="dlink" onclick="toggleDashEdit(\''+esc(p.id)+'\')">Cancel</button></div></div></div>';
+    +'<div style="display:flex;gap:8px"><button class="dash-btn" onclick="saveDashCard('+argId+')">Save</button><button class="dlink" onclick="toggleDashEdit('+argId+')">Cancel</button></div></div></div>';
 }
 function renderDashboard(){
   const el=document.getElementById('dashCards'); if(!el)return;

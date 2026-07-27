@@ -56,9 +56,45 @@ function makeEl() {
   });
 }
 const getEl = id => (elStore[id] || (elStore[id] = makeEl()));
+
+// Tabbed-navigation fixtures. The console's showPanel()/handleHash() query
+// 'main > .panel' and 'nav a'; a stub returning [] made every assertion about
+// them vacuously pass, so the tab layer (the console's core interaction model
+// since the panel rewrite) had no coverage at all. These return real objects
+// with tracked class/attribute state so the behaviour can actually be asserted.
+function makeClassList(set) {
+  return {
+    add: c => set.add(c), remove: c => set.delete(c), contains: c => set.has(c),
+    toggle: (c, force) => { const on = force === undefined ? !set.has(c) : !!force; if (on) set.add(c); else set.delete(c); return on; },
+  };
+}
+function makePanel(id) {
+  const set = new Set();
+  return { id, _classes: set, classList: makeClassList(set), style: {} };
+}
+function makeNavLink(href) {
+  const set = new Set(), attrs = { href };
+  return {
+    _classes: set, _attrs: attrs, classList: makeClassList(set),
+    getAttribute: n => (n in attrs ? attrs[n] : null),
+    setAttribute: (n, v) => { attrs[n] = String(v); },
+    removeAttribute: n => { delete attrs[n]; },
+    addEventListener() {}, style: {},
+  };
+}
+const PANEL_IDS = ['dashboard', 'setup', 't1', 't2', 'flow', 's0', 's1', 's1s', 's2', 's3', 's4', 's4v', 's5', 's6a', 's6b', 's7', 'tips', 'projects', 'archive'];
+const panels = PANEL_IDS.map(makePanel);
+const navLinks = PANEL_IDS.map(id => makeNavLink('#' + id));
+panels[0].classList.add('active');   // matches the markup's default-active panel
+function queryAll(sel) {
+  if (sel === 'main > .panel') return panels;
+  if (sel === 'nav a') return navLinks;
+  return [];
+}
+
 const ctx = {
   localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; }, get length() { return Object.keys(store).length; }, key: i => Object.keys(store)[i] },
-  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, appendChild() {} }) },
+  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: queryAll, addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
   navigator: { clipboard: { writeText: () => Promise.resolve() } },
   window: { addEventListener() {} },
   IntersectionObserver: class { observe() {} disconnect() {} },
@@ -200,6 +236,127 @@ if (loaded && typeof ctx.collectState === 'function' && typeof ctx.stateBackupKe
   else bad(`state round-trip failed (serializeScoped=${serializeScoped} lossless=${lossless} applyScoped=${applyScoped})`);
   for (const k of Object.keys(store)) delete store[k];
 } else if (loaded) bad('state backup helpers (stateBackupKeys/applyStateKeys) not defined');
+
+// F01 — secrets must never reach a backup. collectState() writes the file that
+// Export downloads AND that "Save → repo" puts inside a git repo, so a token in
+// the ccg:* wildcard leaks into version control. Assert exclusion on BOTH the
+// serialize side and the apply side (an imported backup must not install one).
+if (loaded && typeof ctx.collectState === 'function' && typeof ctx.stateBackupKeys === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  store['ccg:ghToken'] = 'ghp_SECRET';
+  store['ccg:secret:future'] = 'also-secret';
+  store['ccg:activeProject'] = 'obs';
+  const snap = ctx.collectState();
+  const exportClean = !('ccg:ghToken' in snap) && !('ccg:secret:future' in snap) && ('ccg:activeProject' in snap);
+  if (exportClean) ok('collectState() excludes secret keys from backups (F01)');
+  else bad('collectState() leaked a secret key into the backup payload: ' + JSON.stringify(Object.keys(snap)));
+  const { keys } = ctx.stateBackupKeys({ data: { 'ccg:ghToken': 'ghp_EVIL', 'ccg:secret:x': 'e', 'ccg:activeProject': 'obs' } });
+  if (keys && !keys.some(k => /ghToken|ccg:secret:/.test(k))) ok('import/load refuses to install a secret from a backup (F01)');
+  else bad('stateBackupKeys would import a secret key: ' + JSON.stringify(keys));
+  for (const k of Object.keys(store)) delete store[k];
+}
+
+// F04 — INV-20 must hold at the SINKS, not just in esc() itself. The previous
+// esc() unit check passed while six render paths interpolated stored values raw
+// into innerHTML and into onclick attributes. Render a hostile project through
+// the real render* functions and assert no payload survives anywhere.
+if (loaded && typeof ctx.switchProject === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  const PAYLOADS = ['<img src=x onerror=alert(1)>', '" onmouseover="alert(2)', "'); alert(3); //"];
+  store['ccg:customProjects'] = JSON.stringify([{
+    id: "x'); alert(4); //", name: 'Proj <img src=x onerror=alert(1)>', healthDimensions: 'A, B',
+    subsystems: [{ name: 'Core " onmouseover="alert(2)', files: "a.ts'); alert(3); //" }],
+    cycleGroups: ['Core " onmouseover="alert(2)'], invariants: [], seeds: [],
+  }]);
+  store["ccg:x'); alert(4); //:invariants"] = JSON.stringify([{ id: "INV-99'); alert(3); //", text: 'imported', subsystem: 's' }]);
+  store['ccg:dashRepos'] = JSON.stringify({ "x'); alert(4); //": 'own"er/re"po' });
+  try {
+    ctx.switchProject("x'); alert(4); //");
+    ctx.renderDashboard();
+    const sinks = ['ctItems', 'subsysTableBody', 't2SubsysBody', 'projectSelect', 'customInvariantsList', 'projectsCustom', 'dashCards'];
+    const dirty = [];
+    for (const id of sinks) {
+      const h = elStore[id] ? elStore[id].innerHTML : '';
+      for (const p of PAYLOADS) if (h.includes(p)) dirty.push(`${id} ← ${JSON.stringify(p)}`);
+    }
+    if (!dirty.length) ok('every render sink escapes stored content — hostile fixture leaks nothing (INV-20/F04)');
+    else bad('unescaped stored content reached innerHTML: ' + dirty.join(' | '));
+
+    // Attribute half. A substring scan CANNOT see the subtlest form of this bug:
+    // esc() turns ' into &#39;, so esc(id) wrapped in '...' inside an onclick
+    // looks escaped and contains no raw payload — until the browser decodes the
+    // entity back to ' and breaks out of the JS string. So do what a browser
+    // does: decode each inline handler, then EXECUTE it with every identifier
+    // stubbed to a no-op except a tripwire. If injected data can reach the
+    // tripwire, the sink is broken.
+    const decode = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    const handlers = [];
+    for (const id of sinks) {
+      const h = elStore[id] ? elStore[id].innerHTML : '';
+      for (const m of h.matchAll(/\son[a-z]+="([^"]*)"/gi)) handlers.push([id, decode(m[1])]);
+    }
+    let tripped = null;
+    const noop = new Proxy(function () {}, { get: (t, p) => (p === Symbol.toPrimitive ? undefined : noop), apply: () => noop });
+    for (const [id, src] of handlers) {
+      const sbx = { alert: () => { tripped = tripped || [id, src]; } };
+      const scope = new Proxy(sbx, { has: () => true, get: (t, p) => (p in t ? t[p] : noop) });
+      try { vm.runInNewContext(src, scope); } catch (e) { /* a handler that throws is not an injection */ }
+    }
+    if (handlers.length && !tripped) ok(`inline handlers survive entity-decode + execute — ${handlers.length} checked, none injectable (INV-20/F04)`);
+    else if (!handlers.length) bad('no inline handlers found in the hostile render — the attribute check is vacuous');
+    else bad(`injected data executed in an inline handler: ${tripped[0]} → ${tripped[1].slice(0, 90)}`);
+  } catch (e) { bad('hostile-fixture render threw: ' + e.message); }
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+}
+
+// F05 — copying is the console's primary action; it must never fail silently.
+// Drive the two paths that previously did nothing at all: a rejecting
+// writeText, and no navigator.clipboard at all (file:// / insecure context).
+if (loaded && typeof ctx.copyToClipboard === 'function') {
+  const btn = { _cls: new Set(), classList: makeClassList(new Set()), innerHTML: '' };
+  btn.classList = makeClassList(btn._cls);
+  const realCb = ctx.navigator.clipboard, realWarn = ctx.console.warn;
+  ctx.console.warn = () => {};
+  ctx.navigator.clipboard = { writeText: () => Promise.reject(new Error('denied')) };
+  ctx.copyToClipboard('hello', btn);
+  await new Promise(r => setTimeout(r, 0));   // let the rejection reach .catch
+  const rejectedVisibly = /failed/i.test(btn.innerHTML) && btn._cls.has('fail');
+  btn.innerHTML = ''; btn._cls.clear();
+  ctx.navigator.clipboard = undefined;              // file:// / non-secure context
+  ctx.copyToClipboard('hello', btn);
+  const absentVisibly = /failed/i.test(btn.innerHTML) && btn._cls.has('fail');
+  ctx.navigator.clipboard = realCb; ctx.console.warn = realWarn;
+  if (rejectedVisibly && absentVisibly) ok('copy failure is surfaced on the button, never swallowed (F05)');
+  else bad(`copy failed silently (rejected=${rejectedVisibly} absent=${absentVisibly})`);
+}
+
+// F08 — the tabbed panel navigation had zero headless coverage: the old stub
+// returned [] for every querySelectorAll, so showPanel()/handleHash() ran
+// against nothing and any assertion about them passed vacuously.
+if (loaded && typeof ctx.showPanel === 'function') {
+  const activeIds = () => panels.filter(p => p._classes.has('active')).map(p => p.id);
+  ctx.showPanel('s3');
+  const one = activeIds();
+  if (one.length === 1 && one[0] === 's3') ok('showPanel activates exactly one panel (F08)');
+  else bad('showPanel did not isolate one panel (active: ' + JSON.stringify(one) + ')');
+  const cur = navLinks.filter(a => a.getAttribute('aria-current') === 'page').map(a => a._attrs.href);
+  if (cur.length === 1 && cur[0] === '#s3' && navLinks[PANEL_IDS.indexOf('s3')]._classes.has('active')) ok('showPanel syncs nav active state + aria-current (F08)');
+  else bad('nav state not synced by showPanel (aria-current on: ' + JSON.stringify(cur) + ')');
+  ctx.showPanel('no-such-panel');
+  const fb = activeIds();
+  if (fb.length === 1 && fb[0] === PANEL_IDS[0]) ok('showPanel falls back to the first panel for an unknown id (F08)');
+  else bad('unknown-id fallback wrong (active: ' + JSON.stringify(fb) + ')');
+  if (typeof ctx.handleHash === 'function') {
+    ctx.location = { hash: '#s6a' };
+    ctx.handleHash();
+    const h = activeIds();
+    if (h.length === 1 && h[0] === 's6a') ok('handleHash opens the panel named by the URL hash (F08)');
+    else bad('handleHash did not honor the hash (active: ' + JSON.stringify(h) + ')');
+    delete ctx.location;
+  } else bad('handleHash not defined — hash routing unguarded');
+  ctx.showPanel('dashboard');
+}
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');
 console.log(log.join('\n'));
