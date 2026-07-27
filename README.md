@@ -15,7 +15,7 @@ A structured workflow system for managing audit-implement-verify cycles on large
 The system supports three levels of ceremony depending on project maturity and the type of work:
 
 ### Tier 1 — Broad Scan (single session)
-Three-stage whole-codebase audit: broad pass, deep dive on low-confidence areas, then effectiveness and strategic review. Produces findings across code quality, feature effectiveness, and completeness gaps. Operator approves which findings to implement before any code changes.
+Three-stage whole-codebase audit: broad pass, deep dive on low-confidence areas, then effectiveness and strategic review. Produces findings across code quality, feature effectiveness, completeness gaps, and — for projects with a user-facing surface — the interface and visual layer (see below). Operator approves which findings to implement before any code changes.
 
 **Command chain:** `/broad-scan` → review → `/broad-implement F03, F07` → `/test-sync` → `/sync-docs`
 
@@ -71,7 +71,7 @@ When an Axis B category scores at or below the policy threshold for consecutive 
 A fresh session with no implementation context re-probes invariants, counts regressions with a hard definition (any behavior worse under realistic load = regression, regardless of "tradeoff" label), and checks whether fixes have corresponding regression tests.
 
 ### Health per-change (`/pr-review`)
-The cycle grades health *over time*; `/pr-review` is its sibling for health *per change*. It applies the same rubrics — severity/confidence, "would it fire in production this month," the hard regression definition, plus the test-vs-production-path and test-double probes — to a single PR's diff, and emits a PR REVIEW BLOCK with a verdict and blocking items. It is read-only and runs either by hand (`/pr-review 142`) or off a `subscribe_pr_activity` webhook event; it posts to the PR only when you ask.
+The console carries this prompt too, under **PR Review** in the sidebar (added v1.20.0 — it was missing for four releases). The cycle grades health *over time*; `/pr-review` is its sibling for health *per change*. It applies the same rubrics — severity/confidence, "would it fire in production this month," the hard regression definition, plus the test-vs-production-path and test-double probes — to a single PR's diff, and emits a PR REVIEW BLOCK with a verdict and blocking items. It is read-only and runs either by hand (`/pr-review 142`) or off a `subscribe_pr_activity` webhook event; it posts to the PR only when you ask.
 
 ## Adapting for a New Project
 
@@ -119,6 +119,8 @@ Two optional helpers (both fail-safe, both covered by the Test Command):
 - **Portfolio dashboard** (`scripts/portfolio.mjs`) — aggregates several projects' `PROJECT_HEALTH.md` into one board (lowest overall first = audit next) so you can see across your whole portfolio which project needs attention. Pass the `PROJECT_HEALTH.md` paths.
 - **Portfolio status board** (`scripts/portfolio-status.mjs`) — the *development-status* sibling of the dashboard: joins each project's health score with the `.cycle/` data it already writes (`STATE.md` phase / in-progress / seams counter, `metrics.csv` net trend) into one board — `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated` — so you see not just which project is unhealthiest but where your next action is (resume in-progress work, run a DUE Seams audit). Same args as `portfolio.mjs`; projects without a `.cycle/` directory still list (status columns show `—`).
 
+**Secrets are never backed up.** The console's optional GitHub token (and anything stored under `ccg:secret:*`) is excluded from **Export state** and from **Save → repo**, on both the write and the restore side — so a credential can neither be written into a backup file or into `.cycle/console-state.json`, nor installed into your browser from someone else's backup. You re-enter the token after restoring state on a new machine. `.cycle/console-state.json` is also gitignored as a second layer.
+
 The HTML console's Backup & Restore card also has a **"Connect repo folder"** option (File System Access API, Chromium-based browsers, served over http(s)/localhost) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — converging the console's `localStorage` with the repo's `.cycle/` state, with the directory handle persisted across reloads via IndexedDB. It falls back to Export/Import where the API is unavailable.
 
 Two commands navigate it:
@@ -126,6 +128,19 @@ Two commands navigate it:
 - **`/cycle-resume`** — continues an in-progress *implementation* thread. It carries forward **substrate + facts** (systems map, invariants, what's done/pending) but **never inherits the prior session's findings as authoritative** — a new audit always uses fresh eyes. Resume is for continuation, not re-auditing.
 
 This is **fully additive**: with no `.cycle/` directory every command behaves exactly as before (emit the block in chat, copy-paste into the next session). Deleting `.cycle/` returns you to the pure copy-paste workflow with no loss. See "Cycle State & Memory" in `CLAUDE.md` for the `STATE.md` template and the two-memory-channels rationale.
+
+### Interface & Visual Layer
+
+Stage 3 of `/broad-scan` assesses the interface, not just the logic behind it. It is **gated**: a library, CLI, or service with no client writes "No user-facing surface — not assessed" and skips it, so non-UI projects pay nothing.
+
+The lens splits findings by what an agent can actually verify, and that split is the point:
+
+- **(a) Structural — verifiable by code read**, reported as ordinary findings under the Stage 1 severity/confidence rubric: keyboard and assistive access (click handlers on `div`/`span`/`tr` with no `role`, `tabindex`, or key handler; focus order; focus traps), missing empty/loading/error states, absent responsive breakpoints, incomplete theme/token coverage, design-token bypass, and whether an action that can fail tells the user it failed.
+- **(b) Perceptual — contrast, hierarchy, spacing, whether it looks right.** These cannot be verified from code, so the audit is forbidden from reporting them as findings or guessing at them. They are emitted as **OPERATOR VISUAL CHECKS** instead — written in `Regression Scenarios` format so you can promote them straight into that block and walk them every cycle, rather than leaving "worth an eyeball before merge" in a handoff note.
+
+Two config hooks make it score rather than just report: include an interface Health Dimension (e.g. `UI/UX & Accessibility`) when the project has a client surface — `/setup-cycle` now proposes one — and optionally swap an Axis B category for `Visual / Interaction Regression Posture`. `/reflect` counts a user-visible interface defect as a production fix (its trigger is a user opening the surface, not load), so interface work shows up in `net_score` instead of being flattened into the excluded defensive/structural bucket.
+
+`/audit` and `/pr-review` do **not** carry this lens yet — a deliberate deferral (ROADMAP R18) pending a cycle's experience with it in `/broad-scan`.
 
 ### When Tests Can't Run
 If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
@@ -228,4 +243,6 @@ node scripts/check-template-sync.mjs
 
 The guard exits non-zero if any tracked capability (manual test mode, Regression Scenarios, Frozen Subsystems, Deploy Command/Step, configurable Axis B, Dynamic Workflows, `.cycle/` state, `/cycle-resume`/`/cycle-status`, executable invariants, per-cycle metrics) is present in one artifact but missing from another, if a README-referenced command lacks a CLAUDE.md template, if `.claude/commands/` is stale, or if a workflow output block or pinned prompt behavior is missing from the HTML console. If you intentionally rename a marker, update `CHECKS` in that script. CI runs the guard on every push and pull request.
 
-> **Gotcha (the repo's defining risk):** the HTML console is a *separate presentation* of the same prompts, not a copy generated from CLAUDE.md — so it can silently drift from the canonical commands. Keep its prompt behavior aligned with CLAUDE.md; the guard pins the known divergence points (workflow output blocks, the reflect Cycle Summary Block, the regression Verify/deploy notes) but does **not** verify full prompt equivalence. The durable fix is generating the console's prompts from CLAUDE.md (ROADMAP R3).
+> **Gotcha (the repo's defining risk — now largely closed):** the HTML console is a *separate presentation* of the same prompts, so historically it could silently drift from the canonical commands. That durable fix has shipped (ROADMAP **R14** for the static §-prompts, **R16** for the dynamic builders): the seven static `<pre>` prompts are **generated** from CLAUDE.md and locked by `gen-html-prompts --assert`, and as of v1.20.0 **all nine dynamic builders are locked too, at 100% canonical line coverage, with no exemption tier**. Editing a command body therefore requires regenerating *and* mirroring the change into its builder, or CI goes red.
+>
+> What is still *not* verified automatically: the console's surrounding prose, section framing and layout, and anything about how it renders. Two lessons the closure cost: a marker check is file-global, so it can be green while an individual builder is stale; and a `locked:false` exemption, however well reasoned when written, stops being re-read — §T2b's decayed behind one for four releases. See Common Gotchas in `.cycle/config.md`.

@@ -1,0 +1,13 @@
+# Console state written by the HTML console's "Save → repo" (File System
+# Access API). It is a backup of this browser's ccg:* localStorage — working
+# state, not source. Ignored so it is never committed by accident.
+#
+# Credentials are excluded from that file by the console itself (see
+# SECRET_KEYS / isSecretKey in claude-code-guide-v2.html), so this is the
+# second layer, not the only one. Delete this entry only if you have a
+# deliberate reason to version console state.
+.cycle/console-state.json
+
+# Local scratch
+*.log
+node_modules/

@@ -22,11 +22,15 @@ Guard / Test Coverage Quality | whether the sync guard and scripts actually catc
 
 ### Subsystems
 Canonical Templates & Docs:
-  CLAUDE.md, README.md, ROADMAP.md
+  CLAUDE.md, README.md, ROADMAP.md, CHANGELOG.md, VERSION, PROJECT_HEALTH.md, .cycle/config.md
 Interactive Console (HTML):
-  claude-code-guide-v2.html
+  claude-code-guide-v2.html, index.html
 Tooling & Sync Infrastructure:
-  scripts/gen-commands.mjs, scripts/check-template-sync.mjs, .github/workflows/sync-check.yml, .claude/commands/
+  scripts/gen-commands.mjs, scripts/gen-html-prompts.mjs, scripts/check-template-sync.mjs,
+  scripts/check-html.mjs, scripts/check-output-blocks.mjs, scripts/cycle-context.mjs,
+  scripts/render-metrics.mjs, scripts/invariant-check.mjs, scripts/portfolio.mjs,
+  scripts/portfolio-status.mjs, tests/ (8 regression tests), .github/workflows/sync-check.yml,
+  .claude/commands/ (generated), .claude/settings.json, .gitignore
 
 ### Invariant Library
 INV-01 | .claude/commands/*.md are byte-identical to the command blocks extracted from CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
@@ -37,9 +41,9 @@ INV-05 | No prompt builder emits an unresolved ${...} or "undefined" for any bui
 INV-06 | A project without project.axisB falls back to the 5 DEFAULT_AXIS_B categories | Subsystem: Interactive Console (HTML) | Verify: getAxisB({}).length === 5
 INV-07 | Built-in projects (obs, cla) are unchanged by Axis B configurability (no axisB field) | Subsystem: Interactive Console (HTML) | Verify: code read of PROJECTS
 INV-08 | Invariants render a "| Verify:" suffix iff they have a verify value | Subsystem: Interactive Console (HTML) | Verify: buildVerificationText / buildSeamsText
-INV-09 | State export collects exactly the ccg:* localStorage keys and no others | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-09 | State export collects exactly the ccg:* localStorage keys EXCEPT secrets (isSecretKey) and no others — the wildcard alone is what let a credential join the export in v1.17 | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-10 | Import rejects non-JSON or missing-"data" payloads with a visible message and overwrites only ccg:* keys after a confirm | Subsystem: Interactive Console (HTML) | Verify: importStateFile logic
-INV-11 | Every command body in CLAUDE.md is fenced and contains no nested triple-backtick line (so gen can extract it) | Subsystem: Canonical Templates & Docs | Verify: gen-commands extraction succeeds for all 18
+INV-11 | Every command body in CLAUDE.md is fenced and contains no nested triple-backtick line (so gen can extract it) | Subsystem: Canonical Templates & Docs | Verify: node scripts/gen-commands.mjs --check (extraction succeeds for all 20)
 INV-12 | Implement-command CHECKPOINT and metrics steps are gated on .cycle/ existing — never assumed | Subsystem: Canonical Templates & Docs | Verify: code read of command text
 INV-13 | /sync-commands reads only CLAUDE.md as template source, so every installable command has full text in CLAUDE.md | Subsystem: Canonical Templates & Docs | Verify: INV-02 + sync-commands body
 INV-14 | CI runs check-template-sync.mjs (which transitively runs gen --check) on push and PR | Subsystem: Tooling & Sync Infrastructure | Verify: .github/workflows/sync-check.yml
@@ -48,7 +52,7 @@ INV-16 | The CLAUDE.md /setup-cycle config schema and the HTML setup <pre> list 
 INV-17 | gen-commands.mjs is idempotent — running it twice produces no git diff | Subsystem: Tooling & Sync Infrastructure | Verify: run twice + git diff --quiet
 INV-18 | Deleting .cycle/ returns a consuming project to pure copy-paste behavior (no command hard-depends on it) | Subsystem: Canonical Templates & Docs | Verify: code read of all CHECKPOINT/metrics steps
 INV-19 | The HTML console's prompts stay behaviorally aligned with the canonical CLAUDE.md commands — every workflow output block appears in both, the reflect prompt emits a Cycle Summary Block, and the regression prompt carries the invariant-Verify and deploy-verified notes | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-template-sync.mjs (HTML prompt-behavior parity + workflow-block checks)
-INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, project-form rows); attribute-context JSON args are esc(JSON.stringify(...)) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (esc check) + code read
+INV-20 | Stored/pasted content is HTML-escaped via esc() before innerHTML interpolation (archive entries, invariant lists, project/subsystem tables, cycle tracker, project selector, dashboard cards, project-form rows); attribute-context JS args are esc(JSON.stringify(...)) — esc() ALONE is insufficient there, since it renders ' as &#39; which the browser decodes back to ' before parsing the handler | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (hostile-fixture render: substring scan for the text half + entity-decode-then-execute for inline handlers — proves esc() is APPLIED, not merely that esc() works)
 INV-21 | A failed localStorage write surfaces via storageWarn (console.warn + one-shot alert) rather than being silently swallowed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (storageWarn check)
 INV-22 | The sync guard fails closed on injected drift (removed capability marker, stale .claude/commands file, README command without a CLAUDE.md template, workflow block dropped from the HTML) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
 INV-23 | VERSION (semver) and CHANGELOG.md exist and are non-empty; bumped when command semantics, the config schema, or tooling change | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (VERSION/CHANGELOG check)
@@ -65,8 +69,14 @@ INV-33 | the phase=synthesis metrics row never writes net_score/prod_fixes/new_f
 INV-34 | each dynamic console prompt builder (§6a/§6b/§1s/§4v/Tier1/Tier2) keeps its load-bearing contract markers co-present in CLAUDE.md and the HTML console | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 7)
 INV-35 | portfolio-status.mjs joins PROJECT_HEALTH.md health with each project's .cycle/ STATE.md (phase, in-progress, seams K/N + DUE) and metrics.csv (net trend), ranks lowest-overall first, and degrades to "—" when a project has no .cycle/ | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/portfolio-status.test.mjs
 INV-37 | the console Dashboard's pure parsers (parseHealth, parseState, parseRepoSpec, scoreColor) extract overall/summary/priority/phase/updated and reject malformed repo specs — locked by check-html so a regex regression can't silently blank the live-status board | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
-INV-36 | every `locked` dynamic console builder contains 100% of its canonical body's lines — the R16 lock fails closed via headless render + canonicalCoverage. SIX are locked (W1 full textual lock): §T1 buildTier1Text ← /broad-scan, §T2a buildTier2AuditText ← /targeted-audit, §6b buildP6bText ← /health-pulse (slash-command bodies via commandBody); §4v buildVerificationText ← "Verification Pass", §1s buildSeamsText ← "Seams & Invariants Audit", §6a buildP6aText ← "Health Synthesis" (fenced ### section bodies via sectionBody — no /command minted). §T2b buildTier2ImplText is report-only by design (canonical /targeted-implement delegates to /broad-implement Step 1; the console stays standalone, guarded by the R16-S parity markers) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
+INV-36 | every dynamic console builder contains 100% of its canonical body's lines — the R16 lock fails closed via headless render + canonicalCoverage. ALL NINE are locked, with no report-only tier remaining: §T1 buildTier1Text ← /broad-scan, §T1i buildTier1ImplText ← /broad-implement, §T2a buildTier2AuditText ← /targeted-audit, §T2b buildTier2ImplText ← /targeted-implement, §PR buildPrReviewText ← /pr-review, §6b buildP6bText ← /health-pulse (slash-command bodies via commandBody); §4v buildVerificationText ← "Verification Pass", §1s buildSeamsText ← "Seams & Invariants Audit", §6a buildP6aText ← "Health Synthesis" (fenced ### section bodies via sectionBody — no /command minted). §T2b's former exemption rested on canonical delegating to a /broad-implement prompt the console lacked; adding that prompt (F21) removed the premise, and since canonicalCoverage ignores EXTRA rendered lines a builder can carry expanded detail and still be locked | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
 INV-38 | the cycle-type output blocks SEAMS & INVARIANTS AUDIT BLOCK (§1s) and POLICY RESPONSE (§6a) are registered in check-output-blocks (producer:null, inFormats:true), homed in the Handoff Block Formats section, and shape-guarded (balanced delimiters + required fields present in every CLAUDE.md occurrence) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-output-blocks.mjs
+INV-43 | check-template-sync's WORKFLOW_BLOCKS is DERIVED from check-output-blocks' BLOCKS registry, never hand-listed — every registered output block must appear in both CLAUDE.md and the HTML console, so a console gap cannot hide behind an omission from the list (it hid F02, F03 and F21 for four releases) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
+INV-44 | every `nav a href="#id"` resolves to a real `main > .panel` id — showPanel falls back to the first panel for an unknown id, so an orphaned nav link silently lands the user on the Dashboard rather than erroring | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-40 | credentials never leave the browser: a key matching isSecretKey (ccg:ghToken, or any ccg:secret:*) is excluded from collectState() AND from stateBackupKeys(), so it can be neither written into an Export/`.cycle/console-state.json` backup nor installed from someone else's backup; new secrets must use the ccg:secret: prefix so the denial is default-on | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-41 | copying a prompt never fails silently — clipboard unavailability (file:// / non-secure context) or a rejected writeText falls back to execCommand and, failing that, states the failure on the button | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-42 | the tabbed navigation activates exactly ONE panel, syncs nav active/aria-current to it, and falls back to the first panel for an unknown id or empty hash | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-39 | the R18 interface/visual audit lens keeps its (a) structural / (b) perceptual split — both the lens heading and the OPERATOR VISUAL CHECKS routing target are co-present in CLAUDE.md, the console, and README — so the audit can never be left reporting on appearance it cannot verify from code | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs
 
 ### Policy Configuration
 Policy threshold: 4/10
@@ -94,6 +104,112 @@ S4 | Copy a filled command prompt | Subsystem: Interactive Console (HTML)
   Steps:
     - On a Tier-1/Tier-3 prompt, Fill fields, then Copy
   Expected: clipboard holds the fully-substituted prompt with no [PLACEHOLDER] or ${} left
+
+### Deploy Command
+Interactive Console (HTML): merge to `main` — GitHub Pages republishes
+  https://robinchoudhuryums.github.io/claude-workflow-tools/ from `index.html`
+  (a redirect to the console). No build step; the change is live once the Pages
+  build finishes. Browser-verify rendering AFTER this, not before — layout,
+  light-mode contrast and the mobile drawer have no headless coverage.
+Canonical Templates & Docs: no deploy. Consuming projects pick changes up by
+  running `/sync-commands` — required only when a command body changed.
+Tooling & Sync Infrastructure: no deploy (CI-only).
+
+## Common Gotchas
+
+Traps this repo has actually fallen into. Every command that says "read
+CLAUDE.md (especially Common Gotchas)" means **this** section — the
+dogfooding note in CLAUDE.md redirects here, the same way it does for the
+Cycle Workflow Config.
+
+- **`esc()` alone is unsafe in JS-string context.** It renders `'` as
+  `&#39;`, which the browser decodes back to `'` *before* parsing an inline
+  handler — so `onclick="fn('+esc(x)+')"` looks escaped and is not. Use
+  `esc(JSON.stringify(x))` for any attribute-context JS argument. Cycle-5
+  F04 shipped five sinks correctly and missed this sixth one precisely
+  because it read as already-fixed.
+- **A substring scan cannot prove escaping.** For the case above the raw
+  payload never appears in the HTML. The only honest check is to
+  entity-decode each inline handler and *execute* it against a tripwire
+  (`check-html`).
+- **`collectState()` is wildcard-scoped over `ccg:*`.** Any new key joins
+  every Export and every `Save → repo` write automatically. That is how a
+  GitHub PAT ended up serialized into a file destined for a git repo
+  (Cycle-5 F01). Secrets must use the `ccg:secret:` prefix, which is denied
+  by default on both the serialize and the apply side.
+- **Test doubles drift *more permissive* than reality.** Three instances in
+  one cycle: `WORKFLOW_BLOCKS` hand-listed 7 of 12 registered blocks; the
+  panel fixture hardcoded ids and went stale the moment a panel was added;
+  `check-html`'s `getEl()` auto-creates any id, so a `render*()` writing to
+  a mistyped element passes CI and renders an empty box. **Derive fixtures
+  from the artifact under test.**
+- **`check-template-sync`'s markers are file-global substrings.** A marker
+  satisfied anywhere in the HTML passes, so an individual *builder* can be
+  stale while the guard is green. This is what let §T2b rot through P7 and
+  P9 (Cycle-5 F02). The textual lock, not the marker, is the real guard.
+- **A documented exemption stops being re-read.** §T2b's `locked:false` was
+  recorded in three places with a sound rationale, and that rationale went
+  unexamined for four releases while the builder decayed behind it. If you
+  add an exemption, state what would end it.
+- **Editing a command body is never a one-file change.** Run
+  `gen-commands.mjs` *and* `gen-html-prompts.mjs --write`, and mirror the
+  edit into the corresponding console builder — all nine are `--assert`
+  locked at 100% canonical line coverage.
+- **`canonicalCoverage` ignores EXTRA rendered lines.** A console builder
+  can carry expanded console-only detail *and* still be locked. The
+  "standalone vs locked" tradeoff that justified §T2b's exemption was never
+  actually forced.
+- **`metrics.csv` `net_score`/`prod_fixes`/`new_failure_modes` are owned
+  ONLY by `phase=reflect` rows.** A synthesis row repeating them
+  double-counts the cumulative trend — it silently corrupted this repo's own
+  history once (Cycle-4 F1).
+- **Counting capabilities or test coverage as production fixes inflates
+  `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
+  way. A new capability is not a fix; adding a test is not a fix.
+
+## Key Design Decisions
+
+Promoted from the running "Decisions made" log — each implies a contract,
+so treat these as settled unless the reasoning below is what changed.
+
+- **The console's prompts are GENERATED/LOCKED from CLAUDE.md**, never
+  hand-maintained. Static §-prompts via `gen-html-prompts --write`; all nine
+  dynamic builders via `--assert` at 100% canonical coverage.
+- **There is no exemption tier in the lock manifest.** Every dynamic builder
+  is locked (since v1.20.0). Adding a `locked:false` entry reopens the class
+  of drift that F02 came from.
+- **Near-duplicate command pairs are kept honest by a parity GUARD, not by
+  factoring.** Commands stay self-contained and copy-pasteable; the guard
+  catches divergence.
+- **`net_score` stays a strict gate.** Hardening visibility comes from the
+  separate `defensive_count` secondary signal, never by loosening what
+  counts as a production fix.
+- **Guard coverage is DERIVED, not enumerated.** `WORKFLOW_BLOCKS` comes
+  from the `check-output-blocks` registry; the console panel fixture comes
+  from the markup. Hand-maintained lists drift toward omitting whatever is
+  inconvenient.
+- **R11 (Dynamic Workflows orchestrator) is HELD until DW leaves research
+  preview** — a live integration cannot meet the verification bar in this
+  environment. This is the same discipline that kept visual assessment out
+  of the audit lens until R18 split it into verifiable and perceptual halves.
+
+## Operator State Checklist
+
+Manual steps with no automated validation. Re-check these when onboarding a
+machine or after a release.
+
+- **Rotate any GitHub PAT** that was entered into the console *before*
+  v1.19.1 if Export state or `Save → repo` was ever used — the fix stops
+  future writes but cannot un-write an existing file. Grep any connected
+  repo for a tracked `.cycle/console-state.json`.
+- **Re-enter the console's GitHub token after restoring state** on a new
+  machine; it is deliberately excluded from backups.
+- **Run `/sync-commands` in consuming projects** whenever a command body
+  changes. v1.19.0 changed `/broad-scan`, `/reflect` and `/setup-cycle`;
+  v1.19.1 and v1.20.0 changed none.
+- **Browser-verify console changes.** Rendering, light-mode contrast, the
+  mobile drawer and `legacyCopy()`'s success path have no headless coverage.
+- **`§4v` must run in a fresh session** with no implementation context.
 
 ## Cycle Rotation Plan (operator reference)
 

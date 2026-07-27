@@ -9,6 +9,12 @@ Project-agnostic prompt templates for every slash command, and the canonical sou
 > lives in [`.cycle/config.md`](.cycle/config.md). When running any cycle
 > command against THIS repo, read `.cycle/config.md` as the Cycle
 > Workflow Config, not the template blocks below.
+>
+> The same redirect applies to the sections every command asks you to read
+> before starting: this repo's **Common Gotchas**, **Key Design Decisions**
+> and **Operator State Checklist** also live in
+> [`.cycle/config.md`](.cycle/config.md). (A consuming project keeps all of
+> these in its own CLAUDE.md, as the templates below describe.)
 
 ## Adaptation Checklist
 
@@ -31,6 +37,9 @@ npm test
 
 ### Health Dimensions
 Overall, Architecture & Code Quality, Security & Compliance, ...
+(if the project has a user-facing surface, include one interface
+ dimension — e.g. "UI/UX & Accessibility" — or the interface findings
+ from /broad-scan Stage 3 have nowhere to score)
 
 ### Horizontal (Axis B) Categories   ← optional; defaults to the standard 5 if omitted
 Silent Degradation Posture | what it measures
@@ -38,7 +47,11 @@ Startup Ordering Guarantees | what it measures
 Operator-Only State Gaps | what it measures
 Parallel Source-of-Truth Drift | what it measures
 Test Coverage Quality | what it measures
-(4–6 categories; adapt names/measures for domain-specific bug shapes)
+(4–6 categories; adapt names/measures for domain-specific bug shapes.
+ For a project with a significant client surface, consider swapping one
+ for "Visual / Interaction Regression Posture" — whether interface
+ changes ship with a check that would catch them breaking, or rely on
+ someone happening to look)
 
 ### Subsystems
 Core Architecture & Pipeline:
@@ -67,7 +80,10 @@ S1 | [short scenario name] | Subsystem: [name]
     - [step]
     - [step]
   Expected: [outcome]
-(repeat for each scenario)
+(repeat for each scenario. Visual checks belong here too — /broad-scan
+ Stage 3 emits OPERATOR VISUAL CHECKS in this exact format so they can be
+ promoted into this block and walked every cycle, instead of living as a
+ one-off note in a handoff)
 
 ### Frozen Subsystems   ← optional
 - [subsystem name] — [reason, one line, e.g. "being retired; do not audit unless code is being migrated out"]
@@ -273,6 +289,8 @@ Produce a PROJECT PROFILE:
   error handling patterns, logging patterns]
 - External dependencies: [APIs, databases, cloud services, SDKs]
 - Multi-tenant: [yes/no — how is data isolated?]
+- User-facing surfaces: [web UI / mobile / desktop / TUI / operator
+  console / none — and which subsystem owns each]
 - Key architectural patterns: [monolith/microservices, storage abstraction,
   auth model, job queue, real-time, etc.]
 
@@ -340,6 +358,10 @@ Propose health dimensions for this project's scoring. These should:
 - Be scorable with evidence from code reads
 - Cover both technical health and feature/product effectiveness
 - Include domain-specific dimensions
+- Include one interface dimension (e.g. "UI/UX & Accessibility") if the
+  Phase 1 profile found any user-facing surface. Omit it only when the
+  profile found none — otherwise /broad-scan Stage 3's interface
+  findings have no dimension to score against.
 - Be between 10-15 dimensions total
 
 For each dimension:
@@ -359,7 +381,8 @@ Guarantees, Operator-Only State Gaps, Parallel Source-of-Truth Drift,
 Test Coverage Quality. Keep these unless the domain calls for different
 shapes (e.g. a data pipeline might add "Numerical / Precision Drift," a
 mobile app "Offline / Sync Integrity," a library "Public API
-Compatibility"). Aim for 4–6 categories, each with a name + one-sentence
+Compatibility," a client-heavy app "Visual / Interaction Regression
+Posture"). Aim for 4–6 categories, each with a name + one-sentence
 "what it measures."
 
 ═══════════════════════════════════════════
@@ -403,6 +426,8 @@ OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
 
 ### Health Dimensions
 [dim1], [dim2], [dim3], ...
+(include one interface dimension — e.g. "UI/UX & Accessibility" — if the
+ Phase 1 profile found any user-facing surface)
 
 ### Horizontal (Axis B) Categories   ← optional; defaults to the standard 5 if omitted
 [Category name] | [what it measures]
@@ -431,7 +456,9 @@ S1 | [short scenario name] | Subsystem: [name]
     - [step]
     - [step]
   Expected: [outcome]
-(repeat for each scenario; aim for 5–15 covering golden paths and known regression hotspots)
+(repeat for each scenario; aim for 5–15 covering golden paths and known regression hotspots;
+ include a visual check per user-facing surface — /broad-scan Stage 3 emits
+ OPERATOR VISUAL CHECKS in this format so they can be promoted here directly)
 
 ### Frozen Subsystems   ← optional; omit if no subsystems are frozen
 - [subsystem name] — [reason: why frozen, what's replacing it, what would unfreeze it]
@@ -560,13 +587,63 @@ For each major feature area (use the rating dimensions as a guide):
 2. What's missing that a user or operator would reasonably expect?
    Completeness gaps, not bugs — things that aren't built yet vs.
    things that are built wrong.
-3. Where is the UX friction? Workflows that are confusing, slow,
+3. Where is the workflow friction? Tasks that are confusing, slow,
    or require unnecessary steps — separate from crashes or errors.
+
+INTERFACE & VISUAL LAYER
+If the project has no user-facing surface — a library, a CLI, a
+service with no client — write "No user-facing surface — not assessed"
+and continue to the outputs below.
+
+Otherwise assess the interface, splitting what you find by what you
+can actually verify. This split is load-bearing: reading code proves
+structure, never appearance.
+
+(a) STRUCTURAL — verifiable by code read. Report these as findings,
+    using the same severity/confidence rubric as Stage 1:
+    - Keyboard and assistive access: click handlers bound to
+      non-interactive elements (div, span, tr) with no role,
+      tabindex, or key handler; focus order; focus traps in modals
+      and drawers; inputs with no associated label
+    - Missing states: does every async or list surface render
+      empty, loading, and error states, or only the success path?
+    - Responsive posture: do breakpoints exist for the layouts that
+      need them, or does the layout assume one viewport?
+    - Theme completeness: does every declared theme or mode supply a
+      value for every token it consumes, or does one mode inherit
+      gaps?
+    - Design-token bypass: hardcoded colors, spacing, or fonts
+      routing around the project's tokens — flag only where it
+      breaks theming or consistency, never as style preference
+    - Feedback on failure: does every action that can fail tell the
+      user it failed? A swallowed rejection in a click handler is a
+      Stage 1 silent-degradation finding, not a nit
+
+(b) PERCEPTUAL — contrast, hierarchy, spacing, density, whether it
+    looks right. You cannot verify these from code. Do NOT report
+    them as findings and do NOT guess at them. List them under
+    OPERATOR VISUAL CHECKS below as concrete steps a person can walk
+    in a browser, so the check is scheduled rather than assumed.
+    Where the project defines Regression Scenarios, write them in
+    that format so they can be adopted directly.
+
+DO NOT flag visual choices you would have made differently. A layout
+that works and is internally consistent is not a finding, the same
+way working code that could be written differently is not a finding.
 
 Then provide:
 FEATURE EFFECTIVENESS (for each major feature area):
 - [Feature area]: [Working well / Functional but limited / Needs work]
   [1-2 sentences on how effectively it serves users, not code quality]
+
+INTERFACE FINDINGS (structural only — omit if no user-facing surface):
+- [Finding] — [file/component] — [Severity] — [what a user hits] —
+  [effort: S/M/L + rough time estimate]
+(or "None — no structural interface findings")
+
+OPERATOR VISUAL CHECKS (perceptual — needs a person at a browser):
+- [What to look at] — [steps] — [what "correct" looks like]
+(or "None needed")
 
 COMPLETENESS GAPS (what's not built yet that should be):
 - [Gap] — [impact on users] — [effort: S/M/L + rough time estimate]
@@ -1169,6 +1246,10 @@ For each action completed this cycle, answer two binary questions:
 1. Would this bug have actually fired in production this month?
    YES (real, currently-reachable, realistic load) / NO (speculative,
    defensive, dead code, zero-caller). Be specific about the trigger.
+   A user-visible interface defect — broken layout, unreachable
+   control, missing error state on a path users hit — counts YES; its
+   trigger is a user opening the surface, not load. Do not demote it
+   to defensive/structural.
 2. Did this action introduce a new failure mode, documented or not?
    YES (describe it; better or worse than what it replaced; when it
    fires) / NO. If the post-cycle state is worse under any realistic

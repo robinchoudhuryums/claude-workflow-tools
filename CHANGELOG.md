@@ -5,6 +5,190 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.20.0 — 2026-07-27
+
+Closes the console↔canonical parity gap and the guard hole that hid it (Cycle-5
+F03, F21, F02, F17). Console and tooling only — **no command semantics or
+config-schema change, so no `/sync-commands` re-pull is required**. Two new
+console sections; every dynamic builder is now locked.
+
+### F03 — `/pr-review` reaches the console
+Shipped in v1.11.0 and documented in the README's block table, it had **zero**
+presence in the console for four releases. Added a **PR Review** section +
+`buildPrReviewText`, with the active project's invariant library injected so the
+prompt is standalone for lens 8. Registered `locked:true` from day one.
+
+### F21 — Tier 1 finally has its implement prompt
+The Tier 1 section promised "audit-then-implement with your approval gate in
+between" and shipped only the audit prompt, so a console-driven Tier 1 cycle had
+no way to produce a `BROAD SCAN IMPLEMENTATION SUMMARY`. Added
+`buildTier1ImplText` behind an explicit approval-gate note. Also `locked:true`.
+
+### F02 — the §T2b exemption is retired
+`buildTier2ImplText` was exempted from the R16 lock as "canonical delegates to
+`/broad-implement` Step 1, the console must be standalone." The Cycle-5 audit
+found the exemption had been hiding real rot: no P7 `OPERATOR ACTIONS / DEPLOY`
+(it still read `6. DEPLOY STEP`, retired in v1.7.0 and by then the only surviving
+instance in the repo), no P9 test-doubles scan, and it never emitted
+`TARGETED IMPLEMENTATION SUMMARY` — so console Tier-2 output could not feed
+§4v or §6a. The 4%-coverage number had been read as intentional and never
+re-examined.
+- Two things dissolved the tradeoff: F21 gave the delegation a real target in
+  the console, and `canonicalCoverage` only requires canonical lines to be
+  PRESENT — extras are ignored — so the builder carries its expanded Step-1
+  detail *and* locks. The standalone-vs-locked conflict was never actually
+  forced.
+- **All nine dynamic builders are now locked. There is no report-only tier.**
+
+### F17 — derive the block coverage instead of listing it
+`check-template-sync`'s `WORKFLOW_BLOCKS` was a hand-maintained list of 7 while
+`check-output-blocks` registered 12 — a parallel source of truth, the exact
+Axis B category this tool polices. The five it omitted were not a random
+sample: they were the ones hiding F03, F21 and F02. It is now derived from
+`BLOCKS`, so a registered block that no console section carries fails CI.
+- `guard.test.mjs` +2 cases (now 13), including the PR-REVIEW-BLOCK regression
+  and a registry-block-with-no-console-representation case. Its `setup()` now
+  copies `check-output-blocks.mjs`, which the guard imports.
+
+### Test coverage
+- `check-html`'s panel fixture is now **derived from the markup** rather than a
+  hardcoded id list — it had already gone stale the moment a panel was added,
+  the same failure shape as F17.
+- New assertion: every `nav a href="#id"` resolves to a real panel. `showPanel`
+  falls back to the first panel for an unknown id, so an orphaned nav link
+  silently lands the user on the Dashboard instead of erroring.
+- `INV-36` rewritten (nine locked, no exemptions); `INV-43`/`INV-44` added — 44
+  invariants, 31 runnable PASS.
+
+## 1.19.1 — 2026-07-27
+
+Console security + reliability fixes from the Cycle-5 `/broad-scan` (F01, F04,
+F05, F08). Console and tooling only — **no command semantics or config-schema
+change, so no `/sync-commands` re-pull is required**.
+
+### F01 (Critical) — a GitHub token could be written into your repository
+`collectState()` gathered every `ccg:*` key, and R17 had added the Dashboard's
+optional PAT at `ccg:ghToken`. Both **Export state** (a downloadable file) and
+**Save → repo** (which writes `.cycle/console-state.json` *inside* a git repo
+this workflow tells you to commit) therefore serialized the token in plaintext,
+while the console's own UI claimed it was "stored only in this browser."
+- Added `SECRET_KEYS` / `isSecretKey()`. Secrets are excluded from
+  `collectState()` **and** from `stateBackupKeys()` — so a backup can neither
+  carry a credential out nor install one from someone else's file.
+- **Deny by default:** anything under `ccg:secret:*` is excluded automatically,
+  so a future secret cannot silently rejoin the wildcard the way this one did.
+- Corrected the UI note; added `.gitignore` covering
+  `.cycle/console-state.json` as a second layer.
+- **Operator action:** any state file exported or committed before this release
+  may contain a live token — rotate it.
+
+### F04 (High) — stored content reached innerHTML and inline handlers unescaped
+INV-20 was only partly applied. Six sinks interpolated stored values raw:
+`renderCycle` (label + `advancePhase`/`setPhase` args), `renderSubsysTable` and
+`renderT2SubsysTable` (hand-rolled quote escaping that handled `'` but not `"`),
+`renderProjectSelector`, `renderCustomInvariantsList`, and `dashboardCard`
+(`href` plus two handler args). Reachable by typing a subsystem name containing
+`"`, or by importing/loading a state backup, where every field is attacker
+controlled. All now use `esc()` for text and `esc(JSON.stringify(...))` for
+attribute-context JS args.
+- The `dashboardCard` case was the subtle one and was **not** in the original
+  finding: it already called `esc()`, but inside `'...'` in an `onclick` — and
+  `esc()` renders `'` as `&#39;`, which the browser decodes back to `'` before
+  parsing the handler. It looked escaped and was not.
+
+### F05 (Medium) — copy failed silently
+`doCopy`/`doCopyVerification` called `navigator.clipboard.writeText(...).then()`
+with no `.catch()` and no availability guard, so on `file://`, in any non-secure
+context, or on a permission denial the console's primary action did nothing and
+said nothing. Factored into one `copyToClipboard()` with an `execCommand`
+fallback and a visible "Copy failed" state on the button.
+
+### F08 (Medium) — the tabbed navigation had no coverage
+`check-html`'s stub returned `[]` from every `querySelectorAll`, so
+`showPanel()`/`handleHash()` ran against nothing and any assertion about them
+passed vacuously. Added real panel/nav fixtures and assertions for
+single-panel isolation, nav + `aria-current` sync, unknown-id fallback, and
+hash routing.
+
+### Test coverage
+Nine new `check-html` assertions, every one mutation-proven to fail closed. The
+escaping check is now two-layered: a substring scan for the text half, and — for
+inline handlers — **entity-decode-then-execute in a sandbox with a tripwire**,
+because a substring scan structurally cannot see the `&#39;` case above. This
+also retires INV-20's false green: its `Verify` previously ran a check that only
+tested `esc()` in isolation, never that `esc()` was *applied*.
+`INV-09` reworded; `INV-40`/`41`/`42` added (42 total; 29 runnable PASS).
+
+## 1.19.0 — 2026-07-27
+
+Adds the interface & visual layer to the audit lens (ROADMAP R18). Command
+semantics and the config schema both change → **`/sync-commands` re-pull
+required**. Backward-compatible: no config field becomes mandatory, no output
+block changes shape, and projects with no user-facing surface skip the new
+section entirely.
+
+### Why it was missing
+Across all 20 command templates the entire UI/UX surface was one line
+(`/broad-scan` Stage 3, "Where is the UX friction?" — and that asks about
+*workflow* friction, not the visual layer). Three causes: the **verification
+bar** (every rubric here is built on what an agent can prove from code + a Test
+Command, and visual correctness has no such proof surface — the same discipline
+that HELD R11); **origin domain** (both built-in projects are server-heavy SaaS
+with UI as one subsystem of 8–12, and all five default Axis B categories are
+backend failure shapes); and **no scoring slot** — a user-visible interface
+defect answered NO to `/reflect` Q1, landed in defensive/structural, and was
+excluded from `net_score`, so it could never appear in the trend.
+
+### D1 — `/broad-scan` Stage 3 interface lens
+- New **INTERFACE & VISUAL LAYER** section, gated on the project having a
+  user-facing surface (a library/CLI/service writes "No user-facing surface —
+  not assessed" and skips it).
+- Splits findings into **(a) STRUCTURAL** — verifiable by code read, reported
+  as findings under the Stage 1 rubric (keyboard/assistive access, missing
+  empty/loading/error states, responsive posture, theme completeness,
+  design-token bypass, feedback on failure) — and **(b) PERCEPTUAL**
+  (contrast, hierarchy, spacing), which the audit is explicitly forbidden from
+  reporting as findings or guessing at.
+- Perceptual items route to a new **OPERATOR VISUAL CHECKS** output, written in
+  `Regression Scenarios` format so they can be promoted into that block and
+  walked every cycle instead of living as a "worth an eyeball" handoff note.
+- New **INTERFACE FINDINGS** output section. Stage 3 question 3 reworded
+  `UX friction` → `workflow friction` so it no longer overlaps the new lens.
+
+### D2/D3 — config schema + `/setup-cycle`
+- Schema notes (all three copies — template block, `/setup-cycle` OUTPUT 1, and
+  the console's setup `<pre>`): include an interface Health Dimension when the
+  project has a client surface; optionally swap an Axis B category for
+  `Visual / Interaction Regression Posture`; visual checks are homed in
+  `Regression Scenarios`.
+- `/setup-cycle` Phase 1 now profiles **user-facing surfaces**, and Phase 4
+  *proposes* the interface dimension rather than hoping it emerges — this
+  repo's own 12 dimensions had none despite the console being its entire face.
+
+### D4 — scoring slot (`/reflect`)
+- Q1 now counts a user-visible interface defect (broken layout, unreachable
+  control, missing error state on a path users hit) as **YES** — its trigger is
+  a user opening the surface, not load.
+- **Trend discontinuity, deliberate:** cycles before 1.19.0 scored these as
+  defensive/structural and excluded them from `net_score`. Cumulative
+  `net_score` across the 1.18.0 boundary is therefore computed on a slightly
+  different rule. Nothing was rewritten retroactively.
+
+### Guard + console
+- `§T1 buildTier1Text` reconciled to the new canonical body; still
+  `--assert`-locked at 100% canonical line coverage (6/7 builders locked).
+- `check-template-sync` gains two R18 markers pinning the lens heading **and**
+  the perceptual routing target across CLAUDE.md / console / README — the
+  (a)/(b) split is the load-bearing part, so the guard pins the routing, not
+  just the heading. Two fail-closed cases added to `guard.test.mjs` (now 11).
+- `INV-39` added (39 invariants).
+- Deferred by decision: the same lens for `/audit` and `/pr-review` — ship
+  `/broad-scan` first, run it on a real UI project, then decide.
+
+> Also carried in this release (shipped to `main` after 1.18.0 without their own
+> version bump): the console's tabbed panel navigation, inline-style colour
+> tokenization, and style-class extraction.
+
 ## 1.18.0 — 2026-06-17
 
 Closes the last unguarded gaps in the HTML console — both 8.5 priorities from

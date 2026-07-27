@@ -1,12 +1,37 @@
 # Cycle State
 
 ## Current
-Cycle: 4 — SYNTHESIZED (overall 8.8/10). Post-synthesis roadmap work in progress: R16 (dynamic-builder lock).
-Phase: idle (R16-full + HTML Console Correctness COMPLETE v1.18.0 — 6/7 dynamic builders textually locked; render+FSA paths headless-tested)
-Scope: Interactive Console (HTML builders) + Tooling & Sync Infrastructure
+Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
+Phase: reflect COMPLETE (R18 v1.19.0 + F01/F04/F05/F08 v1.19.1 + F03/F21/F02/F17 v1.20.0 shipped; /regression + /reflect + /sync-docs done — §4v then §6a remain)
+Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
-Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
-Updated: 2026-06-16
+Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
+Updated: 2026-07-27
+
+## Cycle 5 — R18 interface/visual audit lens — ✅ COMPLETE (v1.19.0)
+Shipped in 5 phases on branch claude/broad-scan-dyw3lo. Origin: operator observed the visual layer was not
+explicitly in /broad-scan. Confirmed — across all 20 templates the entire UI/UX surface was ONE line, and that
+line asks about *workflow* friction. Root causes: the verification bar (no proof surface for appearance — the
+same discipline that HELD R11), origin domain (server-heavy built-ins; all 5 default Axis B categories are
+backend shapes), and no scoring slot (interface defects answered NO to /reflect Q1 → defensive/structural →
+excluded from net_score).
+- P0 ROADMAP R18 recorded, incl. the deferral of the same lens for /audit + /pr-review.
+- P1 (D1) /broad-scan Stage 3 INTERFACE & VISUAL LAYER: gated on a user-facing surface; (a) STRUCTURAL findings
+  vs (b) PERCEPTUAL routed to OPERATOR VISUAL CHECKS in Regression-Scenario format; new INTERFACE FINDINGS +
+  OPERATOR VISUAL CHECKS outputs; Q3 reworded UX→workflow friction. §T1 buildTier1Text mirrored, still
+  --assert-locked at 100% coverage.
+- P2 (D2) schema notes in all THREE copies (template block, /setup-cycle OUTPUT 1, console setup <pre>) —
+  interface Health Dimension, optional "Visual / Interaction Regression Posture" Axis B, visual checks homed
+  in Regression Scenarios. INV-16 parity held.
+- P3 (D3) /setup-cycle Phase 1 profiles user-facing surfaces; Phase 4 proposes the interface dimension.
+- P4 (D4) /reflect Q1 counts a user-visible interface defect as YES. p4reflect regenerated via --write.
+- P5 guard: 2 R18 markers (lens heading AND the perceptual routing target — the (a)/(b) split is the
+  load-bearing part) across CLAUDE.md/console/README; 2 fail-closed guard.test cases (now 11); INV-39 (39
+  total); README "Interface & Visual Layer" section; VERSION 1.18.0→1.19.0 + CHANGELOG.
+- Deliberate: D4 creates a net_score trend discontinuity at the 1.18.0 boundary — documented in CHANGELOG,
+  nothing rewritten retroactively.
+- The 3 unversioned post-1.18.0 console commits (tabbed nav, colour tokens, style classes) are noted as
+  carried in the 1.19.0 entry rather than silently swept in.
 
 ## R16-full + HTML Console Correctness — ✅ COMPLETE (v1.18.0)
 Closed both 8.5 synthesis priorities. Shipped in 6 phases (one commit each) on branch claude/stoic-hypatia-gf4y5u.
@@ -123,7 +148,72 @@ Closed both 8.5 synthesis priorities. Shipped in 6 phases (one commit each) on b
   guard-enforced, not just prose — closes the half-fixed footgun (command bodies were fixed in v1.6.0; the
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
+## Cycle 5 — broad-implement F01/F04/F05/F08 — ✅ COMPLETE (v1.19.1)
+- F01 (Critical) — SECRET_KEYS/isSecretKey(): ccg:ghToken + any ccg:secret:* excluded from collectState() AND
+  stateBackupKeys(), so a backup can neither exfiltrate a credential nor install one. Deny-by-default prefix so a
+  future secret can't silently rejoin the wildcard. UI note corrected; .gitignore added for
+  .cycle/console-state.json. OPERATOR: rotate any token that was exported/committed before this release.
+- F04 (High) — six sinks escaped (renderCycle label + 2 handler args, renderSubsysTable, renderT2SubsysTable,
+  renderProjectSelector, renderCustomInvariantsList, dashboardCard href + 2 handler args). The dashboardCard case
+  was NOT in the audit: it already called esc() but inside '...' in an onclick, and esc() emits &#39; which the
+  browser decodes back to ' before parsing — it looked escaped and wasn't. Audit under-counted 5 sinks → 6.
+- F05 (Medium) — one copyToClipboard() with execCommand fallback + visible "Copy failed" button state.
+- F08 (Medium) — real panel/nav fixtures in check-html; showPanel/handleHash now actually asserted (isolation,
+  aria-current sync, unknown-id fallback, hash routing). The old [] stub made them vacuous.
+- 9 new check-html assertions, ALL mutation-proven fail-closed. Escaping check is two-layered: substring scan for
+  text + entity-decode-then-EXECUTE with a tripwire for inline handlers (a substring scan structurally cannot see
+  the &#39; case). This retires INV-20's false green.
+- INV-09 reworded; INV-40/41/42 added → 42 invariants, 29 runnable PASS.
+
+## Cycle 5 — broad-implement Batch 1 (F03/F21) + Batch 2 (F02/F17) — ✅ COMPLETE (v1.20.0)
+Ordering was load-bearing and is worth remembering: F17 turns three previously-unguarded blocks red, so the
+console gaps had to close FIRST or the batch merges a red CI. Sequence run: F03 → F21 → F02 → F17.
+- F03 — PR Review console section + buildPrReviewText (invariant library injected). Was absent for 4 releases.
+- F21 — Tier 1 broad-implement prompt + buildTier1ImplText. The section promised an approval gate and shipped
+  only the audit half, so console Tier 1 could never emit a BROAD SCAN IMPLEMENTATION SUMMARY.
+- F02 — §T2b exemption RETIRED. It was hiding a pre-P7 prompt (no OPERATOR ACTIONS, still said "6. DEPLOY STEP",
+  no test-doubles scan, never emitted TARGETED IMPLEMENTATION SUMMARY). Dissolved by two facts: F21 gave the
+  delegation a real in-console target, and canonicalCoverage ignores EXTRA lines so a builder can be standalone
+  AND locked — the tradeoff the original decision assumed was never forced. ALL NINE builders now locked; no
+  report-only tier remains.
+- F17 — WORKFLOW_BLOCKS derived from check-output-blocks' BLOCKS (7 → 12). The five omitted blocks were exactly
+  the ones hiding F02/F03/F21. guard.test +2 (13 total); setup() now copies check-output-blocks.mjs.
+- check-html panel fixture derived from markup (the hardcoded list had already gone stale); new assertion that
+  every nav href resolves to a panel (showPanel silently falls back to Dashboard otherwise).
+- INV-36 rewritten; INV-43/44 added → 44 invariants, 31 runnable PASS. New guards mutation-proven.
+
 ## Where I left off
+v1.20.0; full Test Command green (13 stages); 44 invariants; invariant-check 31/31 runnable PASS. Cycle 5 has
+now shipped R18 (v1.19.0), the F01/F04/F05/F08 security+reliability batch (v1.19.1), and the F03/F21/F02/F17
+parity batch (v1.20.0). Both High findings are closed and every dynamic builder is locked.
+REMAINING, in the batch order from the prioritised backlog:
+- Batch 3 (~3h, S) console correctness: F06 Axis B round-trip drops `pulse` (every UI-created project gets the
+  measures text as its pulse question — fires on the common path since the form pre-fills from DEFAULT_AXIS_B),
+  F07 deriveId returns '' for non-Latin/punctuation-only names, F16 getFilledText $&-pattern corruption,
+  F20 backup app/kind/version never validated.
+- Batch 4 (~5h, M) make green mean green: F11 audit ALL 31 runnable Verify fields for false greens (INV-20 was
+  one and was found BY HAND, not by tooling — unknown how many others lie), a jsArg() helper + a guard grep for
+  the esc()-inside-quotes footgun, F09 VERSION↔CHANGELOG consistency, F15 CI permissions, F14 INV-11 count.
+- Batch 5 (~5–6h, M) substrate: F18 Common Gotchas + Key Design Decisions (28 references resolve to nothing;
+  §4v Part 3 Q2/Q3 unanswerable — CONSIDER DOING FIRST, every later batch's session benefits), F10
+  PROJECT_HEALTH stale (Dashboard fetches it live), F13 README R3→R14, F12 render-metrics blank net, F19 Deploy
+  Command for the Pages republish.
+- Batch 6 (~4h, M) dogfood R18 on this repo: 12 click-only tr/div/span controls, 0 role, 0 key handlers → the
+  console's own controls are keyboard-unreachable; add an interface Health Dimension; promote OPERATOR VISUAL
+  CHECKS into Regression Scenarios. This run also decides whether /audit and /pr-review get the R18 lens.
+- Strategic: CSP (needs event delegation, L), no LICENSE file, R9, R12, R17 follow-ons.
+CYCLE HYGIENE — /regression, /reflect and /sync-docs are DONE for Cycle 5. metrics.csv now carries 3 phase=reflect
+rows (net +5; the batch summaries had over-reported 8 — F08/F17 are defensive, F03 is a capability), estimates.csv
+carries 3 calibration rows, and the seam counter is 2/3 (not due). portfolio-status now reads Net Δ = ↑ (it had
+been reporting ↓ off stale Cycle-3/4 data). /sync-docs created this repo's Common Gotchas + Key Design Decisions +
+Operator State Checklist (partially closing F18), completed the Subsystems file lists, added a Deploy Command
+(F19), fixed INV-11's stale count (F14), rewrote the README defining-risk gotcha (F13) and de-staled
+PROJECT_HEALTH (F10).
+STILL PENDING for Cycle 5: §4v Independent Verification — MUST be a FRESH session with no implementation context
+(three batches were written by the same agent that would otherwise verify them) — then §6a Health Synthesis to
+re-score. Do NOT let the implementer grade its own work.
+
+## (prior) v1.18.0 left-off
 v1.18.0; full Test Command green (13 stages); 38 invariants (INV-36 now covers 6 locked builders, INV-38 = registered
 output blocks). R16-full + HTML Console Correctness COMPLETE: both 8.5 synthesis priorities closed — 6/7 dynamic
 builders textually locked (sectionBody lets §4v/§1s/§6a lock without minting commands; §6a pins the Cycle-4 F1
