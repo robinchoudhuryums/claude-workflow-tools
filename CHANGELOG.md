@@ -5,6 +5,129 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.25.0 — 2026-07-27
+
+Audits the 12 MANUAL invariants and promotes the F11 mutation audit into CI.
+**Config-schema change** — the console's `/setup-cycle` output was missing two
+things, so consuming projects generated from it should re-check their config
+(see below); the command bodies themselves are unchanged.
+
+### The MANUAL tier was a notation artifact, not a limit
+Twelve invariants reported MANUAL because their `Verify:` field was written as
+prose (`code read of PROJECTS`, `importStateFile logic`) rather than a command.
+Auditing them found **ten were mechanically verifiable all along** and two —
+INV-02 and INV-06 — were *already being enforced on every push* by a check that
+had been running for releases, while the library reported them unverified. All
+twelve are now runnable: the library is **58 invariants, 0 manual**.
+
+Four had no assertion anywhere and now do (`check-html.mjs`): INV-07 (built-ins
+resolve to the shipped Axis B defaults), INV-08 (the `| Verify:` suffix tracks
+the value), INV-10 (the whole import path), INV-15 (§6a/§6b ask about the
+project's *configured* categories). Three became structural checks in
+`check-template-sync.mjs`: INV-14 (CI triggers + the guard step), INV-16 (config
+schema parity), INV-12/INV-18 (every `.cycle/`-writing command step is gated on
+the directory existing).
+
+### Two real defects the audit surfaced
+**INV-16 was false.** Its `Verify:` pointed at the capability markers, which only
+prove a phrase appears *somewhere* in a file. Under that, the console's Setup
+schema had been missing `### Seams Audit Cadence` entirely and its Invariant
+Library line omitted the `| Verify:` field — so an operator who ran `/setup-cycle`
+from the **console** got a config whose invariants could never become executable,
+which is the one field this repo's whole invariant toolchain depends on. Both are
+restored, and check 9 now compares the actual section lists across all three
+copies of the schema. **If you generated a config from the console, add a
+`Verify:` field to your invariants and a `Seams Audit Cadence` section.**
+
+**INV-10 had never executed.** Its `Verify:` read "importStateFile logic", and the
+headless `FileReader` stub never fired `onload` — so no clause of it (JSON
+rejection, envelope rejection, the confirm gate, `ccg:*`-only writes) had ever
+run. All four now do.
+
+Also recorded, deliberately **not** fixed: Axis B configurability stops at
+§6a/§6b. `buildSeamsText` PART 4 and the SEAMS & INVARIANTS AUDIT BLOCK still
+enumerate the five default categories by name, so a project with custom
+categories gets a Seams audit asking about ones it does not use. Fixing it means
+editing an `--assert`-locked canonical body *and* the block's registered field
+names. The check reports the gap rather than quietly passing.
+
+### The mutation audit is now a CI stage
+`tests/mutation-audit.mjs` — promoted from the Cycle-5 scratchpad script that
+found a real false green. `invariant-check.mjs` proves each `Verify:` command
+passes on a clean tree; that is not evidence it would **fail** if the rule were
+violated. This violates each rule in a throwaway copy and requires the command
+to fail. Three things changed on the way in, each closing a way the scratchpad
+version could lie:
+
+- **Coverage is derived** from the live library (through `invariant-check.mjs`'s
+  exported parse — not a second copy). A runnable invariant with no mutation case
+  is a failure, not a quietly smaller proven set.
+- **A stale case fails.** The scratchpad scored a rotted find string as a neutral
+  `?` and still reported "16/17 proven, 0 false greens".
+- **Signals are per-invariant** — the field-level tier §4v asked for. Twenty
+  invariants share `check-html.mjs`; under exit-code-only scoring a mutation for
+  INV-06 that tripped INV-07's assertion still read as proof. Each case names the
+  message its *own* assertion emits.
+
+`tests/mutation-audit.test.mjs` guards the guard against all three. Result:
+**58/58 invariants proven fail-closed across 60 mutations**, in ~15s. Test
+Command and CI are now 16 stages.
+
+## 1.24.0 — 2026-07-27
+
+Closes every finding from the Cycle-5 §4v independent verification pass. Console
+and tooling only — **no command semantics or config-schema change, so no
+`/sync-commands` re-pull is required**.
+
+### The live defect
+The archive **"Copy content"** button called `navigator.clipboard.writeText()`
+inline, bypassing `copyToClipboard()` — F05's exact silent-failure bug, left
+alive in one sink for four releases. Now routed through the helper.
+`copyFeedback()` also restores each button's *own* label instead of hardcoding
+the prompt-copy icon, which is **why** the helper could not be reused there and
+so how that sink kept its own call. `INV-54` adds a static scan: no inline
+handler may touch `navigator.clipboard`.
+
+### INV-53 — the false green §4v found
+The hostile fixture hand-picked which fields to poison, so dropping `esc()` from
+`inv.text` or `inv.subsystem` passed all 14 stages. The payload set is now
+**derived from the sinks' own `${…obj.field…}` interpolations**, and the check
+reports both what it derived and what it held back as non-string — it can never
+silently narrow again. The archive sinks are covered for the first time.
+- The first implementation was itself wrong in the same way: an unqualified
+  `.field` structural test excluded `inv.text`, because `getFile().text()`
+  exists elsewhere in the file. The derivation is now alias-scoped, and an
+  assertion fails if the two fields §4v named ever drop out of the set.
+
+### INV-55 — console block shapes
+`check-output-blocks` validated CLAUDE.md and `.claude/commands/` only, so
+dropping `Net score:` from the console's VERIFICATION BLOCK display passed
+everything. It now validates the console too — **12 of 12 blocks**, in both
+static `<pre>` displays and builder template literals.
+- Getting this right took three passes. The first reported five failures that
+  were all the checker's fault: a block's delimiter line carries its container's
+  punctuation (`` ---END X---`; `` in a builder, `---END X---</pre>` in a
+  display, `<pre id="…">---X---` on the open). Those are stripped before
+  comparison; the five "findings" were artifacts, and the console was correct.
+
+### INV-56 — focus visibility, the structural half
+17 rules set `outline:none`, 15 of them inline on form controls where a
+stylesheet `:focus` rule can never win on specificity, and the file had **zero**
+`:focus-visible` rules. Added a global `:focus-visible` using `box-shadow` —
+the one property inline `outline:none` cannot suppress. Batch 6 routed focus
+visibility entirely to the perceptual bucket; this is the half that was
+checkable from code all along. Contrast remains perceptual (S7/INV-52).
+
+### F15 — CI least privilege
+The `permissions: contents: read` block shipped in v1.21.0 with nothing
+asserting it. `check-template-sync` now validates it (present, read-only, no
+write scope), with a fail-closed `guard.test` case — which also required the
+test's temp copy to include `.github/`.
+
+### Invariants
+`INV-20`'s scope-limit note retired (the gap is closed); `INV-53`–`INV-57`
+added — 57 total, 45 runnable.
+
 ## 1.23.0 — 2026-07-27
 
 **R19 — verification-pack assembly.** Command semantics change (the CHECKPOINT

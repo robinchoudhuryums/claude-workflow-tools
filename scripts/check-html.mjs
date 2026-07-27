@@ -169,6 +169,22 @@ if (loaded) {
     else bad('getAxisB did not honor a custom axisB override');
   } else bad('getAxisB not defined');
 
+  // INV-07 — built-in projects are unchanged by Axis B configurability. The
+  // library stated this as "no axisB field" and verified it by "code read of
+  // PROJECTS", i.e. nothing. Assert the CONSEQUENCE (they resolve to the shipped
+  // defaults) rather than the absence of a field: that is what actually matters
+  // and it stays meaningful if a built-in ever legitimately gains a custom set.
+  if (typeof ctx.getAxisB === 'function') {
+    const builtins = vm.runInContext('typeof PROJECTS !== "undefined" ? PROJECTS : null', ctx);
+    const defaults = ctx.getAxisB({});
+    if (!Array.isArray(builtins) || !builtins.length) bad('PROJECTS not reachable from the context — the INV-07 assertion would be vacuous');
+    else {
+      const drifted = builtins.filter(p => ctx.getAxisB(p) !== defaults).map(p => p.id);
+      if (!drifted.length) ok(`all ${builtins.length} built-in project(s) resolve to the shipped Axis B defaults (INV-07)`);
+      else bad(`built-in project(s) no longer resolve to the default Axis B set: ${drifted.join(', ')} (INV-07)`);
+    }
+  }
+
   if (typeof ctx.collectState === 'function') {
     store['ccg:probe'] = '1'; store['other:probe'] = '1';
     const keys = Object.keys(ctx.collectState());
@@ -196,6 +212,140 @@ if (loaded) {
     else bad('a failed localStorage write was swallowed silently (storageWarn did not fire)');
   } else bad('saveCustomProjects not defined — cannot test storageWarn');
 }
+
+// INV-08 — an invariant renders a "| Verify: …" suffix IFF it carries a verify
+// value. A library entry with no verify must not grow an empty suffix (it would
+// read as "verified by nothing" in a §4v pack), and one WITH a value must never
+// lose it (that value is what invariant-check.mjs executes). The rule named two
+// builders; there are three sites — the two §-builders plus the Seams invariant
+// table — so the static half is derived from the source rather than a name list.
+if (loaded) {
+  // Every interpolation of inv.verify — the three prompt builders AND the
+  // project-form serializer — must sit inside a `inv.verify ? … : ''` ternary.
+  // Derived by counting, so a fourth site cannot be added ungated.
+  const interpolated = (src.match(/\$\{inv\.verify\}/g) || []).length;
+  const gated = (src.match(/inv\.verify\s*\?[^]{0,60}?\$\{inv\.verify\}/g) || []).length;
+  if (interpolated && interpolated === gated) ok(`all ${interpolated} inv.verify interpolation(s) are gated on a value (INV-08)`);
+  else bad(`INV-08: ${interpolated} site(s) interpolate inv.verify but only ${gated} gate it — an entry with no verify would render an empty suffix`);
+
+  const probe = {
+    id: 'inv08', name: 'INV08 Probe', healthDimensions: 'A, B',
+    subsystems: [{ name: 'S', files: 'a.ts' }], cycleGroups: ['S'], seeds: [], axisB: [],
+    policyThreshold: 4, consecutiveCycles: 2,
+    invariants: [
+      { id: 'INV-AA', text: 'carries a verify value', subsystem: 'S', verify: 'node probe-aa.mjs' },
+      { id: 'INV-BB', text: 'carries none', subsystem: 'S', verify: '' },
+    ],
+  };
+  // The builders read the library through getProjectInvariants() (active
+  // project, from storage) rather than off the argument, so the probe has to be
+  // the active project for this to be anything but vacuous.
+  for (const k of Object.keys(store)) delete store[k];
+  store['ccg:customProjects'] = JSON.stringify([probe]);
+  store[`ccg:${probe.id}:invariants`] = JSON.stringify(probe.invariants);
+  if (typeof ctx.switchProject === 'function') ctx.switchProject(probe.id);
+  const builders = Object.keys(ctx).filter(k => /^build.*Text$/.test(k) && typeof ctx[k] === 'function');
+  const rendering = [], wrong = [];
+  for (const n of builders) {
+    let out = '';
+    try { out = ctx[n](probe) || ''; } catch { continue; }
+    if (!out.includes('INV-AA')) continue;
+    rendering.push(n);
+    const line = id => out.split('\n').find(l => l.includes(id)) || '';
+    if (!/\|\s*Verify:\s*node probe-aa\.mjs/.test(line('INV-AA'))) wrong.push(`${n} dropped INV-AA's Verify suffix`);
+    if (/\|\s*Verify:/.test(line('INV-BB'))) wrong.push(`${n} gave INV-BB a Verify suffix it has no value for`);
+  }
+  if (!rendering.length) bad('no prompt builder rendered the probe invariant library — the INV-08 behavioral check is vacuous');
+  else if (!wrong.length) ok(`the "| Verify:" suffix tracks the value in ${rendering.length} builder(s): ${rendering.join(', ')} (INV-08)`);
+  else bad('INV-08: ' + wrong.join('; '));
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+}
+
+// INV-15 — the Axis B builders iterate getAxisB(project) rather than any
+// hardcoded category list, which is what makes a per-project override actually
+// take effect. Verified by "code read" before, i.e. not at all. Derived form: no
+// default category NAME may appear anywhere in the script outside the
+// DEFAULT_AXIS_B declaration, and the two builders must call getAxisB().
+if (loaded && typeof ctx.getAxisB === 'function') {
+  const fnSrc = n => {
+    const i = src.indexOf('\nfunction ' + n);
+    if (i < 0) return '';
+    const rest = src.slice(i + 1);
+    const j = rest.slice(1).search(/\nfunction [A-Za-z_$]/);
+    return j === -1 ? rest : rest.slice(0, j + 1);
+  };
+  const custom = {
+    id: 'inv15', name: 'INV15 Probe', healthDimensions: 'A, B',
+    subsystems: [{ name: 'S', files: 'a.ts' }], cycleGroups: ['S'], seeds: [], invariants: [],
+    policyThreshold: 4, consecutiveCycles: 2,
+    axisB: [{ name: 'ZZ Probe Category', measures: 'zz measures', pulse: 'zz pulse?', playbook: 'zz playbook' }],
+  };
+  const problems = [];
+  for (const n of ['buildP6aText', 'buildP6bText']) {
+    if (!/getAxisB\s*\(/.test(fnSrc(n))) problems.push(`${n} does not call getAxisB()`);
+    let out = '';
+    try { out = typeof ctx[n] === 'function' ? ctx[n](custom) : ''; } catch (e) { problems.push(`${n} threw: ${e.message}`); continue; }
+    if (!out.includes('ZZ Probe Category')) problems.push(`${n} ignored the project's configured Axis B categories`);
+  }
+  if (!problems.length) ok('§6a/§6b ask about the project’s CONFIGURED Axis B categories, not a hardcoded list (INV-15)');
+  else bad('INV-15: ' + problems.join('; '));
+
+  // Report — do NOT silently imply — the one builder this rule does not reach.
+  // §1s PART 4 and the SEAMS & INVARIANTS AUDIT BLOCK enumerate the five DEFAULT
+  // categories by name, so a project with a custom Axis B set gets a Seams audit
+  // asking about categories it does not use. Making it derived means changing a
+  // --assert-locked canonical body AND the block's registered field names, so it
+  // is tracked as a finding rather than quietly folded into a passing check.
+  const seams = fnSrc('buildSeamsText');
+  const hardcoded = ctx.getAxisB({}).map(c => c.name).filter(name => seams.includes(name));
+  if (hardcoded.length) log.push(`  · INV-15 does NOT cover §1s: buildSeamsText hardcodes ${hardcoded.length} default Axis B category name(s) — open finding, see .cycle/config.md`);
+}
+
+// INV-10 — the import path. Its Verify field read "importStateFile logic", and
+// the FileReader stub never fired its onload, so nothing here had ever executed:
+// every clause of this rule (JSON rejection, envelope rejection, the confirm
+// gate, ccg:*-only writes) was unverified. Drive the real function.
+if (loaded && typeof ctx.importStateFile === 'function') {
+  const RealFR = ctx.FileReader;
+  ctx.FileReader = class { readAsText(f) { if (this.onload) this.onload({ target: { result: f._body } }); } };
+  const realMsg = ctx.setStateIoMsg, realConfirm = ctx.confirm;
+  let msg = null, kind = null;
+  ctx.setStateIoMsg = (m, k) => { msg = m; kind = k; };
+  const run = (body, confirmAnswer = true) => {
+    msg = null; kind = null;
+    ctx.confirm = () => confirmAnswer;
+    const input = { files: [{ _body: body }], value: 'C:\\fake' };
+    ctx.importStateFile(input);
+    return { msg, kind, cleared: input.value === '' };
+  };
+  const clear = () => { for (const k of Object.keys(store)) delete store[k]; };
+
+  clear();
+  const notJson = run('this is not json {');
+  const noData = run(JSON.stringify({ nope: 1 }));
+  const rejects = notJson.kind === 'error' && /json/i.test(notJson.msg || '') && notJson.cleared
+    && noData.kind === 'error' && /data/i.test(noData.msg || '') && noData.cleared;
+  if (rejects) ok('import rejects non-JSON and missing-"data" payloads with a visible message (INV-10)');
+  else bad(`INV-10: malformed payloads not rejected visibly (notJson=${JSON.stringify(notJson.msg)} noData=${JSON.stringify(noData.msg)})`);
+
+  clear();
+  const payload = JSON.stringify({ data: { 'ccg:imp:a': '1', 'other:imp': 'nope', 'ccg:ghToken': 'ghp_EVIL' } });
+  run(payload, false);
+  const declined = Object.keys(store).length === 0;
+  if (declined) ok('declining the import confirm writes nothing (INV-10)');
+  else bad(`INV-10: import wrote ${JSON.stringify(Object.keys(store))} despite a declined confirm`);
+
+  clear();
+  run(payload, true);
+  const scoped = store['ccg:imp:a'] === '1' && !('other:imp' in store) && !('ccg:ghToken' in store);
+  if (scoped) ok('an accepted import writes only non-secret ccg:* keys (INV-10/INV-40)');
+  else bad(`INV-10: import wrote out-of-scope keys: ${JSON.stringify(Object.keys(store))}`);
+
+  clear();
+  ctx.FileReader = RealFR; ctx.setStateIoMsg = realMsg; ctx.confirm = realConfirm;
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+} else if (loaded) bad('importStateFile not defined — INV-10 unguarded');
 
 // R3 fallback: connectRepoFolder must degrade gracefully when the File System
 // Access API is absent (the stubbed environment has no window.showDirectoryPicker).
@@ -293,17 +443,65 @@ if (loaded && typeof ctx.collectState === 'function' && typeof ctx.stateBackupKe
 if (loaded && typeof ctx.switchProject === 'function') {
   for (const k of Object.keys(store)) delete store[k];
   const PAYLOADS = ['<img src=x onerror=alert(1)>', '" onmouseover="alert(2)', "'); alert(3); //"];
-  store['ccg:customProjects'] = JSON.stringify([{
-    id: "x'); alert(4); //", name: 'Proj <img src=x onerror=alert(1)>', healthDimensions: 'A, B',
-    subsystems: [{ name: 'Core " onmouseover="alert(2)', files: "a.ts'); alert(3); //" }],
-    cycleGroups: ['Core " onmouseover="alert(2)'], invariants: [], seeds: [],
-  }]);
-  store["ccg:x'); alert(4); //:invariants"] = JSON.stringify([{ id: "INV-99'); alert(3); //", text: 'imported', subsystem: 's' }]);
-  store['ccg:dashRepos'] = JSON.stringify({ "x'); alert(4); //": 'own"er/re"po' });
+
+  // INV-53 — DERIVE which fields to poison from the sinks themselves. Cycle-5
+  // §4v found this fixture was a false green: it hand-picked hostile fields
+  // (inv.id) and left others benign (inv.text, inv.subsystem), so dropping
+  // esc() from an un-poisoned sink passed every stage. A hand-picked payload
+  // set proves escaping only for the fields someone remembered — the same
+  // hand-listing trap as F17's block list, one level down.
+  //
+  // Scan the source for `${…obj.field…}` interpolations, then poison every
+  // STRING-rendered field found. Fields used structurally (.length/.map/.split)
+  // are excluded and REPORTED, so the check never silently narrows itself.
+  const interp = new Map();                       // alias -> Set(field)
+  for (const m of src.matchAll(/\$\{[^}]*?\b([a-z]+)\.([a-zA-Z]+)/g)) {
+    const [, alias, field] = m;
+    if (!interp.has(alias)) interp.set(alias, new Set());
+    interp.get(alias).add(field);
+  }
+  // Alias-SCOPED. An unqualified `.field` test excludes a string field whenever
+  // any unrelated object anywhere calls `.field()` — `inv.text` was dropped
+  // because `getFile().text()` exists in the FSA code, silently un-poisoning the
+  // exact sink §4v caught. The derivation must narrow only on the alias it means.
+  const structural = (alias, f) =>
+    new RegExp(`\\b${alias}\\.${f}\\s*(\\.(length|map|filter|join|split|forEach|find|slice|padEnd)\\b|\\()`).test(src);
+  const fieldsFor = (alias, skip = []) =>
+    [...(interp.get(alias) || [])].filter(f => !structural(alias, f) && !skip.includes(f));
+
+  const hostile = (alias, skip) => {
+    const o = {};
+    fieldsFor(alias, skip).forEach((f, i) => { o[f] = PAYLOADS[i % PAYLOADS.length] + ` [${alias}.${f}]`; });
+    return o;
+  };
+  // Structural fields are supplied concretely; every other interpolated field
+  // is hostile. `id` stays a payload — it is an attribute-context arg.
+  const invFields = fieldsFor('inv');
+  const projFields = fieldsFor('p', ['subsystems', 'invariants', 'seeds', 'axisB', 'cycleGroups']);
+  const subFields = fieldsFor('s');
+  const entFields = fieldsFor('e');
+  // Report BOTH what was derived and what was deliberately held back, so the
+  // fixture can never silently narrow the way the hand-picked one did.
+  const SKIPPED = 'p.{subsystems,invariants,seeds,axisB,cycleGroups} (arrays), e.id (numeric identity)';
+  log.push(`  · INV-53 payload set DERIVED from the sinks: inv{${invFields}} p{${projFields}} s{${subFields}} e{${entFields}}`);
+  log.push(`  · INV-53 held back as non-string: ${SKIPPED}`);
+  if (!invFields.includes('text') || !invFields.includes('subsystem'))
+    bad(`INV-53: the fields §4v proved unguarded (inv.text/inv.subsystem) are NOT in the derived payload set — derivation narrowed itself`);
+
+  const hostileProject = Object.assign(hostile('p', ['subsystems', 'invariants', 'seeds', 'axisB', 'cycleGroups']), {
+    subsystems: [hostile('s')], cycleGroups: [PAYLOADS[1] + ' [cycleGroup]'], invariants: [], seeds: [],
+    axisB: [], healthDimensions: PAYLOADS[0] + ' [p.healthDimensions]',
+  });
+  if (!hostileProject.id) hostileProject.id = PAYLOADS[2] + ' [p.id]';
+  store['ccg:customProjects'] = JSON.stringify([hostileProject]);
+  store[`ccg:${hostileProject.id}:invariants`] = JSON.stringify([hostile('inv')]);
+  store[`ccg:${hostileProject.id}:archive`] = JSON.stringify([Object.assign(hostile('e'), { id: 1 })]);
+  store['ccg:dashRepos'] = JSON.stringify({ [hostileProject.id]: 'own"er/re"po' });
   try {
-    ctx.switchProject("x'); alert(4); //");
+    ctx.switchProject(hostileProject.id);
     ctx.renderDashboard();
-    const sinks = ['ctItems', 'subsysTableBody', 't2SubsysBody', 'projectSelect', 'customInvariantsList', 'projectsCustom', 'dashCards'];
+    if (typeof ctx.renderArchive === 'function') ctx.renderArchive();
+    const sinks = ['ctItems', 'subsysTableBody', 't2SubsysBody', 'projectSelect', 'customInvariantsList', 'projectsCustom', 'dashCards', 'archiveEntries'];
     const dirty = [];
     for (const id of sinks) {
       const h = elStore[id] ? elStore[id].innerHTML : '';
@@ -373,6 +571,15 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   const offenders = [...noComments.matchAll(/on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
   if (!offenders.length) ok('no inline handler builds a JS argument with esc() — jsArg() only (F04/F11)');
   else bad(`inline handler(s) using esc() as a JS argument (use jsArg): ${offenders.join(' | ')}`);
+
+  // INV-54 — every clipboard write goes through copyToClipboard(). F05 fixed the
+  // silent-failure bug at the helper, and the archive "Copy content" button kept
+  // its own inline navigator.clipboard call, so the bug stayed live in that one
+  // sink for four releases. Centralising a behaviour does not apply it; scan for
+  // callers that bypass the centre.
+  const inlineClip = [...noComments.matchAll(/on[a-z]+="[^"]*navigator\.clipboard[^"]*"/gi)].map(m => m[0].slice(0, 80));
+  if (!inlineClip.length) ok('no inline handler calls navigator.clipboard directly — copyToClipboard() only (INV-54)');
+  else bad(`inline handler(s) bypassing copyToClipboard(): ${inlineClip.join(' | ')}`);
 }
 
 // R18 (a)1 — keyboard access. A control built on a non-interactive element
@@ -399,6 +606,23 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   }
   if (!bad_.length) ok('every click-only control is keyboard-reachable (role+tabindex+keydown, or a native button) — R18 (a)1');
   else bad(`mouse-only control(s), unreachable by keyboard: ${bad_.join(' | ')}`);
+}
+
+// INV-56 — focus VISIBILITY, the structural half. Suppressing the UA focus ring
+// with outline:none and supplying nothing in its place makes every focusable
+// control invisible to keyboard users — strictly worse than not being focusable.
+// 15 of the 17 suppressions are INLINE on form controls, where a stylesheet
+// :focus rule can never win on specificity, so the replacement must use
+// box-shadow (which inline outline:none cannot suppress). Whether the indicator
+// has adequate CONTRAST is perceptual and stays with S7/INV-52.
+{
+  const suppressors = (html.match(/outline:\s*none/g) || []).length;
+  const fv = html.match(/:focus-visible\s*\{[^}]*\}/g) || [];
+  const usesBoxShadow = fv.some(r => /box-shadow\s*:/.test(r));
+  if (!suppressors) ok('no outline:none in the file — UA focus ring intact everywhere (INV-56)');
+  else if (fv.length && usesBoxShadow) ok(`${suppressors} outline:none suppression(s) are covered by a :focus-visible rule using box-shadow (INV-56)`);
+  else if (fv.length) bad(`:focus-visible exists but sets no box-shadow — inline outline:none (${suppressors} of them) will win, leaving those controls focusable but invisible`);
+  else bad(`${suppressors} outline:none suppression(s) with NO :focus-visible replacement — focusable but invisible to keyboard users (INV-56)`);
 }
 
 // F06 — Axis B must round-trip through the project form WITHOUT losing `pulse`.

@@ -46,3 +46,7 @@ jobs:
         run: node tests/check-output-blocks.test.mjs
       - name: R19 verification-pack assembler regression test
         run: node tests/verification-pack.test.mjs
+      - name: Mutation-audit harness regression test
+        run: node tests/mutation-audit.test.mjs
+      - name: Invariant mutation audit (every Verify command must fail closed)
+        run: node tests/mutation-audit.mjs

@@ -2,9 +2,9 @@
 
 ## Current
 Cycle: 5 — COMPLETE AND SYNTHESIZED (overall 9.0/10). Full Tier-1 dogfood: broad-scan → 5 implement batches → regression → reflect ×2 → sync-docs → R19 → §4v (fresh session) → §6a.
-Phase: idle — Cycle 5 fully closed. Cycle 6 opens with the §4v findings as scope (see below).
+Phase: implement — post-synthesis remediation COMPLETE through v1.25.0 (§4v findings in v1.24.0; the MANUAL-invariant audit + F11 mutation-audit promotion in v1.25.0). Cycle number stays 5 per P3: no new /broad-scan or /audit has begun, so this is post-synthesis work under the same cycle (Cycle-4 precedent).
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
 Updated: 2026-07-27
 
@@ -264,64 +264,60 @@ average rose while the most important dimension fell; read the grid.
 No policy triggers (lowest 7.0 vs threshold 4/10) — flagged as a rubric weakness: a category over-scored twice
 running is invisible to a fixed threshold.
 
+## Post-synthesis §4v remediation — ✅ COMPLETE (v1.24.0)
+Every finding from the Cycle-5 verification pass is closed.
+- LIVE DEFECT archive "Copy content" bypassed copyToClipboard() → routed through it. Root cause worth keeping:
+  copyFeedback() hardcoded the prompt-copy icon as the reset label, so the helper could not be reused for a
+  button with its own label — that is HOW the sink kept its inline call. INV-54 static scan added.
+- INV-53 — the payload set is now DERIVED from the sinks' ${obj.field} interpolations. MY FIRST ATTEMPT WAS
+  WRONG THE SAME WAY: an unqualified `.field` structural test excluded inv.text because getFile().text() exists
+  elsewhere. Alias-scoped now, plus an assertion that fails if inv.text/inv.subsystem ever leave the set.
+- INV-55 — console block shapes checked, 12/12. TOOK THREE PASSES: the first run's five "failures" were all
+  checker artifacts (delimiter lines carry container punctuation: ---END X---`; / ---END X---</pre> /
+  <pre id=…>---X---). The console was correct. Worth remembering before reporting a new check's first output.
+- INV-56 — global :focus-visible using box-shadow (the only property inline outline:none cannot suppress).
+- F15 — CI permissions asserted; guard.test setup() now copies .github/ (test double updated with the fix).
+- INV-20 scope note retired; INV-53..57 added → 57 invariants, 45/45 runnable PASS. 15 guard cases.
+- F09 caught a missing CHANGELOG entry for the SECOND time — the guard is earning its place.
+
 ## Where I left off
-v1.22.0; full Test Command green (13 stages); 51 invariants; invariant-check 39/39 runnable PASS. Cycle 5 is
-FEATURE-COMPLETE: R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, Batch 3+4
-(v1.21.0), and F12 + the auto-vivify gap + Batch 6 (v1.22.0). All 21 findings closed; all 17 script-verified
-invariants mutation-proven fail-closed.
-/regression + /reflect are now COMPLETE for all five batches. Cycle-5 totals: 10 production fixes, 2 new
-capabilities, 14 defensive/structural, 0 new failure modes, net +10 across 5 reflect rows. Cumulative net 19.
-Two more self-report corrections were made in reflect (F20 is defensive, not a fix; F08/F17/F03 corrected
-earlier) — the batch summaries have over-reported production fixes EVERY time, always by counting capabilities
-or test/guard work as fixes. That is the single most repeated error of this cycle.
-The regression pass NEGATED the one feared new failure mode: making 9 controls focusable could have made them
-focusable-but-invisible, but all 17 outline:none rules are on form inputs, so the default focus ring survives.
-INV-52 (visible focus indicator) is a MANUAL candidate — perceptual, only S7 can answer it.
-CYCLE 6 OPENING SCOPE — the §4v findings, in order (~half a day total):
-- LIVE FIRST: archive Copy → route through copyToClipboard() + INV-54 static scan (no inline
-  navigator.clipboard in any handler). S ≈ 30m.
-- INV-53: DERIVE the hostile fixture's payload set from the sinks' interpolated fields instead of hand-picking
-  it. This is the fix for the one FAIL, and it is the FOURTH time this cycle that hand-listing was the root
-  cause (WORKFLOW_BLOCKS, panel fixture, element stub, now the payload set). S ≈ 1–2h.
-- INV-55: extend check-output-blocks to the console's static <pre> displays. S ≈ 1h.
-- INV-56: the structural half of focus visibility (outline:none without a replacement). S ≈ 1h.
-- F15: assert the CI permissions block. S ≈ 15m.
-Then: walk S5/S6/S7 in a browser; audit the 12 MANUAL invariants (never checked); promote the F11 mutation
-audit out of scratchpad — §4v just proved it needs a field-level tier.
+v1.25.0; full Test Command green (16 stages, ~20s). Library is 58 invariants, **0 manual** —
+invariant-check 58/58 runnable PASS, and mutation-audit proves 58/58 fail-closed across 60 mutations.
 
-Other remaining strategic / non-finding work:
-- Walk S5/S6/S7 in a browser — the three new visual scenarios have never been performed. S7 (keyboard-only)
-  matters most: the code path is guarded but whether the FOCUS RING is visible is unknowable from code.
-- The F11 mutation audit lives in scratchpad, not CI. It found a real false green; a permanent version would
-  keep the library honest as it grows (~17 node spawns, so likely outside the 13-stage gate).
-- The 12 MANUAL invariants have never been audited for correctness at all — F11 covered only runnable ones.
-- legacyCopy()'s SUCCESS path is still unexercised (stub execCommand returns false).
-- Strategic: CSP (needs event delegation, L), no LICENSE file, R9, R12, R17 follow-ons.
-CYCLE HYGIENE — /regression, /reflect and /sync-docs are DONE for Cycle 5. metrics.csv now carries 3 phase=reflect
-rows (net +5; the batch summaries had over-reported 8 — F08/F17 are defensive, F03 is a capability), estimates.csv
-carries 3 calibration rows, and the seam counter is 2/3 (not due). portfolio-status now reads Net Δ = ↑ (it had
-been reporting ↓ off stale Cycle-3/4 data). /sync-docs created this repo's Common Gotchas + Key Design Decisions +
-Operator State Checklist (partially closing F18), completed the Subsystems file lists, added a Deploy Command
-(F19), fixed INV-11's stale count (F14), rewrote the README defining-risk gotcha (F13) and de-staled
-PROJECT_HEALTH (F10).
-STILL PENDING for Cycle 5: §4v Independent Verification — MUST be a FRESH session with no implementation context
-(three batches were written by the same agent that would otherwise verify them) — then §6a Health Synthesis to
-re-score. Do NOT let the implementer grade its own work.
+Two deliverables since v1.24.0:
 
-## (prior) v1.18.0 left-off
-v1.18.0; full Test Command green (13 stages); 38 invariants (INV-36 now covers 6 locked builders, INV-38 = registered
-output blocks). R16-full + HTML Console Correctness COMPLETE: both 8.5 synthesis priorities closed — 6/7 dynamic
-builders textually locked (sectionBody lets §4v/§1s/§6a lock without minting commands; §6a pins the Cycle-4 F1
-metrics-ownership rule), and the browser-only render + FSA/state-round-trip paths are now headless-tested in check-html
-(all mutation-proven fail-closed). Shipped in 6 commits on branch claude/stoic-hypatia-gf4y5u, on top of the v1.17.0
-hosted-console UX work (Dashboard + light mode + mobile nav). NOTE: light mode + mobile layout are still browser-
-verified only — worth an eyeball before merge. Next: merge the branch. The Cycle-4 audit work is fully drained; a
-fresh /broad-scan (Cycle 5) would re-baseline with fresh eyes.
+1) AUDITED THE 12 MANUAL INVARIANTS. The MANUAL tier turned out to be a NOTATION artifact — ten of the
+   twelve were mechanically verifiable all along, and two (INV-02, INV-06) were ALREADY enforced on every
+   push while the library reported them unverified. All twelve converted to runnable. Four gained an
+   assertion that never existed (INV-07/08/10/15 in check-html); three became structural checks 8/9/10 in
+   check-template-sync (INV-14, INV-16, INV-12+INV-18).
+   Two real defects fell out:
+   - INV-16 was FALSE. Its Verify pointed at capability markers, which only prove a phrase appears
+     SOMEWHERE in a file. Under that, the console's Setup schema was missing `### Seams Audit Cadence`
+     entirely AND omitted the `| Verify:` field from the Invariant Library line — so an operator running
+     /setup-cycle FROM THE CONSOLE got a config whose invariants could never become executable. Both
+     restored; check 9 now compares the real section lists across all three copies of the schema.
+   - INV-10 had NEVER EXECUTED. The headless FileReader stub never fired onload, so no clause of the
+     import path had ever run. All four clauses now assert.
 
-## (prior) R16 left-off
-v1.16.0; full Test Command green (13 stages); invariant-check 23/23 runnable PASS (36 total). R16 is COMPLETE:
-the dynamic-builder lock engine + 3 of 4 builders LOCKED to 100% canonical coverage by --assert (INV-36) — §T1
-(/broad-scan), §T2a (/targeted-audit), §6b (/health-pulse) — and §T2b (/targeted-implement) RESOLVED report-only
-by design (canonical delegates to /broad-implement Step 1; console stays standalone, R16-S-marker-guarded). This
-closes the gap R14 left (it locked only the static <pre> §-prompts). Branch claude/stoic-hypatia-gf4y5u is 9
-commits ahead, no PR yet. Next: open a PR for the branch if wanted, or start Cycle 5 (fresh audit).
+2) PROMOTED THE F11 MUTATION AUDIT to tests/mutation-audit.mjs + a CI stage, with the three upgrades that
+   close how the scratchpad version could lie: coverage DERIVED from the live library (missing case =
+   failure), a stale find string FAILS instead of printing a neutral "?", and per-invariant SIGNALS so a
+   mutation caught by a neighbour sharing the same command is not credited (the field-level tier §4v
+   asked for). tests/mutation-audit.test.mjs guards all three.
+
+OPEN FINDING recorded, deliberately not fixed: Axis B configurability stops at §6a/§6b. buildSeamsText
+PART 4 and the SEAMS & INVARIANTS AUDIT BLOCK still enumerate the five DEFAULT categories by name, so a
+project with custom categories gets a Seams audit asking about ones it does not use. Fixing it means
+editing an --assert-locked canonical body AND the block's registered field names — a real change, not a
+tidy-up. check-html reports the gap on every run rather than passing silently.
+
+Still open (non-finding work):
+- Walk S5/S6/S7 in a browser — never performed. S7 (keyboard-only) is the only thing that can answer
+  whether the new focus ring is actually VISIBLE; the code path is guarded, the contrast is not.
+- legacyCopy()'s SUCCESS path is still unexercised (the stub execCommand returns false).
+- Strategic: CSP (needs event delegation, L), no LICENSE file, R9/R12/R17 follow-ons.
+
+CYCLE HYGIENE: /regression, /reflect and /sync-docs are DONE for Cycle 5. Cycle number stays 5 per P3 —
+no new /broad-scan or /audit has begun. metrics.csv carries 3 phase=reflect rows + 1 phase=synthesis row;
+seam counter 2/3 (not due).
