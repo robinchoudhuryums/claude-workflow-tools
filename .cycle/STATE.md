@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
-Phase: implement COMPLETE — ALL 21 Cycle-5 findings closed (v1.19.0 → v1.22.0). /regression + /reflect + /sync-docs done for the first three batches; §4v (FRESH session) then §6a remain, and the last two batches are unreflected.
+Phase: reflect COMPLETE — ALL 21 Cycle-5 findings closed (v1.19.0 → v1.22.0) and ALL batches reflected. Cycle-5 net +10 across 5 reflect rows. ONLY §4v (FRESH session) then §6a remain.
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
@@ -232,9 +232,14 @@ v1.22.0; full Test Command green (13 stages); 51 invariants; invariant-check 39/
 FEATURE-COMPLETE: R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, Batch 3+4
 (v1.21.0), and F12 + the auto-vivify gap + Batch 6 (v1.22.0). All 21 findings closed; all 17 script-verified
 invariants mutation-proven fail-closed.
-IMPORTANT — /reflect has only run for the FIRST THREE batches (net +5, cycle 5). v1.21.0 and v1.22.0 are
-UNREFLECTED: metrics.csv has no rows for them, so the trend under-reports Cycle 5. Run /regression + /reflect
-for those two before §4v.
+/regression + /reflect are now COMPLETE for all five batches. Cycle-5 totals: 10 production fixes, 2 new
+capabilities, 14 defensive/structural, 0 new failure modes, net +10 across 5 reflect rows. Cumulative net 19.
+Two more self-report corrections were made in reflect (F20 is defensive, not a fix; F08/F17/F03 corrected
+earlier) — the batch summaries have over-reported production fixes EVERY time, always by counting capabilities
+or test/guard work as fixes. That is the single most repeated error of this cycle.
+The regression pass NEGATED the one feared new failure mode: making 9 controls focusable could have made them
+focusable-but-invisible, but all 17 outline:none rules are on form inputs, so the default focus ring survives.
+INV-52 (visible focus indicator) is a MANUAL candidate — perceptual, only S7 can answer it.
 ALL 21 Cycle-5 findings are now CLOSED (F01-F21). Remaining work is strategic / non-finding:
 - Walk S5/S6/S7 in a browser — the three new visual scenarios have never been performed. S7 (keyboard-only)
   matters most: the code path is guarded but whether the FOCUS RING is visible is unknowable from code.
