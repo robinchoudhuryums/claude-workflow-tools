@@ -5,6 +5,57 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.22.0 — 2026-07-27
+
+Cycle-5 closeout: F12, the headless stub's auto-vivify gap, and Batch 6 — the
+first run of the R18 interface lens against its own host. Console and tooling
+only — **no command semantics or config-schema change, so no `/sync-commands`
+re-pull is required**.
+
+### F12 — the metrics summary reported a permanently blank field
+`render-metrics` printed `Latest synthesis: net ,` for every real project,
+because a synthesis row's `net_score` is blank *by rule* (P1/INV-33 — those
+columns are owned only by `phase=reflect`). It now reports the columns a
+synthesis row actually owns and sources that cycle's net from its reflect rows.
+The existing test asserted the old string against a fixture whose synthesis row
+carried `net_score=3` — data the repo's own rule forbids — so a P1-compliant
+case was added alongside it.
+
+### The auto-vivify gap — a mistyped element id passed CI
+`check-html`'s `getElementById` stub returned a live element for **any** id, so
+a `render*()` writing to a mistyped id wrote to a phantom element, passed the
+harness, and rendered an empty box in the browser. Not hypothetical: it happened
+during v1.20.0 (`pr-prompt` vs `pr`) and was caught by reading, not tooling.
+Writes are now recorded and every element written during init must exist in the
+markup. Reads of unknown ids stay allowed — in a browser they return `null` and
+the code already guards.
+
+### Batch 6 — R18 dogfooded on the console
+The lens's own gating worked as designed: the light-theme token set deliberately
+flips "chrome only" (documented in the CSS), so the un-flipped semantic colors
+are **not** reported as a finding — the contrast question is perceptual and was
+routed to an operator check instead of guessed at.
+
+- **(a)1 keyboard access — the real finding.** Nine controls built on
+  `div`/`span`/`tr` had no `role`, no `tabindex` and no key handler: six variant
+  toggles, the archive entry headers, the cycle-tracker items and the phase
+  dots. All were mouse-only. Added `kbdActivate()` + `role="button"` +
+  `tabindex="0"`, and moved the subsystem tables' action onto their existing
+  `Use ↗` button, which is natively keyboard-reachable. Guarded by a check that
+  **derives** the control set from the markup.
+- **(a)2 missing states.** `renderCustomProjects` and `renderCustomInvariantsList`
+  blanked their container when empty; both now render an empty state.
+- Added a **Console UI/UX & Accessibility** health dimension — the console is a
+  hosted user-facing surface and had no dimension scoring it, which is precisely
+  the gap R18 exists to close. §6a should treat it as "First measurement".
+- Promoted three **OPERATOR VISUAL CHECKS** into `Regression Scenarios` (S5
+  light-mode legibility, S6 mobile drawer + tabbed nav, S7 keyboard-only pass),
+  so the perceptual half is scheduled rather than assumed.
+
+### Invariants
+`INV-49` (keyboard reachability), `INV-50` (no writes to phantom elements),
+`INV-51` (no blank synthesis net) — 51 total, 39 runnable.
+
 ## 1.21.0 — 2026-07-27
 
 Cycle-5 Batch 3 (console correctness) and Batch 4 (make green mean green).

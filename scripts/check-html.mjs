@@ -41,21 +41,35 @@ const dummy = new Proxy(
 // keep them so the test can assert the rendered OUTPUT, not just that init didn't
 // throw (W2 — browser-only render paths were previously only smoke-tested).
 const elStore = {};
-function makeEl() {
+// Ids actually present in the markup. getElementById() returns a live stub for
+// ANY id, which meant a render writing to a MISTYPED id wrote to a phantom
+// element, passed CI, and rendered an empty box in the browser (proven by
+// mutation during the Cycle-5 regression pass — and I hit it for real,
+// `pr-prompt` vs `pr`, while adding the PR Review panel). Reads of unknown ids
+// are fine — in a browser they return null and the code guards with `if(!el)`.
+// WRITES to an unknown id are the bug, so those are what we record.
+const MARKUP_IDS = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
+const writtenIds = new Set();
+function makeEl(id) {
   const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } } };
   return new Proxy(t, {
     get(o, p) {
       if (p === 'innerHTML') return o._html;
       if (p === 'textContent') return o._text;
       if (p in o) return o[p];
-      if (p === 'querySelector') return () => makeEl();
+      if (p === 'querySelector') return () => makeEl(null);
       if (p === 'querySelectorAll') return () => [];
       return () => {};
     },
-    set(o, p, v) { if (p === 'innerHTML') o._html = String(v); else if (p === 'textContent') o._text = String(v); else o[p] = v; return true; },
+    set(o, p, v) {
+      if (p === 'innerHTML') { o._html = String(v); if (id) writtenIds.add(id); }
+      else if (p === 'textContent') { o._text = String(v); if (id) writtenIds.add(id); }
+      else o[p] = v;
+      return true;
+    },
   });
 }
-const getEl = id => (elStore[id] || (elStore[id] = makeEl()));
+const getEl = id => (elStore[id] || (elStore[id] = makeEl(id)));
 
 // Tabbed-navigation fixtures. The console's showPanel()/handleHash() query
 // 'main > .panel' and 'nav a'; a stub returning [] made every assertion about
@@ -115,6 +129,15 @@ ctx.globalThis = ctx;
 let loaded = false;
 try { vm.createContext(ctx); vm.runInContext(src, ctx, { filename: 'console' }); loaded = true; ok('inline <script> runs under stubbed DOM'); }
 catch (e) { bad('inline <script> threw on load: ' + e.message); }
+
+// Snapshot BEFORE the assertions below write to elements themselves.
+const initWrites = new Set(writtenIds);
+if (loaded) {
+  const phantom = [...initWrites].filter(id => !MARKUP_IDS.has(id));
+  if (!initWrites.size) bad('init wrote to no element — the render assertions below would be vacuous');
+  else if (!phantom.length) ok(`every element written during init exists in the markup (${initWrites.size} checked)`);
+  else bad(`render wrote to element id(s) not in the markup — renders empty in a browser: ${phantom.join(', ')}`);
+}
 
 // 3) Builder cleanliness for every built-in project
 if (loaded && typeof ctx.getAllProjects === 'function') {
@@ -350,6 +373,32 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   const offenders = [...noComments.matchAll(/on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
   if (!offenders.length) ok('no inline handler builds a JS argument with esc() — jsArg() only (F04/F11)');
   else bad(`inline handler(s) using esc() as a JS argument (use jsArg): ${offenders.join(' | ')}`);
+}
+
+// R18 (a)1 — keyboard access. A control built on a non-interactive element
+// (div/span/tr) is not focusable and does not fire click on Enter/Space, so it
+// is mouse-only. Every such control must either carry role="button" +
+// tabindex="0" + a key handler, or delegate to a nested native <button>.
+// Derived from the markup, not a hand-listed set (Common Gotchas: fixtures that
+// are hand-listed drift). Comments are stripped first — prose that names the
+// pattern must not trip the check.
+{
+  const markup = html.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*\/\/.*$/gm, '');
+  const A11Y_EXEMPT = [/onclick="closeNav\(\)"/];   // the drawer backdrop is a dismissal overlay, not a control
+  const bad_ = [];
+  for (const m of markup.matchAll(/<(div|span|tr)\b[^>]*\bonclick="[^"]*"[^>]*>/g)) {
+    const tag = m[0];
+    if (A11Y_EXEMPT.some(re => re.test(tag))) continue;
+    const keyboardable = /role="button"/.test(tag) && /tabindex="0"/.test(tag) && /onkeydown=/.test(tag);
+    if (keyboardable) continue;
+    // A <tr> may instead delegate to a native button carrying the same handler.
+    const fn = (tag.match(/onclick="(?:event\.stopPropagation\(\);)?([a-zA-Z0-9_]+)\(/) || [])[1];
+    const after = markup.slice(m.index, m.index + 700);
+    if (fn && /<button\b[^>]*onclick="[^"]*\b/.test(after) && after.includes(fn + '(')) continue;
+    bad_.push(tag.slice(0, 70));
+  }
+  if (!bad_.length) ok('every click-only control is keyboard-reachable (role+tabindex+keydown, or a native button) — R18 (a)1');
+  else bad(`mouse-only control(s), unreachable by keyboard: ${bad_.join(' | ')}`);
 }
 
 // F06 — Axis B must round-trip through the project form WITHOUT losing `pulse`.

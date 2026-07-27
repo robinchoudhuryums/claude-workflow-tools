@@ -888,7 +888,7 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
       <button class="abar-btn" onclick="collapseAllVariants('s1-variants')">Collapse all ↑</button>
     </div>
     <div id="s1-variants">
-      <div class="vt" onclick="toggleVariant('v-sec',this)"><div class="vt-label"><em>Variant</em> Security &amp; HIPAA Compliance Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-sec',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; HIPAA Compliance Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-sec">
         <div class="pb" id="block-p1sec">
           <div class="pb-header"><div class="pb-label">Security / HIPAA Audit Add-on</div><div class="pb-meta"><span class="ptag">Replace or add to flag list</span><button class="copy-btn" id="copy-p1sec" onclick="doCopy('p1sec')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -902,7 +902,7 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
 For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.</pre>
         </div>
       </div>
-      <div class="vt" onclick="toggleVariant('v-perf',this)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-perf',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-perf">
         <div class="pb" id="block-p1perf">
           <div class="pb-header"><div class="pb-label">Performance Audit Add-on</div><div class="pb-meta"><span class="ptag">Add to or replace flag list</span><button class="copy-btn" id="copy-p1perf" onclick="doCopy('p1perf')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1116,7 +1116,7 @@ DOCUMENTATION UPDATES NEEDED:
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
-    <div class="vt" onclick="toggleVariant('v-single',this)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-single',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
     <div class="vb" id="v-single">
       <div class="pb" id="block-p3single">
         <div class="pb-header"><div class="pb-label">Single Finding Prompt</div><div class="pb-meta"><button class="fill-btn" onclick="toggleFill('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button><button class="copy-btn" id="copy-p3single" onclick="doCopy('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1210,7 +1210,7 @@ Prioritize the verification list by likelihood of breakage. Then:
 ---END FOLLOW-ON AUDIT ITEMS---</pre>
     </div>
 
-    <div class="vt" onclick="toggleVariant('v-reflect',this)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-reflect',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
     <div class="vb" id="v-reflect">
       <div class="pb" id="block-p4reflect">
         <div class="pb-header">
@@ -1376,7 +1376,7 @@ reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</
     <div class="inote"><div class="ic">📌</div><div>The VERIFICATION BLOCK produced here becomes a <strong>required input</strong> for §6a Health Synthesis alongside the SESSION HANDOFF BLOCK and CYCLE SUMMARY BLOCK. All three are needed for accurate scoring.</div></div>
 
     <!-- VERIFICATION BLOCK format reference -->
-    <div class="vt" onclick="toggleVariant('v-vblock-ref',this)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-vblock-ref',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
     <div class="vb" id="v-vblock-ref">
       <div class="pb" id="block-vblockref">
         <div class="pb-header"><div class="pb-label">VERIFICATION BLOCK — Output Format</div><div class="pb-meta"><span class="ptag">Reference only</span><button class="copy-btn" id="copy-vblockref" onclick="doCopy('vblockref')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1473,7 +1473,7 @@ estimate (S/M/L + rough time). For Tier 4: 3 distinct directions, a short
 paragraph each. End with the one strategic bet you'd prioritize if
 resources were limited, and why.</pre>
     </div>
-    <div class="vt" onclick="toggleVariant('v-rm-opts',this)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-rm-opts',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
     <div class="vb" id="v-rm-opts">
       <div class="pb" id="block-p5opts">
         <div class="pb-header"><div class="pb-label">Roadmap — Optional add-ons</div><div class="pb-meta"><button class="copy-btn" id="copy-p5opts" onclick="doCopy('p5opts')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1882,6 +1882,17 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;'
 // onclick="fn('+esc(x)+')" looks escaped and is not. JSON.stringify supplies the
 // quoting and backslash-escaping; esc() then makes it attribute-safe.
 function jsArg(v){ return esc(JSON.stringify(v)); }
+// R18 (a)1 — keyboard activation for controls built on non-interactive elements
+// (div/span/tr). Those elements are not focusable and do not fire click on
+// Enter/Space, so every such control was mouse-only. Paired with role="button"
+// + tabindex="0" at each call site; Space is preventDefault'd so it activates
+// instead of scrolling the page.
+function kbdActivate(e){
+  if(!e||(e.key!=='Enter'&&e.key!==' '&&e.key!=='Spacebar'))return;
+  e.preventDefault();
+  const t=e.currentTarget||e.target;
+  if(t&&typeof t.click==='function')t.click();
+}
 
 // ─── ACTIVE PROJECT STATE ────────────────────────────────────
 function loadActiveProjectId(){ try{return localStorage.getItem('ccg:activeProject')||PROJECTS[0].id}catch(e){return PROJECTS[0].id} }
@@ -1998,7 +2009,9 @@ function renderCustomInvariantsList(){
   const el=document.getElementById('customInvariantsList');
   if(!el)return;
   const custom=loadCustomInvariants();
-  if(!custom.length){el.innerHTML='';return;}
+  // R18 (a)2 — the built-in library still renders above this, so a bare blank
+  // here reads as "nothing saved" rather than "no CUSTOM invariants yet".
+  if(!custom.length){el.innerHTML='<div style="font-size:11px;color:var(--text-muted);padding:4px 2px">No custom invariants yet — add one above, or let them accrue via /reflect and Seams audits.</div>';return;}
   el.innerHTML='<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:6px">Custom invariants (editable)</div>'+
     custom.map(inv=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;background:var(--prompt-bg);border:1px solid var(--border-light);border-radius:var(--r-sm);margin-bottom:4px">
       <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${esc(inv.id)}</span>
@@ -2187,7 +2200,7 @@ function renderSubsysTable(){
     const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillSubsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillSubsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillSubsystem(${argName},${argFiles})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 
@@ -2234,9 +2247,9 @@ function renderCycle(){
     const phaseDots=CYCLE_PHASES.map((p,i)=>{
       const active=i<=phaseIdx;
       const color=active?PHASE_COLORS[p]:'var(--border)';
-      return `<span title="${PHASE_TITLES[p]}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'#fff':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</span>`;
+      return `<span title="${PHASE_TITLES[p]}" role="button" tabindex="0" onkeydown="kbdActivate(event)" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'#fff':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</span>`;
     }).join('');
-    return `<div class="ct-item${isDone?' done':''}" onclick="advancePhase(${argG})" style="justify-content:space-between">
+    return `<div class="ct-item${isDone?' done':''}" role="button" tabindex="0" onkeydown="kbdActivate(event)" onclick="advancePhase(${argG})" style="justify-content:space-between">
       <span class="ct-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g)}</span>
       <div style="display:flex;gap:3px;flex-shrink:0;margin-left:6px">${phaseDots}</div>
     </div>`;
@@ -2509,7 +2522,9 @@ function renderCustomProjects(){
   const el=document.getElementById('projectsCustom');
   if(!el)return;
   const custom=loadCustomProjects();
-  if(!custom.length){el.innerHTML='';return;}
+  // R18 (a)2 — render an empty STATE, not an empty region. Blanking the element
+  // left a user who deleted their last custom project staring at nothing.
+  if(!custom.length){el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:20px 0 10px">Custom projects</div><div style="padding:12px 16px;font-size:12.5px;color:var(--text-muted);background:var(--surface);border:1px dashed var(--border);border-radius:8px">None yet — use <strong>Add project</strong> above to configure your own subsystems, dimensions and invariants.</div>';return;}
   el.innerHTML='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:20px 0 10px">Custom projects</div>'+
     custom.map(p=>`
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -2845,7 +2860,7 @@ function renderArchive(){
   el.innerHTML=all.map((e,i)=>{
     const isSeed=seeds.find(s=>s.id===e.id);
     return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
-      <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
+      <div role="button" tabindex="0" onkeydown="kbdActivate(event)" onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
         <div style="display:flex;align-items:center;gap:8px;min-width:0">
           <span style="color:var(--accent);font-size:11px;flex-shrink:0">▶</span>
           <span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
@@ -3496,7 +3511,7 @@ function renderT2SubsysTable(){
     const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillT2Subsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillT2Subsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillT2Subsystem(${argName},${argFiles})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 

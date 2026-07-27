@@ -32,7 +32,7 @@ if (/net score\s+[▁-█]/.test(out)) ok('renders a net-score sparkline'); else
 // Cumulative net = 3 + 3 + (-1) = 5; prod = 3+3+1 = 7; nfm = 0+0+2 = 2
 if (/Cumulative net score: \*\*5\*\*/.test(out)) ok('cumulative net score correct (5)'); else bad('cumulative net score wrong');
 if (/7 production fixes − 2 new failure modes/.test(out)) ok('fix/failure totals correct'); else bad('fix/failure totals wrong');
-if (/Latest synthesis: net 3, Category D 40%/.test(out)) ok('surfaces the latest synthesis'); else bad('latest synthesis line missing/wrong');
+if (/Latest synthesis \(cycle 1\): Category D 40%/.test(out)) ok('surfaces the latest synthesis'); else bad('latest synthesis line missing/wrong');
 if (/fix, with comma/.test(out)) ok('quoted CSV fields with commas parse correctly'); else bad('quoted-field parsing broke');
 // P11: defensive_count column + secondary cumulative (4 + 0 + 7 = 11) when the column is present.
 if (/\bdef\b/.test(out)) ok('shows the def column when defensive_count is present'); else bad('def column missing');
@@ -46,6 +46,23 @@ writeFileSync(oldCsv,
 const oldOut = run(oldCsv);
 if (!oldOut.startsWith('__THREW__') && /Cumulative net score: \*\*2\*\*/.test(oldOut)) ok('old (pre-defensive_count) file still renders'); else bad('backward-compat render failed');
 if (!/\bdef\b/.test(oldOut) && !/Defensive\/structural items/.test(oldOut)) ok('no def column/summary for an old file (graceful)'); else bad('def shown for an old file');
+
+// F12: a P1-compliant file — the synthesis row's net_score is BLANK by rule
+// (owned only by phase=reflect). The summary line used to render "net ," for
+// every real project. It must now report the columns a synthesis row owns and
+// source that cycle's net from its reflect rows.
+const p1csv = join(dir, 'p1.csv');
+writeFileSync(p1csv,
+  'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count\n' +
+  '2026-02-01,7,Core,reflect,2,2,0,,,"a",1\n' +
+  '2026-02-02,7,Core,reflect,3,3,0,,,"b",0\n' +
+  '2026-02-03,7,all,synthesis,,,,0%,Silent Degradation (6),"scored",\n');
+const p1out = run(p1csv);
+if (!/net\s*,/.test(p1out)) ok('no blank "net ," in the synthesis summary line (F12)');
+else bad('F12: synthesis line still renders a blank net field');
+if (/Latest synthesis \(cycle 7\).*that cycle's net 5 \(summed from its reflect rows\)/.test(p1out))
+  ok("synthesis line sources that cycle's net from its reflect rows (F12)");
+else bad('F12: synthesis line did not sum the cycle net from reflect rows');
 
 rmSync(dir, { recursive: true, force: true });
 
