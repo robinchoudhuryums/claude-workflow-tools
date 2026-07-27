@@ -182,22 +182,32 @@ console gaps had to close FIRST or the batch merges a red CI. Sequence run: F03 
   every nav href resolves to a panel (showPanel silently falls back to Dashboard otherwise).
 - INV-36 rewritten; INV-43/44 added → 44 invariants, 31 runnable PASS. New guards mutation-proven.
 
+## Cycle 5 — Batch 3 (console correctness) + Batch 4 (make green mean green) — ✅ COMPLETE (v1.21.0)
+- F06 Axis B round-trip dropped `pulse` (serializer 3 fields, parser re-read pulse from measures) → 4-field
+  format, legacy 3-field still parsed. Fired on the COMMON path: the form pre-fills from DEFAULT_AXIS_B.
+- F07 non-Latin name → deriveId '' → falsy id → project listed but unselectable → generated fallback id.
+- F16 getFilledText string-replacement honored $&/$`/$'/$1 → function replacement.
+- F20 backup envelope (app/kind/version) never read → foreign app + newer version rejected visibly; absent
+  envelope still accepted (older backups).
+- F11 MUTATION-AUDITED all 17 script-verified invariants (violate rule → run its own Verify → must fail).
+  16 honest, 1 FALSE GREEN: INV-23 claimed "bumped when semantics change" but only tested non-emptiness.
+- F09 closed it (VERSION must equal the newest ## <semver> CHANGELOG heading) → re-audit 17/17, 0 false greens.
+- jsArg() helper (14 call sites) + STATIC guard: no on*= handler may build a JS arg with esc(). The
+  hostile-fixture check only proves sinks the fixture reaches; this covers every handler in the file.
+- F15 CI permissions: contents: read. F14 was already closed in the docs sync.
+- INV-23 rewritten; INV-45..48 added → 48 invariants, 36 runnable PASS.
+- WORTH REMEMBERING: my first F07 assertion was itself a false green — it tested deriveId/fallbackProjectId
+  and still passed when the fix was removed from saveProjectForm. Unit-testing the helper does not prove the
+  wiring. Rewritten to drive the form end to end. Same defect class F11 exists to find.
+
 ## Where I left off
-v1.20.0; full Test Command green (13 stages); 44 invariants; invariant-check 31/31 runnable PASS. Cycle 5 has
-now shipped R18 (v1.19.0), the F01/F04/F05/F08 security+reliability batch (v1.19.1), and the F03/F21/F02/F17
-parity batch (v1.20.0). Both High findings are closed and every dynamic builder is locked.
-REMAINING, in the batch order from the prioritised backlog:
-- Batch 3 (~3h, S) console correctness: F06 Axis B round-trip drops `pulse` (every UI-created project gets the
-  measures text as its pulse question — fires on the common path since the form pre-fills from DEFAULT_AXIS_B),
-  F07 deriveId returns '' for non-Latin/punctuation-only names, F16 getFilledText $&-pattern corruption,
-  F20 backup app/kind/version never validated.
-- Batch 4 (~5h, M) make green mean green: F11 audit ALL 31 runnable Verify fields for false greens (INV-20 was
-  one and was found BY HAND, not by tooling — unknown how many others lie), a jsArg() helper + a guard grep for
-  the esc()-inside-quotes footgun, F09 VERSION↔CHANGELOG consistency, F15 CI permissions, F14 INV-11 count.
-- Batch 5 (~5–6h, M) substrate: F18 Common Gotchas + Key Design Decisions (28 references resolve to nothing;
-  §4v Part 3 Q2/Q3 unanswerable — CONSIDER DOING FIRST, every later batch's session benefits), F10
-  PROJECT_HEALTH stale (Dashboard fetches it live), F13 README R3→R14, F12 render-metrics blank net, F19 Deploy
-  Command for the Pages republish.
+v1.21.0; full Test Command green (13 stages); 48 invariants; invariant-check 36/36 runnable PASS. Cycle 5 has
+shipped R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, and
+Batch 3 + Batch 4 (v1.21.0). Every Cycle-5 finding except F12 is now closed, and all 17 script-verified
+invariants are mutation-proven fail-closed (0 false greens).
+REMAINING (Batches 3, 4 and 5 are now DONE — 5 via the /sync-docs pass, except F12):
+- F12 (S, ~20m) render-metrics prints "Latest synthesis: net " — always blank, since P1 mandates that column be
+  empty on synthesis rows. The only Batch-5 item /sync-docs did not cover.
 - Batch 6 (~4h, M) dogfood R18 on this repo: 12 click-only tr/div/span controls, 0 role, 0 key handlers → the
   console's own controls are keyboard-unreachable; add an interface Health Dimension; promote OPERATOR VISUAL
   CHECKS into Regression Scenarios. This run also decides whether /audit and /pr-review get the R18 lens.
