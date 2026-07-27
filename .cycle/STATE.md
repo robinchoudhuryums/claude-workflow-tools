@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
-Phase: implement (R18 COMPLETE v1.19.0 — interface/visual audit lens; /regression + /reflect pending)
+Phase: implement (R18 v1.19.0 + Cycle-5 F01/F04/F05/F08 v1.19.1 COMPLETE; /regression + /reflect pending)
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
@@ -148,17 +148,36 @@ Closed both 8.5 synthesis priorities. Shipped in 6 phases (one commit each) on b
   guard-enforced, not just prose — closes the half-fixed footgun (command bodies were fixed in v1.6.0; the
   non-R14-generated HTML §6a builder was not, and had already corrupted this repo's own trend).
 
+## Cycle 5 — broad-implement F01/F04/F05/F08 — ✅ COMPLETE (v1.19.1)
+- F01 (Critical) — SECRET_KEYS/isSecretKey(): ccg:ghToken + any ccg:secret:* excluded from collectState() AND
+  stateBackupKeys(), so a backup can neither exfiltrate a credential nor install one. Deny-by-default prefix so a
+  future secret can't silently rejoin the wildcard. UI note corrected; .gitignore added for
+  .cycle/console-state.json. OPERATOR: rotate any token that was exported/committed before this release.
+- F04 (High) — six sinks escaped (renderCycle label + 2 handler args, renderSubsysTable, renderT2SubsysTable,
+  renderProjectSelector, renderCustomInvariantsList, dashboardCard href + 2 handler args). The dashboardCard case
+  was NOT in the audit: it already called esc() but inside '...' in an onclick, and esc() emits &#39; which the
+  browser decodes back to ' before parsing — it looked escaped and wasn't. Audit under-counted 5 sinks → 6.
+- F05 (Medium) — one copyToClipboard() with execCommand fallback + visible "Copy failed" button state.
+- F08 (Medium) — real panel/nav fixtures in check-html; showPanel/handleHash now actually asserted (isolation,
+  aria-current sync, unknown-id fallback, hash routing). The old [] stub made them vacuous.
+- 9 new check-html assertions, ALL mutation-proven fail-closed. Escaping check is two-layered: substring scan for
+  text + entity-decode-then-EXECUTE with a tripwire for inline handlers (a substring scan structurally cannot see
+  the &#39; case). This retires INV-20's false green.
+- INV-09 reworded; INV-40/41/42 added → 42 invariants, 29 runnable PASS.
+
 ## Where I left off
-v1.19.0; full Test Command green (13 stages); 39 invariants; invariant-check 26/26 runnable PASS. R18 COMPLETE
-(D1–D4 + §T1 reconcile + guard markers + fail-closed cases). NOT YET DONE, and the bigger queue: the Cycle-5
-/broad-scan raised F01–F20 and NONE are implemented — F01 (Critical: the GitHub PAT is collected by
-collectState() into both Export state and .cycle/console-state.json, contradicting the console's own "stored
-only in this browser" claim; no .gitignore exists), F02 (§T2b is a pre-P7 stale prompt wrongly exempted as
-"report-only by design"), F03 (/pr-review absent from the console), F04 (four unescaped innerHTML/attribute
-sinks — INV-20 reports a false PASS), F05 (silent clipboard failure). Recommended next batch: F01, F04, F05,
-F08 (all S, ~half a day), then F17+F02+F03 as the structural batch. Also pending for R18 itself: /regression
-and /reflect have not run for this cycle, and the new lens has not yet been exercised on a real UI project —
-that run is what decides whether /audit and /pr-review get it too.
+v1.19.1; full Test Command green (13 stages); 42 invariants; invariant-check 29/29 runnable PASS. Done this
+cycle: R18 (D1–D4 + §T1 reconcile + guard markers, v1.19.0) and the F01/F04/F05/F08 security+reliability batch
+(v1.19.1). STILL OPEN from the Cycle-5 /broad-scan — the structural batch, recommended next in this order:
+F17 (check-template-sync's WORKFLOW_BLOCKS covers only 7 of the 12 registered blocks — derive it from BLOCKS
+and F02/F03 turn from invisible into CI-red, so do this FIRST), then F02 (§T2b is a pre-P7 stale prompt wrongly
+exempted as "report-only by design": no OPERATOR ACTIONS, no test-doubles scan, never emits TARGETED
+IMPLEMENTATION SUMMARY) and F03 (/pr-review has zero presence in the console). Then the long tail: F06 (Axis B
+round-trip drops `pulse`), F07 (deriveId '' for non-Latin names), F09 (VERSION/CHANGELOG consistency unguarded),
+F10 (PROJECT_HEALTH Current Standing stale — the Dashboard fetches it live), F11 (audit ALL runnable Verify
+fields for false greens — INV-20 was one, now fixed, but it was found by hand), F12–F16, F18 (no Common Gotchas
+section despite 28 references), F19, F20. Also pending: /regression and /reflect have not run for Cycle 5, and
+the R18 lens has not been exercised on a real UI project — that run decides whether /audit and /pr-review get it.
 
 ## (prior) v1.18.0 left-off
 v1.18.0; full Test Command green (13 stages); 38 invariants (INV-36 now covers 6 locked builders, INV-38 = registered
