@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
 
+# Least privilege: every step below only reads the checkout — no step posts,
+# pushes, or publishes. Without this the job inherits whatever the repository
+# default grants (F15).
+permissions:
+  contents: read
+
 jobs:
   sync-check:
     runs-on: ubuntu-latest

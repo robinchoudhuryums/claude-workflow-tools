@@ -338,6 +338,80 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   else bad(`copy failed silently (rejected=${rejectedVisibly} absent=${absentVisibly})`);
 }
 
+// F11/jsArg — STATIC guard for the attribute-context footgun. The hostile-fixture
+// check above proves escaping only at sinks the fixture actually reaches; this
+// covers every inline handler in the file. Rule: an `on*=` attribute must never
+// call esc() to build a JS argument — esc() emits &#39; for a quote, which the
+// browser decodes back before parsing the handler. Use jsArg() (JSON.stringify
+// supplies the quoting, esc() then makes it attribute-safe). esc() in non-handler
+// attribute text is correct and stays allowed.
+{
+  const noComments = src.replace(/^\s*\/\/.*$/gm, '');   // skip prose that names the anti-pattern
+  const offenders = [...noComments.matchAll(/on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
+  if (!offenders.length) ok('no inline handler builds a JS argument with esc() — jsArg() only (F04/F11)');
+  else bad(`inline handler(s) using esc() as a JS argument (use jsArg): ${offenders.join(' | ')}`);
+}
+
+// F06 — Axis B must round-trip through the project form WITHOUT losing `pulse`.
+// The 3-field serializer dropped it and the parser re-read pulse from the
+// measures column, so every form-created project asked the wrong §6b question.
+if (loaded && typeof ctx.axisBToText === 'function' && typeof ctx.parseAxisBLine === 'function') {
+  const orig = ctx.getAxisB({});
+  const back = ctx.axisBToText(orig).split('\n').map(ctx.parseAxisBLine);
+  const lossless = orig.length === back.length && orig.every((c, i) =>
+    c.name === back[i].name && c.measures === back[i].measures && c.pulse === back[i].pulse && (c.playbook || '') === back[i].playbook);
+  const distinct = back.every(c => c.pulse && c.pulse !== c.measures);
+  if (lossless && distinct) ok('Axis B round-trips through the form with pulse intact and distinct from measures (F06)');
+  else bad(`Axis B round-trip lossy (lossless=${lossless} pulseDistinct=${distinct})`);
+  const legacy = ctx.parseAxisBLine('Name | what it measures | the playbook');
+  if (legacy.playbook === 'the playbook' && legacy.pulse === '') ok('a legacy 3-field Axis B line still parses as name|measures|playbook (F06)');
+  else bad('legacy 3-field Axis B line mis-parsed: ' + JSON.stringify(legacy));
+  const p6b = ctx.buildP6bText({ healthDimensions: 'A', axisB: back });
+  if (p6b.includes(orig[0].pulse.split('\n')[0].trim())) ok('§6b pulse prompt carries the pulse question, not the measures text (F06)');
+  else bad('§6b still renders the measures text as the pulse question');
+} else if (loaded) bad('axisBToText/parseAxisBLine not defined — F06 round-trip unguarded');
+
+// F07 — a name with no ASCII alphanumerics must still yield a SELECTABLE
+// project. Drive saveProjectForm end to end rather than unit-testing the two
+// helpers: an assertion on deriveId()/fallbackProjectId() alone still passes
+// when the fallback is not wired into the form (verified — it did).
+if (loaded && typeof ctx.saveProjectForm === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  vm.runInContext("pfEditingId=null; pfSubRows=[{name:'Core',files:'a.ts'}];", ctx);
+  getEl('pf-name').value = '日本語プロジェクト';      // derives to '' — the F07 case
+  getEl('pf-dims').value = 'A, B';
+  for (const id of ['pf-invs', 'pf-axisb']) getEl(id).value = '';
+  getEl('pf-thresh').value = '4'; getEl('pf-consec').value = '2';
+  ctx.saveProjectForm();
+  const saved = ctx.loadCustomProjects();
+  const p = saved[0];
+  const usable = !!p && !!p.id && ctx.getProject(p.id).id === p.id;
+  if (saved.length === 1 && usable) ok(`a non-Latin project name yields a selectable project (F07 — id "${p.id}")`);
+  else bad(`F07: project saved with an unusable id (saved=${saved.length} id=${JSON.stringify(p && p.id)})`);
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+} else if (loaded) bad('saveProjectForm not defined — F07 unguarded');
+
+// F16 — a filled value containing $-substitution patterns must survive verbatim.
+if (loaded && typeof ctx.getFilledText === 'function' && typeof ctx.saveVal === 'function') {
+  const el = getEl('p1'); el.textContent = 'Scope: [SUBSYSTEM GROUP NAME] done';
+  ctx.saveVal('p1', 'SUBSYSTEM GROUP NAME', "a$&b$`c$'d$1e");
+  const out = ctx.getFilledText('p1');
+  if (out.includes("a$&b$`c$'d$1e")) ok('filled values with $&/$`/$\'/$1 survive substitution verbatim (F16)');
+  else bad('F16: $-pattern in a filled value was mangled → ' + JSON.stringify(out));
+}
+
+// F20 — the backup envelope must be validated, not just its `data` key.
+if (loaded && typeof ctx.stateBackupKeys === 'function') {
+  const foreign = ctx.stateBackupKeys({ app: 'some-other-tool', data: { 'ccg:x': '1' } });
+  const newer = ctx.stateBackupKeys({ app: 'claude-workflow-tools', version: 2, data: { 'ccg:x': '1' } });
+  const okOld = ctx.stateBackupKeys({ data: { 'ccg:x': '1' } });                       // pre-envelope backup
+  const okCur = ctx.stateBackupKeys({ app: 'claude-workflow-tools', version: 1, data: { 'ccg:x': '1' } });
+  if (foreign.reason === 'foreign-app' && newer.reason === 'newer-version' && !okOld.reason && !okCur.reason)
+    ok('backup envelope validated — foreign app and newer format rejected, older/current accepted (F20)');
+  else bad(`F20 envelope validation wrong: foreign=${foreign.reason} newer=${newer.reason} old=${okOld.reason} cur=${okCur.reason}`);
+}
+
 // F08 — the tabbed panel navigation had zero headless coverage: the old stub
 // returned [] for every querySelectorAll, so showPanel()/handleHash() ran
 // against nothing and any assertion about them passed vacuously.

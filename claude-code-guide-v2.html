@@ -1661,7 +1661,7 @@ Policy responses triggered: [list categories, or "None"]
         <div id="pf-dims-err" class="pf-err"></div>
       </div>
       <div class="mb12">
-        <div class="fill-label">Horizontal (Axis B) categories <span class="lbl-note">(one per line — format: name | what it measures | policy playbook)</span></div>
+        <div class="fill-label">Horizontal (Axis B) categories <span class="lbl-note">(one per line — format: name | what it measures | pulse question | policy playbook. A 3-field line is read as the legacy name | measures | playbook.)</span></div>
         <textarea id="pf-axisb" rows="5"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
         <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">Prefilled with the standard 5. Leave as-is for most projects; adapt the names/measures for domain-specific bug shapes. Clearing this restores the defaults.</div>
@@ -1859,11 +1859,29 @@ const DEFAULT_AXIS_B = [
    playbook:'For every Category D fix from this cycle, write the missing regression test. Add a cycle gate: no cycle is complete until Category D ratio is below 25%.'},
 ];
 function getAxisB(project){ return (project && Array.isArray(project.axisB) && project.axisB.length) ? project.axisB : DEFAULT_AXIS_B; }
-function axisBToText(arr){ return arr.map(c=>`${c.name} | ${c.measures||''} | ${c.playbook||''}`).join('\n'); }
+// F06: serialize FOUR fields. The 3-field form dropped `pulse` entirely, and
+// saveProjectForm then re-read pulse from parts[1] — so every project created
+// through the form got the MEASURES text as its §6b pulse question. It fired on
+// the common path, because the form pre-fills from axisBToText(DEFAULT_AXIS_B).
+function axisBToText(arr){ return arr.map(c=>`${c.name} | ${c.measures||''} | ${c.pulse||''} | ${c.playbook||''}`).join('\n'); }
+// Parse one Axis B line. 4 fields = name|measures|pulse|playbook (current).
+// 3 fields = the legacy name|measures|playbook shape — still accepted, since a
+// user may paste an older config or the pre-1.21 help text.
+function parseAxisBLine(line){
+  const parts=line.split('|').map(s=>s.trim());
+  if(parts.length>=4) return {name:parts[0]||line.trim(),measures:parts[1]||'',pulse:parts[2]||'',playbook:parts[3]||''};
+  return {name:parts[0]||line.trim(),measures:parts[1]||'',pulse:'',playbook:parts[2]||''};
+}
 
 // HTML-escape stored / pasted content before interpolating it into innerHTML (F05).
 // Archive entries especially may hold content pasted from external sources.
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Attribute-context JS argument. ALWAYS use this for a value interpolated into
+// an inline handler — never esc() wrapped in quotes. esc() renders ' as &#39;,
+// which the browser decodes back to ' BEFORE parsing the handler, so
+// onclick="fn('+esc(x)+')" looks escaped and is not. JSON.stringify supplies the
+// quoting and backslash-escaping; esc() then makes it attribute-safe.
+function jsArg(v){ return esc(JSON.stringify(v)); }
 
 // ─── ACTIVE PROJECT STATE ────────────────────────────────────
 function loadActiveProjectId(){ try{return localStorage.getItem('ccg:activeProject')||PROJECTS[0].id}catch(e){return PROJECTS[0].id} }
@@ -1884,7 +1902,16 @@ function saveCustomProjects(arr){ try{localStorage.setItem('ccg:customProjects',
 let activeProjectId = loadActiveProjectId();
 function getAllProjects(){ return [...PROJECTS,...loadCustomProjects()]; }
 function getProject(id){ return getAllProjects().find(p=>p.id===(id||activeProjectId))||PROJECTS[0]; }
-function deriveId(name){ return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+function deriveId(name){ return String(name==null?'':name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+// F07: a name with no ASCII alphanumerics — "日本語プロジェクト", "!!!" — derives
+// to ''. That saved a project whose id was falsy, so getProject('') fell through
+// to the ACTIVE project and switchProject('') reset to the first built-in: the
+// project appeared in the list and could never be selected, edited or deleted.
+// Non-English project names are ordinary input for a project-agnostic tool.
+function fallbackProjectId(taken){
+  let n=1; while(taken.indexOf('project-'+n)!==-1) n++;
+  return 'project-'+n;
+}
 
 function switchProject(id){
   activeProjectId=id;
@@ -1977,7 +2004,7 @@ function renderCustomInvariantsList(){
       <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${esc(inv.id)}</span>
       <span style="font-size:12px;color:var(--text-sec);flex:1">${esc(inv.text)}</span>
       <span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0">${esc(inv.subsystem)}</span>
-      <button onclick="deleteInvariant(${esc(JSON.stringify(inv.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
+      <button onclick="deleteInvariant(${jsArg((inv.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
     </div>`).join('');
 }
 
@@ -2090,7 +2117,10 @@ function getFilledText(pid){
   let text=pre.textContent;
   phs.forEach(ph=>{
     const val=loadVal(pid,ph.name);
-    if(val.trim())text=text.replaceAll(ph.full,val);
+    // F16: a FUNCTION replacement, not a string. String.replaceAll honors $&,
+    // $`, $' and $1 in the replacement, so a pasted value containing them (a
+    // regex or shell snippet in a handoff block) was silently mangled.
+    if(val.trim())text=text.replaceAll(ph.full,()=>val);
   });
   return text;
 }
@@ -2150,11 +2180,11 @@ function renderSubsysTable(){
   if(!tbody)return;
   if(title)title.textContent=`${project.name} — Subsystem Groups`;
   tbody.innerHTML=project.subsystems.map(s=>{
-    // Attribute-context JS args go through esc(JSON.stringify(...)) (INV-20).
+    // Attribute-context JS args go through jsArg((...)) (INV-20).
     // The old hand-rolled quote escaping only handled ' — a name containing "
     // broke out of the onclick attribute entirely.
-    const argName=esc(JSON.stringify(s.name));
-    const argFiles=esc(JSON.stringify(s.files));
+    const argName=jsArg((s.name));
+    const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
     return `<tr onclick="fillSubsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
@@ -2200,7 +2230,7 @@ function renderCycle(){
     const isDone=phase==='verify';
     if(isDone)donePhases+=3;
     else if(phaseIdx>=0)donePhases+=phaseIdx+1;
-    const argG=esc(JSON.stringify(g));   // attribute-context JS arg (INV-20)
+    const argG=jsArg((g));   // attribute-context JS arg (INV-20)
     const phaseDots=CYCLE_PHASES.map((p,i)=>{
       const active=i<=phaseIdx;
       const color=active?PHASE_COLORS[p]:'var(--border)';
@@ -2470,7 +2500,7 @@ function renderBuiltInProjects(){
         </div>
         <div class="flex-g8">
           <div style="font-size:10.5px;padding:2px 8px;border-radius:3px;background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);color:var(--text-muted)">built-in</div>
-          <button onclick="switchProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+          <button onclick="switchProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
         </div>
       </div>`).join('');
 }
@@ -2488,9 +2518,9 @@ function renderCustomProjects(){
           <div class="hint-mut">${p.subsystems.length} subsystems · <span style="font-family:monospace">${esc(p.id)}</span></div>
         </div>
         <div class="flex-g8">
-          <button onclick="switchProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
-          <button onclick="openEditProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
-          <button onclick="deleteProject(${esc(JSON.stringify(p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
+          <button onclick="switchProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
+          <button onclick="openEditProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
+          <button onclick="deleteProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
         </div>
       </div>`).join('');
 }
@@ -2571,11 +2601,11 @@ function saveProjectForm(){
   const dims=document.getElementById('pf-dims').value.trim();
   let valid=true;
   if(!name){showPfErr('pf-name-err','Project name is required');valid=false;}
-  const id=pfEditingId||deriveId(name);
-  if(!pfEditingId){
-    const taken=[...PROJECTS,...loadCustomProjects()].map(p=>p.id);
-    if(taken.includes(id)){showPfErr('pf-name-err',`ID "${id}" already exists`);valid=false;}
-  }
+  const taken=[...PROJECTS,...loadCustomProjects()].map(p=>p.id);
+  // F07: fall back to a generated id when the name derives to '' (no ASCII
+  // alphanumerics), rather than saving an unselectable falsy-id project.
+  const id=pfEditingId||deriveId(name)||fallbackProjectId(taken);
+  if(!pfEditingId&&taken.includes(id)){showPfErr('pf-name-err',`ID "${id}" already exists`);valid=false;}
   if(!dims){showPfErr('pf-dims-err','Health dimensions are required');valid=false;}
   if(!pfSubRows.length||pfSubRows.every(s=>!s.name.trim())){showPfErr('pf-subs-err','At least one subsystem is required');valid=false;}
   if(!valid)return;
@@ -2590,10 +2620,7 @@ function saveProjectForm(){
   const thresh=parseInt(document.getElementById('pf-thresh').value)||4;
   const consec=parseInt(document.getElementById('pf-consec').value)||2;
   const axisbRaw=document.getElementById('pf-axisb').value.trim();
-  const axisbParsed=axisbRaw?axisbRaw.split('\n').filter(l=>l.trim()).map(l=>{
-    const parts=l.split('|').map(s=>s.trim());
-    return {name:parts[0]||l.trim(),measures:parts[1]||'',pulse:parts[1]||'',playbook:parts[2]||''};
-  }):[];
+  const axisbParsed=axisbRaw?axisbRaw.split('\n').filter(l=>l.trim()).map(parseAxisBLine):[];
   const project={
     id,name,
     subsystems:pfSubRows.filter(s=>s.name.trim()).map(s=>({name:s.name.trim(),files:s.files.trim()})),
@@ -2679,6 +2706,12 @@ function exportState(){
 function stateBackupKeys(parsed){
   const data=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:null;
   if(!data) return {data:null,keys:null,reason:'no-data'};
+  // F20: the envelope carries app/kind/version and nothing ever read them, so a
+  // foreign file or a future format would be half-imported silently. Lenient
+  // about ABSENT fields (older backups predate them, and the round-trip helper
+  // passes a bare {data}), strict about WRONG ones.
+  if(parsed.app&&parsed.app!=='claude-workflow-tools') return {data:null,keys:null,reason:'foreign-app'};
+  if(parsed.version!=null&&!(Number(parsed.version)<=1)) return {data:null,keys:null,reason:'newer-version'};
   // Secrets are filtered on the APPLY side too, not just on export: a backup
   // handed over by someone else (or loaded from a shared repo) must not be able
   // to install a credential into this browser.
@@ -2705,6 +2738,8 @@ function importStateFile(input){
     catch(e){ setStateIoMsg('Import failed: file is not valid JSON.','error'); input.value=''; return; }
     const {data,keys,reason}=stateBackupKeys(parsed);
     if(reason==='no-data'){ setStateIoMsg('Import failed: not a recognized state backup (missing "data").','error'); input.value=''; return; }
+    if(reason==='foreign-app'){ setStateIoMsg('Import failed: that file was exported by a different application.','error'); input.value=''; return; }
+    if(reason==='newer-version'){ setStateIoMsg('Import failed: backup uses a newer format than this console understands — update the console first.','error'); input.value=''; return; }
     if(reason==='no-keys'){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
     if(!confirm(`Import ${keys.length} stored item(s)? This OVERWRITES matching projects, invariants, archive entries, and tracker state in this browser.`)){ input.value=''; return; }
     try{
@@ -2784,6 +2819,8 @@ async function loadStateFromRepo(){
     const parsed = JSON.parse(await (await fh.getFile()).text());
     const {data,keys,reason} = stateBackupKeys(parsed);
     if(reason==='no-data'){ setStateIoMsg('No recognizable state in .cycle/console-state.json.','error'); return; }
+    if(reason==='foreign-app'){ setStateIoMsg('That .cycle/console-state.json was written by a different application.','error'); return; }
+    if(reason==='newer-version'){ setStateIoMsg('That state file uses a newer format than this console understands — update the console first.','error'); return; }
     if(reason==='no-keys'){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
     if(!confirm(`Load ${keys.length} item(s) from the connected repo? This OVERWRITES matching state in this browser.`)) return;
     applyStateKeys(data,keys);
@@ -2815,13 +2852,13 @@ function renderArchive(){
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
           <span style="font-size:11px;color:var(--text-muted);font-family:monospace">${esc(e.date)}</span>
-          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${esc(JSON.stringify(e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
+          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${jsArg((e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
           <span style="color:var(--text-muted);font-size:10px">▼</span>
         </div>
       </div>
       <div class="log-body" id="arlog-${i}">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <button onclick="navigator.clipboard.writeText(${esc(JSON.stringify(e.content))})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Copy content</button>
+          <button onclick="navigator.clipboard.writeText(${jsArg((e.content))})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Copy content</button>
         </div>
         <pre style="font-family:monospace;font-size:12px;color:var(--text-sec);line-height:1.65;white-space:pre-wrap;word-break:break-word;margin:0">${esc(e.content)}</pre>
       </div>
@@ -3455,8 +3492,8 @@ function renderT2SubsysTable(){
   if(!tbody)return;
   if(title)title.textContent=`${project.name} — Subsystem Groups`;
   tbody.innerHTML=project.subsystems.map(s=>{
-    const argName=esc(JSON.stringify(s.name));
-    const argFiles=esc(JSON.stringify(s.files));
+    const argName=jsArg((s.name));
+    const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
     return `<tr onclick="fillT2Subsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn">Use ↗</button></td><td>${displayFiles}</td></tr>`;
@@ -3847,7 +3884,7 @@ function dashboardCard(p){
   // Attribute-context JS arg (INV-20). esc() ALONE is not enough here: it turns
   // ' into &#39;, which HTML-decodes back to ' before the JS is parsed, so
   // wrapping esc(p.id) in '...' inside onclick still breaks out of the string.
-  const argId=esc(JSON.stringify(p.id));
+  const argId=jsArg((p.id));
   return '<div class="dcard'+active+'">'
     +'<div class="dcard-top"><div class="dcard-name">'+esc(p.name)+(active?' <span class="dchip" style="color:var(--accent);border-color:rgba(79,142,247,.4)">active</span>':'')+'</div>'
     +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span class="note-mut">/10</span>':'')+'</div></div>'
