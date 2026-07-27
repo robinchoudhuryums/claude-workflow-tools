@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet implemented); R18 shipped from a separate operator question.
-Phase: reflect COMPLETE (R18 v1.19.0 + F01/F04/F05/F08 v1.19.1 + F03/F21/F02/F17 v1.20.0 shipped; /regression + /reflect + /sync-docs done — §4v then §6a remain)
+Phase: implement COMPLETE — ALL 21 Cycle-5 findings closed (v1.19.0 → v1.22.0). /regression + /reflect + /sync-docs done for the first three batches; §4v (FRESH session) then §6a remain, and the last two batches are unreflected.
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
 Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
@@ -200,17 +200,48 @@ console gaps had to close FIRST or the batch merges a red CI. Sequence run: F03 
   and still passed when the fix was removed from saveProjectForm. Unit-testing the helper does not prove the
   wiring. Rewritten to drive the form end to end. Same defect class F11 exists to find.
 
+## Cycle 5 — F12 + auto-vivify gap + Batch 6 (R18 dogfood) — ✅ COMPLETE (v1.22.0)
+- F12 render-metrics reported a field blank BY RULE ("net ,"). Now reports what a synthesis row owns + sums that
+  cycle's net from its reflect rows. Its existing test asserted the old string against a fixture whose synthesis
+  row had net_score=3 — data P1 forbids — so a P1-compliant case was added beside it.
+- AUTO-VIVIFY GAP CLOSED: check-html's getElementById stub returned a live element for ANY id, so a render
+  writing to a mistyped id passed CI and rendered empty in the browser (this really happened: pr-prompt vs pr in
+  v1.20.0). Writes are recorded; every element written during init must exist in the markup. Reads of unknown
+  ids stay allowed (browser returns null; code guards).
+- BATCH 6 = the first R18 lens run on its own host, and the lens GATED CORRECTLY: the light theme deliberately
+  flips "chrome only" (documented in CSS), so un-flipped semantic colors were NOT reported as a finding — that
+  is perceptual, and went to an operator check instead of being guessed at.
+  - (a)1 keyboard: 9 controls on div/span/tr were mouse-only (6 variant toggles, archive headers, cycle-tracker
+    items, phase dots). kbdActivate() + role/tabindex added; subsystem-table action moved onto the native
+    "Use ↗" button. Guard DERIVES the control set from markup.
+  - (a)2: two renders blanked their container when empty → real empty states.
+  - Added "Console UI/UX & Accessibility" health dimension (NEW → §6a must mark it "First measurement").
+  - Promoted S5 (light mode), S6 (mobile drawer + tabbed nav), S7 (keyboard-only) into Regression Scenarios.
+- INV-49/50/51 added → 51 invariants, 39 runnable PASS.
+- F09 PROVED ITSELF: bumping VERSION without a CHANGELOG entry turned 8 invariants red mid-session.
+
+## DECISION INPUT for the R18 deferral (/audit + /pr-review)
+Batch 6 was the experiment that was supposed to decide this. Result: the lens found ONE real structural class
+(keyboard access) and correctly refused to guess at the perceptual half. That is a good signal, but it is ONE
+run on a small single-file console — not enough to justify widening to /audit and /pr-review yet. Recommend
+running the lens on a genuinely UI-heavy consuming project (Observatory's Frontend subsystem) before deciding.
+Keep the deferral.
+
 ## Where I left off
-v1.21.0; full Test Command green (13 stages); 48 invariants; invariant-check 36/36 runnable PASS. Cycle 5 has
-shipped R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, and
-Batch 3 + Batch 4 (v1.21.0). Every Cycle-5 finding except F12 is now closed, and all 17 script-verified
-invariants are mutation-proven fail-closed (0 false greens).
-REMAINING (Batches 3, 4 and 5 are now DONE — 5 via the /sync-docs pass, except F12):
-- F12 (S, ~20m) render-metrics prints "Latest synthesis: net " — always blank, since P1 mandates that column be
-  empty on synthesis rows. The only Batch-5 item /sync-docs did not cover.
-- Batch 6 (~4h, M) dogfood R18 on this repo: 12 click-only tr/div/span controls, 0 role, 0 key handlers → the
-  console's own controls are keyboard-unreachable; add an interface Health Dimension; promote OPERATOR VISUAL
-  CHECKS into Regression Scenarios. This run also decides whether /audit and /pr-review get the R18 lens.
+v1.22.0; full Test Command green (13 stages); 51 invariants; invariant-check 39/39 runnable PASS. Cycle 5 is
+FEATURE-COMPLETE: R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, Batch 3+4
+(v1.21.0), and F12 + the auto-vivify gap + Batch 6 (v1.22.0). All 21 findings closed; all 17 script-verified
+invariants mutation-proven fail-closed.
+IMPORTANT — /reflect has only run for the FIRST THREE batches (net +5, cycle 5). v1.21.0 and v1.22.0 are
+UNREFLECTED: metrics.csv has no rows for them, so the trend under-reports Cycle 5. Run /regression + /reflect
+for those two before §4v.
+ALL 21 Cycle-5 findings are now CLOSED (F01-F21). Remaining work is strategic / non-finding:
+- Walk S5/S6/S7 in a browser — the three new visual scenarios have never been performed. S7 (keyboard-only)
+  matters most: the code path is guarded but whether the FOCUS RING is visible is unknowable from code.
+- The F11 mutation audit lives in scratchpad, not CI. It found a real false green; a permanent version would
+  keep the library honest as it grows (~17 node spawns, so likely outside the 13-stage gate).
+- The 12 MANUAL invariants have never been audited for correctness at all — F11 covered only runnable ones.
+- legacyCopy()'s SUCCESS path is still unexercised (stub execCommand returns false).
 - Strategic: CSP (needs event delegation, L), no LICENSE file, R9, R12, R17 follow-ons.
 CYCLE HYGIENE — /regression, /reflect and /sync-docs are DONE for Cycle 5. metrics.csv now carries 3 phase=reflect
 rows (net +5; the batch summaries had over-reported 8 — F08/F17 are defensive, F03 is a capability), estimates.csv
