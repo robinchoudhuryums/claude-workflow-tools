@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 5 — COMPLETE AND SYNTHESIZED (overall 9.0/10). Full Tier-1 dogfood: broad-scan → 5 implement batches → regression → reflect ×2 → sync-docs → R19 → §4v (fresh session) → §6a.
-Phase: idle — Cycle 5 fully closed. Cycle 6 opens with the §4v findings as scope (see below).
+Phase: implement — post-synthesis remediation of the Cycle-5 §4v findings COMPLETE (v1.24.0). Cycle number stays 5 per P3: no new /broad-scan or /audit has begun, so this is post-synthesis work under the same cycle (Cycle-4 precedent).
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs
 Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
@@ -264,6 +264,22 @@ average rose while the most important dimension fell; read the grid.
 No policy triggers (lowest 7.0 vs threshold 4/10) — flagged as a rubric weakness: a category over-scored twice
 running is invisible to a fixed threshold.
 
+## Post-synthesis §4v remediation — ✅ COMPLETE (v1.24.0)
+Every finding from the Cycle-5 verification pass is closed.
+- LIVE DEFECT archive "Copy content" bypassed copyToClipboard() → routed through it. Root cause worth keeping:
+  copyFeedback() hardcoded the prompt-copy icon as the reset label, so the helper could not be reused for a
+  button with its own label — that is HOW the sink kept its inline call. INV-54 static scan added.
+- INV-53 — the payload set is now DERIVED from the sinks' ${obj.field} interpolations. MY FIRST ATTEMPT WAS
+  WRONG THE SAME WAY: an unqualified `.field` structural test excluded inv.text because getFile().text() exists
+  elsewhere. Alias-scoped now, plus an assertion that fails if inv.text/inv.subsystem ever leave the set.
+- INV-55 — console block shapes checked, 12/12. TOOK THREE PASSES: the first run's five "failures" were all
+  checker artifacts (delimiter lines carry container punctuation: ---END X---`; / ---END X---</pre> /
+  <pre id=…>---X---). The console was correct. Worth remembering before reporting a new check's first output.
+- INV-56 — global :focus-visible using box-shadow (the only property inline outline:none cannot suppress).
+- F15 — CI permissions asserted; guard.test setup() now copies .github/ (test double updated with the fix).
+- INV-20 scope note retired; INV-53..57 added → 57 invariants, 45/45 runnable PASS. 15 guard cases.
+- F09 caught a missing CHANGELOG entry for the SECOND time — the guard is earning its place.
+
 ## Where I left off
 v1.22.0; full Test Command green (13 stages); 51 invariants; invariant-check 39/39 runnable PASS. Cycle 5 is
 FEATURE-COMPLETE: R18 (v1.19.0), F01/F04/F05/F08 (v1.19.1), F03/F21/F02/F17 (v1.20.0), a docs sync, Batch 3+4
@@ -277,7 +293,7 @@ or test/guard work as fixes. That is the single most repeated error of this cycl
 The regression pass NEGATED the one feared new failure mode: making 9 controls focusable could have made them
 focusable-but-invisible, but all 17 outline:none rules are on form inputs, so the default focus ring survives.
 INV-52 (visible focus indicator) is a MANUAL candidate — perceptual, only S7 can answer it.
-CYCLE 6 OPENING SCOPE — the §4v findings, in order (~half a day total):
+CYCLE 6 SCOPE — ALL CLOSED in v1.24.0. What remains is non-finding work:
 - LIVE FIRST: archive Copy → route through copyToClipboard() + INV-54 static scan (no inline
   navigator.clipboard in any handler). S ≈ 30m.
 - INV-53: DERIVE the hostile fixture's payload set from the sinks' interpolated fields instead of hand-picking
