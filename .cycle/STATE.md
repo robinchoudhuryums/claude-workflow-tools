@@ -5,7 +5,7 @@ Cycle: 5 — fresh /broad-scan run 2026-07-27 (F01–F20 raised, NOT yet impleme
 Phase: implement (R18 v1.19.0 + F01/F04/F05/F08 v1.19.1 + F03/F21/F02/F17 v1.20.0 COMPLETE; /regression + /reflect pending)
 Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs
-Subsystem cycles since last Seams audit: 1 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation)
+Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
 Updated: 2026-07-27
 
 ## Cycle 5 — R18 interface/visual audit lens — ✅ COMPLETE (v1.19.0)
