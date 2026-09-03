@@ -55,7 +55,19 @@ const writtenIds = new Set();
 const writeLog = [];
 const htmlWrites = new Set();   // ids that received innerHTML (the escaping sinks)
 function makeEl(id) {
-  const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } } };
+  // The classList and attribute stubs used to be no-ops, so anything asserting
+  // on a class or an ARIA attribute passed vacuously (the same shape as the
+  // panel fixture and the auto-vivifying getElementById before them). They now
+  // track state, which is what lets the drawer assertions below be real.
+  const attrs = {};
+  const t = {
+    _html: '', _text: '', value: '', style: {}, dataset: {}, _attrs: attrs,
+    classList: makeClassList(new Set()),
+    getAttribute: n => (n in attrs ? attrs[n] : null),
+    setAttribute: (n, v) => { attrs[n] = String(v); },
+    removeAttribute: n => { delete attrs[n]; },
+    focus() { focused = id; },
+  };
   return new Proxy(t, {
     get(o, p) {
       if (p === 'innerHTML') return o._html;
@@ -74,6 +86,8 @@ function makeEl(id) {
   });
 }
 const getEl = id => (elStore[id] || (elStore[id] = makeEl(id)));
+let focused = null;                       // last element .focus()ed, by id
+const docListeners = {};                  // type -> [fn] (recorded, then driven)
 
 // Tabbed-navigation fixtures. The console's showPanel()/handleHash() query
 // 'main > .panel' and 'nav a'; a stub returning [] made every assertion about
@@ -119,7 +133,7 @@ function queryAll(sel) {
 
 const ctx = {
   localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; }, get length() { return Object.keys(store).length; }, key: i => Object.keys(store)[i] },
-  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: queryAll, addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
+  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: queryAll, addEventListener(type, fn) { (docListeners[type] || (docListeners[type] = [])).push(fn); }, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
   navigator: { clipboard: { writeText: () => Promise.resolve() } },
   window: { addEventListener() {} },
   IntersectionObserver: class { observe() {} disconnect() {} },
@@ -622,6 +636,44 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   else bad(`inline handler(s) bypassing copyToClipboard(): ${inlineClip.join(' | ')}`);
 }
 
+// F12 — the mobile drawer. Driven, not read: toggle it, require aria-expanded to
+// track the state, then fire the recorded document keydown listener with Escape
+// and require the drawer to close and focus to return to the toggle. A keyboard
+// user who cannot dismiss the drawer is trapped behind it.
+let navEscapeOk = false;
+if (loaded) {
+  const nav = getEl('sidebar'), toggle = getEl('navToggle');
+  const problems = [];
+  if (!MARKUP_IDS.has('navToggle')) problems.push('no #navToggle in the markup — the drawer toggle cannot carry aria-expanded');
+  if (!/id="navToggle"[^>]*aria-expanded="false"/.test(html)) problems.push('#navToggle has no initial aria-expanded="false"');
+  if (typeof ctx.toggleNav !== 'function') problems.push('toggleNav not defined');
+  else {
+    ctx.toggleNav();
+    if (!nav.classList.contains('open')) problems.push('toggleNav did not open the drawer');
+    if (toggle.getAttribute('aria-expanded') !== 'true') problems.push(`aria-expanded is ${JSON.stringify(toggle.getAttribute('aria-expanded'))} while open`);
+    const keydown = docListeners.keydown || [];
+    if (!keydown.length) problems.push('no document keydown listener — Escape cannot reach the drawer');
+    focused = null;
+    keydown.forEach(fn => { try { fn({ key: 'Escape' }); } catch (e) { problems.push('keydown listener threw: ' + e.message); } });
+    if (nav.classList.contains('open')) problems.push('Escape did not close the drawer');
+    if (toggle.getAttribute('aria-expanded') !== 'false') problems.push('aria-expanded not reset to false after Escape');
+    if (focused !== 'navToggle') problems.push(`focus went to ${JSON.stringify(focused)} instead of back to the toggle after Escape`);
+    // A non-Escape key must NOT close it (a listener that closes on everything
+    // would pass every assertion above and break normal typing).
+    ctx.toggleNav();
+    keydown.forEach(fn => { try { fn({ key: 'a' }); } catch (e) {} });
+    if (!nav.classList.contains('open')) problems.push('a non-Escape key closed the drawer');
+    ctx.closeNav();
+    // Escape with the drawer already closed must not steal focus: the listener
+    // is document-wide and on desktop the toggle is display:none.
+    focused = null;
+    keydown.forEach(fn => { try { fn({ key: 'Escape' }); } catch (e) {} });
+    if (focused !== null) problems.push(`Escape moved focus to ${JSON.stringify(focused)} while the drawer was already closed`);
+  }
+  if (!problems.length) { navEscapeOk = true; ok('the drawer tracks aria-expanded, closes on Escape and returns focus to its toggle (F12)'); }
+  else bad('F12 drawer: ' + problems.join('; '));
+}
+
 // R18 (a)1 — keyboard access. A control built on a non-interactive element
 // (div/span/tr) is not focusable and does not fire click on Enter/Space, so it
 // is mouse-only. Every such control must either carry role="button" +
@@ -631,7 +683,12 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
 // pattern must not trip the check.
 {
   const markup = html.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*\/\/.*$/gm, '');
-  const A11Y_EXEMPT = [/onclick="closeNav\(\)"/];   // the drawer backdrop is a dismissal overlay, not a control
+  // The drawer backdrop is a dismissal overlay, not a control — but that only
+  // holds while a KEYBOARD dismissal exists, so the exemption is conditional on
+  // the Escape assertion below rather than merely documented. (It was pinned to
+  // the literal `closeNav()` and silently stopped matching when the call gained
+  // an argument: an exemption that tracks syntax, not intent.)
+  const A11Y_EXEMPT = navEscapeOk ? [/\bclass="navbackdrop"/] : [];
   const bad_ = [];
   for (const m of markup.matchAll(/<(div|span|tr)\b[^>]*\bonclick="[^"]*"[^>]*>/g)) {
     const tag = m[0];
@@ -812,6 +869,155 @@ if (loaded && typeof ctx.showPanel === 'function') {
     if (badShape.reason === 'bad-projects' && notArray.reason === 'bad-projects' && !fine.reason) ok('a backup whose project list is not a JSON array is rejected visibly, not half-imported (F04)');
     else bad(`F04: backup shape validation wrong (badJson=${badShape.reason} notArray=${notArray.reason} fine=${fine.reason})`);
   }
+}
+
+// F05 — invariant ids must be STABLE across project-form saves. Driven end to
+// end (the F07 lesson: asserting on the parse helper alone still passes when the
+// fix is not wired into the form). Deleting a middle line used to renumber every
+// id below it, and the form's counter ignored ids the §4v form had already
+// issued, so the two allocators collided.
+if (loaded && typeof ctx.saveProjectForm === 'function' && typeof ctx.openEditProject === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  const set = (id, v) => { getEl(id).value = v; };
+  vm.runInContext("pfEditingId=null; pfSubRows=[{name:'Core',files:'a.ts'}];", ctx);
+  set('pf-name', 'Id Stability'); set('pf-dims', 'A, B'); set('pf-axisb', '');
+  set('pf-thresh', '4'); set('pf-consec', '2');
+  set('pf-invs', 'first rule | Core\nsecond rule | Core\nthird rule | Core | node t.mjs');
+  ctx.saveProjectForm();
+  const created = ctx.loadCustomProjects()[0];
+  const idsOf = p => (p.invariants || []).map(i => i.id);
+  const problems = [];
+  if (!created) problems.push('project was not saved');
+  else {
+    if (JSON.stringify(idsOf(created)) !== '["INV-01","INV-02","INV-03"]') problems.push(`initial ids ${JSON.stringify(idsOf(created))}`);
+    // A §4v-form invariant for the SAME project takes the next number.
+    ctx.switchProject(created.id);
+    set('inv-text', 'a custom rule'); set('inv-sub', 'Core'); set('inv-verify', '');
+    ctx.saveInvariant();
+    const customIds = ctx.loadCustomInvariants().map(i => i.id);
+    if (JSON.stringify(customIds) !== '["INV-04"]') problems.push(`custom invariant id ${JSON.stringify(customIds)}`);
+    // Re-open, DROP the middle rule, APPEND a new one.
+    ctx.openEditProject(created.id);
+    const lines = getEl('pf-invs').value.split('\n');
+    if (!/^INV-01 \| first rule \| Core$/.test(lines[0] || '')) problems.push(`edit textarea does not round-trip the id: ${JSON.stringify(lines[0])}`);
+    if (!/^INV-03 \| third rule \| Core \| node t\.mjs$/.test(lines[2] || '')) problems.push(`edit textarea lost the verify field: ${JSON.stringify(lines[2])}`);
+    set('pf-invs', [lines[0], lines[2], 'a fourth rule | Core'].join('\n'));
+    ctx.saveProjectForm();
+    const edited = ctx.loadCustomProjects()[0];
+    if (JSON.stringify(idsOf(edited)) !== '["INV-01","INV-03","INV-05"]')
+      problems.push(`after deleting the middle rule the ids are ${JSON.stringify(idsOf(edited))} — expected INV-01, INV-03 kept and INV-05 issued above the custom INV-04`);
+    const byId = Object.fromEntries((edited.invariants || []).map(i => [i.id, i.text]));
+    if (byId['INV-01'] !== 'first rule' || byId['INV-03'] !== 'third rule') problems.push('an id is now attached to different rule text');
+  }
+  if (!problems.length) ok('invariant ids survive a project-form edit and never collide with §4v-issued ids (F05)');
+  else bad('F05: ' + problems.join('; '));
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+} else if (loaded) bad('saveProjectForm/openEditProject not defined — F05 unguarded');
+
+// F06 — a failed dashboard fetch must SAY why. The reason was captured into
+// cache[id].error and never rendered (and, when a cache entry already existed,
+// not even recorded), so a 404 on a private repo looked identical to "no data".
+if (loaded && typeof ctx.renderDashboard === 'function' && typeof ctx.dashErrHint === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  const pid = ctx.getProject().id;
+  store['ccg:dashRepos'] = JSON.stringify({ [pid]: 'owner/private-repo' });
+  store['ccg:dashCache'] = JSON.stringify({ [pid]: { status: null, fetchedAt: null, ok: false, error: 'PROJECT_HEALTH.md → HTTP 404' } });
+  ctx.renderDashboard();
+  const out = elStore['dashCards'] ? elStore['dashCards'].innerHTML : '';
+  const shows = out.includes('HTTP 404') && /token/i.test(out) && !/No data yet/.test(out);
+  if (shows) ok('a failed fetch renders its reason and the fix on the card, not "No data yet" (F06)');
+  else bad('F06: the dashboard card does not surface the fetch failure — ' + JSON.stringify(out.slice(0, 160)));
+  const hints = ['x → HTTP 404', 'y → HTTP 403', 'Failed to fetch'].map(m => ctx.dashErrHint(m));
+  if (hints.every(h => h.length > 20) && /token/i.test(hints[0]) && /token|limit/i.test(hints[1]) && /file:\/\//.test(hints[2]))
+    ok('dashErrHint turns 404 / 403 / network failures into an actionable line (F06)');
+  else bad('F06: dashErrHint does not explain the common failures: ' + JSON.stringify(hints));
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+} else if (loaded) bad('renderDashboard/dashErrHint not defined — F06 unguarded');
+
+// F13 — theme-safe text colour. Two halves, both derived:
+//   (a) no literal hex TEXT colour may exist outside the token blocks. A literal
+//       cannot flip, and every one of them was a dark-theme value that landed on
+//       a white surface in light mode (nav badges 1.4:1, flow chips 1.5:1, the
+//       state message 2.9:1).
+//   (b) every --on-* token must clear 4.5:1 against EVERY surface token of its
+//       own theme, computed here rather than eyeballed. (Whether the result
+//       looks right is perceptual and stays with S8.)
+{
+  const styleBlock = (html.match(/<style>([\s\S]*?)<\/style>/) || [, ''])[1];
+  const tokenBlock = /(?::root|\[data-theme="light"\])\s*\{[^}]*\}/g;
+  const strip = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const scanned = strip(html).replace(tokenBlock, '');
+  const literals = [...scanned.matchAll(/color:\s*(#[0-9a-fA-F]{3,8})/g)].map(m => m[1]);
+  if (!literals.length) ok('no literal hex text colour outside the token blocks — every text colour can flip with the theme (F13)');
+  else bad(`F13: ${literals.length} literal text colour(s) that cannot flip with the theme: ${[...new Set(literals)].join(', ')}`);
+
+  const tokensIn = re => {
+    const m = styleBlock.match(re);
+    return m ? Object.fromEntries([...m[0].matchAll(/(--[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,6})/g)].map(x => [x[1], x[2]])) : {};
+  };
+  const dark = tokensIn(/:root\s*\{[^}]*\}/);
+  const light = { ...dark, ...tokensIn(/\[data-theme="light"\]\s*\{[^}]*\}/) };
+  const lum = hex => {
+    let h = hex.slice(1); if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const SURFACES = ['--bg', '--surface', '--surface2', '--surface3'];
+  const failures = [];
+  let checked = 0;
+  for (const [theme, map] of [['dark', dark], ['light', light]]) {
+    const onTokens = Object.keys(map).filter(k => k.startsWith('--on-'));
+    if (!onTokens.length) { failures.push(`${theme}: no --on-* tokens defined — this check would be vacuous`); continue; }
+    for (const t of onTokens) {
+      for (const surf of SURFACES) {
+        if (!map[surf]) { failures.push(`${theme}: surface ${surf} is not a hex token`); continue; }
+        checked++;
+        const r = ratio(map[t], map[surf]);
+        if (r < 4.5) failures.push(`${theme} ${t} (${map[t]}) on ${surf} (${map[surf]}) = ${r.toFixed(2)}:1`);
+      }
+    }
+  }
+  if (!failures.length) ok(`every --on-* text token clears 4.5:1 on every surface of its theme (${checked} pairs computed) — F13`);
+  else bad('F13 contrast: ' + failures.join(' | '));
+}
+
+// F12 — every form control must be programmatically labelled. Derived from the
+// markup AND from the forms that only exist once rendered (the fill forms, the
+// project editor, the dashboard per-card editor), because those are where the
+// unlabelled controls were. A <label> whose `for` resolves to nothing is also a
+// failure: it looks like an association and is not one.
+if (loaded) {
+  const sources = [html];
+  const FILL_IDS2 = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  for (const pid of FILL_IDS2) { try { ctx.buildFillForm(pid); } catch (e) {} }
+  try { ctx.openProjectForm(); } catch (e) {}
+  try { ctx.renderDashboard(); } catch (e) {}
+  for (const id of Object.keys(elStore)) if (elStore[id].innerHTML) sources.push(elStore[id].innerHTML);
+  const blob = sources.join('\n');
+  // `\bfor=` also matches data-for=/xfor= (a word boundary sits after a hyphen),
+  // so a broken association read as a valid one — the mutation audit caught it.
+  const labelFor = new Set([...blob.matchAll(/<label\b[^>]*\sfor="([^"]+)"/g)].map(m => m[1]));
+  const controls = [...blob.matchAll(/<(input|textarea|select)\b([^>]*)>/g)]
+    .map(m => ({ tag: m[1], attrs: m[2] }))
+    .filter(c => !/type="hidden"/.test(c.attrs));
+  const idOf = a => (a.match(/\bid="([^"]+)"/) || [])[1];
+  const unlabelled = controls.filter(c => {
+    if (/\saria-label(ledby)?="[^"]+"/.test(c.attrs)) return false;
+    const id = idOf(c.attrs);
+    return !(id && labelFor.has(id));
+  }).map(c => `<${c.tag} ${(c.attrs || '').trim().slice(0, 60)}>`);
+  const controlIds = new Set(controls.map(c => idOf(c.attrs)).filter(Boolean));
+  const orphanLabels = [...labelFor].filter(f => !controlIds.has(f));
+  if (!controls.length || FILL_IDS2.length < 2) bad('F12: derived no form controls / fill forms to check — the label assertion would be vacuous');
+  else if (unlabelled.length) bad(`F12: ${unlabelled.length} of ${controls.length} form control(s) have no programmatic label: ${unlabelled.slice(0, 4).join(' | ')}`);
+  else if (orphanLabels.length) bad(`F12: <label for> pointing at no control (looks associated, is not): ${orphanLabels.join(', ')}`);
+  else ok(`all ${controls.length} form control(s) across the markup and the rendered forms carry a label or aria-label (F12)`);
+  for (const k of Object.keys(store)) delete store[k];
+  try { ctx.cancelProjectForm(); } catch (e) {}
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
 }
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');

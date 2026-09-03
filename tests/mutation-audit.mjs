@@ -93,6 +93,16 @@ const CASES = {
   'INV-53': [['scripts/check-html.mjs', '`\\\\b${alias}\\\\.${f}\\\\s*', '`\\\\.${f}\\\\s*', /INV-53/]],
   'INV-54': [[HTML, 'onclick="copyToClipboard(${jsArg((e.content))},this)"', 'onclick="navigator.clipboard.writeText(${jsArg((e.content))})"', /bypassing copyToClipboard/i]],
   'INV-56': [[HTML, ':focus-visible{outline:2px solid var(--accent)', ':focus-visible-disabled{outline:2px solid var(--accent)', /focus-visible|outline:none/i]],
+  'INV-59': [[HTML, "if(/^INV-\\d+$/i.test(parts[0]||''))id=parts.shift().toUpperCase();", "if(false)id=parts.shift().toUpperCase();", /F05/]],
+  'INV-60': [[HTML, "+(err?'<div class=\"dcard-err\"", "+(false?'<div class=\"dcard-err\"", /F06/]],
+  'INV-61': [
+    [HTML, '.nb-g{background:rgba(34,197,94,.15);color:var(--on-green)}', '.nb-g{background:rgba(34,197,94,.15);color:#86efac}', /literal text colour/i],
+    [HTML, '--on-green:#166534;', '--on-green:#86efac;', /F13 contrast/],
+  ],
+  'INV-62': [
+    [HTML, 'id="navToggle" aria-label="Open navigation" aria-expanded="false"', 'id="navToggle" aria-label="Open navigation"', /F12/],
+    [HTML, '<label class="fill-label" for="pf-name">', '<label class="fill-label" data-for="pf-name">', /F12/],
+  ],
 
   // ── node scripts/check-template-sync.mjs ────────────────────────────────────
   'INV-02': [['README.md', '## Slash Commands Reference', '## Slash Commands Reference\n\nBogus `/totally-made-up` reference.\n', /without a CLAUDE.md template/i]],

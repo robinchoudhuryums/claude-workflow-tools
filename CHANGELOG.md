@@ -5,6 +5,55 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.28.0 — 2026-09-03
+
+Cycle-6 `/broad-implement` Batches 3 and 4 (four findings). **Console and tooling
+only — no command body or config-schema change, so no `/sync-commands` re-pull.**
+
+### Batch 3 — console data integrity and feedback
+- **F05.** The project form renumbered invariants `INV-01..N` from LINE ORDER on
+  every save, so deleting the third of ten rules shifted seven ids and broke
+  every reference in already-archived handoff and verification blocks. It also
+  counted from 1 while `getNextInvariantId()` counts both stores, so a project
+  with five form invariants plus a §4v-added `INV-06` got a second `INV-06`.
+  Ids now round-trip through the textarea as an optional `INV-NN |` prefix — the
+  same shape the Cycle Workflow Config uses — and a new line is allocated above
+  the max of both stores. Canonical `/reflect` has always said "do not invent or
+  reuse a number"; the console was doing both.
+- **F06.** A Dashboard fetch failure recorded its reason into `cache[id].error`
+  and nothing ever read it — and when a cache entry already existed the reason
+  was not even recorded. A 404 on a private repo, a 403 rate limit and an
+  offline browser all rendered as "No data yet". The card now shows the reason
+  and the fix (add a token, wait for the limit, `file://` blocks fetch).
+
+### Batch 4 — light theme and assistive access
+- **F13.** Sixteen literal hex text colours sat outside the token blocks, all of
+  them dark-theme values: in light mode the nav badges measured **1.4:1**, the
+  flow chips 1.5:1 and the state message 2.9:1. Text colour now goes through
+  `--on-green/amber/red/blue/purple/teal`, which flip; the semantic *fills* stay
+  put, so the deliberate "chrome only" light theme is unchanged. The Dashboard
+  score chip flips too — S5 named that as the risk the decision left standing.
+  `check-html` computes every `--on-*` token against every surface of its theme
+  (48 pairs) and fails below 4.5:1, and rejects any new literal. Also fixes the
+  four dead `.fill-select` rules the finding named: the select carried
+  `.fill-input` plus inline styles duplicating them, and its `<option>`
+  background rule was both dead and un-themed.
+- **F12.** The mobile drawer had no `aria-expanded`, could not be dismissed from
+  the keyboard, and left focus on `<body>` — a keyboard user opened a drawer they
+  could not close. Escape now closes it and returns focus to the toggle. None of
+  the 69 form controls had a programmatic label (the forms used styled `div`s);
+  all now carry `<label for>` or an aria-label.
+
+### Guard notes
+`INV-59`–`INV-62` added (62 total, 62 runnable), each mutation-proven. Two of the
+guards were wrong on the first attempt and the audit caught both: the drawer
+backdrop's a11y exemption was pinned to the literal `closeNav()` and silently
+stopped matching when the call gained an argument (it is now CONDITIONAL on the
+Escape path existing, not merely documented), and the label check's `\bfor=`
+also matched `data-for=`, so a broken association read as a valid one. The
+element double now tracks classes, attributes and focus instead of no-oping
+them, which is what makes the drawer assertions real.
+
 ## 1.27.0 — 2026-09-03
 
 Cycle-6 `/broad-implement` Batches 1 and 2 (nine findings). **Two command

@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 6 — a fresh /broad-scan (2026-09-03, 17 findings F01–F17) began Cycle 6 per P3.
-Phase: implement — Batches 1 and 2 of the scan's IMPLEMENTATION BATCH PLAN COMPLETE (v1.27.0). Batches 3–6 (F05, F06 | F13, F12 | F11, F15, F14 | F16) not started.
+Phase: implement — Batches 1–4 of the scan's IMPLEMENTATION BATCH PLAN COMPLETE (v1.27.0, v1.28.0). Batches 5–6 (F11, F15, F14 | F16) not started.
 Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 2 (cadence 3 — not due; /reflect for Cycle 6 will increment to 3 = DUE)
@@ -31,11 +31,27 @@ NOT in the repo): screenshots mid-animation were an artifact; geometry/DOM asser
 - DONE F08 config.md drift. Net 6 − 0 (F07 borderline; F04/F09/F08 defensive) — /reflect to confirm.
 - Block persisted: .cycle/blocks/06-1.27.0-broad-implement.md. Command bodies changed → consumers re-pull.
 
+## Cycle 6 — Batches 3 + 4 — ✅ COMPLETE (v1.28.0)
+Console + tooling only; no command body or schema change, so no consumer re-pull.
+- DONE F05 invariant ids now round-trip through the pf-invs textarea as an optional `INV-NN |` prefix
+  and are allocated above the max of BOTH stores; deleting a line no longer renumbers the rest, and the
+  form can no longer re-issue a number the §4v form already used.
+- DONE F06 the Dashboard records the failure reason on EVERY failure (it was dropped when a cache entry
+  already existed) and renders it with the fix (token / rate limit / file:// blocks fetch).
+- DONE F13 all 16 literal hex text colours replaced by --on-* tokens that flip; check-html computes 48
+  token/surface pairs at 4.5:1 and rejects any new literal. The four dead `.fill-select` rules are live.
+- DONE F12 69 form controls labelled (markup + render-only forms); drawer gets aria-expanded, Escape,
+  and focus return guarded on it having been open.
+- INV-59..62 added → 62 total, 62 runnable, 70 mutations. TWO OF MY OWN GUARDS WERE WRONG FIRST TIME and
+  the mutation audit caught both: the backdrop a11y exemption was pinned to the literal `closeNav()` and
+  stopped matching when the call gained an argument (now CONDITIONAL on the Escape path existing), and
+  the label check's `\bfor=` also matched `data-for=` so a broken association read as valid. Same lesson
+  as Batch 1's marker: a new guard can be born narrower than it looks.
+- Element double upgraded: tracking classList/attributes/focus + recorded document listeners, which is
+  what lets the drawer be DRIVEN rather than read.
+- Block persisted: .cycle/blocks/06-1.28.0-broad-implement.md.
+
 ## Pending / not yet done
-- Batch 3: F05 (invariant ids unstable across project-form saves; collision with custom ids), F06
-  (Dashboard hides the fetch error it captured).
-- Batch 4: F13 (hardcoded dark-theme chip/badge/message colours, 1.4–2.9:1 in light mode), F12 (drawer
-  Escape/focus/aria-expanded; 0 of 22 inputs labelled).
 - Batch 5: F11 (PH_RE misses 5 operator placeholders, offers 5 output tokens), F15 (STATE.md back to
   template shape), F14 (console §4v probes re-roll on Copy).
 - Batch 6: F16 (lock the 8 console-only prompts as section bodies; fix the "fully closed" claims).
@@ -315,8 +331,17 @@ Every finding from the Cycle-5 verification pass is closed.
 - INV-20 scope note retired; INV-53..57 added → 57 invariants, 45/45 runnable PASS. 15 guard cases.
 - F09 caught a missing CHANGELOG entry for the SECOND time — the guard is earning its place.
 
-## Where I left off
+## Where I left off (superseded — see below)
 v1.27.0 pushed on claude/broad-scan-8a6drq; full Test Command green (16 stages); 58/58 invariants
 fail-closed across 64 mutations. Cycle 6 Batches 1+2 done; next is Batch 3 (F05, F06) via
 /broad-implement, or /reflect if the operator wants to close the cycle here. Findings and the
 batch plan are in the Cycle-6 scan output (chat) — the scan itself writes no file (audit rule).
+
+## Where I left off
+v1.28.0 pushed on claude/broad-scan-8a6drq; full Test Command green (16 stages, 283 ✓); 62/62 invariants
+fail-closed across 70 mutations. Cycle 6 Batches 1–4 done (F01 F09 F17 F04 F02 F03 F10 F07 F08 | F05 F06
+F13 F12); Batches 5 (F11, F15, F14) and 6 (F16) remain. All four Batch 3+4 fixes were re-verified in
+headless Chromium, including the two deliberate visual changes they introduce (the subsystem dropdown
+now uses .fill-select; the Dashboard score chip flips with the theme) — S5/S8 should confirm the look.
+Next: /broad-implement Batch 5, or close the cycle with /regression → /reflect (seam counter 2 → 3 = DUE)
+→ §4v in a fresh session → §6a. /sync-docs owes two new gotchas from this batch (see the block).
