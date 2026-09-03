@@ -15,7 +15,7 @@ A structured workflow system for managing audit-implement-verify cycles on large
 The system supports three levels of ceremony depending on project maturity and the type of work:
 
 ### Tier 1 — Broad Scan (single session)
-Three-stage whole-codebase audit: broad pass, deep dive on low-confidence areas, then effectiveness and strategic review. Produces findings across code quality, feature effectiveness, completeness gaps, and — for projects with a user-facing surface — the interface and visual layer (see below). Operator approves which findings to implement before any code changes.
+Three-stage whole-codebase audit: broad pass, deep dive on low-confidence areas, then effectiveness and strategic review. Produces findings across code quality, feature effectiveness, completeness gaps, and — for projects with a user-facing surface — the interface and visual layer (see below) — and closes with an **implementation batch plan** that sequences every finding into `/broad-implement`-sized batches with effort estimates. Operator approves which findings (or batches) to implement before any code changes.
 
 **Command chain:** `/broad-scan` → review → `/broad-implement F03, F07` → `/test-sync` → `/sync-docs`
 

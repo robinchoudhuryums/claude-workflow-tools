@@ -5,6 +5,25 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.26.0 — 2026-09-03
+
+`/broad-scan` now ends with an **IMPLEMENTATION BATCH PLAN**. **Command-body
+change** — consuming projects should re-pull with `/sync-commands`.
+
+The Top 5 ranks findings by production impact; nothing ranked the *work*.
+An operator reading a 17-finding audit still had to decide what to run first,
+what belongs in one `/broad-implement` session, and which fixes have to land
+before a new guard can go green. The new closing section makes the audit do
+that: every finding from Stages 1–3 (interface findings included) is placed
+exactly once — in a sequential batch sized for one implement session, or under
+Deferred with a reason. Batches are ordered by impact, then by dependency (a
+guard that would turn CI red until a gap closes goes after the batch that
+closes it), with per-item S/M/L + hours and a batch total. The Top 5 stays.
+
+Mirrored into the console's `buildTier1Text` (still `--assert`-locked at 100%
+canonical coverage). Surfaced by the Cycle-6 dogfood scan, whose output was
+the first to carry the section.
+
 ## 1.25.0 — 2026-07-27
 
 Audits the 12 MANUAL invariants and promotes the F11 mutation audit into CI.
