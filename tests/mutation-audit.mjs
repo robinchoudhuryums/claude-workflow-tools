@@ -70,6 +70,12 @@ const CASES = {
     [HTML, 'white-space:nowrap">${esc(g)}</span>', 'white-space:nowrap">${g}</span>', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.text)}', '${inv.text}', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.subsystem)}', '${inv.subsystem}', /unescaped stored content|injected data executed/i],
+    // F01/F09 — the fill form renders only on interaction; these prove the
+    // hostile fixture now reaches it, one sink at a time.
+    [HTML, '<option value="${esc(s.name)}"${val===s.name', '<option value="${s.name}"${val===s.name', /unescaped stored content|injected data executed/i],
+    [HTML, 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>', 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${val}</textarea>', /unescaped stored content|injected data executed/i],
+    [HTML, "'Paste content here...'}\" onchange=\"saveVal(${argPid},${argName},this.value)\">${esc(val)}</textarea>", "'Paste content here...'}\" onchange=\"saveVal(${argPid},${argName},this.value)\">${val}</textarea>", /unescaped stored content|injected data executed/i],
+    [HTML, 'value="${esc(val)}" oninput="saveVal(${argPid}', 'value="${val}" oninput="saveVal(${argPid}', /unescaped stored content|injected data executed/i],
   ],
   'INV-21': [[HTML, 'function storageWarn(e){', 'function storageWarn(e){ return;', /storageWarn/i]],
   'INV-30': [[HTML, 'if(!window.showDirectoryPicker){ setStateIoMsg(', 'if(!window.showDirectoryPicker){ return; setStateIoMsg(', /R3 fallback/i]],
@@ -87,6 +93,23 @@ const CASES = {
   'INV-53': [['scripts/check-html.mjs', '`\\\\b${alias}\\\\.${f}\\\\s*', '`\\\\.${f}\\\\s*', /INV-53/]],
   'INV-54': [[HTML, 'onclick="copyToClipboard(${jsArg((e.content))},this)"', 'onclick="navigator.clipboard.writeText(${jsArg((e.content))})"', /bypassing copyToClipboard/i]],
   'INV-56': [[HTML, ':focus-visible{outline:2px solid var(--accent)', ':focus-visible-disabled{outline:2px solid var(--accent)', /focus-visible|outline:none/i]],
+  'INV-59': [[HTML, "if(/^INV-\\d+$/i.test(parts[0]||''))id=parts.shift().toUpperCase();", "if(false)id=parts.shift().toUpperCase();", /F05/]],
+  'INV-60': [[HTML, "+(err?'<div class=\"dcard-err\"", "+(false?'<div class=\"dcard-err\"", /F06/]],
+  'INV-61': [
+    [HTML, '.nb-g{background:rgba(34,197,94,.15);color:var(--on-green)}', '.nb-g{background:rgba(34,197,94,.15);color:#86efac}', /literal text colour/i],
+    [HTML, '--on-green:#166534;', '--on-green:#86efac;', /F13 contrast/],
+  ],
+  // Reinstating the real collision: <pre id="t1a"> back to id="t1", which the
+  // enclosing <section id="t1"> then shadows.
+  'INV-67': [[HTML, '<pre id="t1a"></pre>', '<pre id="t1"></pre>', /duplicate id/i]],
+  'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/]],
+  'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
+  'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
+  'INV-66': [['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i]],
+  'INV-62': [
+    [HTML, 'id="navToggle" aria-label="Open navigation" aria-expanded="false"', 'id="navToggle" aria-label="Open navigation"', /F12/],
+    [HTML, '<label class="fill-label" for="pf-name">', '<label class="fill-label" data-for="pf-name">', /F12/],
+  ],
 
   // ── node scripts/check-template-sync.mjs ────────────────────────────────────
   'INV-02': [['README.md', '## Slash Commands Reference', '## Slash Commands Reference\n\nBogus `/totally-made-up` reference.\n', /without a CLAUDE.md template/i]],
@@ -127,7 +150,7 @@ const CASES = {
 
   // ── the remaining test-backed scripts ───────────────────────────────────────
   'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i]],
-  'INV-25': [['scripts/render-metrics.mjs', 'function parseCSV(text) {', 'function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
+  'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
   'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/]],
   'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],

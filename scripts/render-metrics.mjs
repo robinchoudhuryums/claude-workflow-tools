@@ -11,30 +11,12 @@
 //   (defaults to .cycle/metrics.csv; prints to stdout unless --out given)
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { parseCSV } from './csv.mjs';   // the one CSV parser (F03) — was a private copy here
 
 const args = process.argv.slice(2);
 const outIdx = args.indexOf('--out');
 const outFile = outIdx !== -1 ? args[outIdx + 1] : null;
 const input = args.find((a, i) => !a.startsWith('--') && (outIdx === -1 || i !== outIdx + 1)) || '.cycle/metrics.csv';
-
-// Minimal CSV parser handling double-quoted fields (notes contain commas).
-function parseCSV(text) {
-  const rows = [];
-  let row = [], field = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) {
-      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
-      else if (c === '"') q = false;
-      else field += c;
-    } else if (c === '"') q = true;
-    else if (c === ',') { row.push(field); field = ''; }
-    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(field); if (row.length > 1 || row[0] !== '') rows.push(row); row = []; field = ''; }
-    else field += c;
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows;
-}
 
 const BLOCKS = '▁▂▃▄▅▆▇█';
 function sparkline(nums) {

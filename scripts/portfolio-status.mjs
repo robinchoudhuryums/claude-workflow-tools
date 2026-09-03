@@ -19,6 +19,7 @@
 
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { dirname, basename, resolve, join } from 'node:path';
+import { parseRow } from './csv.mjs';
 
 const args = process.argv.slice(2);
 const outIdx = args.indexOf('--out');
@@ -47,18 +48,20 @@ function seamsCadence(cycleDir, root) {
 }
 
 // Net-score trend from metrics.csv: sum net_score per cycle, compare the last
-// two cycles that carry data. Only `cycle` and `net_score` are read, and both
-// sit before the comma-bearing quoted `notes` column, so a naive split is safe.
+// two cycles that carry data. F03: rows are parsed quote-aware — the previous
+// bare split assumed only `notes` could hold a comma, and a subsystem such as
+// "Auth, Security & HIPAA" shifted net_score under the phase column, so every
+// such row was silently skipped and the trend read "—".
 function netTrend(metricsFile) {
   if (!existsSync(metricsFile)) return '—';
   const lines = readFileSync(metricsFile, 'utf8').split('\n').filter(l => l.trim());
   if (lines.length < 2) return '—';
-  const header = lines[0].split(',').map(h => h.trim());
+  const header = parseRow(lines[0]).map(h => h.trim());
   const ci = header.indexOf('cycle'), ni = header.indexOf('net_score');
   if (ci === -1 || ni === -1) return '—';
   const perCycle = new Map();
   for (const line of lines.slice(1)) {
-    const cells = line.split(',');
+    const cells = parseRow(line);
     const cyc = (cells[ci] || '').trim();
     const net = parseFloat(cells[ni]);
     if (!cyc || !Number.isFinite(net)) continue;

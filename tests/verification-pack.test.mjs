@@ -9,7 +9,7 @@
 //
 // Usage: node tests/verification-pack.test.mjs
 
-import { selectProbes, readInvariants, readBlocks, cycleTotals, buildPack } from '../scripts/verification-pack.mjs';
+import { selectProbes, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack } from '../scripts/verification-pack.mjs';
 
 let failures = 0;
 const log = [];
@@ -57,10 +57,12 @@ const CSV = [
   '2026-02-01,5,X,reflect,2,2,0,,,"clean batch",3',
   '2026-02-02,5,X,reflect,3,4,1,,,"CORRECTION: claimed 5, actually 4",2',
   '2026-02-03,5,all,synthesis,,,,0%,Some Category,"scored",',
+  // F03: a quoted, comma-bearing subsystem (both built-in projects have them).
+  '2026-02-04,5,"Auth, Security & HIPAA",reflect,4,4,0,,,"comma subsystem, quoted",1',
 ].join('\n');
 const t = cycleTotals(CSV, 5);
-if (t.rows === 2 && t.net === 5 && t.fixes === 6 && t.nfm === 1 && t.defensive === 5)
-  ok('cycleTotals sums only the named cycle’s reflect rows (synthesis + other cycles excluded)');
+if (t.rows === 3 && t.net === 9 && t.fixes === 10 && t.nfm === 1 && t.defensive === 6)
+  ok('cycleTotals sums only the named cycle’s reflect rows, incl. one whose subsystem contains a comma (F03)');
 else bad(`cycleTotals wrong: ${JSON.stringify(t)}`);
 
 if (t.corrections.length === 1 && /CORRECTION/.test(t.corrections[0]))
@@ -108,13 +110,35 @@ const empty = buildPack({
   totals: { rows: 0, net: 0, fixes: 0, nfm: 0, defensive: 0, corrections: [] },
   cycle: 9, seed: 'z', project: 'p',
 });
-if (/no blocks found/.test(empty) && /may be unreflected/.test(empty))
+if (/no blocks for cycle 9 found/.test(empty) && /may be unreflected/.test(empty))
   ok('an empty blocks dir and an unreflected cycle are both reported, not silently blank');
 else bad('missing blocks / unreflected cycle passed silently');
 
 // 6) readBlocks degrades on a missing directory rather than throwing.
 if (Array.isArray(readBlocks('/definitely/not/here'))) ok('readBlocks returns [] for a missing directory');
 else bad('readBlocks threw on a missing directory');
+
+// 7) F02 — .cycle/blocks/ accumulates across cycles. A pack for cycle 6 must
+// carry ONLY cycle-6 blocks and must SAY which others it left out; with no
+// cycle given, everything is returned (the pre-F02 behaviour).
+{
+  const names = ['05-a-reflect.md', '05-1.24.0-broad-implement.md', '06-1.27.0-broad-implement.md', '6-b-reflect.md', 'notes.txt'];
+  const fake = { readDir: () => names, read: f => 'body of ' + f.split('/').pop() };
+  const six = readBlocks('/x', { cycle: 6, ...fake });
+  if (six.length === 2 && six.every(b => blockCycle(b.name) === '6') && six[0].text.startsWith('body of'))
+    ok('readBlocks scoped to a cycle returns only that cycle\'s blocks (zero-padded and bare prefixes alike)');
+  else bad('readBlocks did not scope to the cycle: ' + JSON.stringify(six.map(b => b.name)));
+  if (six.excluded && six.excluded.length === 2 && six.excluded.every(n => n.startsWith('05-')))
+    ok('readBlocks reports the other-cycle blocks it excluded');
+  else bad('readBlocks did not report excluded blocks: ' + JSON.stringify(six.excluded));
+  const all = readBlocks('/x', fake);
+  if (all.length === 4 && all.excluded.length === 0) ok('readBlocks with no cycle returns every block (backward-compatible)');
+  else bad('unscoped readBlocks changed: ' + JSON.stringify(all.map(b => b.name)));
+  const packSix = buildPack({ body: BODY, invariants: parsed, probes: a1, blocks: six, totals: t, cycle: 6, seed: 'z', project: 'p' });
+  if (/2 block\(s\) from OTHER cycles .* excluded: 05-1\.24\.0-broad-implement\.md, 05-a-reflect\.md/.test(packSix) && !packSix.includes('body of 05-'))
+    ok('the pack names the excluded other-cycle blocks and does not carry their text');
+  else bad('pack did not state/exclude other-cycle blocks correctly');
+}
 
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');
 console.log(log.join('\n'));

@@ -14,6 +14,16 @@
   --teal:#14b8a6; --purple:#a78bfa; --orange:#fb923c;
   --text:#dde4f0; --text-sec:#8899b3; --text-muted:#4e5e7a;
   --tag-bg:#1e2d1a; --tag-text:#6ee7b7;
+  /* ON-SURFACE TEXT (F13). The semantic hues above are FILLS and stay put
+     ("chrome only" — see the light block). These are the TEXT colours drawn on
+     a surface, so they MUST flip: the dark values sit at 1.4–2.9:1 on a white
+     surface, which is what badges, flow chips and the state message were using
+     in light mode. check-html computes the ratio for every --on-* token
+     against every surface of its own theme and fails below 4.5:1. */
+  --on-green:#86efac; --on-amber:#fcd34d; --on-red:#f87171;
+  --on-blue:#7bb3ff; --on-purple:#c4b5fd; --on-teal:#5eead4;
+  --fg-on-solid:#fff;      /* text ON a semantic FILL (phase dots, checkmarks) */
+  --prompt-text:#c5cfe0;   /* prompt blocks keep --prompt-bg in both themes */
   --ph-bg:rgba(245,158,11,0.1); --ph-border:rgba(245,158,11,0.35); --ph-text:#fbbf24;
   --nav-w:256px; --r:8px; --r-sm:5px;
 }
@@ -26,6 +36,8 @@
   --text:#1d2433; --text-sec:#475066; --text-muted:#8a94a8;
   --tag-bg:#e4f3e9; --tag-text:#157f49;
   --ph-bg:rgba(245,158,11,0.12); --ph-border:rgba(245,158,11,0.45); --ph-text:#b45309;
+  --on-green:#166534; --on-amber:#92400e; --on-red:#b91c1c;
+  --on-blue:#1d4ed8; --on-purple:#6d28d9; --on-teal:#115e59;
 }
 [data-theme="light"] .fill-form{background:var(--surface2)}
 [data-theme="light"] #projectSelect{background:var(--surface2)!important;color:var(--text)!important;border-color:var(--border)!important}
@@ -53,6 +65,7 @@
 .dsrc{font-size:10.5px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--text-muted)}
 .dcard-summary{font-size:12px;color:var(--text-sec);line-height:1.5}
 .dcard-pri{font-size:11px;color:var(--text-muted);line-height:1.45}
+.dcard-err{font-size:11.5px;color:var(--on-red);line-height:1.5;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:var(--r-sm);padding:6px 9px}
 .dcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:1px}
 .dlink{font-size:11px;color:var(--accent);text-decoration:none;cursor:pointer;background:none;border:none;font-family:inherit;padding:0}
 .dlink:hover{text-decoration:underline}
@@ -77,10 +90,10 @@ nav a:hover{color:var(--text);background:var(--surface2)}
 nav a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(79,142,247,.07)}
 .nav-group{padding:14px 16px 4px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted)}
 .nbadge{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:500;margin-left:auto}
-.nb-r{background:rgba(239,68,68,.2);color:#f87171}
-.nb-a{background:rgba(245,158,11,.2);color:#fbbf24}
-.nb-p{background:rgba(167,139,250,.2);color:#c4b5fd}
-.nb-g{background:rgba(34,197,94,.15);color:#86efac}
+.nb-r{background:rgba(239,68,68,.2);color:var(--on-red)}
+.nb-a{background:rgba(245,158,11,.2);color:var(--on-amber)}
+.nb-p{background:rgba(167,139,250,.2);color:var(--on-purple)}
+.nb-g{background:rgba(34,197,94,.15);color:var(--on-green)}
 
 /* CYCLE TRACKER */
 .cycle-tracker{margin:16px 10px 0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
@@ -93,7 +106,7 @@ nav a.active{color:var(--accent);border-left-color:var(--accent);background:rgba
 .ct-item{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;user-select:none}
 .ct-check{width:13px;height:13px;border-radius:2px;border:1.5px solid var(--border);background:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .ct-check.done{background:var(--green);border-color:var(--green)}
-.ct-check.done::after{content:'✓';font-size:9px;color:#fff;font-weight:700}
+.ct-check.done::after{content:'✓';font-size:9px;color:var(--fg-on-solid);font-weight:700}
 .ct-label{font-size:11.5px;color:var(--text-sec);transition:color .15s}
 .ct-item:hover .ct-label{color:var(--text)}
 .ct-item.done .ct-label{color:var(--text-muted);text-decoration:line-through}
@@ -107,12 +120,12 @@ main{margin-left:var(--nav-w);flex:1;max-width:880px;padding:40px 44px 80px}
 .flow-box h2{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;font-weight:600}
 .flow-row{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:7px}
 .fn{display:inline-flex;align-items:center;padding:4px 11px;border-radius:16px;font-size:12px;font-weight:500;white-space:nowrap}
-.fn-b{background:rgba(79,142,247,.15);color:#7bb3ff;border:1px solid rgba(79,142,247,.3)}
-.fn-t{background:rgba(20,184,166,.12);color:#5eead4;border:1px solid rgba(20,184,166,.3)}
-.fn-a{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.3);font-size:11px}
-.fn-p{background:rgba(167,139,250,.12);color:#c4b5fd;border:1px solid rgba(167,139,250,.3)}
-.fn-g{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3)}
-.fn-r{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.fn-b{background:rgba(79,142,247,.15);color:var(--on-blue);border:1px solid rgba(79,142,247,.3)}
+.fn-t{background:rgba(20,184,166,.12);color:var(--on-teal);border:1px solid rgba(20,184,166,.3)}
+.fn-a{background:rgba(245,158,11,.12);color:var(--on-amber);border:1px solid rgba(245,158,11,.3);font-size:11px}
+.fn-p{background:rgba(167,139,250,.12);color:var(--on-purple);border:1px solid rgba(167,139,250,.3)}
+.fn-g{background:rgba(34,197,94,.12);color:var(--on-green);border:1px solid rgba(34,197,94,.3)}
+.fn-r{background:rgba(239,68,68,.1);color:var(--on-red);border:1px solid rgba(239,68,68,.25)}
 .farr{color:var(--text-muted);font-size:13px;padding:0 6px}
 .flbl{font-size:11px;color:var(--text-muted);padding:0 4px}
 .flow-note{font-size:11.5px;color:var(--text-muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.55}
@@ -187,13 +200,13 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .fill-input, .fill-textarea, .fill-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 9px;resize:vertical;transition:border-color .15s;outline:none}
 .fill-input:focus,.fill-textarea:focus,.fill-select:focus{border-color:rgba(245,158,11,.5)}
 .fill-select{font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%234e5e7a'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:14px;padding-right:28px}
-.fill-select option{background:#1a1f2e}
+.fill-select option{background:var(--surface2);color:var(--text)}
 .fill-textarea{min-height:72px;line-height:1.55}
 .fill-note{font-size:11px;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);}
 .fill-note a{color:var(--accent);text-decoration:none}
 
 /* PROMPT PRE */
-.pb pre{margin:0;padding:15px;background:var(--prompt-bg);font-family:'IBM Plex Mono','Courier New',monospace;font-size:12.5px;line-height:1.7;color:#c5cfe0;white-space:pre-wrap;word-break:break-word;max-height:440px;overflow-y:auto}
+.pb pre{margin:0;padding:15px;background:var(--prompt-bg);font-family:'IBM Plex Mono','Courier New',monospace;font-size:12.5px;line-height:1.7;color:var(--prompt-text);white-space:pre-wrap;word-break:break-word;max-height:440px;overflow-y:auto}
 .pb pre::-webkit-scrollbar{width:5px}
 .pb pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
@@ -242,9 +255,9 @@ table.lt td:first-child{color:var(--text);font-weight:500;white-space:nowrap}
 .fr{display:flex;gap:7px;align-items:baseline;padding:7px 10px;background:var(--prompt-bg);border-radius:var(--r-sm);border:1px solid var(--border-light);margin-bottom:6px}
 .fn2{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);flex-shrink:0;min-width:40px}
 .fs{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600;flex-shrink:0}
-.fp0{background:rgba(239,68,68,.2);color:#f87171}
-.fp1{background:rgba(245,158,11,.2);color:#fcd34d}
-.fp2{background:rgba(79,142,247,.15);color:#7bb3ff}
+.fp0{background:rgba(239,68,68,.2);color:var(--on-red)}
+.fp1{background:rgba(245,158,11,.2);color:var(--on-amber)}
+.fp2{background:rgba(79,142,247,.15);color:var(--on-blue)}
 .ft{font-size:12.5px;color:var(--text-sec);flex:1}
 .fl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted)}
 
@@ -261,6 +274,9 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 .abar-btn:hover{color:var(--text);border-color:var(--text-muted)}
 
 @media(max-width:768px){
+  /* F17: body is a flex ROW for the desktop layout. Without this the mobile
+     top bar became a 174px left column and main overflowed the viewport. */
+  body{flex-direction:column}
   .mobilebar{display:flex}
   nav{transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 14px 40px rgba(0,0,0,.45)}
   nav.open{transform:translateX(0)}
@@ -274,7 +290,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 
 <!-- MOBILE TOP BAR -->
 <div class="mobilebar">
-  <button class="iconbtn" aria-label="Open navigation" onclick="toggleNav()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  <button class="iconbtn" id="navToggle" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar" onclick="toggleNav()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
   <div style="font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;flex:1">Session Guide</div>
   <button class="iconbtn" aria-label="Toggle light or dark theme" title="Toggle theme" id="themeBtnMobile" onclick="toggleTheme()">☀</button>
 </div>
@@ -321,7 +337,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <!-- PROJECT SELECTOR -->
     <div style="padding:10px 12px 6px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
       <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:6px">Active Project</div>
-      <select id="projectSelect" onchange="switchProject(this.value)"
+      <select id="projectSelect" aria-label="Active project" onchange="switchProject(this.value)"
         style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;font-weight:500;padding:5px 8px;cursor:pointer;outline:none;font-family:inherit">
       </select>
     </div>
@@ -338,7 +354,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     </div>
   </div>
 </nav>
-<div class="navbackdrop" id="navBackdrop" onclick="closeNav()"></div>
+<div class="navbackdrop" id="navBackdrop" onclick="closeNav(true)"></div>
 
 <!-- MAIN -->
 <main>
@@ -365,11 +381,11 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
       <div id="dashStatus" class="note-mut"></div>
     </div>
     <div class="dash-token" id="dashToken">
-      <label style="font-size:11.5px;color:var(--text-sec);font-weight:500">Personal access token <span style="color:var(--text-muted);font-weight:400">— optional, for private repos &amp; higher rate limits</span></label>
+      <label for="dashTokenInput" style="font-size:11.5px;color:var(--text-sec);font-weight:500">Personal access token <span style="color:var(--text-muted);font-weight:400">— optional, for private repos &amp; higher rate limits</span></label>
       <input id="dashTokenInput" type="password" placeholder="ghp_… (read-only contents scope)" style="width:100%;margin-top:7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 9px;outline:none">
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="dash-btn" onclick="saveDashToken()">Save token</button>
-        <button class="dash-btn" onclick="clearDashToken()" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#f87171">Clear</button>
+        <button class="dash-btn" onclick="clearDashToken()" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--on-red)">Clear</button>
       </div>
       <div class="dash-note">Stored only in this browser's <code>localStorage</code> and sent only to <code>api.github.com</code>. It is <strong>excluded from Export state and from Save&nbsp;→&nbsp;repo</strong>, so it is never written into a backup file or into your repository — you will need to re-enter it after restoring state on another machine. Prefer a fine-grained, read-only token. Public repos need no token.</div>
     </div>
@@ -383,15 +399,15 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
       <div class="spurp"><strong>Purpose:</strong> Thorough, multi-phase analysis that defines the foundation for the entire cycle workflow: subsystem boundaries, file lists, health dimensions, invariant library seed, and policy thresholds. Run once when onboarding a new project, or re-run after major restructures.</div>
     </div></div>
     <div class="wnote"><div class="ic">⚠</div><div><strong>This command's output is the foundation for everything else.</strong> Bad subsystem boundaries = shallow audits. Missing files = blind spots. Wrong dimensions = misleading scores. Take time to review the output and adjust before using the other commands.</div></div>
-    <div class="pb" id="block-setup">
+    <div class="pb" id="block-psetup">
       <div class="pb-header">
         <div class="pb-label">Setup Cycle Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Run once per project</span>
-          <button class="copy-btn" id="copy-setup" onclick="doCopy('setup')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+          <button class="copy-btn" id="copy-psetup" onclick="doCopy('psetup')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <pre id="setup">Do not make any changes to any files during this session.
+      <pre id="psetup">Do not make any changes to any files during this session.
 
 You are setting up the cycle workflow configuration for this project.
 This is the foundation for all future audit, implementation, and
@@ -433,11 +449,13 @@ Produce a PROJECT PROFILE:
   error handling patterns, logging patterns]
 - External dependencies: [APIs, databases, cloud services, SDKs]
 - Multi-tenant: [yes/no — how is data isolated?]
+- User-facing surfaces: [web UI / mobile / desktop / TUI / operator
+  console / none — and which subsystem owns each]
 - Key architectural patterns: [monolith/microservices, storage abstraction,
   auth model, job queue, real-time, etc.]
 
 ═══════════════════════════════════════════
-PHASE 2 — MODULE & DEPENDENCY ANALYSIS
+PHASE 2 — MODULE &amp; DEPENDENCY ANALYSIS
 ═══════════════════════════════════════════
 
 For every directory that contains source code:
@@ -473,18 +491,17 @@ For each proposed subsystem:
 Quality checks — verify all of these before proceeding:
 □ Every source file in the project is assigned to exactly one subsystem
 □ No subsystem has so many files that it can't be audited in one session
-  (rough guide: <20 files or <5000 lines for deep reading)
+  (rough guide: &lt;20 files or &lt;5000 lines for deep reading)
 □ Files within each subsystem are more tightly coupled to each other
   than to files in other subsystems
 □ The boundaries correspond to natural seams, not arbitrary directory splits
 □ High-fan-out modules are in the subsystem that owns their primary concern
-  (e.g., storage abstraction in the Storage subsystem even though 30+ files import it)
 
 If any check fails, adjust the groupings and explain the tradeoff.
 
 Flag SEAM FILES — files that sit at the boundary between subsystems
 and could reasonably belong to either. These are important for the
-Seams & Invariants audit.
+Seams &amp; Invariants audit.
 
 Flag FROZEN SUBSYSTEM CANDIDATES — subsystems that are explicitly
 legacy / being retired / being migrated out (e.g., a deprecated
@@ -494,16 +511,18 @@ candidate, note: (a) why it's frozen, (b) what's replacing it,
 Frozen Subsystems section.
 
 ═══════════════════════════════════════════
-PHASE 4 — HEALTH DIMENSIONS & POLICY
+PHASE 4 — HEALTH DIMENSIONS &amp; POLICY
 ═══════════════════════════════════════════
 
 Propose health dimensions for this project's scoring. These should:
 - Reflect what actually matters for THIS project's domain and users
-  (not generic "code quality" dimensions)
-- Be scorable with evidence from code reads (not aspirational)
+- Be scorable with evidence from code reads
 - Cover both technical health and feature/product effectiveness
-- Include domain-specific dimensions (e.g., "Clinical Documentation"
-  for a healthcare app, "AI Analysis Reliability" for an ML pipeline)
+- Include domain-specific dimensions
+- Include one interface dimension (e.g. "UI/UX &amp; Accessibility") if the
+  Phase 1 profile found any user-facing surface. Omit it only when the
+  profile found none — otherwise /broad-scan Stage 3's interface
+  findings have no dimension to score against.
 - Be between 10-15 dimensions total
 
 For each dimension:
@@ -512,25 +531,23 @@ For each dimension:
 - Which subsystem(s) primarily feed evidence into this score
 
 Also recommend:
-- Policy threshold: [score ≤ N triggers policy response — recommend
-  a value based on project maturity. 4/10 for mature projects,
-  5/10 for early-stage projects that need faster feedback loops]
+- Policy threshold: [score ≤ N triggers policy response — recommend a
+  value based on project maturity: 4/10 for mature projects, 5/10 for
+  early-stage projects that need faster feedback loops]
 - Consecutive cycles before trigger: [typically 2, but 1 for
   safety-critical projects]
 
-Also propose the project's HORIZONTAL (Axis B) bug-shape categories.
-These are cross-cutting failure patterns that no single subsystem owns;
-they are scored in Health Synthesis alongside the vertical dimensions.
-The default set fits most server/SaaS projects:
-- Silent Degradation Posture
-- Startup Ordering Guarantees
-- Operator-Only State Gaps
-- Parallel Source-of-Truth Drift
-- Test Coverage Quality
-Keep these unless the project's domain calls for different shapes —
-e.g., a data pipeline might add "Numerical / Precision Drift," a mobile
-app "Offline / Sync Integrity," a library "Public API Compatibility."
-Aim for 4–6 categories. For each: name + one-sentence "what it measures."
+Also propose the project's HORIZONTAL (Axis B) bug-shape categories —
+cross-cutting failure patterns that no single subsystem owns, scored in
+Health Synthesis alongside the vertical dimensions. The default set fits
+most server/SaaS projects: Silent Degradation Posture, Startup Ordering
+Guarantees, Operator-Only State Gaps, Parallel Source-of-Truth Drift,
+Test Coverage Quality. Keep these unless the domain calls for different
+shapes (e.g. a data pipeline might add "Numerical / Precision Drift," a
+mobile app "Offline / Sync Integrity," a library "Public API
+Compatibility," a client-heavy app "Visual / Interaction Regression
+Posture"). Aim for 4–6 categories, each with a name + one-sentence
+"what it measures."
 
 ═══════════════════════════════════════════
 PHASE 5 — INVARIANT EXTRACTION
@@ -540,27 +557,22 @@ Extract initial invariants from the project's documentation and code.
 Each invariant must be:
 - Specific enough to be pass/fail (not "auth should be secure")
 - Verifiable by code read or targeted test execution
-- High-consequence if violated (not style preferences)
+- High-consequence if violated
 
 Sources to mine (in priority order):
-1. Common Gotchas section of CLAUDE.md — these are documented foot-guns
-   that developers have already tripped over. Each one is a candidate.
-2. Key Design Decisions — each decision implies a contract that must hold
-3. Operator State Checklist (if present) — each item implies a startup
-   invariant
-4. Critical code patterns observed in Phase 2 — middleware ordering,
-   singleton initialization, encryption/decryption symmetry, auth
-   enforcement, data isolation
+1. Common Gotchas section of CLAUDE.md
+2. Key Design Decisions — each implies a contract
+3. Operator State Checklist (if present)
+4. Critical code patterns observed in Phase 2
 
 For each invariant:
 - ID: INV-XX
 - Rule: [one clear sentence]
-- Subsystem: [which subsystem this invariant belongs to]
-- How to verify: [code read / specific test / assertion to check]
-- Source: [which gotcha, design decision, or code pattern this came from]
+- Subsystem: [which subsystem]
+- How to verify: [code read / specific test / assertion]
+- Source: [which gotcha, decision, or pattern]
 
-Aim for 15-25 invariants. Prefer fewer high-quality invariants over
-many vague ones.
+Aim for 15-25 invariants.
 
 ═══════════════════════════════════════════
 OUTPUT — PROJECT CONFIGURATION
@@ -569,8 +581,6 @@ OUTPUT — PROJECT CONFIGURATION
 Produce two outputs:
 
 OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
-This section is consumed by all slash commands — they reference it
-instead of inlining project-specific content.
 
 ## Cycle Workflow Config
 
@@ -620,19 +630,20 @@ S1 | [short scenario name] | Subsystem: [name]
 
 ### Deploy Command   ← optional; per-subsystem mapping; omit if project has no deploy step
 [subsystem name]: [command + any context, e.g. "clasp push -f then Apps Script editor → Deploy → New version"]
+[subsystem name]: [command + any context]
 (repeat for each subsystem with a deploy command)
 
 OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
 
 Recommended first subsystem to audit: [name — why]
-Recommended cycle order: [ordered list with rationale — exclude any
-  subsystems marked frozen; note that they are skipped by default but
-  can be explicitly named to override]
+Recommended cycle order: [ordered list with rationale — exclude
+  any subsystems marked frozen; note that they are skipped by
+  default but can be explicitly named to override]
 Seams audit frequency: every [N] subsystem cycles
 
 CONFIDENCE ASSESSMENT:
-For each subsystem proposed, rate your confidence that the file list
-is complete and the boundary is correct: High / Medium / Low.
+For each subsystem, rate confidence that file list is complete
+and boundary is correct: High / Medium / Low.
 For any Medium or Low, explain what you'd need to verify.</pre>
     </div>
   </section>
@@ -644,17 +655,17 @@ For any Medium or Low, explain what you'd need to verify.</pre>
       <div class="spurp"><strong>Purpose:</strong> Fast, whole-codebase discovery. One session, audit-then-implement with your approval gate in between. Use when the project still has obvious issues, during rapid development, or for a quick pulse between formal cycles.</div>
     </div></div>
     <div class="inote"><div class="ic">📌</div><div><strong>When to use:</strong> Project is new or unaudited, rapid development phase, broad scans still produce real bugs. <strong>When to graduate:</strong> Broad scans start finding more speculative "improvements" than production bugs → move that subsystem to Tier 2.</div></div>
-    <div class="pb" id="block-t1">
+    <div class="pb" id="block-t1a">
       <div class="pb-header">
         <div class="pb-label">Tier 1 — Broad Scan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Single session</span>
-          <button class="fill-btn" onclick="toggleFill('t1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
-          <button class="copy-btn" id="copy-t1" onclick="doCopy('t1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+          <button class="fill-btn" onclick="toggleFill('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="copy-btn" id="copy-t1a" onclick="doCopy('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div class="fill-form" id="fill-t1"></div>
-      <pre id="t1"></pre>
+      <div class="fill-form" id="fill-t1a"></div>
+      <pre id="t1a"></pre>
     </div>
     <div class="inote"><div class="ic">✋</div><div><strong>Approval gate:</strong> review the findings before anything is implemented, then name the ones you want fixed in the prompt below. Produces a <strong>BROAD SCAN IMPLEMENTATION SUMMARY</strong>.</div></div>
     <div class="pb" id="block-t1i">
@@ -1301,7 +1312,9 @@ Defensive/structural count from the tally above — a secondary signal that
 does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
 Cycle field (the single source of truth — don't invent one); leave the
 synthesis-only columns blank. defensive_count is the LAST column (after
-the quoted notes). Do NOT also record net_score/prod_fixes/
+the quoted notes). Double-quote ANY field that contains a comma — the
+subsystem column often does ("Auth, Security &amp; HIPAA") — exactly as notes
+is quoted, or the row's columns shift. Do NOT also record net_score/prod_fixes/
 new_failure_modes on an implement-phase row (the implement commands write
 STATE.md, not metrics). Skip if no .cycle/.
 
@@ -1359,17 +1372,17 @@ reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</
       <div id="invariantForm" style="display:none;margin-top:8px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)">
         <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:10px">Add Invariant</div>
         <div style="margin-bottom:8px">
-          <div class="fill-label">Invariant rule <span style="color:var(--text-muted);font-weight:400;font-size:10px">(one sentence — what must always hold)</span></div>
+          <label class="fill-label" for="inv-text">Invariant rule <span style="color:var(--text-muted);font-weight:400;font-size:10px">(one sentence — what must always hold)</span></label>
           <textarea id="inv-text" rows="2" placeholder="e.g. PHI redactor runs before any external API call that includes transcript text"
             style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
         </div>
         <div style="margin-bottom:10px">
-          <div class="fill-label">Subsystem / seam it guards</div>
+          <label class="fill-label" for="inv-sub">Subsystem / seam it guards</label>
           <input id="inv-sub" type="text" placeholder="e.g. Security & Compliance"
             style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box">
         </div>
         <div style="margin-bottom:10px">
-          <div class="fill-label">Verify <span style="color:var(--text-muted);font-weight:400;font-size:10px">(optional — test name or code ref the Verification Pass can run)</span></div>
+          <label class="fill-label" for="inv-verify">Verify <span style="color:var(--text-muted);font-weight:400;font-size:10px">(optional — test name or code ref the Verification Pass can run)</span></label>
           <input id="inv-verify" type="text" placeholder="e.g. describe('INV-08') or server/auth.ts:ROLE_HIERARCHY"
             style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box">
         </div>
@@ -1389,7 +1402,7 @@ reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</
         <div class="pb-meta">
           <span class="ptag">Fresh session — no implementation context</span>
           <button class="fill-btn" onclick="toggleFill('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
-          <button class="copy-btn" id="copy-p4v" onclick="doCopyVerification()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+          <button class="copy-btn" id="copy-p4v" onclick="doCopy('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
       <div class="fill-form" id="fill-p4v"></div>
@@ -1585,18 +1598,17 @@ Top horizontal priority: [bug-shape category most in need of policy intervention
 
 ### Cycle N — [date] — Synthesis
 
-AXIS A — VERTICAL (Subsystem Health):
-Architecture: X/10 | Security: X/10 | Call Analysis: X/10 | RAG: X/10 or N/A
-AI Output Quality: X/10 or N/A | Integrations: X/10 | UI/UX: X/10
-Ops Integrity: X/10 | Ops Readiness: X/10 | Viability: X/10 or N/A
+AXIS A — VERTICAL (Subsystem Health — one line per Health Dimension in the
+project's Cycle Workflow Config):
+[Dimension]: X/10 | [Dimension]: X/10 | [Dimension]: X/10 or N/A
+[Dimension]: X/10 | [Dimension]: X/10 | [Dimension]: X/10
 
-AXIS B — HORIZONTAL (Bug-Shape Posture — rows follow this project's configured Axis B categories):
-Silent Degradation: X/10 [trend] | Startup Ordering: X/10 [trend]
-Operator-Only Gaps: X/10 [trend] | Parallel Drift: X/10 [trend]
-Test Coverage Quality: X/10 [trend]
+AXIS B — HORIZONTAL (Bug-Shape Posture — one line per configured Axis B category):
+[Category]: X/10 [trend] | [Category]: X/10 [trend]
+[Category]: X/10 [trend]
 
 Overall (weighted avg): X/10
-Verification: [N] invariants probed, [N] passed | Net score: [fixed] − [regressions] = [net]
+Verification: [N] invariants probed, [N] passed | Net score: [fixed] - [regressions] = [net]
 Category D ratio: [X%]
 Key finding: [one sentence]
 Priority for next cycle: [one sentence]
@@ -1647,7 +1659,7 @@ Policy responses triggered: [list categories, or "None"]
         <div class="flex-g8">
           <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
           <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
-          <input id="importStateFile" type="file" accept="application/json,.json" style="display:none" onchange="importStateFile(this)">
+          <input id="importStateFile" type="file" accept="application/json,.json" aria-label="Choose a state backup file to import" style="display:none" onchange="importStateFile(this)">
         </div>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
@@ -1671,20 +1683,20 @@ Policy responses triggered: [list categories, or "None"]
     <div id="projectForm" style="display:none;margin-top:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
       <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:16px">New Project</div>
       <div class="mb12">
-        <div class="fill-label">Project name</div>
+        <label class="fill-label" for="pf-name">Project name</label>
         <input id="pf-name" type="text" placeholder="e.g. My Internal Tool"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box">
         <div id="pf-name-preview" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
         <div id="pf-name-err" class="pf-err"></div>
       </div>
       <div class="mb12">
-        <div class="fill-label">Health dimensions <span class="lbl-note">(comma-separated)</span></div>
+        <label class="fill-label" for="pf-dims">Health dimensions <span class="lbl-note">(comma-separated)</span></label>
         <textarea id="pf-dims" rows="3"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5">Overall, Architecture &amp; Code Quality (incl. test coverage), Security &amp; Compliance, Operational Integrity, Operational Readiness</textarea>
         <div id="pf-dims-err" class="pf-err"></div>
       </div>
       <div class="mb12">
-        <div class="fill-label">Horizontal (Axis B) categories <span class="lbl-note">(one per line — format: name | what it measures | pulse question | policy playbook. A 3-field line is read as the legacy name | measures | playbook.)</span></div>
+        <label class="fill-label" for="pf-axisb">Horizontal (Axis B) categories <span class="lbl-note">(one per line — format: name | what it measures | pulse question | policy playbook. A 3-field line is read as the legacy name | measures | playbook.)</span></label>
         <textarea id="pf-axisb" rows="5"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
         <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">Prefilled with the standard 5. Leave as-is for most projects; adapt the names/measures for domain-specific bug shapes. Clearing this restores the defaults.</div>
@@ -1699,18 +1711,18 @@ Policy responses triggered: [list categories, or "None"]
         <div id="pf-subs-err" class="pf-err"></div>
       </div>
       <div class="mb12">
-        <div class="fill-label">Invariants <span class="lbl-note">(optional — one per line, format: rule text | subsystem | verify (optional))</span></div>
-        <textarea id="pf-invs" rows="4" placeholder="e.g. PHI redactor runs before any external API call | Security&#10;Rate limiter state survives restart | Core Architecture"
+        <label class="fill-label" for="pf-invs">Invariants <span class="lbl-note">(optional — one per line, format: [INV-NN |] rule text | subsystem | verify (optional). Existing ids are kept; a line with no id gets the next free number.)</span></label>
+        <textarea id="pf-invs" rows="4" placeholder="e.g. INV-01 | PHI redactor runs before any external API call | Security&#10;Rate limiter state survives restart | Core Architecture"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"></textarea>
       </div>
       <div style="margin-bottom:8px;display:flex;gap:12px">
         <div style="flex:1">
-          <div class="fill-label">Policy threshold <span class="lbl-note">(Axis B score ≤ N triggers policy)</span></div>
+          <label class="fill-label" for="pf-thresh">Policy threshold <span class="lbl-note">(Axis B score ≤ N triggers policy)</span></label>
           <input id="pf-thresh" type="number" min="1" max="10" value="4"
             style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
         <div style="flex:1">
-          <div class="fill-label">Consecutive cycles <span class="lbl-note">(before trigger)</span></div>
+          <label class="fill-label" for="pf-consec">Consecutive cycles <span class="lbl-note">(before trigger)</span></label>
           <input id="pf-consec" type="number" min="1" max="10" value="2"
             style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:5px 8px;outline:none">
         </div>
@@ -1743,10 +1755,10 @@ Policy responses triggered: [list categories, or "None"]
     </button>
     <div id="archiveForm" style="display:none;margin-top:12px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:12px">New Archive Entry</div>
-      <div style="font-size:11px;color:var(--text-sec);margin-bottom:4px">Title (e.g. "Observatory — Security & HIPAA Audit")</div>
+      <label for="af-title" style="display:block;font-size:11px;color:var(--text-sec);margin-bottom:4px">Title (e.g. "Observatory — Security & HIPAA Audit")</label>
       <input id="af-title" type="text" placeholder="Project — Subsystem Scope"
         style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box;margin-bottom:8px">
-      <div style="font-size:11px;color:var(--text-sec);margin-bottom:4px">Content — paste handoff block, implementation summary, or key findings</div>
+      <label for="af-content" style="display:block;font-size:11px;color:var(--text-sec);margin-bottom:4px">Content — paste handoff block, implementation summary, or key findings</label>
       <textarea id="af-content" rows="8" placeholder="Paste session output here..."
         style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea>
       <div style="display:flex;gap:10px">
@@ -1930,7 +1942,36 @@ function storageWarn(e){
   }
 }
 function saveActiveProjectId(id){ try{localStorage.setItem('ccg:activeProject',id)}catch(e){storageWarn(e)} }
-function loadCustomProjects(){ try{return JSON.parse(localStorage.getItem('ccg:customProjects')||'[]')}catch(e){return []} }
+// F04 (Cycle 6): a stored project missing a field (hand-edited backup, older
+// schema, truncated Save → repo file) used to throw inside renderCycle at load,
+// abort the whole script, and — because the Projects panel never rendered —
+// leave no in-app way to remove it. Repair what can be repaired (missing
+// arrays/strings), drop what cannot (no id or name), and say so once.
+let _projectRepairWarned=false;
+function normalizeProject(p){
+  if(!p||typeof p!=='object'||typeof p.id!=='string'||!p.id||typeof p.name!=='string') return null;
+  const q={...p};
+  if(!Array.isArray(q.subsystems)) q.subsystems=[];
+  q.subsystems=q.subsystems.filter(s=>s&&typeof s==='object').map(s=>({...s,name:String(s.name==null?'':s.name),files:String(s.files==null?'':s.files)}));
+  if(!Array.isArray(q.invariants)) q.invariants=[];
+  q.invariants=q.invariants.filter(i=>i&&typeof i==='object').map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
+  if(!Array.isArray(q.seeds)) q.seeds=[];
+  if(q.cycleGroups!=null&&!Array.isArray(q.cycleGroups)) delete q.cycleGroups;
+  if(typeof q.healthDimensions!=='string') q.healthDimensions=q.healthDimensions==null?'':String(q.healthDimensions);
+  return q;
+}
+function loadCustomProjects(){
+  let raw;
+  try{raw=JSON.parse(localStorage.getItem('ccg:customProjects')||'[]')}catch(e){raw=[]}
+  if(!Array.isArray(raw)) raw=[];
+  const out=[]; let repaired=0, dropped=0;
+  raw.forEach(p=>{ const q=normalizeProject(p); if(!q){dropped++;return;} if(JSON.stringify(q)!==JSON.stringify(p)) repaired++; out.push(q); });
+  if((repaired||dropped)&&!_projectRepairWarned){
+    _projectRepairWarned=true;
+    try{console.warn(`claude-workflow-tools: stored project list needed repair (${repaired} repaired, ${dropped} unusable and skipped) — re-save the project in Projects, or Export state to inspect.`);}catch(_){}
+  }
+  return out;
+}
 function saveCustomProjects(arr){ try{localStorage.setItem('ccg:customProjects',JSON.stringify(arr))}catch(e){storageWarn(e)} }
 
 let activeProjectId = loadActiveProjectId();
@@ -2050,16 +2091,60 @@ function loadVal(pid,name){ try{return localStorage.getItem(lsKey(pid,name))||''
 function saveVal(pid,name,val){ try{localStorage.setItem(lsKey(pid,name),val)}catch(e){storageWarn(e)} }
 
 // ─── PLACEHOLDER FILL SYSTEM ─────────────────────────────────
-const PH_RE = /\[([A-Z][A-Z0-9\s\/\-&',:.()]+)\]/g;
+// F11 (Cycle 6): a prompt carries two kinds of bracket token — FILL FIELDS the
+// operator supplies, and FORMAT TOKENS that belong to an output block the agent
+// must emit. The old pattern was ALL-CAPS-only, so it missed every operator
+// placeholder containing a lowercase word or an em dash (5 of them, including
+// "[PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]")
+// while happily offering [ID], [INV-XX] and [X/10] as fields — filling those
+// rewrites the very template the agent is told to emit. The two are now told
+// apart STRUCTURALLY rather than by a keyword list: a token inside an
+// ---OUTPUT BLOCK--- span, or sharing its opening line with another token (a
+// template row), is a format token.
+const PH_RE = /\[([A-Z][^\]]{0,199})\]/g;
 const LARGE_KEYS=['PASTE','LIST','DESCRIBE','NOTE'];
 const OPT_KEYS=['OPTIONAL','IF APPLICABLE'];
+// The prompts' own vocabulary for "the operator supplies this". A token is a
+// fill field if it is written in the ALL-CAPS placeholder style OR opens with
+// one of these directives — the latter is what admits the long forms carrying a
+// lowercase clause after an em dash. Everything else bracketed is prose or an
+// output-format token ("[FROZEN: subsystem-name]" is an instruction about what
+// to WRITE, not a field to fill).
+const DIRECTIVE_KEYS=['PASTE','LIST','DESCRIBE','NOTE','OPTIONAL','IF '];
+const ALLCAPS_PH=/^[A-Z][A-Z0-9\s\/\-&',:.()]*$/;
+const ANY_TOKEN=/\[[^\]]{0,199}\]/g;
+function isFillField(name){ return ALLCAPS_PH.test(name)||DIRECTIVE_KEYS.some(k=>name.startsWith(k)); }
 function isLarge(name){return LARGE_KEYS.some(k=>name.startsWith(k))}
 function isOpt(name){return OPT_KEYS.some(k=>name.startsWith(k))}
 
+function outputBlockSpans(text){
+  const lines=text.split('\n'), spans=[]; let start=-1;
+  lines.forEach((l,i)=>{
+    const t=l.trim();
+    if(!/^---[A-Z].*---$/.test(t))return;
+    if(/^---END/.test(t)){ if(start!==-1){spans.push([start,i]);start=-1;} }
+    else if(start===-1) start=i;
+  });
+  if(start!==-1)spans.push([start,lines.length-1]);   // unterminated: treat the rest as block
+  return spans;
+}
 function getPlaceholders(text){
+  const spans=outputBlockSpans(text);
+  const nl=[]; for(let i=0;i<text.length;i++) if(text[i]==='\n') nl.push(i);
+  const lineOf=idx=>{ let lo=0,hi=nl.length; while(lo<hi){const mid=(lo+hi)>>1; if(nl[mid]<idx)lo=mid+1; else hi=mid;} return lo; };
+  // Count EVERY bracket token per line, not just the ones PH_RE matches: a
+  // template row is "[ID] | [Severity] | [one-line fix]" and its siblings are
+  // lowercase, so counting matches only would have seen a lone token.
+  const perLine={};
+  let mm; const scan=new RegExp(ANY_TOKEN.source,'g');
+  while((mm=scan.exec(text))!==null){ const ln=lineOf(mm.index); perLine[ln]=(perLine[ln]||0)+1; }
   const seen=new Set(),out=[];
   let m; PH_RE.lastIndex=0;
   while((m=PH_RE.exec(text))!==null){
+    const ln=lineOf(m.index);
+    if(spans.some(sp=>ln>=sp[0]&&ln<=sp[1]))continue;   // part of an output block
+    if((perLine[ln]||0)>1)continue;                      // a template row, not a field
+    if(!isFillField(m[1]))continue;                      // prose or an output token
     if(!seen.has(m[0])){seen.add(m[0]);out.push({full:m[0],name:m[1]})}
   }
   return out;
@@ -2082,33 +2167,42 @@ function buildFillForm(pid){
     const opt=isOpt(ph.name);
     const large=isLarge(ph.name);
     const safeId=pid+'_'+ph.name.replace(/\W+/g,'_');
+    // F01 (Cycle 6): every stored value and subsystem name rendered here goes
+    // through esc(), and every handler argument through jsArg(). This form is
+    // rendered only on interaction, so the init-time hostile fixture never
+    // reached it — a subsystem name from an imported backup executed here.
+    const argPid=jsArg(pid), argName=jsArg(ph.name);
     html+=`<div class="fill-row">`;
-    html+=`<div class="fill-label">${ph.full}${opt?' <span class="opt">optional</span>':''}</div>`;
+    // F12: a real <label for>, not a styled div — every control below carries
+    // ${safeId}, so the association is programmatic rather than positional.
+    html+=`<label class="fill-label" for="${safeId}">${esc(ph.full)}${opt?' <span class="opt">optional</span>':''}</label>`;
 
     if(isSysMap(ph.name)){
       // Systems map — large textarea with save-to-bank button
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." onchange="saveVal('${pid}','${ph.name}',this.value)">${val}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
       html+=`<div style="display:flex;gap:8px;margin-top:4px">
         <button onclick="saveBank(document.getElementById('${safeId}').value)" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);color:var(--teal);cursor:pointer;font-family:inherit">Save to bank</button>
-        <button onclick="loadBank('${safeId}','${pid}','${ph.name}')" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Load from bank</button>
+        <button onclick="loadBank('${safeId}',${argPid},${argName})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Load from bank</button>
       </div>`;
     } else if(isSubsys(ph.name)){
-      const opts=project.subsystems.map(s=>`<option value="${s.name}"${val===s.name?' selected':''}>${s.name}</option>`).join('');
-      html+=`<select class="fill-input" style="appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%234e5e7a'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 8px center;background-size:14px;padding-right:28px;cursor:pointer"
-        onchange="handleSubSelect('${pid}',this.value)">
+      const opts=project.subsystems.map(s=>`<option value="${esc(s.name)}"${val===s.name?' selected':''}>${esc(s.name)}</option>`).join('');
+      // F13: .fill-select carried these exact rules and had ZERO users — the
+      // select duplicated them inline and its <option> background rule was dead
+      // (and un-themed). Use the class; drop the duplication.
+      html+=`<select class="fill-select" id="${safeId}" onchange="handleSubSelect(${argPid},this.value)">
         <option value="">— select a subsystem —</option>
         ${opts}
         <option value="__custom__">Custom…</option>
       </select>`;
       if(val&&!project.subsystems.find(s=>s.name===val)){
-        html+=`<input class="fill-input" style="margin-top:4px" type="text" value="${val.replace(/"/g,'&quot;')}" placeholder="Custom subsystem name" oninput="saveVal('${pid}','${ph.name}',this.value)">`;
+        html+=`<input class="fill-input" id="${safeId}_custom" aria-label="Custom subsystem name" style="margin-top:4px" type="text" value="${esc(val)}" placeholder="Custom subsystem name" oninput="saveVal(${argPid},${argName},this.value)">`;
       }
     } else if(isFiles(ph.name)){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="2" placeholder="Files for this subsystem..." onchange="saveVal('${pid}','${ph.name}',this.value)">${val}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="2" placeholder="Files for this subsystem..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else if(large){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal('${pid}','${ph.name}',this.value)">${val}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else {
-      html+=`<input class="fill-input" id="${safeId}" type="text" placeholder="${opt?'Leave blank to keep placeholder as-is':'Enter value...'}" value="${val.replace(/"/g,'&quot;')}" oninput="saveVal('${pid}','${ph.name}',this.value)">`;
+      html+=`<input class="fill-input" id="${safeId}" type="text" placeholder="${opt?'Leave blank to keep placeholder as-is':'Enter value...'}" value="${esc(val)}" oninput="saveVal(${argPid},${argName},this.value)">`;
     }
     html+=`</div>`;
   });
@@ -2279,7 +2373,7 @@ function renderCycle(){
     const phaseDots=CYCLE_PHASES.map((p,i)=>{
       const active=i<=phaseIdx;
       const color=active?PHASE_COLORS[p]:'var(--border)';
-      return `<span title="${PHASE_TITLES[p]}" role="button" tabindex="0" onkeydown="kbdActivate(event)" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'#fff':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</span>`;
+      return `<span title="${PHASE_TITLES[p]}" role="button" tabindex="0" onkeydown="kbdActivate(event)" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'var(--fg-on-solid)':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</span>`;
     }).join('');
     return `<div class="ct-item${isDone?' done':''}" role="button" tabindex="0" onkeydown="kbdActivate(event)" onclick="advancePhase(${argG})" style="justify-content:space-between">
       <span class="ct-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g)}</span>
@@ -2583,7 +2677,7 @@ function openProjectForm(){
   document.getElementById('pf-consec').value='2';
   document.getElementById('pf-name-preview').textContent='';
   document.getElementById('projectFormTitle').textContent='New Project';
-  document.getElementById('projectFormTitle').style.color='#22c55e';
+  document.getElementById('projectFormTitle').style.color='var(--on-green)';
   document.getElementById('pf-save-label').textContent='Create project';
   document.getElementById('addProjectBtn').style.display='none';
   renderSubRows();
@@ -2598,12 +2692,13 @@ function openEditProject(id){
   document.getElementById('pf-name').value=p.name;
   document.getElementById('pf-dims').value=p.healthDimensions;
   document.getElementById('pf-axisb').value=axisBToText(getAxisB(p));
-  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.text} | ${inv.subsystem}${inv.verify?` | ${inv.verify}`:''}`).join('\n');
+  // F05: emit the id so it survives the round-trip. A line without one is new.
+  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.id?inv.id+' | ':''}${inv.text} | ${inv.subsystem}${inv.verify?` | ${inv.verify}`:''}`).join('\n');
   document.getElementById('pf-thresh').value=p.policyThreshold||4;
   document.getElementById('pf-consec').value=p.policyConsecutiveCycles||2;
   document.getElementById('pf-name-preview').textContent=`ID: ${p.id} (locked)`;
   document.getElementById('projectFormTitle').textContent=`Editing: ${p.name}`;
-  document.getElementById('projectFormTitle').style.color='#f59e0b';
+  document.getElementById('projectFormTitle').style.color='var(--on-amber)';
   document.getElementById('pf-save-label').textContent='Save changes';
   document.getElementById('addProjectBtn').style.display='none';
   renderSubRows();
@@ -2630,10 +2725,10 @@ function renderSubRows(){
         <span style="font-size:11px;color:var(--text-muted);font-weight:500">Subsystem ${i+1}</span>
         ${pfSubRows.length>1?`<button onclick="removeSubRow(${i})" style="font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">Remove</button>`:''}
       </div>
-      <input type="text" value="${esc(s.name)}" placeholder="Subsystem name (e.g. Core Architecture & Pipeline)"
+      <input type="text" value="${esc(s.name)}" aria-label="Subsystem ${i+1} name" placeholder="Subsystem name (e.g. Core Architecture & Pipeline)"
         style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:5px"
         oninput="pfSubRows[${i}].name=this.value">
-      <textarea rows="2" placeholder="Files (e.g. server/index.ts, server/routes.ts)"
+      <textarea rows="2" aria-label="Subsystem ${i+1} files" placeholder="Files (e.g. server/index.ts, server/routes.ts)"
         style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:11px;padding:5px 8px;outline:none;box-sizing:border-box;resize:vertical"
         oninput="pfSubRows[${i}].files=this.value">${esc(s.files)}</textarea>
     </div>`).join('');
@@ -2641,6 +2736,35 @@ function renderSubRows(){
 
 function addSubRow(){ pfSubRows.push({name:'',files:''});renderSubRows(); }
 function removeSubRow(i){ pfSubRows.splice(i,1);if(!pfSubRows.length)pfSubRows=[{name:'',files:''}];renderSubRows(); }
+
+// F05 (Cycle 6): the form used to renumber every invariant INV-01..N from line
+// ORDER on each save, so deleting line 3 of 10 shifted seven ids and broke every
+// reference in archived handoff/verification blocks — and it counted from 1 while
+// getNextInvariantId() counts BOTH stores, so a project with five form invariants
+// plus a §4v-added INV-06 got a second INV-06. Ids now round-trip through the
+// textarea (an optional `INV-NN |` prefix, the same shape the Cycle Workflow
+// Config uses) and new lines are allocated above the max of BOTH stores.
+// Canonical /reflect: "do not invent or reuse a number".
+function parseInvariantFormLines(raw,pid){
+  const taken=new Set();
+  try{
+    const custom=JSON.parse(localStorage.getItem(`ccg:${pid}:invariants`)||'[]');
+    if(Array.isArray(custom))custom.forEach(inv=>{ if(inv&&inv.id)taken.add(String(inv.id).toUpperCase()); });
+  }catch(e){}
+  const out=raw.split('\n').filter(l=>l.trim()).map(l=>{
+    const parts=l.split('|').map(x=>x.trim());
+    let id=null;
+    if(/^INV-\d+$/i.test(parts[0]||''))id=parts.shift().toUpperCase();
+    const inv={id,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
+    if(parts[2])inv.verify=parts[2];
+    if(id)taken.add(id);
+    return inv;
+  });
+  let max=0;
+  taken.forEach(t=>{const m=t.match(/^INV-(\d+)$/);if(m)max=Math.max(max,parseInt(m[1],10));});
+  out.forEach(inv=>{ if(!inv.id){ max++; inv.id=`INV-${String(max).padStart(2,'0')}`; taken.add(inv.id); } });
+  return out;
+}
 
 function saveProjectForm(){
   clearPfErrors();
@@ -2658,12 +2782,7 @@ function saveProjectForm(){
   if(!valid)return;
 
   const invsRaw=document.getElementById('pf-invs').value.trim();
-  const invsParsed=invsRaw?invsRaw.split('\n').filter(l=>l.trim()).map((l,i)=>{
-    const parts=l.split('|').map(s=>s.trim());
-    const inv={id:`INV-${String(i+1).padStart(2,'0')}`,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
-    if(parts[2])inv.verify=parts[2];
-    return inv;
-  }):[];
+  const invsParsed=invsRaw?parseInvariantFormLines(invsRaw,id):[];
   const thresh=parseInt(document.getElementById('pf-thresh').value)||4;
   const consec=parseInt(document.getElementById('pf-consec').value)||2;
   const axisbRaw=document.getElementById('pf-axisb').value.trim();
@@ -2704,7 +2823,9 @@ function setStateIoMsg(msg,kind){
   if(!el)return;
   el.textContent=msg;
   el.style.display='block';
-  el.style.color=kind==='error'?'#ef4444':(kind==='ok'?'#22c55e':'#8899b3');
+  // F13: '#8899b3' is the DARK theme's --text-sec — a dark-mode grey on a white
+  // surface (2.9:1) in light mode. Tokens flip; literals do not.
+  el.style.color=kind==='error'?'var(--on-red)':(kind==='ok'?'var(--on-green)':'var(--text-sec)');
 }
 
 // SECRETS — keys that live in localStorage but must NEVER be serialized into a
@@ -2759,6 +2880,13 @@ function stateBackupKeys(parsed){
   // passes a bare {data}), strict about WRONG ones.
   if(parsed.app&&parsed.app!=='claude-workflow-tools') return {data:null,keys:null,reason:'foreign-app'};
   if(parsed.version!=null&&!(Number(parsed.version)<=1)) return {data:null,keys:null,reason:'newer-version'};
+  // F04: the project list is the one key whose shape can brick init. A backup
+  // carrying something that is not a JSON array of projects is refused whole
+  // rather than half-applied; per-entry field repair happens in loadCustomProjects.
+  if(typeof data['ccg:customProjects']==='string'){
+    let list; try{ list=JSON.parse(data['ccg:customProjects']); }catch(e){ return {data:null,keys:null,reason:'bad-projects'}; }
+    if(!Array.isArray(list)) return {data:null,keys:null,reason:'bad-projects'};
+  }
   // Secrets are filtered on the APPLY side too, not just on export: a backup
   // handed over by someone else (or loaded from a shared repo) must not be able
   // to install a credential into this browser.
@@ -2788,6 +2916,7 @@ function importStateFile(input){
     if(reason==='foreign-app'){ setStateIoMsg('Import failed: that file was exported by a different application.','error'); input.value=''; return; }
     if(reason==='newer-version'){ setStateIoMsg('Import failed: backup uses a newer format than this console understands — update the console first.','error'); input.value=''; return; }
     if(reason==='no-keys'){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
+    if(reason==='bad-projects'){ setStateIoMsg('Import failed: the backup\'s project list is not valid (not a JSON array of projects) — nothing was imported.','error'); input.value=''; return; }
     if(!confirm(`Import ${keys.length} stored item(s)? This OVERWRITES matching projects, invariants, archive entries, and tracker state in this browser.`)){ input.value=''; return; }
     try{
       applyStateKeys(data,keys);
@@ -2869,6 +2998,7 @@ async function loadStateFromRepo(){
     if(reason==='foreign-app'){ setStateIoMsg('That .cycle/console-state.json was written by a different application.','error'); return; }
     if(reason==='newer-version'){ setStateIoMsg('That state file uses a newer format than this console understands — update the console first.','error'); return; }
     if(reason==='no-keys'){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
+    if(reason==='bad-projects'){ setStateIoMsg('That state file\'s project list is not valid (not a JSON array of projects) — nothing was loaded.','error'); return; }
     if(!confirm(`Load ${keys.length} item(s) from the connected repo? This OVERWRITES matching state in this browser.`)) return;
     applyStateKeys(data,keys);
     switchProject(activeProjectId); renderProjectsTab();
@@ -3114,6 +3244,24 @@ PRODUCTION READINESS ASSESSMENT:
 One paragraph: is this tool ready for production use? What's the gap
 between current state and production-ready? Be specific about what
 "production-ready" means for this type of application.
+
+IMPLEMENTATION BATCH PLAN (every finding, in suggested implementation order):
+The Top 5 ranks impact; this ranks the WORK. Group every finding from
+Stages 1–3 — interface findings included — into sequential batches,
+each sized for one /broad-implement session. Order batches by
+production impact first, then by dependency: a fix that a later batch's
+regression check relies on goes earlier, and a new guard that would
+turn CI red until a gap closes goes AFTER the batch that closes it.
+Within a batch, order by severity. Estimate each item (S/M/L + rough
+hours) and total each batch.
+
+Batch 1 — [theme] | est. [total hours]
+  [ID] | [Severity] | [one-line fix] | [effort: S/M/L + hours] | [depends on / unblocks, or "—"]
+(repeat per batch)
+Deferred (not batched): [ID] — [why: needs a decision, out of scope, or blocked on another item]
+
+Every finding must appear exactly once — in a batch or under Deferred.
+The sequence is a suggestion; I will choose which batches to run.
 
 After I review the audit, I will tell you which findings to implement.
 Do not implement anything until then.`;
@@ -3522,11 +3670,16 @@ function renderPrReview(){
 
 function renderTier1(){
   const project=getProject();
-  const pre=document.getElementById('t1');
+  // The <pre> is t1a, NOT t1: the enclosing <section> owns id="t1" (the nav
+  // href and showPanel depend on it), and getElementById returns the FIRST
+  // match in document order. Writing to 't1' here assigned textContent to the
+  // SECTION and destroyed the entire Tier 1 panel — header, both prompts, both
+  // buttons — on every load, for every release since the tabbed-nav rewrite.
+  const pre=document.getElementById('t1a');
   if(pre) pre.textContent=buildTier1Text(project);
-  const form=document.getElementById('fill-t1');
+  const form=document.getElementById('fill-t1a');
   if(form){form.innerHTML='';form.classList.remove('open');}
-  const btn=document.querySelector('#block-t1 .fill-btn');
+  const btn=document.querySelector('#block-t1a .fill-btn');
   if(btn)btn.classList.remove('active');
 }
 
@@ -3716,10 +3869,13 @@ ${invLines}
 Conduct the following verification in four parts. Use code reads and targeted test executions — not prose assessments or trust in the cycle's self-reported results. (If the project's Test Command is \`manual\`, substitute the relevant Regression Scenarios from CLAUDE.md for test executions and rely on close code reads; treat a failed scenario as a failed probe.)
 
 PART 1 — INVARIANT PROBE RESULTS
-Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected at copy time — do NOT substitute your own picks):
+Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected deterministically from a stated seed, not chosen by the implementer — do NOT substitute your own picks):
 
 MANDATORY ROTATION PROBES:
-${invs.length>=5?selectRandomInvariants(invs,5).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
+${invs.length>=5?selectSeededInvariants(invs,5,probeSeed()).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
+(Probe seed: ${probeSeed()} — the selection is a pure function of the seed and
+the invariant ids, so a verifier can reproduce it and the implementer cannot
+re-roll it. It rotates once per UTC day.)
 
 For each invariant probed:
 - Read the relevant code directly (do not rely on the cycle's description of what changed)
@@ -3788,18 +3944,25 @@ Category D ratio: [X%]
 Finally, answer: "What invariants should be added to the library based on what this cycle revealed?" List any new invariants discovered during verification that should be probed in future cycles.`;
 }
 
-function selectRandomInvariants(invs,count){
-  const shuffled=[...invs];
-  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
-  return shuffled.slice(0,count);
-}
-
-function doCopyVerification(){
-  // Regenerate prompt with fresh random picks, then copy with fill values applied
-  const project=getProject();
-  const pre=document.getElementById('p4v');
-  if(pre) pre.textContent=buildVerificationText(project);
-  copyToClipboard(getFilledText('p4v'),document.getElementById('copy-p4v'));
+// F14 (Cycle 6): the rotation probes were drawn with Math.random() AND re-rolled
+// on every Copy, so the copied prompt differed from the one on screen and an
+// implementer could press Copy until the picks looked easy. The §4v prompt's own
+// rule — "pre-selected … do NOT substitute your own picks" — has no force if the
+// selection is a coin flip the implementer controls. R19 fixed exactly this for
+// scripts/verification-pack.mjs by seeding from the commit sha; this is the same
+// property in the browser, where there is no sha: seed from the project + UTC
+// day, state the seed in the prompt, and never re-roll on copy.
+function probeSeed(){ return `${activeProjectId}:${new Date().toISOString().slice(0,10)}`; }
+function hash32(str){ let h=2166136261>>>0; const s=String(str); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+function selectSeededInvariants(invs,count,seed){
+  return [...invs]
+    // The seed goes FIRST. FNV-1a does not avalanche on a trailing change: with
+    // the seed as a suffix every hash shifted by the SAME constant, so the sort
+    // order never moved and the probes never rotated (the guard caught it).
+    // sha256 in verification-pack.mjs has no such problem — this one does.
+    .map(inv=>({inv,h:hash32(seed+'|'+String(inv.id))}))
+    .sort((a,b)=>a.h-b.h||String(a.inv.id).localeCompare(String(b.inv.id)))
+    .slice(0,count).map(x=>x.inv);
 }
 
 function renderVerification(){
@@ -3878,8 +4041,26 @@ function toggleTheme(){
   try{ localStorage.setItem('ccg:theme',next); }catch(e){ storageWarn(e); }
 }
 // ─── MOBILE NAV DRAWER ───────────────────────────────────────
-function toggleNav(){ const n=document.getElementById('sidebar'); if(n) n.classList.toggle('open'); }
-function closeNav(){ const n=document.getElementById('sidebar'); if(n) n.classList.remove('open'); }
+// F12 (Cycle 6): the drawer opened with no aria-expanded on its toggle, could
+// not be dismissed from the keyboard, and left focus behind on <body> — so a
+// keyboard user opened a panel they could not reach and could not close.
+function setNavOpen(open,restoreFocus){
+  const n=document.getElementById('sidebar'); if(!n)return;
+  const wasOpen=n.classList.contains('open');
+  n.classList.toggle('open',!!open);
+  const t=document.getElementById('navToggle');
+  if(t&&t.setAttribute)t.setAttribute('aria-expanded',open?'true':'false');
+  if(open){ const first=n.querySelector&&n.querySelector('a[href^="#"]'); if(first&&first.focus)first.focus(); }
+  // Only hand focus back if the drawer WAS open: Escape is a document-wide
+  // listener, so on desktop (where the toggle is display:none) an unguarded
+  // restore would fire on every Escape press.
+  else if(restoreFocus&&wasOpen&&t&&t.focus)t.focus();
+}
+function toggleNav(){ const n=document.getElementById('sidebar'); setNavOpen(!(n&&n.classList.contains('open'))); }
+// Called on every nav-link click too, where focus is already on the link — only
+// an explicit dismissal (Escape, backdrop) hands focus back to the toggle.
+function closeNav(restoreFocus){ setNavOpen(false,restoreFocus); }
+try{ document.addEventListener('keydown',function(e){ if(e&&e.key==='Escape')closeNav(true); }); }catch(e){}
 
 // ─── DASHBOARD (live project status: GitHub primary, cache + self-reported fallback) ──
 function dashLoad(key){ try{return JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}} }
@@ -3889,7 +4070,16 @@ function dashCache(){ return dashLoad('ccg:dashCache'); }
 function dashManual(){ return dashLoad('ccg:dashManual'); }
 function dashToken(){ try{return localStorage.getItem('ccg:ghToken')||''}catch(e){return ''} }
 
-function scoreColor(v){ const n=parseFloat(v); if(isNaN(n))return 'var(--text-muted)'; if(n>=8.5)return 'var(--green)'; if(n>=7)return 'var(--teal)'; if(n>=5)return 'var(--amber)'; return 'var(--red)'; }
+// F06: turn a fetch error into something an operator can act on. The raw
+// message is kept — it names the file and status — but 404/403 get the fix.
+function dashErrHint(msg){
+  const m=String(msg||'');
+  if(/HTTP 404/.test(m)) return m+' — repo or file not found. Private repo? Add a GitHub token above.';
+  if(/HTTP 401|HTTP 403/.test(m)) return m+' — unauthorized or rate-limited. Add a token above, or wait for the limit to reset.';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return m+' — network unreachable, or the page is opened from file:// (fetch is blocked there).';
+  return m;
+}
+function scoreColor(v){ const n=parseFloat(v); if(isNaN(n))return 'var(--text-muted)'; if(n>=8.5)return 'var(--on-green)'; if(n>=7)return 'var(--on-teal)'; if(n>=5)return 'var(--on-amber)'; return 'var(--on-red)'; }
 function relTime(iso){ if(!iso)return ''; const d=Date.now()-new Date(iso).getTime(); if(isNaN(d))return ''; const m=Math.round(d/60000); if(m<1)return 'just now'; if(m<60)return m+'m ago'; const h=Math.round(m/60); if(h<24)return h+'h ago'; return Math.round(h/24)+'d ago'; }
 function parseRepoSpec(spec){ if(!spec)return null; const at=String(spec).split('@'); const branch=at[1]||'HEAD'; const parts=at[0].split('/'); if(parts.length<2||!parts[0].trim()||!parts[1].trim())return null; return {owner:parts[0].trim(),repo:parts[1].trim(),branch:branch.trim()}; }
 function parseHealth(md){ const g=re=>{const m=md.match(re);return m?m[1].trim():'';}; return { overall:g(/Overall[^:\n]*:\s*([\d.]+)\s*\/\s*10/i), lastSynthesis:g(/Last synthesis:\s*([^\n]+)/i), summary:g(/One-line summary:\s*([^\n]+)/i), topVertical:g(/Top vertical priority:\s*([^\n]+)/i), topHorizontal:g(/Top horizontal priority:\s*([^\n]+)/i) }; }
@@ -3920,18 +4110,24 @@ async function refreshDashboard(){
   let okN=0, failN=0;
   for(const id of ids){
     try{ const status=await fetchProjectStatus(repos[id]); cache[id]={status,fetchedAt:new Date().toISOString(),ok:true}; okN++; }
-    catch(e){ if(cache[id]){ cache[id].ok=false; } else { cache[id]={status:null,fetchedAt:null,ok:false,error:String(e&&e.message||e)}; } failN++; }
+    // F06 (Cycle 6): the error was recorded ONLY when there was no prior cache
+    // entry, and dashboardCard never read it either — so a 404 on a private repo,
+    // a 403 rate limit and a network failure all rendered as "No data yet" or an
+    // unexplained stale "Cached" chip. Always record the reason.
+    catch(e){ const msg=String((e&&e.message)||e); if(cache[id]){ cache[id].ok=false; cache[id].error=msg; } else { cache[id]={status:null,fetchedAt:null,ok:false,error:msg}; } failN++; }
   }
   dashSave('ccg:dashCache',cache); dashRefreshing=false; renderDashboard();
-  if(st&&ids.length) st.textContent='Updated '+okN+' live'+(failN?(', '+failN+' from cache/fallback'):'');
+  if(st&&ids.length) st.textContent='Updated '+okN+' live'+(failN?(', '+failN+' failed — reason on the card'):'');
 }
 function dashboardCard(p){
   const repos=dashRepos(), cache=dashCache(), manual=dashManual();
   const spec=repos[p.id]||'', c=cache[p.id], man=manual[p.id]||{};
   let status=null, src='', icon='○';
+  const err=(c&&c.ok===false&&c.error)?dashErrHint(c.error):'';
   if(c&&c.ok&&c.status){ status=c.status; src='Live · '+relTime(c.fetchedAt); icon='🟢'; }
   else if(c&&c.status){ status=c.status; src='Cached · '+relTime(c.fetchedAt); icon='🟡'; }
   else if(man.overall||man.phase||man.note){ status={overall:man.overall,phase:man.phase,summary:man.note}; src='Self-reported'; icon='✎'; }
+  else if(err){ src='Fetch failed'; icon='🔴'; }
   else { src=spec?'No data yet':'No source — add a repo'; }
   const overall=(status&&status.overall)||'—';
   const phase=(status&&status.phase)||'';
@@ -3946,16 +4142,17 @@ function dashboardCard(p){
     +'<div class="dcard-top"><div class="dcard-name">'+esc(p.name)+(active?' <span class="dchip" style="color:var(--accent);border-color:rgba(79,142,247,.4)">active</span>':'')+'</div>'
     +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span class="note-mut">/10</span>':'')+'</div></div>'
     +'<div class="dcard-row"><span class="dsrc">'+icon+' '+esc(src)+'</span>'+(phase?'<span class="dchip" title="'+esc(phase)+'">'+esc(phase.split('(')[0].trim().slice(0,30))+'</span>':'')+'</div>'
+    +(err?'<div class="dcard-err" role="status">⚠ '+esc(err)+'</div>':'')
     +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
     +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
     +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
     +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+esc(ghUrl)+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit('+argId+')">⚙ source</button></div>'
     +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
-    +'<label>GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
-    +'<label>Fallback when no GitHub data (overall / phase / note)</label>'
-    +'<input id="dman-o-'+esc(p.id)+'" value="'+esc(man.overall||'')+'" placeholder="overall e.g. 8.5">'
-    +'<input id="dman-p-'+esc(p.id)+'" value="'+esc(man.phase||'')+'" placeholder="phase e.g. idle">'
-    +'<input id="dman-n-'+esc(p.id)+'" value="'+esc(man.note||'')+'" placeholder="one-line note">'
+    +'<label for="dspec-'+esc(p.id)+'">GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
+    +'<label for="dman-o-'+esc(p.id)+'">Fallback when no GitHub data (overall / phase / note)</label>'
+    +'<input id="dman-o-'+esc(p.id)+'" aria-label="Fallback overall score" value="'+esc(man.overall||'')+'" placeholder="overall e.g. 8.5">'
+    +'<input id="dman-p-'+esc(p.id)+'" aria-label="Fallback phase" value="'+esc(man.phase||'')+'" placeholder="phase e.g. idle">'
+    +'<input id="dman-n-'+esc(p.id)+'" aria-label="Fallback one-line note" value="'+esc(man.note||'')+'" placeholder="one-line note">'
     +'<div style="display:flex;gap:8px"><button class="dash-btn" onclick="saveDashCard('+argId+')">Save</button><button class="dlink" onclick="toggleDashEdit('+argId+')">Cancel</button></div></div></div>';
 }
 function renderDashboard(){

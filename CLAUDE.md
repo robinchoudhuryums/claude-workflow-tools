@@ -143,7 +143,12 @@ copy-paste, keep a `.cycle/` directory at the project root:
 
 - `.cycle/STATE.md` — rolling "where I left off" (template below). Written by
   the implement commands' CHECKPOINT step, read by `/cycle-resume` and
-  `/cycle-status`.
+  `/cycle-status`. It is ROLLING: it carries the current cycle only, and its
+  sections are exactly the template's. Narrative history from completed cycles
+  belongs in `.cycle/HISTORY.md` — left unchecked this file accumulates
+  per-release sections until the substrate a new session loads is buried in
+  them (it reached 24 sections with two `Decisions made` and two `Where I left
+  off`, and the hook reads the FIRST match of each heading).
 - `.cycle/metrics.csv` — per-cycle metrics appended by `/reflect` / synthesis.
   Header row (create on first write):
   `date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count`
@@ -166,7 +171,9 @@ copy-paste, keep a `.cycle/` directory at the project root:
   Over time this surfaces personal calibration (e.g. "L items actually
   take ~5 days"); `/plan` and `/audit` can consult it to sharpen future
   effort estimates.
-- `PROJECT_HEALTH.md` stays at the repo root (see §7 in the HTML tool).
+- `PROJECT_HEALTH.md` stays at the repo root. `/cycle-init` step 5 carries
+  the project-agnostic skeleton (the console's §7 copy is illustrative and
+  names one built-in project's dimensions).
 
 Two optional helpers operate on this state (both fail-safe and additive):
 - `scripts/cycle-context.mjs` — a **SessionStart** hook that auto-loads
@@ -211,7 +218,9 @@ And two helpers operate on the invariant library:
 And one assembles the independent-verification input:
 - `scripts/verification-pack.mjs` — builds a ready-to-paste §4v prompt: the
   canonical body via the same `sectionBody()` the lock uses (no fourth copy),
-  the live invariant library, the cycle's blocks from `.cycle/blocks/`, and the
+  the live invariant library, the CURRENT cycle's blocks from `.cycle/blocks/`
+  (by `<cycle>-` filename prefix — blocks from other cycles are named as
+  excluded, never silently dropped, since the directory accumulates), and the
   **rotation probes seeded from the commit sha** so they are reproducible rather
   than chosen by the implementer — the prompt's "do NOT substitute your own
   picks" rule has no force if the implementer picks them. It also reads
@@ -370,7 +379,8 @@ Quality checks — verify all of these before proceeding:
 If any check fails, adjust the groupings and explain the tradeoff.
 
 Flag SEAM FILES — files that sit at the boundary between subsystems
-and could reasonably belong to either.
+and could reasonably belong to either. These are important for the
+Seams & Invariants audit.
 
 Flag FROZEN SUBSYSTEM CANDIDATES — subsystems that are explicitly
 legacy / being retired / being migrated out (e.g., a deprecated
@@ -400,8 +410,11 @@ For each dimension:
 - Which subsystem(s) primarily feed evidence into this score
 
 Also recommend:
-- Policy threshold: [score ≤ N triggers policy response]
-- Consecutive cycles before trigger: [typically 2]
+- Policy threshold: [score ≤ N triggers policy response — recommend a
+  value based on project maturity: 4/10 for mature projects, 5/10 for
+  early-stage projects that need faster feedback loops]
+- Consecutive cycles before trigger: [typically 2, but 1 for
+  safety-critical projects]
 
 Also propose the project's HORIZONTAL (Axis B) bug-shape categories —
 cross-cutting failure patterns that no single subsystem owns, scored in
@@ -510,6 +523,7 @@ Seams audit frequency: every [N] subsystem cycles
 CONFIDENCE ASSESSMENT:
 For each subsystem, rate confidence that file list is complete
 and boundary is correct: High / Medium / Low.
+For any Medium or Low, explain what you'd need to verify.
 ```
 
 ---
@@ -687,6 +701,24 @@ PRODUCTION READINESS ASSESSMENT:
 One paragraph: is this tool ready for production use? What's the gap
 between current state and production-ready? Be specific about what
 "production-ready" means for this type of application.
+
+IMPLEMENTATION BATCH PLAN (every finding, in suggested implementation order):
+The Top 5 ranks impact; this ranks the WORK. Group every finding from
+Stages 1–3 — interface findings included — into sequential batches,
+each sized for one /broad-implement session. Order batches by
+production impact first, then by dependency: a fix that a later batch's
+regression check relies on goes earlier, and a new guard that would
+turn CI red until a gap closes goes AFTER the batch that closes it.
+Within a batch, order by severity. Estimate each item (S/M/L + rough
+hours) and total each batch.
+
+Batch 1 — [theme] | est. [total hours]
+  [ID] | [Severity] | [one-line fix] | [effort: S/M/L + hours] | [depends on / unblocks, or "—"]
+(repeat per batch)
+Deferred (not batched): [ID] — [why: needs a decision, out of scope, or blocked on another item]
+
+Every finding must appear exactly once — in a batch or under Deferred.
+The sequence is a suggestion; I will choose which batches to run.
 
 After I review the audit, I will tell you which findings to implement.
 Do not implement anything until then.
@@ -1346,7 +1378,9 @@ Defensive/structural count from the tally above — a secondary signal that
 does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
 Cycle field (the single source of truth — don't invent one); leave the
 synthesis-only columns blank. defensive_count is the LAST column (after
-the quoted notes). Do NOT also record net_score/prod_fixes/
+the quoted notes). Double-quote ANY field that contains a comma — the
+subsystem column often does ("Auth, Security & HIPAA") — exactly as notes
+is quoted, or the row's columns shift. Do NOT also record net_score/prod_fixes/
 new_failure_modes on an implement-phase row (the implement commands write
 STATE.md, not metrics). Skip if no .cycle/.
 
@@ -1552,7 +1586,7 @@ INPUTS — paste these from the completed cycle:
 Conduct the following verification in four parts. Use code reads and targeted test executions — not prose assessments or trust in the cycle's self-reported results. (If the project's Test Command is `manual`, substitute the relevant Regression Scenarios from CLAUDE.md for test executions and rely on close code reads; treat a failed scenario as a failed probe.)
 
 PART 1 — INVARIANT PROBE RESULTS
-Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected at copy time — do NOT substitute your own picks):
+Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected deterministically from a stated seed, not chosen by the implementer — do NOT substitute your own picks):
 
 MANDATORY ROTATION PROBES:
 [5 mandatory rotation probes — pre-selected from the library at render time]
@@ -2149,8 +2183,25 @@ missing — NEVER overwrite or modify a file that already exists.
    date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
 4. If .cycle/estimates.csv does not exist, create it with just the header:
    date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
-5. If PROJECT_HEALTH.md does not exist at the repo root, create it from
-   the §7 template (Current Standing + an empty Score History).
+5. If PROJECT_HEALTH.md does not exist at the repo root, create it with
+   this skeleton (project-agnostic — Health Synthesis fills the rows from
+   the Health Dimensions and Axis B categories in the Cycle Workflow Config):
+     # Project Health
+     ## Current Standing
+     Last synthesis: none yet
+     Overall (weighted avg): —
+     One-line summary: not yet synthesized
+     Top vertical priority: —
+     Top horizontal priority: —
+     ## Score History
+     (Health Synthesis appends one "### Cycle N — [date] — Synthesis" entry
+      per cycle: an AXIS A line per Health Dimension, an AXIS B line per
+      configured category, Overall, Verification, Category D ratio, Key
+      finding, Priority for next cycle, Delta from prior, Policy responses)
+     ## Pulse Check Log (directional only — do not compare to synthesis scores)
+   Keep the field labels exactly as above — portfolio.mjs, portfolio-status.mjs
+   and the console Dashboard parse "Overall (weighted avg):" and the two
+   "Top … priority:" lines.
 
 Report which files were created and which already existed. If the
 project has no Cycle Workflow Config yet, suggest running /setup-cycle
@@ -2196,6 +2247,182 @@ changes, (3) triggered policy responses are mandatory next-cycle scope.
 
 Treat Dynamic Workflows as a delivery mechanism for these prompts, not a
 replacement for them. Research preview — expect semantics to shift.
+
+---
+
+## Console Reference Prompts
+
+The console renders a few prompts that have **no slash-command counterpart** —
+§1 audit variants, the §4 pre-implementation dependency check, the §5 roadmap
+add-ons, the §7 tracking blocks, and the §4v output reference. Until Cycle 6
+they existed only inside `claude-code-guide-v2.html`, which put them outside
+every lock: the fourth-copy drift class the R14/R16 work closed for commands was
+still open for these. Their canonical bodies live here now and are byte-locked
+by `gen-html-prompts --assert`, which additionally fails if any *new* static
+console prompt appears without an entry.
+
+They are deliberately NOT slash commands: each is an add-on to a command that
+already exists, so minting `/security-audit` or `/pre-check` would duplicate a
+command body rather than extend one.
+
+### Console Prompt — Security & Compliance Audit Add-on
+
+Pasted alongside the §1 audit prompt to narrow it to a security pass. No slash command owns it; the console renders it as a variant under §1.
+
+```
+This is a security and HIPAA compliance audit only. Focus exclusively on:
+- PHI handling (storage, transmission, logging, access control)
+- Authentication and authorization enforcement
+- Data validation and sanitization
+- Encryption at rest and in transit
+- Audit logging completeness
+- Any surface area that would fail a HIPAA technical safeguards review
+For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
+```
+
+### Console Prompt — Performance & Scalability Audit Add-on
+
+The §1 variant for a performance pass, same arrangement as the security add-on above.
+
+```
+Focus this audit on performance and scalability concerns:
+- N+1 queries or repeated expensive operations
+- Missing caching on high-frequency reads
+- Synchronous operations that should be async
+- Memory leaks or unbounded growth patterns
+- Bottlenecks in the critical path under load
+```
+
+### Console Prompt — Single-Finding Implementation
+
+The smallest implement path: one finding, no handoff block. Useful for a hotfix where the full /broad-implement ceremony would cost more than the change.
+
+```
+[DESCRIBE THE SINGLE FINDING TO ADDRESS AND ITS FILE/FUNCTION LOCATION]
+
+Implement only this change. Before making any edits, confirm your understanding of what needs to change and why. If the fix is more involved than expected, describe what you found before proceeding.
+
+After completing the change, note: what was modified, whether anything unexpected came up, and whether any other files may need updating as a result.
+```
+
+### Console Prompt — Pre-Implementation Dependency Check
+
+The §4 pre-check that /implement calls mandatory for High and Very High risk actions. It is the one prompt here the workflow depends on by name, and it had no canonical home until Cycle 6.
+
+```
+Do not make any changes to any files yet.
+
+[PASTE SYSTEMS MAP SUMMARY HERE, INCLUDING THE INTER-MODULE DEPENDENCY MAP]
+
+I am planning to make the following changes as part of implementing audit findings:
+[LIST EACH PLANNED CHANGE WITH THE FILE AND FUNCTION/AREA IT AFFECTS]
+
+Before I make any of these changes:
+1. Identify every file outside the current scope that imports from, calls into, or otherwise depends on the specific functions, modules, constants, or data structures being changed
+2. For each dependency found, describe the nature of the dependency and what would break or need updating if the change proceeds as described
+3. Flag any changes where the impact cannot be determined from the systems map alone and a deeper read of the dependent file is needed
+4. Recommend any sequencing — if Change A should happen before Change B to avoid intermediate breakage, say so
+
+Do not begin implementation until this check is complete.
+```
+
+### Console Prompt — Roadmap Add-ons
+
+Optional lines appended to the /roadmap prompt when a roadmap needs to surface blocked decisions or sequencing.
+
+```
+Flag any items where the right path forward depends on a business or product decision that hasn't been made yet.
+
+Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are addressed first.
+```
+
+### Console Prompt — Project Health Pointer
+
+The block a project adds to its CLAUDE.md so sessions know PROJECT_HEALTH.md exists and read it during synthesis.
+
+```
+## Project Health
+Current health scores and audit cycle history are tracked in PROJECT_HEALTH.md.
+Read this file during systems map and synthesis sessions to understand current standing
+and compare against prior scores.
+```
+
+### Console Prompt — PROJECT_HEALTH.md Template
+
+The full score-history template, project-agnostic: the rows follow whatever Health Dimensions and Axis B categories the project's Cycle Workflow Config defines. `/cycle-init` step 5 creates the shorter starting skeleton; this is the shape it grows into. Keep the field labels verbatim — portfolio.mjs, portfolio-status.mjs and the console Dashboard parse them.
+
+```
+# Project Health
+
+## Current Standing
+Last synthesis: [date]
+Overall (weighted avg): X/10
+One-line summary: [plain-language status]
+Top vertical priority: [subsystem dimension most in need]
+Top horizontal priority: [bug-shape category most in need of policy intervention]
+
+## Score History
+
+### Cycle N — [date] — Synthesis
+
+AXIS A — VERTICAL (Subsystem Health — one line per Health Dimension in the
+project's Cycle Workflow Config):
+[Dimension]: X/10 | [Dimension]: X/10 | [Dimension]: X/10 or N/A
+[Dimension]: X/10 | [Dimension]: X/10 | [Dimension]: X/10
+
+AXIS B — HORIZONTAL (Bug-Shape Posture — one line per configured Axis B category):
+[Category]: X/10 [trend] | [Category]: X/10 [trend]
+[Category]: X/10 [trend]
+
+Overall (weighted avg): X/10
+Verification: [N] invariants probed, [N] passed | Net score: [fixed] - [regressions] = [net]
+Category D ratio: [X%]
+Key finding: [one sentence]
+Priority for next cycle: [one sentence]
+Delta from prior: [improved / declined / held — which dimensions on both axes]
+Policy responses triggered: [list categories, or "None"]
+
+### Cycle N-1 — [date] — Synthesis
+...
+
+## Pulse Check Log (directional only — do not compare to synthesis scores)
+[date] — [one-line summary of pulse check findings]
+```
+
+### Console Prompt — Verification Block Output Reference
+
+A read-only display of the VERIFICATION BLOCK shape, shown next to the §4v prompt so the operator can see what the pass must produce. The same block is emitted by the Verification Pass body above and registered in Handoff Block Formats.
+
+```
+---VERIFICATION BLOCK---
+Verified scope: [subsystem group name]
+Verification date: [date]
+Cycle being verified: [subsystem + cycle identifier from implementation summary]
+
+INVARIANT PROBE RESULTS:
+INV-XX | [invariant description] | PASS / FAIL / UNVERIFIED | [evidence summary]
+(repeat for each probed invariant)
+Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
+
+REGRESSION COUNT:
+Regressions found: [N]
+R1 | [description] | [severity] | Documented by cycle: Y/N | [code location]
+(repeat for each regression, or "None found")
+Net score: [findings fixed] − [regressions] = [net]
+
+CYCLE EXECUTION QUALITY:
+Tests run to completion: YES/NO — [evidence]
+Common Gotchas cross-checked: YES/NO — [evidence]
+New Common Gotchas added: YES/NO — [what was added, or N/A]
+
+COVERAGE GAP REPORT:
+Fixes with regression tests: [N of M]
+Category D candidates (fixes without regression tests):
+[action ID] | [fix description] | [what test is needed]
+(repeat for each, or "None — all fixes have regression tests")
+Category D ratio: [X%]
+---END VERIFICATION BLOCK---
+```
 
 ---
 

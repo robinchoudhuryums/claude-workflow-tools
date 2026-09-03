@@ -50,8 +50,24 @@ const elStore = {};
 // WRITES to an unknown id are the bug, so those are what we record.
 const MARKUP_IDS = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
 const writtenIds = new Set();
+// Ordered log of every id written, so a later pass can DERIVE "which elements
+// did these renders touch" instead of hand-listing sinks (F09).
+const writeLog = [];
+const htmlWrites = new Set();   // ids that received innerHTML (the escaping sinks)
 function makeEl(id) {
-  const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } } };
+  // The classList and attribute stubs used to be no-ops, so anything asserting
+  // on a class or an ARIA attribute passed vacuously (the same shape as the
+  // panel fixture and the auto-vivifying getElementById before them). They now
+  // track state, which is what lets the drawer assertions below be real.
+  const attrs = {};
+  const t = {
+    _html: '', _text: '', value: '', style: {}, dataset: {}, _attrs: attrs,
+    classList: makeClassList(new Set()),
+    getAttribute: n => (n in attrs ? attrs[n] : null),
+    setAttribute: (n, v) => { attrs[n] = String(v); },
+    removeAttribute: n => { delete attrs[n]; },
+    focus() { focused = id; },
+  };
   return new Proxy(t, {
     get(o, p) {
       if (p === 'innerHTML') return o._html;
@@ -62,14 +78,16 @@ function makeEl(id) {
       return () => {};
     },
     set(o, p, v) {
-      if (p === 'innerHTML') { o._html = String(v); if (id) writtenIds.add(id); }
-      else if (p === 'textContent') { o._text = String(v); if (id) writtenIds.add(id); }
+      if (p === 'innerHTML') { o._html = String(v); if (id) { writtenIds.add(id); writeLog.push(id); htmlWrites.add(id); } }
+      else if (p === 'textContent') { o._text = String(v); if (id) { writtenIds.add(id); writeLog.push(id); } }
       else o[p] = v;
       return true;
     },
   });
 }
 const getEl = id => (elStore[id] || (elStore[id] = makeEl(id)));
+let focused = null;                       // last element .focus()ed, by id
+const docListeners = {};                  // type -> [fn] (recorded, then driven)
 
 // Tabbed-navigation fixtures. The console's showPanel()/handleHash() query
 // 'main > .panel' and 'nav a'; a stub returning [] made every assertion about
@@ -115,7 +133,7 @@ function queryAll(sel) {
 
 const ctx = {
   localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; }, get length() { return Object.keys(store).length; }, key: i => Object.keys(store)[i] },
-  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: queryAll, addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
+  document: { getElementById: id => getEl(id), querySelector: () => dummy, querySelectorAll: queryAll, addEventListener(type, fn) { (docListeners[type] || (docListeners[type] = [])).push(fn); }, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
   navigator: { clipboard: { writeText: () => Promise.resolve() } },
   window: { addEventListener() {} },
   IntersectionObserver: class { observe() {} disconnect() {} },
@@ -132,6 +150,7 @@ catch (e) { bad('inline <script> threw on load: ' + e.message); }
 
 // Snapshot BEFORE the assertions below write to elements themselves.
 const initWrites = new Set(writtenIds);
+const initHtmlWrites = new Set(htmlWrites);
 if (loaded) {
   const phantom = [...initWrites].filter(id => !MARKUP_IDS.has(id));
   if (!initWrites.size) bad('init wrote to no element — the render assertions below would be vacuous');
@@ -497,11 +516,46 @@ if (loaded && typeof ctx.switchProject === 'function') {
   store[`ccg:${hostileProject.id}:invariants`] = JSON.stringify([hostile('inv')]);
   store[`ccg:${hostileProject.id}:archive`] = JSON.stringify([Object.assign(hostile('e'), { id: 1 })]);
   store['ccg:dashRepos'] = JSON.stringify({ [hostileProject.id]: 'own"er/re"po' });
+  // F09 — the fill forms render only on interaction, so an init-only pass never
+  // reached them and F01 (a subsystem name executing from an imported backup)
+  // lived there for six releases. Give every static <pre> its real markup text
+  // (the stub DOM has none), seed a hostile SAVED VALUE for every placeholder
+  // the console would offer, then drive each fill form and the project editor.
+  const unescPre = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  for (const m of html.matchAll(/<pre id="([^"]+)">([\s\S]*?)<\/pre>/g)) if (m[2].trim()) getEl(m[1]).textContent = unescPre(m[2]);
+  const FILL_IDS = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  let seededValues = 0;
+  if (typeof ctx.getPlaceholders === 'function') {
+    for (const pid of FILL_IDS) {
+      const text = getEl(pid).textContent || '';
+      ctx.getPlaceholders(text).forEach((ph, i) => { store[`ccg:${hostileProject.id}:${pid}:${ph.name}`] = PAYLOADS[i % PAYLOADS.length] + ` [${pid}:${ph.name}]`; seededValues++; });
+    }
+  }
   try {
+    // The marker goes BEFORE switchProject: that call is what re-renders the
+    // cycle tracker, invariant lists and subsystem tables. Placing it after
+    // silently dropped those sinks from the scan (caught by the mutation audit
+    // on the first run of this derivation — three INV-20 cases went green).
+    const mark = writeLog.length;
     ctx.switchProject(hostileProject.id);
     ctx.renderDashboard();
     if (typeof ctx.renderArchive === 'function') ctx.renderArchive();
-    const sinks = ['ctItems', 'subsysTableBody', 't2SubsysBody', 'projectSelect', 'customInvariantsList', 'projectsCustom', 'dashCards', 'archiveEntries'];
+    for (const pid of FILL_IDS) if (typeof ctx.buildFillForm === 'function') ctx.buildFillForm(pid);
+    if (typeof ctx.openEditProject === 'function') ctx.openEditProject(hostileProject.id);
+    if (typeof ctx.cancelProjectForm === 'function') ctx.cancelProjectForm();
+    // DERIVE the sink set from what the renders actually wrote (Key Design
+    // Decision: guard coverage is derived, never enumerated). Then assert the
+    // derivation reached the interaction-only surfaces, so it cannot narrow
+    // itself back to the init-time set.
+    const sinks = [...new Set(writeLog.slice(mark))];
+    const reached = { fillForms: sinks.filter(id => id.startsWith('fill-')).length, editor: sinks.includes('pf-subs') };
+    // Floor, derived from init: every element init wrote via innerHTML must be
+    // rewritten by this pass, or the scan has lost a sink it used to cover.
+    const lostInit = [...initHtmlWrites].filter(id => !sinks.includes(id));
+    log.push(`  · INV-20 sink set DERIVED from render writes: ${sinks.length} element(s) — ${initHtmlWrites.size} init-time innerHTML sink(s) + ${reached.fillForms} fill form(s) + editor; ${seededValues} hostile saved value(s) seeded`);
+    if (!FILL_IDS.length || !reached.fillForms || !reached.editor || !seededValues)
+      bad(`INV-20/F09: hostile render did not reach the interaction-only sinks (fill forms ${reached.fillForms}/${FILL_IDS.length}, editor ${reached.editor}, seeded ${seededValues}) — the sink derivation narrowed itself`);
+    if (lostInit.length) bad(`INV-20/F09: init-time sink(s) missing from the hostile scan — the derivation narrowed itself: ${lostInit.join(', ')}`);
     const dirty = [];
     for (const id of sinks) {
       const h = elStore[id] ? elStore[id].innerHTML : '';
@@ -582,6 +636,44 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   else bad(`inline handler(s) bypassing copyToClipboard(): ${inlineClip.join(' | ')}`);
 }
 
+// F12 — the mobile drawer. Driven, not read: toggle it, require aria-expanded to
+// track the state, then fire the recorded document keydown listener with Escape
+// and require the drawer to close and focus to return to the toggle. A keyboard
+// user who cannot dismiss the drawer is trapped behind it.
+let navEscapeOk = false;
+if (loaded) {
+  const nav = getEl('sidebar'), toggle = getEl('navToggle');
+  const problems = [];
+  if (!MARKUP_IDS.has('navToggle')) problems.push('no #navToggle in the markup — the drawer toggle cannot carry aria-expanded');
+  if (!/id="navToggle"[^>]*aria-expanded="false"/.test(html)) problems.push('#navToggle has no initial aria-expanded="false"');
+  if (typeof ctx.toggleNav !== 'function') problems.push('toggleNav not defined');
+  else {
+    ctx.toggleNav();
+    if (!nav.classList.contains('open')) problems.push('toggleNav did not open the drawer');
+    if (toggle.getAttribute('aria-expanded') !== 'true') problems.push(`aria-expanded is ${JSON.stringify(toggle.getAttribute('aria-expanded'))} while open`);
+    const keydown = docListeners.keydown || [];
+    if (!keydown.length) problems.push('no document keydown listener — Escape cannot reach the drawer');
+    focused = null;
+    keydown.forEach(fn => { try { fn({ key: 'Escape' }); } catch (e) { problems.push('keydown listener threw: ' + e.message); } });
+    if (nav.classList.contains('open')) problems.push('Escape did not close the drawer');
+    if (toggle.getAttribute('aria-expanded') !== 'false') problems.push('aria-expanded not reset to false after Escape');
+    if (focused !== 'navToggle') problems.push(`focus went to ${JSON.stringify(focused)} instead of back to the toggle after Escape`);
+    // A non-Escape key must NOT close it (a listener that closes on everything
+    // would pass every assertion above and break normal typing).
+    ctx.toggleNav();
+    keydown.forEach(fn => { try { fn({ key: 'a' }); } catch (e) {} });
+    if (!nav.classList.contains('open')) problems.push('a non-Escape key closed the drawer');
+    ctx.closeNav();
+    // Escape with the drawer already closed must not steal focus: the listener
+    // is document-wide and on desktop the toggle is display:none.
+    focused = null;
+    keydown.forEach(fn => { try { fn({ key: 'Escape' }); } catch (e) {} });
+    if (focused !== null) problems.push(`Escape moved focus to ${JSON.stringify(focused)} while the drawer was already closed`);
+  }
+  if (!problems.length) { navEscapeOk = true; ok('the drawer tracks aria-expanded, closes on Escape and returns focus to its toggle (F12)'); }
+  else bad('F12 drawer: ' + problems.join('; '));
+}
+
 // R18 (a)1 — keyboard access. A control built on a non-interactive element
 // (div/span/tr) is not focusable and does not fire click on Enter/Space, so it
 // is mouse-only. Every such control must either carry role="button" +
@@ -591,7 +683,12 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
 // pattern must not trip the check.
 {
   const markup = html.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*\/\/.*$/gm, '');
-  const A11Y_EXEMPT = [/onclick="closeNav\(\)"/];   // the drawer backdrop is a dismissal overlay, not a control
+  // The drawer backdrop is a dismissal overlay, not a control — but that only
+  // holds while a KEYBOARD dismissal exists, so the exemption is conditional on
+  // the Escape assertion below rather than merely documented. (It was pinned to
+  // the literal `closeNav()` and silently stopped matching when the call gained
+  // an argument: an exemption that tracks syntax, not intent.)
+  const A11Y_EXEMPT = navEscapeOk ? [/\bclass="navbackdrop"/] : [];
   const bad_ = [];
   for (const m of markup.matchAll(/<(div|span|tr)\b[^>]*\bonclick="[^"]*"[^>]*>/g)) {
     const tag = m[0];
@@ -719,6 +816,320 @@ if (loaded && typeof ctx.showPanel === 'function') {
   if (PANEL_IDS.length && NAV_HREFS.length && !orphans.length) ok(`every nav link resolves to a panel — ${PANEL_IDS.length} panels, ${NAV_HREFS.length} links (F03/F21)`);
   else if (!PANEL_IDS.length || !NAV_HREFS.length) bad('panel/nav fixture derived nothing from the markup — the tab assertions would be vacuous');
   else bad('nav link(s) pointing at no panel (would silently fall back to Dashboard): ' + orphans.join(', '));
+}
+
+// F17 — responsive posture. body is display:flex (row) for the desktop layout;
+// at the mobile breakpoint the top bar and main must stack, or the "sticky top
+// bar" renders as a left-hand column beside a horizontally overflowing main
+// (measured at 375px and 768px in Chromium during the Cycle-6 scan: mobilebar
+// 174px wide at x=0, document 464px wide in a 375px viewport). A real-DOM
+// geometry assertion needs a browser stage; this pins the rule that fixes it.
+{
+  const mq = html.match(/@media\(max-width:768px\)\{([\s\S]*?)\n\}/);
+  const inner = mq ? mq[1] : '';
+  if (!mq) bad('no @media(max-width:768px) block found — the mobile layout rules are gone (F17)');
+  else if (/body\{[^}]*(flex-direction:\s*column|display:\s*block)/.test(inner)) ok('mobile breakpoint stacks the top bar and main (body flex-direction:column) — F17');
+  else bad('mobile breakpoint leaves body as a flex ROW — the top bar renders as a side column and main overflows the viewport (F17)');
+}
+
+// F04 — a malformed stored project must not brick the console. init has no
+// guard, so a custom project missing `subsystems` (hand-edited backup, older
+// schema) threw in renderCycle, aborted the whole script, and — because the
+// Projects panel never rendered — left no in-app way to delete it. Boot a
+// FRESH context with such a store and require it to load and render.
+{
+  const bootWith = (seed) => {
+    const st = { ...seed };
+    const els2 = {};
+    const el2 = () => { const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: makeClassList(new Set()) }; return new Proxy(t, { get(o, p) { if (p === 'innerHTML') return o._html; if (p === 'textContent') return o._text; if (p in o) return o[p]; if (p === 'querySelector') return () => el2(); if (p === 'querySelectorAll') return () => []; return () => {}; }, set(o, p, v) { if (p === 'innerHTML') o._html = String(v); else if (p === 'textContent') o._text = String(v); else o[p] = v; return true; } }); };
+    const c = {
+      localStorage: { getItem: k => (k in st ? st[k] : null), setItem: (k, v) => { st[k] = String(v); }, removeItem: k => { delete st[k]; }, get length() { return Object.keys(st).length; }, key: i => Object.keys(st)[i] },
+      document: { getElementById: id => (els2[id] || (els2[id] = el2())), querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
+      navigator: { clipboard: { writeText: () => Promise.resolve() } }, window: { addEventListener() {} },
+      IntersectionObserver: class { observe() {} disconnect() {} }, MutationObserver: class { observe() {} disconnect() {} },
+      Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, FileReader: class { readAsText() {} },
+      console: { ...console, warn: () => {} }, setTimeout: () => 0, clearTimeout() {}, alert: () => {}, confirm: () => true, Date, Math, JSON, Object, Array, Set, RegExp,
+    };
+    c.globalThis = c; vm.createContext(c);
+    try { vm.runInContext(src, c, { filename: 'console-boot' }); } catch (e) { return { threw: e.message, ctx: c, els: els2 }; }
+    return { threw: null, ctx: c, els: els2 };
+  };
+  const malformed = bootWith({ 'ccg:customProjects': JSON.stringify([{ id: 'x', name: 'Broken' }, { nope: true }, 'junk']), 'ccg:activeProject': 'x' });
+  if (malformed.threw) bad('a malformed stored project bricks the console at load: ' + malformed.threw + ' (F04)');
+  else {
+    const rendered = (malformed.els['projectsCustom'] || {}).innerHTML || '';
+    const usable = typeof malformed.ctx.getProject === 'function' && malformed.ctx.getProject('x') && malformed.ctx.getProject('x').id === 'x';
+    if (usable && rendered.includes('Broken')) ok('a stored project missing fields is repaired, listed, and deletable instead of bricking init (F04)');
+    else bad(`F04: console loaded but the repaired project is not usable/listed (usable=${usable}, listed=${rendered.includes('Broken')})`);
+  }
+  if (typeof ctx.stateBackupKeys === 'function') {
+    const badShape = ctx.stateBackupKeys({ data: { 'ccg:customProjects': '{not json' } });
+    const notArray = ctx.stateBackupKeys({ data: { 'ccg:customProjects': JSON.stringify({ id: 'x' }) } });
+    const fine = ctx.stateBackupKeys({ data: { 'ccg:customProjects': JSON.stringify([{ id: 'ok', name: 'OK', subsystems: [] }]) } });
+    if (badShape.reason === 'bad-projects' && notArray.reason === 'bad-projects' && !fine.reason) ok('a backup whose project list is not a JSON array is rejected visibly, not half-imported (F04)');
+    else bad(`F04: backup shape validation wrong (badJson=${badShape.reason} notArray=${notArray.reason} fine=${fine.reason})`);
+  }
+}
+
+// F05 — invariant ids must be STABLE across project-form saves. Driven end to
+// end (the F07 lesson: asserting on the parse helper alone still passes when the
+// fix is not wired into the form). Deleting a middle line used to renumber every
+// id below it, and the form's counter ignored ids the §4v form had already
+// issued, so the two allocators collided.
+if (loaded && typeof ctx.saveProjectForm === 'function' && typeof ctx.openEditProject === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  const set = (id, v) => { getEl(id).value = v; };
+  vm.runInContext("pfEditingId=null; pfSubRows=[{name:'Core',files:'a.ts'}];", ctx);
+  set('pf-name', 'Id Stability'); set('pf-dims', 'A, B'); set('pf-axisb', '');
+  set('pf-thresh', '4'); set('pf-consec', '2');
+  set('pf-invs', 'first rule | Core\nsecond rule | Core\nthird rule | Core | node t.mjs');
+  ctx.saveProjectForm();
+  const created = ctx.loadCustomProjects()[0];
+  const idsOf = p => (p.invariants || []).map(i => i.id);
+  const problems = [];
+  if (!created) problems.push('project was not saved');
+  else {
+    if (JSON.stringify(idsOf(created)) !== '["INV-01","INV-02","INV-03"]') problems.push(`initial ids ${JSON.stringify(idsOf(created))}`);
+    // A §4v-form invariant for the SAME project takes the next number.
+    ctx.switchProject(created.id);
+    set('inv-text', 'a custom rule'); set('inv-sub', 'Core'); set('inv-verify', '');
+    ctx.saveInvariant();
+    const customIds = ctx.loadCustomInvariants().map(i => i.id);
+    if (JSON.stringify(customIds) !== '["INV-04"]') problems.push(`custom invariant id ${JSON.stringify(customIds)}`);
+    // Re-open, DROP the middle rule, APPEND a new one.
+    ctx.openEditProject(created.id);
+    const lines = getEl('pf-invs').value.split('\n');
+    if (!/^INV-01 \| first rule \| Core$/.test(lines[0] || '')) problems.push(`edit textarea does not round-trip the id: ${JSON.stringify(lines[0])}`);
+    if (!/^INV-03 \| third rule \| Core \| node t\.mjs$/.test(lines[2] || '')) problems.push(`edit textarea lost the verify field: ${JSON.stringify(lines[2])}`);
+    set('pf-invs', [lines[0], lines[2], 'a fourth rule | Core'].join('\n'));
+    ctx.saveProjectForm();
+    const edited = ctx.loadCustomProjects()[0];
+    if (JSON.stringify(idsOf(edited)) !== '["INV-01","INV-03","INV-05"]')
+      problems.push(`after deleting the middle rule the ids are ${JSON.stringify(idsOf(edited))} — expected INV-01, INV-03 kept and INV-05 issued above the custom INV-04`);
+    const byId = Object.fromEntries((edited.invariants || []).map(i => [i.id, i.text]));
+    if (byId['INV-01'] !== 'first rule' || byId['INV-03'] !== 'third rule') problems.push('an id is now attached to different rule text');
+  }
+  if (!problems.length) ok('invariant ids survive a project-form edit and never collide with §4v-issued ids (F05)');
+  else bad('F05: ' + problems.join('; '));
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+} else if (loaded) bad('saveProjectForm/openEditProject not defined — F05 unguarded');
+
+// F06 — a failed dashboard fetch must SAY why. The reason was captured into
+// cache[id].error and never rendered (and, when a cache entry already existed,
+// not even recorded), so a 404 on a private repo looked identical to "no data".
+if (loaded && typeof ctx.renderDashboard === 'function' && typeof ctx.dashErrHint === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  const pid = ctx.getProject().id;
+  store['ccg:dashRepos'] = JSON.stringify({ [pid]: 'owner/private-repo' });
+  store['ccg:dashCache'] = JSON.stringify({ [pid]: { status: null, fetchedAt: null, ok: false, error: 'PROJECT_HEALTH.md → HTTP 404' } });
+  ctx.renderDashboard();
+  const out = elStore['dashCards'] ? elStore['dashCards'].innerHTML : '';
+  const shows = out.includes('HTTP 404') && /token/i.test(out) && !/No data yet/.test(out);
+  if (shows) ok('a failed fetch renders its reason and the fix on the card, not "No data yet" (F06)');
+  else bad('F06: the dashboard card does not surface the fetch failure — ' + JSON.stringify(out.slice(0, 160)));
+  const hints = ['x → HTTP 404', 'y → HTTP 403', 'Failed to fetch'].map(m => ctx.dashErrHint(m));
+  if (hints.every(h => h.length > 20) && /token/i.test(hints[0]) && /token|limit/i.test(hints[1]) && /file:\/\//.test(hints[2]))
+    ok('dashErrHint turns 404 / 403 / network failures into an actionable line (F06)');
+  else bad('F06: dashErrHint does not explain the common failures: ' + JSON.stringify(hints));
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+} else if (loaded) bad('renderDashboard/dashErrHint not defined — F06 unguarded');
+
+// F13 — theme-safe text colour. Two halves, both derived:
+//   (a) no literal hex TEXT colour may exist outside the token blocks. A literal
+//       cannot flip, and every one of them was a dark-theme value that landed on
+//       a white surface in light mode (nav badges 1.4:1, flow chips 1.5:1, the
+//       state message 2.9:1).
+//   (b) every --on-* token must clear 4.5:1 against EVERY surface token of its
+//       own theme, computed here rather than eyeballed. (Whether the result
+//       looks right is perceptual and stays with S8.)
+{
+  const styleBlock = (html.match(/<style>([\s\S]*?)<\/style>/) || [, ''])[1];
+  const tokenBlock = /(?::root|\[data-theme="light"\])\s*\{[^}]*\}/g;
+  const strip = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const scanned = strip(html).replace(tokenBlock, '');
+  const literals = [...scanned.matchAll(/color:\s*(#[0-9a-fA-F]{3,8})/g)].map(m => m[1]);
+  if (!literals.length) ok('no literal hex text colour outside the token blocks — every text colour can flip with the theme (F13)');
+  else bad(`F13: ${literals.length} literal text colour(s) that cannot flip with the theme: ${[...new Set(literals)].join(', ')}`);
+
+  const tokensIn = re => {
+    const m = styleBlock.match(re);
+    return m ? Object.fromEntries([...m[0].matchAll(/(--[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,6})/g)].map(x => [x[1], x[2]])) : {};
+  };
+  const dark = tokensIn(/:root\s*\{[^}]*\}/);
+  const light = { ...dark, ...tokensIn(/\[data-theme="light"\]\s*\{[^}]*\}/) };
+  const lum = hex => {
+    let h = hex.slice(1); if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const SURFACES = ['--bg', '--surface', '--surface2', '--surface3'];
+  const failures = [];
+  let checked = 0;
+  for (const [theme, map] of [['dark', dark], ['light', light]]) {
+    const onTokens = Object.keys(map).filter(k => k.startsWith('--on-'));
+    if (!onTokens.length) { failures.push(`${theme}: no --on-* tokens defined — this check would be vacuous`); continue; }
+    for (const t of onTokens) {
+      for (const surf of SURFACES) {
+        if (!map[surf]) { failures.push(`${theme}: surface ${surf} is not a hex token`); continue; }
+        checked++;
+        const r = ratio(map[t], map[surf]);
+        if (r < 4.5) failures.push(`${theme} ${t} (${map[t]}) on ${surf} (${map[surf]}) = ${r.toFixed(2)}:1`);
+      }
+    }
+  }
+  if (!failures.length) ok(`every --on-* text token clears 4.5:1 on every surface of its theme (${checked} pairs computed) — F13`);
+  else bad('F13 contrast: ' + failures.join(' | '));
+}
+
+// F12 — every form control must be programmatically labelled. Derived from the
+// markup AND from the forms that only exist once rendered (the fill forms, the
+// project editor, the dashboard per-card editor), because those are where the
+// unlabelled controls were. A <label> whose `for` resolves to nothing is also a
+// failure: it looks like an association and is not one.
+if (loaded) {
+  const sources = [html];
+  const FILL_IDS2 = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  for (const pid of FILL_IDS2) { try { ctx.buildFillForm(pid); } catch (e) {} }
+  try { ctx.openProjectForm(); } catch (e) {}
+  try { ctx.renderDashboard(); } catch (e) {}
+  for (const id of Object.keys(elStore)) if (elStore[id].innerHTML) sources.push(elStore[id].innerHTML);
+  const blob = sources.join('\n');
+  // `\bfor=` also matches data-for=/xfor= (a word boundary sits after a hyphen),
+  // so a broken association read as a valid one — the mutation audit caught it.
+  const labelFor = new Set([...blob.matchAll(/<label\b[^>]*\sfor="([^"]+)"/g)].map(m => m[1]));
+  const controls = [...blob.matchAll(/<(input|textarea|select)\b([^>]*)>/g)]
+    .map(m => ({ tag: m[1], attrs: m[2] }))
+    .filter(c => !/type="hidden"/.test(c.attrs));
+  const idOf = a => (a.match(/\bid="([^"]+)"/) || [])[1];
+  const unlabelled = controls.filter(c => {
+    if (/\saria-label(ledby)?="[^"]+"/.test(c.attrs)) return false;
+    const id = idOf(c.attrs);
+    return !(id && labelFor.has(id));
+  }).map(c => `<${c.tag} ${(c.attrs || '').trim().slice(0, 60)}>`);
+  const controlIds = new Set(controls.map(c => idOf(c.attrs)).filter(Boolean));
+  const orphanLabels = [...labelFor].filter(f => !controlIds.has(f));
+  if (!controls.length || FILL_IDS2.length < 2) bad('F12: derived no form controls / fill forms to check — the label assertion would be vacuous');
+  else if (unlabelled.length) bad(`F12: ${unlabelled.length} of ${controls.length} form control(s) have no programmatic label: ${unlabelled.slice(0, 4).join(' | ')}`);
+  else if (orphanLabels.length) bad(`F12: <label for> pointing at no control (looks associated, is not): ${orphanLabels.join(', ')}`);
+  else ok(`all ${controls.length} form control(s) across the markup and the rendered forms carry a label or aria-label (F12)`);
+  for (const k of Object.keys(store)) delete store[k];
+  try { ctx.cancelProjectForm(); } catch (e) {}
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+}
+
+// F11 — the fill form must offer the operator's inputs and ONLY those. It used
+// to do neither: an ALL-CAPS-only pattern missed every placeholder carrying a
+// lowercase clause after an em dash, while offering [ID], [INV-XX] and [X/10] —
+// tokens that belong to the output block the agent is told to emit, so filling
+// one rewrote the template. Checked against all 16 prompts, with the two rules
+// re-derived here independently of the implementation.
+if (loaded && typeof ctx.getPlaceholders === 'function') {
+  const unescPre2 = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const FILL = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  const DIRECTIVE = ['PASTE', 'LIST', 'DESCRIBE', 'NOTE', 'OPTIONAL', 'IF '];
+  const NEVER = ['[ID]', '[INV-XX]', '[INV-NEW-XX]', '[INV-N]', '[X/10]', '[N]', '[Severity]', '[Gap]', '[Suggestion]'];
+  const problems = [];
+  let offeredTotal = 0, promptsWithFields = 0, requiredSeen = 0;
+  for (const pid of FILL) {
+    const m = html.match(new RegExp('<pre id="' + pid + '">([\\s\\S]*?)</pre>'));
+    let text = m ? unescPre2(m[1]) : '';
+    if (!text.trim() && elStore[pid]) text = elStore[pid].textContent || '';
+    if (!text.trim()) { problems.push(`${pid}: no prompt text to classify`); continue; }
+    const lines = text.split('\n');
+    // Independent re-derivation: which lines sit inside an output block, and
+    // which carry more than one bracket token (a format row).
+    const inBlock = new Array(lines.length).fill(false);
+    let open = -1;
+    lines.forEach((l, i) => {
+      const t = l.trim();
+      if (!/^---[A-Z].*---$/.test(t)) return;
+      if (/^---END/.test(t)) { if (open !== -1) { for (let k = open; k <= i; k++) inBlock[k] = true; open = -1; } }
+      else if (open === -1) open = i;
+    });
+    if (open !== -1) for (let k = open; k < lines.length; k++) inBlock[k] = true;
+    const offered = ctx.getPlaceholders(text).map(x => x.full);
+    offeredTotal += offered.length;
+    if (offered.length) promptsWithFields++;
+    // (a) every directive-prefixed token that is alone on its line and outside a
+    //     block MUST be offered — these are the operator's actual inputs.
+    lines.forEach((line, i) => {
+      if (inBlock[i]) return;
+      const toks = [...line.matchAll(/\[[^\]]{0,199}\]?/g)].filter(t => t[0].endsWith(']'));
+      const opens = (line.match(/\[/g) || []).length;
+      if (opens !== 1) return;
+      const start = line.indexOf('[');
+      const whole = text.slice(text.split('\n').slice(0, i).join('\n').length + (i ? 1 : 0) + start);
+      const closed = whole.match(/^\[([^\]]{0,199})\]/);
+      if (!closed) return;
+      if (!DIRECTIVE.some(k => closed[1].startsWith(k))) return;
+      requiredSeen++;
+      if (!offered.includes(closed[0])) problems.push(`${pid}: operator placeholder not offered — ${JSON.stringify(closed[0].slice(0, 60))}`);
+    });
+    // (b) nothing from inside an output block, and (c) nothing from a format row.
+    for (const full of offered) {
+      const at = text.indexOf(full);
+      const ln = text.slice(0, at).split('\n').length - 1;
+      if (inBlock[ln]) problems.push(`${pid}: offers an output-block token as a field — ${JSON.stringify(full.slice(0, 40))}`);
+      if (((lines[ln] || '').match(/\[/g) || []).length > 1) problems.push(`${pid}: offers a format-row token as a field — ${JSON.stringify(full.slice(0, 40))}`);
+      if (NEVER.includes(full)) problems.push(`${pid}: offers ${full}, which belongs to the output template`);
+    }
+  }
+  if (!FILL.length || promptsWithFields < 8 || requiredSeen < 10) problems.push(`derived too little to check (prompts ${FILL.length}, with fields ${promptsWithFields}, required ${requiredSeen}) — the assertion would be vacuous`);
+  if (!problems.length) ok(`the fill form offers every operator placeholder and no output-format token across ${FILL.length} prompts (${offeredTotal} fields) — F11`);
+  else bad('F11: ' + problems.slice(0, 5).join('; '));
+}
+
+// F14 — §4v rotation probes must be REPRODUCIBLE, not a coin flip the
+// implementer can re-roll. They were Math.random() AND re-rolled on every Copy,
+// so the copied prompt differed from the displayed one and "do NOT substitute
+// your own picks" had no force. Same property R19 gave the script via the sha.
+if (loaded && typeof ctx.selectSeededInvariants === 'function' && typeof ctx.probeSeed === 'function') {
+  const lib = Array.from({ length: 20 }, (_, i) => ({ id: `INV-${String(i + 1).padStart(2, '0')}`, text: 't' + i }));
+  const a = ctx.selectSeededInvariants(lib, 5, 'seed-a').map(x => x.id);
+  const a2 = ctx.selectSeededInvariants(lib, 5, 'seed-a').map(x => x.id);
+  const b = ctx.selectSeededInvariants(lib, 5, 'seed-b').map(x => x.id);
+  // Seeds that differ only in their LAST character must still rotate: a
+  // non-avalanching hash with the seed appended shifts every value by the same
+  // constant and leaves the order untouched (which is what happened first).
+  const c = ctx.selectSeededInvariants(lib, 5, 'seed-c').map(x => x.id);
+  const problems = [];
+  if (a.join() !== a2.join()) problems.push('not deterministic for a given seed — a verifier could not reproduce the selection');
+  if (a.join() === b.join() || b.join() === c.join()) problems.push('ignores the seed — the probes would never rotate (a one-character seed change must reorder the selection)');
+  if (a.length !== 5 || new Set(a).size !== 5) problems.push(`returned ${a.length} probes (${new Set(a).size} distinct)`);
+  // Strip comments first: the prose explaining the fix names the anti-pattern.
+  if (/Math\.random/.test(src.replace(/^\s*\/\/.*$/gm, ''))) problems.push('Math.random() still present in the console — a probe selection must not be a coin flip');
+  const rendered = ctx.buildVerificationText(ctx.getProject());
+  if (!rendered.includes('Probe seed:')) problems.push('the rendered §4v prompt does not state its seed');
+  const again = ctx.buildVerificationText(ctx.getProject());
+  if (rendered !== again) problems.push('two renders of the §4v prompt differ — the probes are still being re-rolled');
+  if (/doCopyVerification/.test(html)) problems.push('the Copy button still re-renders the §4v prompt before copying (doCopyVerification)');
+  if (!problems.length) ok('§4v rotation probes are seeded, reproducible, stated in the prompt, and never re-rolled on copy (F14)');
+  else bad('F14: ' + problems.join('; '));
+} else if (loaded) bad('probeSeed/selectSeededInvariants not defined — F14 unguarded');
+
+// INV-67 — every id in the MARKUP is unique. getElementById() returns the FIRST
+// element in document order, so a collision does not error: it silently hands
+// the code a different element than the one it names. Two shipped for many
+// releases. <section id="t1"> shadowed <pre id="t1">, so renderTier1() assigned
+// textContent to the SECTION and destroyed the entire Tier 1 panel — header,
+// both prompts, both buttons — on every load; and doCopy('setup') read the
+// setup SECTION, pasting the panel heading and warning note into the prompt an
+// operator copied. Neither is visible to the harness above BY CONSTRUCTION: the
+// stubbed document is a flat id→element map with no document order, so it
+// cannot represent "first match wins". This check reads the markup instead.
+// Runtime-generated ids (dedit-<pid>, ${safeId}) are excluded with the script.
+{
+  const markup = html.replace(/<script>[\s\S]*?<\/script>/g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const ids = [...markup.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
+  const seen = new Map();
+  for (const id of ids) seen.set(id, (seen.get(id) || 0) + 1);
+  const dupes = [...seen].filter(([, n]) => n > 1).map(([id, n]) => `${id} (×${n})`);
+  if (ids.length < 50) bad(`INV-67: only ${ids.length} markup id(s) found — the duplicate-id check would be vacuous`);
+  else if (dupes.length) bad(`INV-67: duplicate id(s) in the markup — getElementById returns the FIRST match, so a render silently targets the wrong element: ${dupes.join(', ')}`);
+  else ok(`every id in the markup is unique (${ids.length} checked) — no render can silently target the wrong element (INV-67)`);
 }
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');

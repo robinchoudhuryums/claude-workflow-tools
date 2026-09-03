@@ -5,3 +5,6 @@ date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
 2026-07-27,5,F03/F21/F02/F17 (Batch 1+2),M,11,6,"M over-estimated ~45%: F02 was forecast at 4-5h and took ~1h once F21 removed the delegation premise - the blocker was a false assumption, not work"
 2026-07-27,5,Batch 3 + Batch 4,M,8,5,M over-estimated ~35%; F11's mutation audit was the long pole and was worth it - it found the one false green (INV-23) that inspection had missed twice
 2026-07-27,5,F12 + auto-vivify + Batch 6,M,5,4,M accurate. Batch 6's keyboard fix was mechanical once the control set was derived rather than hand-listed
+2026-09-03,6,Batch 1+2 (F01 F09 F17 F04 F02 F03 F10 F07 F08),M,11.5,7,"Batch plan over-estimated ~40%. F09 (deriving the hostile sink set) was the long pole and the first attempt was wrong - the marker sat after switchProject and three existing INV-20 cases went green."
+2026-09-03,6,Batch 3+4 (F05 F06 F13 F12),M,9,6,"Over-estimated ~33%. F13 was faster than feared once the contrast check was computed rather than eyeballed; F12 slower - 69 controls needed labels, not the 22 the scan counted."
+2026-09-03,6,Batch 5+6 (F11 F14 F15 F16),M,8,7,"Roughly accurate in total, but F16 alone OVERRAN its 4h estimate: the scan said eight unlocked prompts, there were nine, and the ninth (setup) needed a canonical merge plus an engine change to support section bodies."

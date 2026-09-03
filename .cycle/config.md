@@ -35,10 +35,12 @@ Tooling & Sync Infrastructure:
   scripts/gen-commands.mjs, scripts/gen-html-prompts.mjs, scripts/check-template-sync.mjs,
   scripts/check-html.mjs, scripts/check-output-blocks.mjs, scripts/cycle-context.mjs,
   scripts/render-metrics.mjs, scripts/invariant-check.mjs, scripts/portfolio.mjs,
-  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, tests/ (9 regression tests),
+  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/csv.mjs, tests/ (10 regression tests + mutation-audit.mjs),
   .github/workflows/sync-check.yml, .claude/commands/ (generated), .claude/settings.json, .gitignore
 Cycle state (not audited as source, but read/written by the tooling above):
-  .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/
+  .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/,
+  .cycle/HISTORY.md (narrative history split out of STATE.md in Cycle 6 / F15 — reference
+  prose, deliberately NOT substrate: nothing reads it, and no guard depends on it)
 
 ### Invariant Library
 INV-01 | .claude/commands/*.md are byte-identical to the command blocks extracted from CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
@@ -47,10 +49,10 @@ INV-03 | Every tracked capability marker present in one artifact is present in a
 INV-04 | The HTML inline <script> parses with no syntax errors | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-05 | No prompt builder emits an unresolved ${...} or "undefined" for any built-in project | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-06 | A project without project.axisB falls back to the 5 DEFAULT_AXIS_B categories | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
-INV-07 | Every built-in project resolves to the shipped DEFAULT_AXIS_B set — Axis B configurability changed nothing for them. Stated as "no axisB field" and verified by code read until the Cycle-6 manual-tier audit; asserted on the CONSEQUENCE instead, so it stays meaningful if a built-in ever legitimately gains a custom set | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-07 | Every built-in project resolves to the shipped DEFAULT_AXIS_B set — Axis B configurability changed nothing for them. Stated as "no axisB field" and verified by code read until the v1.25.0 manual-tier audit (Cycle 5, post-synthesis); asserted on the CONSEQUENCE instead, so it stays meaningful if a built-in ever legitimately gains a custom set | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-08 | Every interpolation of inv.verify is gated on a value — an entry with no verify renders no "| Verify:" suffix (it would read as "verified by nothing" in a §4v pack) and one WITH a value never loses it (that string is what invariant-check.mjs executes). Four sites: buildPrReviewText, buildSeamsText, buildVerificationText, and the project-form serializer — the rule named two of them, so the check derives the site count rather than listing it | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-09 | State export collects exactly the ccg:* localStorage keys EXCEPT secrets (isSecretKey) and no others — the wildcard alone is what let a credential join the export in v1.17 | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
-INV-10 | Import rejects non-JSON and missing-"data" payloads with a visible message, writes nothing when the confirm is declined, and installs only non-secret ccg:* keys. Unverified until Cycle 6: the Verify field read "importStateFile logic" and the headless FileReader stub never fired onload, so no clause of this rule had ever executed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-10 | Import rejects non-JSON and missing-"data" payloads with a visible message, writes nothing when the confirm is declined, and installs only non-secret ccg:* keys. Unverified until v1.25.0 (Cycle 5, post-synthesis): the Verify field read "importStateFile logic" and the headless FileReader stub never fired onload, so no clause of this rule had ever executed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-11 | Every command body in CLAUDE.md is fenced and contains no nested triple-backtick line (so gen can extract it) | Subsystem: Canonical Templates & Docs | Verify: node scripts/gen-commands.mjs --check (extraction succeeds for all 20)
 INV-12 | Every command step that writes to .cycle/ (CHECKPOINT, METRICS, ESTIMATE CALIBRATION, BLOCKS, SEAM COUNTER) is gated on the directory existing — never assumed | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 10)
 INV-13 | Every installable command has its full text in CLAUDE.md, because /sync-commands reads only CLAUDE.md as template source | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 1)
@@ -99,6 +101,15 @@ INV-40 | credentials never leave the browser: a key matching isSecretKey (ccg:gh
 INV-41 | copying a prompt never fails silently — clipboard unavailability (file:// / non-secure context) or a rejected writeText falls back to execCommand and, failing that, states the failure on the button | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-42 | the tabbed navigation activates exactly ONE panel, syncs nav active/aria-current to it, and falls back to the first panel for an unknown id or empty hash | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-39 | the R18 interface/visual audit lens keeps its (a) structural / (b) perceptual split — both the lens heading and the OPERATOR VISUAL CHECKS routing target are co-present in CLAUDE.md, the console, and README — so the audit can never be left reporting on appearance it cannot verify from code | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs
+INV-59 | invariant ids survive a project-form edit: the form textarea round-trips an `INV-NN |` prefix, existing ids are kept when a line is deleted, and a new line is allocated above the max of BOTH stores (form invariants AND §4v-added custom ones). Renumbering from line order broke every id reference in already-archived handoff and verification blocks, and the two allocators could issue the same number | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-60 | a failed Dashboard fetch renders its REASON and the fix on the card — the error is recorded on every failure (not only when no cache entry exists) and dashErrHint explains 404 / 401-403 / network failures. The reason was captured and discarded, so a private repo without a token was indistinguishable from a repo with no data | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-61 | no literal hex TEXT colour exists outside the token blocks, and every `--on-*` token clears 4.5:1 against every surface token of its own theme (computed, not eyeballed). A literal cannot flip with the theme: the nav badges sat at 1.4:1 and the state message at 2.9:1 on the light surfaces. Whether the flipped colours LOOK right is perceptual and stays with S8 | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-62 | every form control in the markup AND in the render-only forms (fill forms, project editor, per-card dashboard editor) carries a `<label for>` or an aria-label, no `<label for>` points at a missing control, and the mobile drawer tracks aria-expanded + closes on Escape returning focus to its toggle. The backdrop's a11y exemption is CONDITIONAL on that Escape path existing, not merely documented | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-63 | the fill form offers EVERY operator placeholder and NO output-format token, across all 16 prompts. Fields and format tokens are told apart structurally — a token inside an ---OUTPUT BLOCK--- span, or sharing its line with another bracket token, is part of a template the agent must emit, not an input. The ALL-CAPS-only pattern missed 5 operator placeholders (any containing a lowercase clause after an em dash) while offering [ID], [INV-XX] and [X/10], so filling one rewrote the block the prompt tells the agent to produce | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-64 | the §4v rotation probes are a pure function of a stated seed and the invariant ids — reproducible by a verifier, never re-rolled on Copy, and rotating when the seed changes by ONE character. They were Math.random() re-rolled on every copy, so the prompt's own "do NOT substitute your own picks" had no force. The seed is hashed as a PREFIX: FNV-1a does not avalanche on a trailing change, and with the seed appended every hash shifted by the same constant and the selection never rotated | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-65 | .cycle/STATE.md keeps the shape its own template defines in CLAUDE.md — every template section present, none invented, none duplicated. It is the rolling substrate /cycle-resume and the SessionStart hook read; unchecked it grew to 24 sections and 347 lines with two "Decisions made" and two "Where I left off". Narrative history belongs in .cycle/HISTORY.md | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 11)
+INV-66 | every static console <pre> is locked to a canonical body in CLAUDE.md, and --assert FAILS if a new one appears with no manifest entry. Nine had no slash-command counterpart and sat outside every lock — including `setup`, which DID have one and had decayed to a pre-R18 copy that never asks about a user-facing surface. The derived half matters: the audit that found this set under-counted it by one | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
+INV-67 | Every id in the console MARKUP is unique. getElementById returns the FIRST element in document order, so a collision does not error — it silently hands the code a different element than the one it names. Two shipped for many releases: <section id="t1"> shadowed <pre id="t1">, so renderTier1() assigned textContent to the SECTION and destroyed the whole Tier 1 panel on every load; and doCopy('setup') read the setup SECTION, pasting the panel heading and warning note into the copied prompt. The vm harness cannot see this class BY CONSTRUCTION — its document is a flat id→element map with no document order | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 
 ### Policy Configuration
 Policy threshold: 4/10
@@ -151,6 +162,21 @@ S7 | VISUAL — keyboard-only pass | Subsystem: Interactive Console (HTML)
     cycle-tracker dots, variant toggles, archive headers and "Use ↗" buttons all
     activate. (R18 (a)1 is now guarded structurally — this walk covers whether
     the focus indicator is actually VISIBLE, which code cannot tell you.)
+S8 | VISUAL — light-mode chips and badges | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Toggle light mode; view the sidebar badges ("Status", "Once", "Light",
+      "New"), the Session Flow chips, and the Projects → state message after
+      Connect repo folder
+  Expected: every badge, chip and message is legible without leaning in.
+    (Cycle-6 F13 computed 1.4–2.9:1 for the hardcoded dark-theme hexes; once
+    tokenised, this walk decides whether the replacement colours look right.)
+S9 | VISUAL — phone layout | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Open the hosted console on a phone or at 375px; scroll the Dashboard
+      and a prompt panel; open and close the drawer
+  Expected: one column, top bar pinned at the top, no horizontal scroll,
+    prompt blocks wrap inside the viewport. (Cycle-6 F17: body was a flex ROW
+    below 768px; the fix is pinned by a static CSS check, not by geometry.)
 
 ### Deploy Command
 Interactive Console (HTML): merge to `main` — GitHub Pages republishes
@@ -188,16 +214,57 @@ Cycle Workflow Config.
   one cycle: `WORKFLOW_BLOCKS` hand-listed 7 of 12 registered blocks; the
   panel fixture hardcoded ids and went stale the moment a panel was added;
   `check-html`'s `getEl()` auto-creates any id, so a `render*()` writing to
-  a mistyped element passes CI and renders an empty box. **Derive fixtures
-  from the artifact under test.**
+  a mistyped element passes CI and renders an empty box. A fourth, found by
+  the Cycle-6 scan: the hostile fixture's SINK list was hand-listed, and the
+  one sink it omitted (the fill form) was the one with the live XSS (F01).
+  **Derive fixtures from the artifact under test.** Since v1.27.0 no
+  hand-listed guard set remains.
+- **A derivation can narrow itself the moment it is introduced.** The first
+  version of the derived sink set (F09) placed its marker AFTER
+  `switchProject()`, so the init-time sinks silently left the scan and three
+  existing INV-20 mutation cases went green. Only the mutation audit caught
+  it. When you replace a list with a derivation, add a FLOOR the derivation
+  must reach (here: every element init wrote via innerHTML), or the new
+  guard can cover less than the list it replaced.
+- **A render that runs only on user interaction is invisible to an
+  init-time headless check.** `buildFillForm` renders on Fill fields, not at
+  load, so six releases of hostile-fixture passes never executed it. The
+  fixture must DRIVE the interaction paths (fill forms, the project editor),
+  not just the renders `switchProject()` happens to call.
+- **`metrics.csv` readers that split on a bare comma assume only `notes` is
+  quoted.** Subsystem names with commas ("Auth, Security & HIPAA" — both
+  built-in projects have them) shifted every column and two readers silently
+  skipped the row (Cycle-6 F03). `scripts/csv.mjs` is the one parser now;
+  never split a metrics row by hand, and quote any comma-bearing field.
+- **`.cycle/blocks/` accumulates across cycles.** The first Cycle-6 pack
+  would have handed the verifier all nine Cycle-5 blocks (F02). Anything
+  that reads the directory must filter by the `<cycle>-` prefix and SAY what
+  it excluded.
+- **`PROJECT_HEALTH.md` Current Standing is live status, not history.** The
+  Dashboard, both portfolio scripts and the SessionStart hook read it; it
+  reported a defect fixed in v1.24.0 as open for five weeks and the hook
+  loaded that into every session (F07). When remediation closes what a
+  synthesis reported, update the block in the same commit.
 - **`check-template-sync`'s markers are file-global substrings.** A marker
   satisfied anywhere in the HTML passes, so an individual *builder* can be
   stale while the guard is green. This is what let §T2b rot through P7 and
   P9 (Cycle-5 F02). The textual lock, not the marker, is the real guard.
-- **A documented exemption stops being re-read.** §T2b's `locked:false` was
-  recorded in three places with a sound rationale, and that rationale went
-  unexamined for four releases while the builder decayed behind it. If you
-  add an exemption, state what would end it.
+  Cycle 6 found the same shape one level worse: the console's **`/setup-cycle`
+  prompt** was a pre-R18 copy missing 36 canonical lines — including the whole
+  "user-facing surfaces" step and the interface-dimension instruction — while
+  every R18 marker passed, because those phrases appear elsewhere in the file
+  (in the §T1 builder). It was the largest prompt in the console and nothing
+  had compared it to canonical for four releases.
+- **A documented exemption stops being re-read — and an exemption pinned to
+  SYNTAX stops matching.** §T2b's `locked:false` was recorded in three places
+  with a sound rationale that went unexamined for four releases while the
+  builder decayed behind it. Cycle 6 hit the other half: the a11y check
+  exempted the drawer backdrop by matching the literal `onclick="closeNav()"`,
+  so the moment that call gained an argument the exemption silently stopped
+  applying. Don't just state what would end an exemption — make the guard
+  *evaluate* that condition. The backdrop's exemption is now conditional on a
+  keyboard dismissal (Escape) actually existing, so it cannot outlive its own
+  justification.
 - **Editing a command body is never a one-file change.** Run
   `gen-commands.mjs` *and* `gen-html-prompts.mjs --write`, and mirror the
   edit into the corresponding console builder — all nine are `--assert`
@@ -222,6 +289,23 @@ Cycle Workflow Config.
   button still called `navigator.clipboard.writeText()` inline — the exact bug
   F05 fixed, left live in one sink. After centralising a behaviour, scan for
   callers that bypass the centre.
+- **A near-miss regex reads as a passing guard.** The new label check
+  collected associations with `<label[^>]*\bfor="…"` — and `\b` matches after a
+  hyphen, so `data-for="pf-name"` counted as a real association. The mutation
+  that broke a label passed. A guard's regex needs the same adversarial read as
+  the code it guards; `\s` before the attribute name, not `\b`.
+- **A non-avalanching hash does not rotate on a trailing change.** The §4v
+  probe seed was hashed as `id + seed` with FNV-1a. Changing the seed's last
+  character shifts every hash by the *same constant*, so the sort order — and
+  therefore the selection — never moved. Seed as a PREFIX, and assert that a
+  one-character seed change reorders the picks. (`verification-pack.mjs` was
+  never affected: sha256 avalanches. The property belongs to the hash, not to
+  the idea of seeding.)
+- **An audit's own count of what sits outside a guard can be wrong.** The
+  Cycle-6 scan reported eight unlocked console prompts. There were nine, and
+  the ninth (`setup`) was the consequential one. A finding that says "these N
+  things are unguarded" is a hand-maintained list with all the usual failure
+  modes — derive the set from the artifact and let the guard report the count.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
@@ -232,8 +316,17 @@ Promoted from the running "Decisions made" log — each implies a contract,
 so treat these as settled unless the reasoning below is what changed.
 
 - **The console's prompts are GENERATED/LOCKED from CLAUDE.md**, never
-  hand-maintained. Static §-prompts via `gen-html-prompts --write`; all nine
-  dynamic builders via `--assert` at 100% canonical coverage.
+  hand-maintained. Static §-prompts via `gen-html-prompts --write` — ALL 16 of
+  them since v1.29.0, including the nine that had no slash command and so sat
+  outside every lock; all nine dynamic builders via `--assert` at 100% canonical
+  coverage. `--assert` also fails if a NEW static `<pre>` appears with no
+  manifest entry, which is the derived half: the Cycle-6 audit itself
+  under-counted the unlocked set by one.
+- **A console prompt with no slash-command counterpart is a canonical SECTION
+  in CLAUDE.md, never a new command.** Each one extends a command that already
+  exists (§1 variants, the §4 pre-check, §5 add-ons, §7 tracking blocks, the
+  §4v output reference), so minting `/security-audit` would duplicate a command
+  body rather than extend one.
 - **There is no exemption tier in the lock manifest.** Every dynamic builder
   is locked (since v1.20.0). Adding a `locked:false` entry reopens the class
   of drift that F02 came from.
@@ -247,11 +340,13 @@ so treat these as settled unless the reasoning below is what changed.
   `WORKFLOW_BLOCKS` comes from the `check-output-blocks` registry; the console
   panel fixture and the keyboard-control set come from the markup. Hand-
   maintained lists drift toward omitting whatever is inconvenient. This has now
-  been the root cause **four times in one cycle** (F17's block list, the panel
-  fixture, the element stub, and §4v's finding that the hostile fixture's
-  payload set is hand-picked). Treat "I will list the cases" as a design smell:
-  derive the set from the artifact under test, or the guard proves only the
-  cases someone thought of.
+  been the root cause **six times across two cycles** (Cycle 5: F17's block
+  list, the panel fixture, the element stub, §4v's hand-picked payload set;
+  Cycle 6: the hostile fixture's hand-listed SINK set that omitted the one
+  sink with a live XSS, and — one level down — a derivation that narrowed
+  itself on introduction). Treat "I will list the cases" as a design smell:
+  derive the set from the artifact under test, give the derivation a floor,
+  or the guard proves only the cases someone thought of.
 - **R11 (Dynamic Workflows orchestrator) is HELD until DW leaves research
   preview** — a live integration cannot meet the verification bar in this
   environment. This is the same discipline that kept visual assessment out
@@ -271,10 +366,25 @@ machine or after a release.
 - **Run `/sync-commands` in consuming projects** whenever a command body
   changes. v1.19.0 changed `/broad-scan`, `/reflect` and `/setup-cycle`;
   **v1.23.0 changed the three implement commands and `/reflect`** (they now
-  persist their block to `.cycle/blocks/`). v1.19.1, v1.20.0, v1.21.0 and
-  v1.22.0 changed none — those were console/tooling only.
+  persist their block to `.cycle/blocks/`); **v1.26.0 changed `/broad-scan`**
+  (closing IMPLEMENTATION BATCH PLAN); **v1.27.0 changed `/reflect`** (quote
+  comma-bearing metrics fields) **and `/cycle-init`** (inline PROJECT_HEALTH
+  skeleton); **v1.29.0 changed `/setup-cycle`** (three elaborations restored
+  from the console copy). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0 and
+  v1.28.0 changed none.
+- **One-time, projects configured from the CONSOLE's Setup prompt before
+  v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing
+  surfaces and never proposed an interface Health Dimension. Re-check whether
+  your Cycle Workflow Config needs one (the same shape of re-check v1.25.0
+  asked for on `Seams Audit Cadence` and the `Verify:` field).
+- **One-time, consuming projects with comma-bearing subsystem names:** any
+  existing `metrics.csv` row whose subsystem is UNQUOTED has shifted columns
+  and cannot be repaired by the parser — quote those subsystem fields by
+  hand once (v1.27.0 / F03).
 - **Browser-verify console changes.** Rendering, light-mode contrast, the
   mobile drawer and `legacyCopy()`'s success path have no headless coverage.
+  After v1.27.0's F17 fix, walk S9 (phone layout) once Pages republishes —
+  the geometry is machine-checked (static CSS rule only), the look is not.
 - **`§4v` must run in a fresh session** with no implementation context.
 
 ## Cycle Rotation Plan (operator reference)

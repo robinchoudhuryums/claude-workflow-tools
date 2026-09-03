@@ -32,7 +32,8 @@ const alpha = project('alpha',
   'Last synthesis: 2026-06-02\nOverall (weighted avg): 8.5/10\nOne-line summary: solid',
   {
     state: '# Cycle State\n## Current\nCycle: 2\nPhase: idle (synthesized)\nSubsystem cycles since last Seams audit: 1\nUpdated: 2026-06-02\n',
-    metrics: `${H}\n2026-06-01,1,X,reflect,1,1,0,,,"note",0\n2026-06-02,2,X,reflect,2,2,0,,,"note",0\n`,
+    // F03: a quoted comma-bearing subsystem must still be read (it used to be skipped).
+    metrics: `${H}\n2026-06-01,1,"Auth, Security & HIPAA",reflect,1,1,0,,,"note",0\n2026-06-02,2,"Auth, Security & HIPAA",reflect,2,2,0,,,"note",0\n`,
     config: '### Seams Audit Cadence\nevery 3 subsystem cycles\n',
   });
 
@@ -75,7 +76,7 @@ if (/Seams audit DUE: beta/.test(out)) ok('Read: flags beta seams DUE'); else ba
 const alphaRow = row(out, 'alpha');
 if (/\|\s*idle\s*\|\s*no\s*\|/.test(alphaRow)) ok('alpha idle → in-progress no'); else bad('alpha idle/in-progress wrong');
 if (/1\/3/.test(alphaRow) && !/DUE/.test(alphaRow)) ok('alpha seams = 1/3 (cadence 3 from config, not due)'); else bad('alpha seams/cadence wrong');
-if (alphaRow.includes('↑')) ok('alpha net trend = ↑ (1 → 2)'); else bad('alpha trend wrong');
+if (alphaRow.includes('↑')) ok('alpha net trend = ↑ (1 → 2, comma-bearing subsystem rows read — F03)'); else bad('alpha trend wrong (comma-bearing subsystem rows skipped?)');
 
 // gamma: no .cycle/ → status columns are "—"
 const gammaRow = row(out, 'gamma');

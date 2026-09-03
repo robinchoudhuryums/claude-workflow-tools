@@ -5,6 +5,231 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.30.0 — 2026-09-03
+
+Fixes the two duplicate-id collisions the Cycle-6 `/regression` pass found, and
+adds the invariant that makes the class impossible. Console + guard only — **no
+command body or config-schema change, so no `/sync-commands` re-pull**.
+
+### The Tier 1 panel was destroyed on every load
+`<section id="t1">` and `<pre id="t1">` shared an id. `getElementById` returns
+the **first** element in document order, so `renderTier1()` assigned
+`textContent` to the **section** — wiping its header, both prompts, both Copy
+buttons and both Fill buttons, and replacing them with unstyled, unwrapped
+prose. `<pre id="t1i">` (Broad Implement) went with it. The panel had rendered
+this way since the tabbed-nav rewrite, on the hosted console, for the Tier 1
+entry point this project's own workflow uses most.
+
+`doCopy('setup')` had the same collision with `<section id="setup">`: it copied
+the section, so the panel heading, purpose blurb and warning note were pasted
+into the prompt an operator handed to an agent (10,841 chars instead of 10,127).
+
+Both are fixed by renaming the **`<pre>`** ids — `t1` → `t1a` (matching the
+existing `t2a`/`t2b` pattern) and `setup` → `psetup` (matching `p*`) — never the
+section ids, which the nav `href`s and `showPanel()` depend on. No stored fill
+values are orphaned: the Tier 1 fill form was inside the destroyed subtree and
+could never have run, and Setup has no fill form.
+
+### Why nothing caught it
+`check-html`'s stubbed document is a flat id→element map with **no document
+order**, so it cannot represent "first match wins" — the collision is invisible
+to it by construction. `INV-50` passed throughout because `t1` *is* in the
+markup; it proves an id exists, not that the element resolved at runtime is the
+one intended. It took driving a real browser and counting `<pre>` elements.
+
+`INV-67` closes it with a check the harness *can* run: strip the `<script>`
+block, collect every markup `id`, fail on a duplicate. 177 ids checked,
+mutation-proven by reinstating the exact collision. Library: 67, all runnable.
+
+### Bookkeeping
+`/reflect` had already run for Cycle 6, and it is the sole writer of
+`net_score`/`prod_fixes`/`new_failure_modes`. These two production fixes are
+therefore **not** in the cycle-6 metrics row (13 − 0); §6a should count 15 − 0
+for the cycle. The reflect block is left intact as the honest record of what
+that reflection concluded, and `.cycle/blocks/06-1.30.0-broad-implement.md`
+supersedes its "carried out, unfixed" note.
+
+## 1.29.0 — 2026-09-03
+
+Cycle-6 `/broad-implement` Batches 5 and 6 — the last four findings of the
+scan's batch plan. **`/setup-cycle` changed, so consuming projects should
+re-pull with `/sync-commands`.**
+
+### Batch 6 — every console prompt is now locked (F16)
+The audit found eight console prompts sitting outside every lock. There were
+**nine**, and the ninth was the one that mattered: `setup`, which *does* have a
+canonical counterpart and had quietly decayed to a **pre-R18 copy** — missing 36
+canonical lines including the entire "user-facing surfaces" profile step and the
+instruction to propose an interface Health Dimension. An operator running
+`/setup-cycle` from the console got a config that could never score the interface
+layer, which is precisely the gap R18 shipped to close in v1.19.0. The file-global
+markers could not see it, because the phrases appear elsewhere in the file.
+
+- The static `MANIFEST` now resolves a canonical body from EITHER a slash
+  `command:` or a `section:` heading, via the same resolver the dynamic lock
+  uses. All 16 static `<pre>` blocks are locked; the nine without a slash
+  command have canonical bodies under **"Console Reference Prompts"** in
+  `CLAUDE.md`.
+- `--assert` additionally fails if a *new* static prompt appears with no
+  manifest entry. That derived half is the point: the audit itself under-counted
+  the unlocked set, so a hand-maintained list would have been wrong on arrival.
+- Three elaborations the console had been shipping and canonical had lost are
+  restored to `/setup-cycle` (the policy-threshold maturity guidance, the seam
+  files → Seams audit pointer, and "for any Medium or Low, explain what you'd
+  need to verify"). `p7tmpl` is now project-agnostic instead of naming one
+  built-in project's dimensions.
+- These stay **sections, not commands**: each extends a command that already
+  exists, so minting `/security-audit` would duplicate a body rather than
+  extend one.
+
+### Batch 5
+- **F11.** The fill form classified bracket tokens by an ALL-CAPS-only pattern,
+  so it missed every operator placeholder carrying a lowercase clause after an
+  em dash (5 of them) while offering `[ID]`, `[INV-XX]` and `[X/10]` as fields —
+  filling one rewrites the output block the prompt tells the agent to emit.
+  Fields and format tokens are now told apart **structurally**: a token inside
+  an `---OUTPUT BLOCK---` span, or sharing its line with another bracket token,
+  is a template, not an input. Across all 16 prompts: 31 fields offered, every
+  one an operator input.
+- **F14.** The §4v rotation probes were `Math.random()` **re-rolled on every
+  Copy**, so the copied prompt differed from the one on screen and an
+  implementer could press Copy until the picks looked easy — the prompt's own
+  "do NOT substitute your own picks" had no force. They are now a pure function
+  of a stated seed (project + UTC day), reproducible by a verifier, never
+  re-rolled. R19 gave the script this property via the commit sha; the browser
+  has no sha, so it states the seed instead.
+- **F15.** `.cycle/STATE.md` had grown to 24 sections and 347 lines with two
+  `Decisions made` and two `Where I left off` — the substrate a new session
+  loads was buried in narrative. It is back to its own 7-section template (64
+  lines); the history moved to `.cycle/HISTORY.md`, and `check-template-sync`
+  now fails if the file grows a section the template does not define.
+
+### Guard notes
+`INV-63`–`INV-66` added (66 total, 66 runnable, 74 mutations). The F14 guard
+caught a real defect **in its own fix**: FNV-1a does not avalanche on a trailing
+change, so with the seed appended every hash shifted by the same constant and
+the selection never rotated. The seed is hashed as a prefix, and the guard now
+requires a one-character seed change to reorder the picks. (`verification-pack.mjs`
+is unaffected — sha256 avalanches.)
+
+## 1.28.0 — 2026-09-03
+
+Cycle-6 `/broad-implement` Batches 3 and 4 (four findings). **Console and tooling
+only — no command body or config-schema change, so no `/sync-commands` re-pull.**
+
+### Batch 3 — console data integrity and feedback
+- **F05.** The project form renumbered invariants `INV-01..N` from LINE ORDER on
+  every save, so deleting the third of ten rules shifted seven ids and broke
+  every reference in already-archived handoff and verification blocks. It also
+  counted from 1 while `getNextInvariantId()` counts both stores, so a project
+  with five form invariants plus a §4v-added `INV-06` got a second `INV-06`.
+  Ids now round-trip through the textarea as an optional `INV-NN |` prefix — the
+  same shape the Cycle Workflow Config uses — and a new line is allocated above
+  the max of both stores. Canonical `/reflect` has always said "do not invent or
+  reuse a number"; the console was doing both.
+- **F06.** A Dashboard fetch failure recorded its reason into `cache[id].error`
+  and nothing ever read it — and when a cache entry already existed the reason
+  was not even recorded. A 404 on a private repo, a 403 rate limit and an
+  offline browser all rendered as "No data yet". The card now shows the reason
+  and the fix (add a token, wait for the limit, `file://` blocks fetch).
+
+### Batch 4 — light theme and assistive access
+- **F13.** Sixteen literal hex text colours sat outside the token blocks, all of
+  them dark-theme values: in light mode the nav badges measured **1.4:1**, the
+  flow chips 1.5:1 and the state message 2.9:1. Text colour now goes through
+  `--on-green/amber/red/blue/purple/teal`, which flip; the semantic *fills* stay
+  put, so the deliberate "chrome only" light theme is unchanged. The Dashboard
+  score chip flips too — S5 named that as the risk the decision left standing.
+  `check-html` computes every `--on-*` token against every surface of its theme
+  (48 pairs) and fails below 4.5:1, and rejects any new literal. Also fixes the
+  four dead `.fill-select` rules the finding named: the select carried
+  `.fill-input` plus inline styles duplicating them, and its `<option>`
+  background rule was both dead and un-themed.
+- **F12.** The mobile drawer had no `aria-expanded`, could not be dismissed from
+  the keyboard, and left focus on `<body>` — a keyboard user opened a drawer they
+  could not close. Escape now closes it and returns focus to the toggle. None of
+  the 69 form controls had a programmatic label (the forms used styled `div`s);
+  all now carry `<label for>` or an aria-label.
+
+### Guard notes
+`INV-59`–`INV-62` added (62 total, 62 runnable), each mutation-proven. Two of the
+guards were wrong on the first attempt and the audit caught both: the drawer
+backdrop's a11y exemption was pinned to the literal `closeNav()` and silently
+stopped matching when the call gained an argument (it is now CONDITIONAL on the
+Escape path existing, not merely documented), and the label check's `\bfor=`
+also matched `data-for=`, so a broken association read as a valid one. The
+element double now tracks classes, attributes and focus instead of no-oping
+them, which is what makes the drawer assertions real.
+
+## 1.27.0 — 2026-09-03
+
+Cycle-6 `/broad-implement` Batches 1 and 2 (nine findings). **Two command
+bodies changed** (`/reflect`, `/cycle-init`) — consuming projects should re-pull
+with `/sync-commands`; the rest is console and tooling.
+
+### Batch 1 — console safety
+- **F01 (High, security).** `buildFillForm` interpolated subsystem names and
+  saved fill values raw into innerHTML. The form renders only on interaction,
+  so the init-time hostile fixture never reached it: a subsystem name from an
+  imported backup executed in the console origin with `ccg:ghToken` in reach
+  (confirmed in Chromium). Every interpolation now goes through `esc()` and
+  every handler argument through `jsArg()`.
+- **F09 (guard).** The hostile fixture's sink list was the last hand-listed
+  set — and exactly where F01 hid. The sink set is now DERIVED from what the
+  renders actually write; the fixture gives every static `<pre>` its markup
+  text, seeds a hostile saved value for every placeholder, drives every fill
+  form and the project editor, and fails if the derivation stops reaching
+  them. Three field-level INV-20 mutation cases cover the fill form.
+- **F17 (High, interface).** `body` is a flex ROW; the mobile media query never
+  changed it, so below 768px the top bar rendered as a 174px left column and
+  main overflowed the viewport (document 464px wide at 375px). Now stacks.
+  A static check pins the rule; a real-DOM geometry assertion needs a browser
+  stage (open gap).
+- **F04.** A stored project missing `subsystems` threw in `renderCycle`, aborted
+  init, and left no in-app way to delete it (the Projects panel never rendered
+  and switching projects threw too). `loadCustomProjects` now repairs missing
+  fields and drops entries with no id/name (warned once); a backup whose
+  project list is not a JSON array is refused whole (`bad-projects`) with a
+  visible message. A fresh-context boot test guards it.
+
+### Batch 2 — hand-offs to the next session and to consumers
+- **F02.** `.cycle/blocks/` accumulates across cycles; the first Cycle-6 pack
+  would have carried all nine Cycle-5 blocks. `readBlocks` now scopes to the
+  `<cycle>-` prefix and the pack names what it excluded.
+- **F03.** Two `metrics.csv` readers split rows on a bare comma, so every row
+  whose SUBSYSTEM contains a comma ("Auth, Security & HIPAA" — both built-in
+  projects have such names) was silently skipped: under-counted totals in the
+  pack, "—" trend on the status board. `scripts/csv.mjs` is now the ONE
+  parser all three readers import (render-metrics's private copy retired).
+  `/reflect` METRICS now says to quote any comma-bearing field.
+- **F10.** `/cycle-init` step 5 told consumers to create PROJECT_HEALTH.md
+  "from the §7 template" — which exists only in the console and names one
+  built-in project's dimensions. The step now carries a project-agnostic
+  skeleton with the field labels the parsers depend on.
+- **F07.** PROJECT_HEALTH.md Current Standing still reported a defect fixed in
+  v1.24.0 as open — and the SessionStart hook loaded it into every session.
+  Corrected, with a note that the block is live status, not history.
+- **F08.** `.cycle/config.md` cycle-number and test-count drift corrected.
+
+## 1.26.0 — 2026-09-03
+
+`/broad-scan` now ends with an **IMPLEMENTATION BATCH PLAN**. **Command-body
+change** — consuming projects should re-pull with `/sync-commands`.
+
+The Top 5 ranks findings by production impact; nothing ranked the *work*.
+An operator reading a 17-finding audit still had to decide what to run first,
+what belongs in one `/broad-implement` session, and which fixes have to land
+before a new guard can go green. The new closing section makes the audit do
+that: every finding from Stages 1–3 (interface findings included) is placed
+exactly once — in a sequential batch sized for one implement session, or under
+Deferred with a reason. Batches are ordered by impact, then by dependency (a
+guard that would turn CI red until a gap closes goes after the batch that
+closes it), with per-item S/M/L + hours and a batch total. The Top 5 stays.
+
+Mirrored into the console's `buildTier1Text` (still `--assert`-locked at 100%
+canonical coverage). Surfaced by the Cycle-6 dogfood scan, whose output was
+the first to carry the section.
+
 ## 1.25.0 — 2026-07-27
 
 Audits the 12 MANUAL invariants and promotes the F11 mutation audit into CI.
