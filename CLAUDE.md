@@ -166,7 +166,9 @@ copy-paste, keep a `.cycle/` directory at the project root:
   Over time this surfaces personal calibration (e.g. "L items actually
   take ~5 days"); `/plan` and `/audit` can consult it to sharpen future
   effort estimates.
-- `PROJECT_HEALTH.md` stays at the repo root (see §7 in the HTML tool).
+- `PROJECT_HEALTH.md` stays at the repo root. `/cycle-init` step 5 carries
+  the project-agnostic skeleton (the console's §7 copy is illustrative and
+  names one built-in project's dimensions).
 
 Two optional helpers operate on this state (both fail-safe and additive):
 - `scripts/cycle-context.mjs` — a **SessionStart** hook that auto-loads
@@ -1364,7 +1366,9 @@ Defensive/structural count from the tally above — a secondary signal that
 does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
 Cycle field (the single source of truth — don't invent one); leave the
 synthesis-only columns blank. defensive_count is the LAST column (after
-the quoted notes). Do NOT also record net_score/prod_fixes/
+the quoted notes). Double-quote ANY field that contains a comma — the
+subsystem column often does ("Auth, Security & HIPAA") — exactly as notes
+is quoted, or the row's columns shift. Do NOT also record net_score/prod_fixes/
 new_failure_modes on an implement-phase row (the implement commands write
 STATE.md, not metrics). Skip if no .cycle/.
 
@@ -2167,8 +2171,25 @@ missing — NEVER overwrite or modify a file that already exists.
    date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
 4. If .cycle/estimates.csv does not exist, create it with just the header:
    date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
-5. If PROJECT_HEALTH.md does not exist at the repo root, create it from
-   the §7 template (Current Standing + an empty Score History).
+5. If PROJECT_HEALTH.md does not exist at the repo root, create it with
+   this skeleton (project-agnostic — Health Synthesis fills the rows from
+   the Health Dimensions and Axis B categories in the Cycle Workflow Config):
+     # Project Health
+     ## Current Standing
+     Last synthesis: none yet
+     Overall (weighted avg): —
+     One-line summary: not yet synthesized
+     Top vertical priority: —
+     Top horizontal priority: —
+     ## Score History
+     (Health Synthesis appends one "### Cycle N — [date] — Synthesis" entry
+      per cycle: an AXIS A line per Health Dimension, an AXIS B line per
+      configured category, Overall, Verification, Category D ratio, Key
+      finding, Priority for next cycle, Delta from prior, Policy responses)
+     ## Pulse Check Log (directional only — do not compare to synthesis scores)
+   Keep the field labels exactly as above — portfolio.mjs, portfolio-status.mjs
+   and the console Dashboard parse "Overall (weighted avg):" and the two
+   "Top … priority:" lines.
 
 Report which files were created and which already existed. If the
 project has no Cycle Workflow Config yet, suggest running /setup-cycle

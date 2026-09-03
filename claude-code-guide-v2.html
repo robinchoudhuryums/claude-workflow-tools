@@ -261,6 +261,9 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 .abar-btn:hover{color:var(--text);border-color:var(--text-muted)}
 
 @media(max-width:768px){
+  /* F17: body is a flex ROW for the desktop layout. Without this the mobile
+     top bar became a 174px left column and main overflowed the viewport. */
+  body{flex-direction:column}
   .mobilebar{display:flex}
   nav{transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 14px 40px rgba(0,0,0,.45)}
   nav.open{transform:translateX(0)}
@@ -1301,7 +1304,9 @@ Defensive/structural count from the tally above — a secondary signal that
 does NOT change net_score); take the `cycle` value from .cycle/STATE.md's
 Cycle field (the single source of truth — don't invent one); leave the
 synthesis-only columns blank. defensive_count is the LAST column (after
-the quoted notes). Do NOT also record net_score/prod_fixes/
+the quoted notes). Double-quote ANY field that contains a comma — the
+subsystem column often does ("Auth, Security &amp; HIPAA") — exactly as notes
+is quoted, or the row's columns shift. Do NOT also record net_score/prod_fixes/
 new_failure_modes on an implement-phase row (the implement commands write
 STATE.md, not metrics). Skip if no .cycle/.
 
@@ -1930,7 +1935,36 @@ function storageWarn(e){
   }
 }
 function saveActiveProjectId(id){ try{localStorage.setItem('ccg:activeProject',id)}catch(e){storageWarn(e)} }
-function loadCustomProjects(){ try{return JSON.parse(localStorage.getItem('ccg:customProjects')||'[]')}catch(e){return []} }
+// F04 (Cycle 6): a stored project missing a field (hand-edited backup, older
+// schema, truncated Save → repo file) used to throw inside renderCycle at load,
+// abort the whole script, and — because the Projects panel never rendered —
+// leave no in-app way to remove it. Repair what can be repaired (missing
+// arrays/strings), drop what cannot (no id or name), and say so once.
+let _projectRepairWarned=false;
+function normalizeProject(p){
+  if(!p||typeof p!=='object'||typeof p.id!=='string'||!p.id||typeof p.name!=='string') return null;
+  const q={...p};
+  if(!Array.isArray(q.subsystems)) q.subsystems=[];
+  q.subsystems=q.subsystems.filter(s=>s&&typeof s==='object').map(s=>({...s,name:String(s.name==null?'':s.name),files:String(s.files==null?'':s.files)}));
+  if(!Array.isArray(q.invariants)) q.invariants=[];
+  q.invariants=q.invariants.filter(i=>i&&typeof i==='object').map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
+  if(!Array.isArray(q.seeds)) q.seeds=[];
+  if(q.cycleGroups!=null&&!Array.isArray(q.cycleGroups)) delete q.cycleGroups;
+  if(typeof q.healthDimensions!=='string') q.healthDimensions=q.healthDimensions==null?'':String(q.healthDimensions);
+  return q;
+}
+function loadCustomProjects(){
+  let raw;
+  try{raw=JSON.parse(localStorage.getItem('ccg:customProjects')||'[]')}catch(e){raw=[]}
+  if(!Array.isArray(raw)) raw=[];
+  const out=[]; let repaired=0, dropped=0;
+  raw.forEach(p=>{ const q=normalizeProject(p); if(!q){dropped++;return;} if(JSON.stringify(q)!==JSON.stringify(p)) repaired++; out.push(q); });
+  if((repaired||dropped)&&!_projectRepairWarned){
+    _projectRepairWarned=true;
+    try{console.warn(`claude-workflow-tools: stored project list needed repair (${repaired} repaired, ${dropped} unusable and skipped) — re-save the project in Projects, or Export state to inspect.`);}catch(_){}
+  }
+  return out;
+}
 function saveCustomProjects(arr){ try{localStorage.setItem('ccg:customProjects',JSON.stringify(arr))}catch(e){storageWarn(e)} }
 
 let activeProjectId = loadActiveProjectId();
@@ -2082,33 +2116,38 @@ function buildFillForm(pid){
     const opt=isOpt(ph.name);
     const large=isLarge(ph.name);
     const safeId=pid+'_'+ph.name.replace(/\W+/g,'_');
+    // F01 (Cycle 6): every stored value and subsystem name rendered here goes
+    // through esc(), and every handler argument through jsArg(). This form is
+    // rendered only on interaction, so the init-time hostile fixture never
+    // reached it — a subsystem name from an imported backup executed here.
+    const argPid=jsArg(pid), argName=jsArg(ph.name);
     html+=`<div class="fill-row">`;
-    html+=`<div class="fill-label">${ph.full}${opt?' <span class="opt">optional</span>':''}</div>`;
+    html+=`<div class="fill-label">${esc(ph.full)}${opt?' <span class="opt">optional</span>':''}</div>`;
 
     if(isSysMap(ph.name)){
       // Systems map — large textarea with save-to-bank button
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." onchange="saveVal('${pid}','${ph.name}',this.value)">${val}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
       html+=`<div style="display:flex;gap:8px;margin-top:4px">
         <button onclick="saveBank(document.getElementById('${safeId}').value)" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);color:var(--teal);cursor:pointer;font-family:inherit">Save to bank</button>
-        <button onclick="loadBank('${safeId}','${pid}','${ph.name}')" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Load from bank</button>
+        <button onclick="loadBank('${safeId}',${argPid},${argName})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Load from bank</button>
       </div>`;
     } else if(isSubsys(ph.name)){
-      const opts=project.subsystems.map(s=>`<option value="${s.name}"${val===s.name?' selected':''}>${s.name}</option>`).join('');
+      const opts=project.subsystems.map(s=>`<option value="${esc(s.name)}"${val===s.name?' selected':''}>${esc(s.name)}</option>`).join('');
       html+=`<select class="fill-input" style="appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%234e5e7a'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 8px center;background-size:14px;padding-right:28px;cursor:pointer"
-        onchange="handleSubSelect('${pid}',this.value)">
+        onchange="handleSubSelect(${argPid},this.value)">
         <option value="">— select a subsystem —</option>
         ${opts}
         <option value="__custom__">Custom…</option>
       </select>`;
       if(val&&!project.subsystems.find(s=>s.name===val)){
-        html+=`<input class="fill-input" style="margin-top:4px" type="text" value="${val.replace(/"/g,'&quot;')}" placeholder="Custom subsystem name" oninput="saveVal('${pid}','${ph.name}',this.value)">`;
+        html+=`<input class="fill-input" style="margin-top:4px" type="text" value="${esc(val)}" placeholder="Custom subsystem name" oninput="saveVal(${argPid},${argName},this.value)">`;
       }
     } else if(isFiles(ph.name)){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="2" placeholder="Files for this subsystem..." onchange="saveVal('${pid}','${ph.name}',this.value)">${val}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="2" placeholder="Files for this subsystem..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else if(large){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal('${pid}','${ph.name}',this.value)">${val}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else {
-      html+=`<input class="fill-input" id="${safeId}" type="text" placeholder="${opt?'Leave blank to keep placeholder as-is':'Enter value...'}" value="${val.replace(/"/g,'&quot;')}" oninput="saveVal('${pid}','${ph.name}',this.value)">`;
+      html+=`<input class="fill-input" id="${safeId}" type="text" placeholder="${opt?'Leave blank to keep placeholder as-is':'Enter value...'}" value="${esc(val)}" oninput="saveVal(${argPid},${argName},this.value)">`;
     }
     html+=`</div>`;
   });
@@ -2759,6 +2798,13 @@ function stateBackupKeys(parsed){
   // passes a bare {data}), strict about WRONG ones.
   if(parsed.app&&parsed.app!=='claude-workflow-tools') return {data:null,keys:null,reason:'foreign-app'};
   if(parsed.version!=null&&!(Number(parsed.version)<=1)) return {data:null,keys:null,reason:'newer-version'};
+  // F04: the project list is the one key whose shape can brick init. A backup
+  // carrying something that is not a JSON array of projects is refused whole
+  // rather than half-applied; per-entry field repair happens in loadCustomProjects.
+  if(typeof data['ccg:customProjects']==='string'){
+    let list; try{ list=JSON.parse(data['ccg:customProjects']); }catch(e){ return {data:null,keys:null,reason:'bad-projects'}; }
+    if(!Array.isArray(list)) return {data:null,keys:null,reason:'bad-projects'};
+  }
   // Secrets are filtered on the APPLY side too, not just on export: a backup
   // handed over by someone else (or loaded from a shared repo) must not be able
   // to install a credential into this browser.
@@ -2788,6 +2834,7 @@ function importStateFile(input){
     if(reason==='foreign-app'){ setStateIoMsg('Import failed: that file was exported by a different application.','error'); input.value=''; return; }
     if(reason==='newer-version'){ setStateIoMsg('Import failed: backup uses a newer format than this console understands — update the console first.','error'); input.value=''; return; }
     if(reason==='no-keys'){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
+    if(reason==='bad-projects'){ setStateIoMsg('Import failed: the backup\'s project list is not valid (not a JSON array of projects) — nothing was imported.','error'); input.value=''; return; }
     if(!confirm(`Import ${keys.length} stored item(s)? This OVERWRITES matching projects, invariants, archive entries, and tracker state in this browser.`)){ input.value=''; return; }
     try{
       applyStateKeys(data,keys);
@@ -2869,6 +2916,7 @@ async function loadStateFromRepo(){
     if(reason==='foreign-app'){ setStateIoMsg('That .cycle/console-state.json was written by a different application.','error'); return; }
     if(reason==='newer-version'){ setStateIoMsg('That state file uses a newer format than this console understands — update the console first.','error'); return; }
     if(reason==='no-keys'){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
+    if(reason==='bad-projects'){ setStateIoMsg('That state file\'s project list is not valid (not a JSON array of projects) — nothing was loaded.','error'); return; }
     if(!confirm(`Load ${keys.length} item(s) from the connected repo? This OVERWRITES matching state in this browser.`)) return;
     applyStateKeys(data,keys);
     switchProject(activeProjectId); renderProjectsTab();

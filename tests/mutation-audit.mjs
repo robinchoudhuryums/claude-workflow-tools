@@ -70,6 +70,12 @@ const CASES = {
     [HTML, 'white-space:nowrap">${esc(g)}</span>', 'white-space:nowrap">${g}</span>', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.text)}', '${inv.text}', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.subsystem)}', '${inv.subsystem}', /unescaped stored content|injected data executed/i],
+    // F01/F09 — the fill form renders only on interaction; these prove the
+    // hostile fixture now reaches it, one sink at a time.
+    [HTML, '<option value="${esc(s.name)}"${val===s.name', '<option value="${s.name}"${val===s.name', /unescaped stored content|injected data executed/i],
+    [HTML, 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>', 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${val}</textarea>', /unescaped stored content|injected data executed/i],
+    [HTML, "'Paste content here...'}\" onchange=\"saveVal(${argPid},${argName},this.value)\">${esc(val)}</textarea>", "'Paste content here...'}\" onchange=\"saveVal(${argPid},${argName},this.value)\">${val}</textarea>", /unescaped stored content|injected data executed/i],
+    [HTML, 'value="${esc(val)}" oninput="saveVal(${argPid}', 'value="${val}" oninput="saveVal(${argPid}', /unescaped stored content|injected data executed/i],
   ],
   'INV-21': [[HTML, 'function storageWarn(e){', 'function storageWarn(e){ return;', /storageWarn/i]],
   'INV-30': [[HTML, 'if(!window.showDirectoryPicker){ setStateIoMsg(', 'if(!window.showDirectoryPicker){ return; setStateIoMsg(', /R3 fallback/i]],
@@ -127,7 +133,7 @@ const CASES = {
 
   // ── the remaining test-backed scripts ───────────────────────────────────────
   'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i]],
-  'INV-25': [['scripts/render-metrics.mjs', 'function parseCSV(text) {', 'function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
+  'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
   'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/]],
   'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],

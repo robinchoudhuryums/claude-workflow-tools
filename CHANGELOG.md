@@ -5,6 +5,56 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.27.0 — 2026-09-03
+
+Cycle-6 `/broad-implement` Batches 1 and 2 (nine findings). **Two command
+bodies changed** (`/reflect`, `/cycle-init`) — consuming projects should re-pull
+with `/sync-commands`; the rest is console and tooling.
+
+### Batch 1 — console safety
+- **F01 (High, security).** `buildFillForm` interpolated subsystem names and
+  saved fill values raw into innerHTML. The form renders only on interaction,
+  so the init-time hostile fixture never reached it: a subsystem name from an
+  imported backup executed in the console origin with `ccg:ghToken` in reach
+  (confirmed in Chromium). Every interpolation now goes through `esc()` and
+  every handler argument through `jsArg()`.
+- **F09 (guard).** The hostile fixture's sink list was the last hand-listed
+  set — and exactly where F01 hid. The sink set is now DERIVED from what the
+  renders actually write; the fixture gives every static `<pre>` its markup
+  text, seeds a hostile saved value for every placeholder, drives every fill
+  form and the project editor, and fails if the derivation stops reaching
+  them. Three field-level INV-20 mutation cases cover the fill form.
+- **F17 (High, interface).** `body` is a flex ROW; the mobile media query never
+  changed it, so below 768px the top bar rendered as a 174px left column and
+  main overflowed the viewport (document 464px wide at 375px). Now stacks.
+  A static check pins the rule; a real-DOM geometry assertion needs a browser
+  stage (open gap).
+- **F04.** A stored project missing `subsystems` threw in `renderCycle`, aborted
+  init, and left no in-app way to delete it (the Projects panel never rendered
+  and switching projects threw too). `loadCustomProjects` now repairs missing
+  fields and drops entries with no id/name (warned once); a backup whose
+  project list is not a JSON array is refused whole (`bad-projects`) with a
+  visible message. A fresh-context boot test guards it.
+
+### Batch 2 — hand-offs to the next session and to consumers
+- **F02.** `.cycle/blocks/` accumulates across cycles; the first Cycle-6 pack
+  would have carried all nine Cycle-5 blocks. `readBlocks` now scopes to the
+  `<cycle>-` prefix and the pack names what it excluded.
+- **F03.** Two `metrics.csv` readers split rows on a bare comma, so every row
+  whose SUBSYSTEM contains a comma ("Auth, Security & HIPAA" — both built-in
+  projects have such names) was silently skipped: under-counted totals in the
+  pack, "—" trend on the status board. `scripts/csv.mjs` is now the ONE
+  parser all three readers import (render-metrics's private copy retired).
+  `/reflect` METRICS now says to quote any comma-bearing field.
+- **F10.** `/cycle-init` step 5 told consumers to create PROJECT_HEALTH.md
+  "from the §7 template" — which exists only in the console and names one
+  built-in project's dimensions. The step now carries a project-agnostic
+  skeleton with the field labels the parsers depend on.
+- **F07.** PROJECT_HEALTH.md Current Standing still reported a defect fixed in
+  v1.24.0 as open — and the SessionStart hook loaded it into every session.
+  Corrected, with a note that the block is live status, not history.
+- **F08.** `.cycle/config.md` cycle-number and test-count drift corrected.
+
 ## 1.26.0 — 2026-09-03
 
 `/broad-scan` now ends with an **IMPLEMENTATION BATCH PLAN**. **Command-body

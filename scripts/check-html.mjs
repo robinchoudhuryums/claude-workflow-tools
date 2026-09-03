@@ -50,6 +50,10 @@ const elStore = {};
 // WRITES to an unknown id are the bug, so those are what we record.
 const MARKUP_IDS = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
 const writtenIds = new Set();
+// Ordered log of every id written, so a later pass can DERIVE "which elements
+// did these renders touch" instead of hand-listing sinks (F09).
+const writeLog = [];
+const htmlWrites = new Set();   // ids that received innerHTML (the escaping sinks)
 function makeEl(id) {
   const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } } };
   return new Proxy(t, {
@@ -62,8 +66,8 @@ function makeEl(id) {
       return () => {};
     },
     set(o, p, v) {
-      if (p === 'innerHTML') { o._html = String(v); if (id) writtenIds.add(id); }
-      else if (p === 'textContent') { o._text = String(v); if (id) writtenIds.add(id); }
+      if (p === 'innerHTML') { o._html = String(v); if (id) { writtenIds.add(id); writeLog.push(id); htmlWrites.add(id); } }
+      else if (p === 'textContent') { o._text = String(v); if (id) { writtenIds.add(id); writeLog.push(id); } }
       else o[p] = v;
       return true;
     },
@@ -132,6 +136,7 @@ catch (e) { bad('inline <script> threw on load: ' + e.message); }
 
 // Snapshot BEFORE the assertions below write to elements themselves.
 const initWrites = new Set(writtenIds);
+const initHtmlWrites = new Set(htmlWrites);
 if (loaded) {
   const phantom = [...initWrites].filter(id => !MARKUP_IDS.has(id));
   if (!initWrites.size) bad('init wrote to no element — the render assertions below would be vacuous');
@@ -497,11 +502,46 @@ if (loaded && typeof ctx.switchProject === 'function') {
   store[`ccg:${hostileProject.id}:invariants`] = JSON.stringify([hostile('inv')]);
   store[`ccg:${hostileProject.id}:archive`] = JSON.stringify([Object.assign(hostile('e'), { id: 1 })]);
   store['ccg:dashRepos'] = JSON.stringify({ [hostileProject.id]: 'own"er/re"po' });
+  // F09 — the fill forms render only on interaction, so an init-only pass never
+  // reached them and F01 (a subsystem name executing from an imported backup)
+  // lived there for six releases. Give every static <pre> its real markup text
+  // (the stub DOM has none), seed a hostile SAVED VALUE for every placeholder
+  // the console would offer, then drive each fill form and the project editor.
+  const unescPre = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  for (const m of html.matchAll(/<pre id="([^"]+)">([\s\S]*?)<\/pre>/g)) if (m[2].trim()) getEl(m[1]).textContent = unescPre(m[2]);
+  const FILL_IDS = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  let seededValues = 0;
+  if (typeof ctx.getPlaceholders === 'function') {
+    for (const pid of FILL_IDS) {
+      const text = getEl(pid).textContent || '';
+      ctx.getPlaceholders(text).forEach((ph, i) => { store[`ccg:${hostileProject.id}:${pid}:${ph.name}`] = PAYLOADS[i % PAYLOADS.length] + ` [${pid}:${ph.name}]`; seededValues++; });
+    }
+  }
   try {
+    // The marker goes BEFORE switchProject: that call is what re-renders the
+    // cycle tracker, invariant lists and subsystem tables. Placing it after
+    // silently dropped those sinks from the scan (caught by the mutation audit
+    // on the first run of this derivation — three INV-20 cases went green).
+    const mark = writeLog.length;
     ctx.switchProject(hostileProject.id);
     ctx.renderDashboard();
     if (typeof ctx.renderArchive === 'function') ctx.renderArchive();
-    const sinks = ['ctItems', 'subsysTableBody', 't2SubsysBody', 'projectSelect', 'customInvariantsList', 'projectsCustom', 'dashCards', 'archiveEntries'];
+    for (const pid of FILL_IDS) if (typeof ctx.buildFillForm === 'function') ctx.buildFillForm(pid);
+    if (typeof ctx.openEditProject === 'function') ctx.openEditProject(hostileProject.id);
+    if (typeof ctx.cancelProjectForm === 'function') ctx.cancelProjectForm();
+    // DERIVE the sink set from what the renders actually wrote (Key Design
+    // Decision: guard coverage is derived, never enumerated). Then assert the
+    // derivation reached the interaction-only surfaces, so it cannot narrow
+    // itself back to the init-time set.
+    const sinks = [...new Set(writeLog.slice(mark))];
+    const reached = { fillForms: sinks.filter(id => id.startsWith('fill-')).length, editor: sinks.includes('pf-subs') };
+    // Floor, derived from init: every element init wrote via innerHTML must be
+    // rewritten by this pass, or the scan has lost a sink it used to cover.
+    const lostInit = [...initHtmlWrites].filter(id => !sinks.includes(id));
+    log.push(`  · INV-20 sink set DERIVED from render writes: ${sinks.length} element(s) — ${initHtmlWrites.size} init-time innerHTML sink(s) + ${reached.fillForms} fill form(s) + editor; ${seededValues} hostile saved value(s) seeded`);
+    if (!FILL_IDS.length || !reached.fillForms || !reached.editor || !seededValues)
+      bad(`INV-20/F09: hostile render did not reach the interaction-only sinks (fill forms ${reached.fillForms}/${FILL_IDS.length}, editor ${reached.editor}, seeded ${seededValues}) — the sink derivation narrowed itself`);
+    if (lostInit.length) bad(`INV-20/F09: init-time sink(s) missing from the hostile scan — the derivation narrowed itself: ${lostInit.join(', ')}`);
     const dirty = [];
     for (const id of sinks) {
       const h = elStore[id] ? elStore[id].innerHTML : '';
@@ -719,6 +759,59 @@ if (loaded && typeof ctx.showPanel === 'function') {
   if (PANEL_IDS.length && NAV_HREFS.length && !orphans.length) ok(`every nav link resolves to a panel — ${PANEL_IDS.length} panels, ${NAV_HREFS.length} links (F03/F21)`);
   else if (!PANEL_IDS.length || !NAV_HREFS.length) bad('panel/nav fixture derived nothing from the markup — the tab assertions would be vacuous');
   else bad('nav link(s) pointing at no panel (would silently fall back to Dashboard): ' + orphans.join(', '));
+}
+
+// F17 — responsive posture. body is display:flex (row) for the desktop layout;
+// at the mobile breakpoint the top bar and main must stack, or the "sticky top
+// bar" renders as a left-hand column beside a horizontally overflowing main
+// (measured at 375px and 768px in Chromium during the Cycle-6 scan: mobilebar
+// 174px wide at x=0, document 464px wide in a 375px viewport). A real-DOM
+// geometry assertion needs a browser stage; this pins the rule that fixes it.
+{
+  const mq = html.match(/@media\(max-width:768px\)\{([\s\S]*?)\n\}/);
+  const inner = mq ? mq[1] : '';
+  if (!mq) bad('no @media(max-width:768px) block found — the mobile layout rules are gone (F17)');
+  else if (/body\{[^}]*(flex-direction:\s*column|display:\s*block)/.test(inner)) ok('mobile breakpoint stacks the top bar and main (body flex-direction:column) — F17');
+  else bad('mobile breakpoint leaves body as a flex ROW — the top bar renders as a side column and main overflows the viewport (F17)');
+}
+
+// F04 — a malformed stored project must not brick the console. init has no
+// guard, so a custom project missing `subsystems` (hand-edited backup, older
+// schema) threw in renderCycle, aborted the whole script, and — because the
+// Projects panel never rendered — left no in-app way to delete it. Boot a
+// FRESH context with such a store and require it to load and render.
+{
+  const bootWith = (seed) => {
+    const st = { ...seed };
+    const els2 = {};
+    const el2 = () => { const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: makeClassList(new Set()) }; return new Proxy(t, { get(o, p) { if (p === 'innerHTML') return o._html; if (p === 'textContent') return o._text; if (p in o) return o[p]; if (p === 'querySelector') return () => el2(); if (p === 'querySelectorAll') return () => []; return () => {}; }, set(o, p, v) { if (p === 'innerHTML') o._html = String(v); else if (p === 'textContent') o._text = String(v); else o[p] = v; return true; } }); };
+    const c = {
+      localStorage: { getItem: k => (k in st ? st[k] : null), setItem: (k, v) => { st[k] = String(v); }, removeItem: k => { delete st[k]; }, get length() { return Object.keys(st).length; }, key: i => Object.keys(st)[i] },
+      document: { getElementById: id => (els2[id] || (els2[id] = el2())), querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
+      navigator: { clipboard: { writeText: () => Promise.resolve() } }, window: { addEventListener() {} },
+      IntersectionObserver: class { observe() {} disconnect() {} }, MutationObserver: class { observe() {} disconnect() {} },
+      Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, FileReader: class { readAsText() {} },
+      console: { ...console, warn: () => {} }, setTimeout: () => 0, clearTimeout() {}, alert: () => {}, confirm: () => true, Date, Math, JSON, Object, Array, Set, RegExp,
+    };
+    c.globalThis = c; vm.createContext(c);
+    try { vm.runInContext(src, c, { filename: 'console-boot' }); } catch (e) { return { threw: e.message, ctx: c, els: els2 }; }
+    return { threw: null, ctx: c, els: els2 };
+  };
+  const malformed = bootWith({ 'ccg:customProjects': JSON.stringify([{ id: 'x', name: 'Broken' }, { nope: true }, 'junk']), 'ccg:activeProject': 'x' });
+  if (malformed.threw) bad('a malformed stored project bricks the console at load: ' + malformed.threw + ' (F04)');
+  else {
+    const rendered = (malformed.els['projectsCustom'] || {}).innerHTML || '';
+    const usable = typeof malformed.ctx.getProject === 'function' && malformed.ctx.getProject('x') && malformed.ctx.getProject('x').id === 'x';
+    if (usable && rendered.includes('Broken')) ok('a stored project missing fields is repaired, listed, and deletable instead of bricking init (F04)');
+    else bad(`F04: console loaded but the repaired project is not usable/listed (usable=${usable}, listed=${rendered.includes('Broken')})`);
+  }
+  if (typeof ctx.stateBackupKeys === 'function') {
+    const badShape = ctx.stateBackupKeys({ data: { 'ccg:customProjects': '{not json' } });
+    const notArray = ctx.stateBackupKeys({ data: { 'ccg:customProjects': JSON.stringify({ id: 'x' }) } });
+    const fine = ctx.stateBackupKeys({ data: { 'ccg:customProjects': JSON.stringify([{ id: 'ok', name: 'OK', subsystems: [] }]) } });
+    if (badShape.reason === 'bad-projects' && notArray.reason === 'bad-projects' && !fine.reason) ok('a backup whose project list is not a JSON array is rejected visibly, not half-imported (F04)');
+    else bad(`F04: backup shape validation wrong (badJson=${badShape.reason} notArray=${notArray.reason} fine=${fine.reason})`);
+  }
 }
 
 console.log('HTML console check (claude-code-guide-v2.html):\n');

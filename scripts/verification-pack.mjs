@@ -25,8 +25,8 @@
 //   (cycle defaults to .cycle/STATE.md's Cycle field — the single source of
 //    truth per P3; seed defaults to the current git HEAD sha.)
 //
-// Importable: exports selectProbes / readInvariants / readBlocks / cycleTotals
-// / buildPack for the regression test. No CLI side effects on import (INV-28).
+// Importable: exports selectProbes / readInvariants / readBlocks / blockCycle /
+// cycleTotals / buildPack for the regression test. No CLI side effects on import (INV-28).
 
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -34,6 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { sectionBody } from './gen-html-prompts.mjs';
+import { parseRow } from './csv.mjs';
 
 // ── pure, testable helpers ──────────────────────────────────
 
@@ -56,10 +57,20 @@ export function selectProbes(invariantLines, seed, count = 5) {
 }
 
 // Blocks persisted by the implement commands / /reflect at CHECKPOINT.
-export function readBlocks(dir, readDir = readdirSync, read = f => readFileSync(f, 'utf8')) {
+// F02 (Cycle 6): .cycle/blocks/ ACCUMULATES across cycles, and the first pack
+// generated after Cycle 5 would have handed the verifier all nine Cycle-5
+// blocks alongside the new ones. Blocks are named `<cycle>-…` for exactly this
+// reason, so when a cycle is given only its prefix is read and everything else
+// is reported as excluded (never silently dropped). With no cycle, every block
+// is returned as before.
+export function blockCycle(name) { const m = String(name).match(/^0*(\d+)-/); return m ? m[1] : null; }
+export function readBlocks(dir, opts = {}) {
+  const { cycle = null, readDir = readdirSync, read = f => readFileSync(f, 'utf8') } = opts;
   let names = [];
-  try { names = readDir(dir).filter(n => n.endsWith('.md')).sort(); } catch { return []; }
-  return names.map(n => ({ name: n, text: read(join(dir, n)).trim() }));
+  try { names = readDir(dir).filter(n => n.endsWith('.md')).sort(); } catch { return Object.assign([], { excluded: [] }); }
+  const want = cycle == null ? names : names.filter(n => blockCycle(n) === String(Number(cycle)));
+  const excluded = names.filter(n => !want.includes(n));
+  return Object.assign(want.map(n => ({ name: n, text: read(join(dir, n)).trim() })), { excluded });
 }
 
 // Cycle totals from the phase=reflect rows, plus the correction signal. A
@@ -70,14 +81,15 @@ export function cycleTotals(metricsCsv, cycle) {
   let net = 0, fixes = 0, nfm = 0, defensive = 0, n = 0;
   const corrections = [];
   for (const raw of rows) {
-    // cycle/phase/net/prod/nfm all sit before the quoted notes column.
-    const c = raw.split(',');
-    if ((c[1] || '').trim() !== String(cycle) || (c[3] || '').trim() !== 'reflect') continue;
+    // F03: a quote-aware split. The old bare split assumed only `notes` could
+    // hold a comma and silently skipped every row whose SUBSYSTEM had one.
+    const c = parseRow(raw).map(x => x.trim());
+    if (c[1] !== String(cycle) || c[3] !== 'reflect') continue;
     n++;
     net += parseFloat(c[4]) || 0; fixes += parseFloat(c[5]) || 0; nfm += parseFloat(c[6]) || 0;
-    const tail = raw.slice(raw.indexOf('"'));
-    defensive += parseFloat((raw.match(/,(\d+)\s*$/) || [])[1]) || 0;
-    if (/CORRECTION/i.test(tail)) corrections.push(tail.slice(0, 240).replace(/^"/, ''));
+    defensive += parseFloat(c[10]) || 0;
+    const notes = c[9] || '';
+    if (/CORRECTION/i.test(notes)) corrections.push(notes.slice(0, 240));
   }
   return { rows: n, net, fixes, nfm, defensive, corrections };
 }
@@ -111,11 +123,13 @@ export function buildPack({ body, invariants, probes, blocks, totals, cycle, see
       'from the code rather than accepting it.',
       '');
   }
-  const blockSection = blocks.length
+  const excluded = (blocks && blocks.excluded) || [];
+  const blockSection = (blocks.length
     ? blocks.map(b => `───── ${b.name} ─────\n${b.text}`).join('\n\n')
-    : '(no blocks found in .cycle/blocks/ — paste the Implementation Summary and\n'
+    : `(no blocks for cycle ${cycle} found in .cycle/blocks/ — paste the Implementation Summary and\n`
     + ' Cycle Summary Blocks here by hand, or run the implement commands with a\n'
-    + ' .cycle/ directory present so they persist automatically)';
+    + ' .cycle/ directory present so they persist automatically)')
+    + (excluded.length ? `\n\n(${excluded.length} block(s) from OTHER cycles present in .cycle/blocks/ and excluded: ${excluded.join(', ')})` : '');
 
   const filled = body
     .replace('[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]', '(the cycle\'s blocks are reproduced above, under INPUT BLOCKS)')
@@ -166,7 +180,7 @@ function main(argv) {
   const pack = buildPack({
     body, invariants,
     probes: selectProbes(invariants, seed),
-    blocks: readBlocks(at('.cycle/blocks')),
+    blocks: readBlocks(at('.cycle/blocks'), { cycle }),
     totals: cycleTotals(metrics, cycle),
     cycle, seed: seed.slice(0, 12), project: 'claude-workflow-tools',
   });

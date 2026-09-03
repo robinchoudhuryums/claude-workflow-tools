@@ -1,12 +1,46 @@
 # Cycle State
 
 ## Current
-Cycle: 5 — COMPLETE AND SYNTHESIZED (overall 9.0/10). Full Tier-1 dogfood: broad-scan → 5 implement batches → regression → reflect ×2 → sync-docs → R19 → §4v (fresh session) → §6a.
-Phase: implement — post-synthesis remediation COMPLETE through v1.25.0 (§4v findings in v1.24.0; the MANUAL-invariant audit + F11 mutation-audit promotion in v1.25.0). Cycle number stays 5 per P3: no new /broad-scan or /audit has begun, so this is post-synthesis work under the same cycle (Cycle-4 precedent).
-Scope: Canonical Templates & Docs + Interactive Console (§T1 builder) + Tooling & Sync Infrastructure
+Cycle: 6 — a fresh /broad-scan (2026-09-03, 17 findings F01–F17) began Cycle 6 per P3.
+Phase: implement — Batches 1 and 2 of the scan's IMPLEMENTATION BATCH PLAN COMPLETE (v1.27.0). Batches 3–6 (F05, F06 | F13, F12 | F11, F15, F14 | F16) not started.
+Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
-Subsystem cycles since last Seams audit: 2 (this repo runs broad-scan + roadmap/proposal batches, not strict subsystem rotation; cadence 3 — not due)
-Updated: 2026-07-27
+Subsystem cycles since last Seams audit: 2 (cadence 3 — not due; /reflect for Cycle 6 will increment to 3 = DUE)
+Updated: 2026-09-03
+
+## Cycle 6 — broad-scan → /broad-implement Batches 1 + 2 — ✅ COMPLETE (v1.27.0)
+Scan (v1.26.0 added the IMPLEMENTATION BATCH PLAN closing section to /broad-scan; first output to carry it):
+17 findings; Overall 8.0 (from 9.0 — fresh eyes, not a regression: one High security sink + one High
+interface break that no headless check could see, and three consumer-facing tooling defects the tests
+were shaped not to exercise). Headless Chromium was used for Stage 2 (a driver in the session scratchpad,
+NOT in the repo): screenshots mid-animation were an artifact; geometry/DOM assertions were the evidence.
+- DONE F01 (High) fill-form sink: subsystem names + saved values raw in innerHTML; executed in Chromium
+  with ccg:ghToken readable. esc()/jsArg() everywhere in buildFillForm.
+- DONE F09 hostile-fixture sinks DERIVED from render writes; fill forms + project editor driven; two
+  fail-closed floors. FIRST ATTEMPT WAS WRONG: marker after switchProject dropped the init sinks and three
+  existing INV-20 cases went green — the mutation audit caught it. Worth remembering: a derivation can
+  narrow itself the moment it is introduced; the floor (init innerHTML sinks ⊆ scanned sinks) guards it.
+- DONE F17 (High) body flex ROW below 768px → top bar as a side column + horizontal overflow; column now.
+  Static CSS check only — real-DOM geometry needs a browser stage (open gap).
+- DONE F04 malformed stored project bricked init with no in-app recovery → repair/drop + backup shape
+  refusal ('bad-projects') + fresh-context boot test.
+- DONE F02 verification pack scoped to `<cycle>-` blocks; excluded ones named.
+- DONE F03 scripts/csv.mjs = the one CSV parser (three readers); /reflect says quote comma fields.
+- DONE F10 /cycle-init carries a project-agnostic PROJECT_HEALTH skeleton (§7 pointer was a dead end).
+- DONE F07 PROJECT_HEALTH Current Standing corrected (it is LIVE status the hook loads every session).
+- DONE F08 config.md drift. Net 6 − 0 (F07 borderline; F04/F09/F08 defensive) — /reflect to confirm.
+- Block persisted: .cycle/blocks/06-1.27.0-broad-implement.md. Command bodies changed → consumers re-pull.
+
+## Pending / not yet done
+- Batch 3: F05 (invariant ids unstable across project-form saves; collision with custom ids), F06
+  (Dashboard hides the fetch error it captured).
+- Batch 4: F13 (hardcoded dark-theme chip/badge/message colours, 1.4–2.9:1 in light mode), F12 (drawer
+  Escape/focus/aria-expanded; 0 of 22 inputs labelled).
+- Batch 5: F11 (PH_RE misses 5 operator placeholders, offers 5 output tokens), F15 (STATE.md back to
+  template shape), F14 (console §4v probes re-roll on Copy).
+- Batch 6: F16 (lock the 8 console-only prompts as section bodies; fix the "fully closed" claims).
+- Then: /regression, /reflect (Cycle 6 → seam counter 3/3 DUE), /sync-docs (four new gotchas), §4v
+  in a fresh session (node scripts/verification-pack.mjs now scopes to cycle 6), §6a.
 
 ## Cycle 5 — R18 interface/visual audit lens — ✅ COMPLETE (v1.19.0)
 Shipped in 5 phases on branch claude/broad-scan-dyw3lo. Origin: operator observed the visual layer was not
@@ -281,43 +315,7 @@ Every finding from the Cycle-5 verification pass is closed.
 - F09 caught a missing CHANGELOG entry for the SECOND time — the guard is earning its place.
 
 ## Where I left off
-v1.25.0; full Test Command green (16 stages, ~20s). Library is 58 invariants, **0 manual** —
-invariant-check 58/58 runnable PASS, and mutation-audit proves 58/58 fail-closed across 60 mutations.
-
-Two deliverables since v1.24.0:
-
-1) AUDITED THE 12 MANUAL INVARIANTS. The MANUAL tier turned out to be a NOTATION artifact — ten of the
-   twelve were mechanically verifiable all along, and two (INV-02, INV-06) were ALREADY enforced on every
-   push while the library reported them unverified. All twelve converted to runnable. Four gained an
-   assertion that never existed (INV-07/08/10/15 in check-html); three became structural checks 8/9/10 in
-   check-template-sync (INV-14, INV-16, INV-12+INV-18).
-   Two real defects fell out:
-   - INV-16 was FALSE. Its Verify pointed at capability markers, which only prove a phrase appears
-     SOMEWHERE in a file. Under that, the console's Setup schema was missing `### Seams Audit Cadence`
-     entirely AND omitted the `| Verify:` field from the Invariant Library line — so an operator running
-     /setup-cycle FROM THE CONSOLE got a config whose invariants could never become executable. Both
-     restored; check 9 now compares the real section lists across all three copies of the schema.
-   - INV-10 had NEVER EXECUTED. The headless FileReader stub never fired onload, so no clause of the
-     import path had ever run. All four clauses now assert.
-
-2) PROMOTED THE F11 MUTATION AUDIT to tests/mutation-audit.mjs + a CI stage, with the three upgrades that
-   close how the scratchpad version could lie: coverage DERIVED from the live library (missing case =
-   failure), a stale find string FAILS instead of printing a neutral "?", and per-invariant SIGNALS so a
-   mutation caught by a neighbour sharing the same command is not credited (the field-level tier §4v
-   asked for). tests/mutation-audit.test.mjs guards all three.
-
-OPEN FINDING recorded, deliberately not fixed: Axis B configurability stops at §6a/§6b. buildSeamsText
-PART 4 and the SEAMS & INVARIANTS AUDIT BLOCK still enumerate the five DEFAULT categories by name, so a
-project with custom categories gets a Seams audit asking about ones it does not use. Fixing it means
-editing an --assert-locked canonical body AND the block's registered field names — a real change, not a
-tidy-up. check-html reports the gap on every run rather than passing silently.
-
-Still open (non-finding work):
-- Walk S5/S6/S7 in a browser — never performed. S7 (keyboard-only) is the only thing that can answer
-  whether the new focus ring is actually VISIBLE; the code path is guarded, the contrast is not.
-- legacyCopy()'s SUCCESS path is still unexercised (the stub execCommand returns false).
-- Strategic: CSP (needs event delegation, L), no LICENSE file, R9/R12/R17 follow-ons.
-
-CYCLE HYGIENE: /regression, /reflect and /sync-docs are DONE for Cycle 5. Cycle number stays 5 per P3 —
-no new /broad-scan or /audit has begun. metrics.csv carries 3 phase=reflect rows + 1 phase=synthesis row;
-seam counter 2/3 (not due).
+v1.27.0 pushed on claude/broad-scan-8a6drq; full Test Command green (16 stages); 58/58 invariants
+fail-closed across 64 mutations. Cycle 6 Batches 1+2 done; next is Batch 3 (F05, F06) via
+/broad-implement, or /reflect if the operator wants to close the cycle here. Findings and the
+batch plan are in the Cycle-6 scan output (chat) — the scan itself writes no file (audit rule).
