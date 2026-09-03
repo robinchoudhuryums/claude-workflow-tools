@@ -62,7 +62,7 @@ The frequency is a config field — **`Seams Audit Cadence`** (default: every 4 
 - **Axis B (Horizontal):** Cross-cutting bug-shape posture (Silent Degradation, Startup Ordering, Operator-Only Gaps, Parallel Drift, Test Coverage Quality). Tells you which bug class needs policy intervention. Rough rubric: 8-10 = strong evidence of mitigation, 5-7 = mixed signals, 1-4 = active evidence of the problem pattern.
 
 ### Invariant Library
-Project-specific rules that must always hold (e.g., "WAF ordering is wafPreBody → express.json → wafPostBody"). Probed during verification, validated during seams audits, grown organically via `/reflect`. Stored per-project in the HTML tool and in CLAUDE.md for each project. Invariants marked STALE or UNVERIFIABLE for 2+ consecutive seams audits should be retired. Target library size: 15-40 invariants.
+Project-specific rules that must always hold (e.g., "WAF ordering is wafPreBody → express.json → wafPostBody"). Probed during verification, validated during seams audits, grown organically via `/reflect`. Stored per-project in the HTML tool and in CLAUDE.md for each project. Invariants marked STALE or UNVERIFIABLE for 2+ consecutive seams audits should be retired. Target library size: 15-40 for a library probed by code read — this repo runs 66, which is only sustainable because every one of them is a runnable `Verify:` command proven fail-closed by `tests/mutation-audit.mjs`. Grow past ~40 only if the probing is automated; otherwise a seams audit cannot honestly validate them all.
 
 ### Policy Response Feedback Loop
 When an Axis B category scores at or below the policy threshold for consecutive cycles, the synthesis outputs a mandatory policy fix for the next cycle's scope. Converts one-off bug fixing into systemic improvement.
@@ -106,7 +106,8 @@ If context fills mid-implementation (work unfinished), the optional `.cycle/` st
 
 ### Cycle State & Resuming
 For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
-- `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it.
+- `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it. It keeps the shape of the template in `CLAUDE.md` and carries the *current* cycle only — `check-template-sync` fails if it grows a section the template doesn't define, because unchecked it accumulates per-release narrative until the substrate a new session loads is buried in it.
+- `.cycle/HISTORY.md` — optional: the narrative record of completed cycles, moved out of `STATE.md` so that file stays rolling. Reference prose; nothing reads it.
 - `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
 - `.cycle/estimates.csv` — estimate-vs-actual effort log that `/reflect` appends, surfacing your personal calibration over time.
 

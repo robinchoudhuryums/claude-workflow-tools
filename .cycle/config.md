@@ -38,7 +38,9 @@ Tooling & Sync Infrastructure:
   scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/csv.mjs, tests/ (10 regression tests + mutation-audit.mjs),
   .github/workflows/sync-check.yml, .claude/commands/ (generated), .claude/settings.json, .gitignore
 Cycle state (not audited as source, but read/written by the tooling above):
-  .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/
+  .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/,
+  .cycle/HISTORY.md (narrative history split out of STATE.md in Cycle 6 / F15 — reference
+  prose, deliberately NOT substrate: nothing reads it, and no guard depends on it)
 
 ### Invariant Library
 INV-01 | .claude/commands/*.md are byte-identical to the command blocks extracted from CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
@@ -246,10 +248,22 @@ Cycle Workflow Config.
   satisfied anywhere in the HTML passes, so an individual *builder* can be
   stale while the guard is green. This is what let §T2b rot through P7 and
   P9 (Cycle-5 F02). The textual lock, not the marker, is the real guard.
-- **A documented exemption stops being re-read.** §T2b's `locked:false` was
-  recorded in three places with a sound rationale, and that rationale went
-  unexamined for four releases while the builder decayed behind it. If you
-  add an exemption, state what would end it.
+  Cycle 6 found the same shape one level worse: the console's **`/setup-cycle`
+  prompt** was a pre-R18 copy missing 36 canonical lines — including the whole
+  "user-facing surfaces" step and the interface-dimension instruction — while
+  every R18 marker passed, because those phrases appear elsewhere in the file
+  (in the §T1 builder). It was the largest prompt in the console and nothing
+  had compared it to canonical for four releases.
+- **A documented exemption stops being re-read — and an exemption pinned to
+  SYNTAX stops matching.** §T2b's `locked:false` was recorded in three places
+  with a sound rationale that went unexamined for four releases while the
+  builder decayed behind it. Cycle 6 hit the other half: the a11y check
+  exempted the drawer backdrop by matching the literal `onclick="closeNav()"`,
+  so the moment that call gained an argument the exemption silently stopped
+  applying. Don't just state what would end an exemption — make the guard
+  *evaluate* that condition. The backdrop's exemption is now conditional on a
+  keyboard dismissal (Escape) actually existing, so it cannot outlive its own
+  justification.
 - **Editing a command body is never a one-file change.** Run
   `gen-commands.mjs` *and* `gen-html-prompts.mjs --write`, and mirror the
   edit into the corresponding console builder — all nine are `--assert`
@@ -274,6 +288,23 @@ Cycle Workflow Config.
   button still called `navigator.clipboard.writeText()` inline — the exact bug
   F05 fixed, left live in one sink. After centralising a behaviour, scan for
   callers that bypass the centre.
+- **A near-miss regex reads as a passing guard.** The new label check
+  collected associations with `<label[^>]*\bfor="…"` — and `\b` matches after a
+  hyphen, so `data-for="pf-name"` counted as a real association. The mutation
+  that broke a label passed. A guard's regex needs the same adversarial read as
+  the code it guards; `\s` before the attribute name, not `\b`.
+- **A non-avalanching hash does not rotate on a trailing change.** The §4v
+  probe seed was hashed as `id + seed` with FNV-1a. Changing the seed's last
+  character shifts every hash by the *same constant*, so the sort order — and
+  therefore the selection — never moved. Seed as a PREFIX, and assert that a
+  one-character seed change reorders the picks. (`verification-pack.mjs` was
+  never affected: sha256 avalanches. The property belongs to the hash, not to
+  the idea of seeding.)
+- **An audit's own count of what sits outside a guard can be wrong.** The
+  Cycle-6 scan reported eight unlocked console prompts. There were nine, and
+  the ninth (`setup`) was the consequential one. A finding that says "these N
+  things are unguarded" is a hand-maintained list with all the usual failure
+  modes — derive the set from the artifact and let the guard report the count.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
@@ -337,7 +368,14 @@ machine or after a release.
   persist their block to `.cycle/blocks/`); **v1.26.0 changed `/broad-scan`**
   (closing IMPLEMENTATION BATCH PLAN); **v1.27.0 changed `/reflect`** (quote
   comma-bearing metrics fields) **and `/cycle-init`** (inline PROJECT_HEALTH
-  skeleton). v1.19.1, v1.20.0–v1.22.0, v1.24.0 and v1.25.0 changed none.
+  skeleton); **v1.29.0 changed `/setup-cycle`** (three elaborations restored
+  from the console copy). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0 and
+  v1.28.0 changed none.
+- **One-time, projects configured from the CONSOLE's Setup prompt before
+  v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing
+  surfaces and never proposed an interface Health Dimension. Re-check whether
+  your Cycle Workflow Config needs one (the same shape of re-check v1.25.0
+  asked for on `Seams Audit Cadence` and the `Verify:` field).
 - **One-time, consuming projects with comma-bearing subsystem names:** any
   existing `metrics.csv` row whose subsystem is UNQUOTED has shifted columns
   and cannot be repaired by the parser — quote those subsystem fields by
