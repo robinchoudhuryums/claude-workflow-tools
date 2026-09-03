@@ -103,6 +103,10 @@ INV-59 | invariant ids survive a project-form edit: the form textarea round-trip
 INV-60 | a failed Dashboard fetch renders its REASON and the fix on the card — the error is recorded on every failure (not only when no cache entry exists) and dashErrHint explains 404 / 401-403 / network failures. The reason was captured and discarded, so a private repo without a token was indistinguishable from a repo with no data | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-61 | no literal hex TEXT colour exists outside the token blocks, and every `--on-*` token clears 4.5:1 against every surface token of its own theme (computed, not eyeballed). A literal cannot flip with the theme: the nav badges sat at 1.4:1 and the state message at 2.9:1 on the light surfaces. Whether the flipped colours LOOK right is perceptual and stays with S8 | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-62 | every form control in the markup AND in the render-only forms (fill forms, project editor, per-card dashboard editor) carries a `<label for>` or an aria-label, no `<label for>` points at a missing control, and the mobile drawer tracks aria-expanded + closes on Escape returning focus to its toggle. The backdrop's a11y exemption is CONDITIONAL on that Escape path existing, not merely documented | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-63 | the fill form offers EVERY operator placeholder and NO output-format token, across all 16 prompts. Fields and format tokens are told apart structurally — a token inside an ---OUTPUT BLOCK--- span, or sharing its line with another bracket token, is part of a template the agent must emit, not an input. The ALL-CAPS-only pattern missed 5 operator placeholders (any containing a lowercase clause after an em dash) while offering [ID], [INV-XX] and [X/10], so filling one rewrote the block the prompt tells the agent to produce | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-64 | the §4v rotation probes are a pure function of a stated seed and the invariant ids — reproducible by a verifier, never re-rolled on Copy, and rotating when the seed changes by ONE character. They were Math.random() re-rolled on every copy, so the prompt's own "do NOT substitute your own picks" had no force. The seed is hashed as a PREFIX: FNV-1a does not avalanche on a trailing change, and with the seed appended every hash shifted by the same constant and the selection never rotated | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-65 | .cycle/STATE.md keeps the shape its own template defines in CLAUDE.md — every template section present, none invented, none duplicated. It is the rolling substrate /cycle-resume and the SessionStart hook read; unchecked it grew to 24 sections and 347 lines with two "Decisions made" and two "Where I left off". Narrative history belongs in .cycle/HISTORY.md | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 11)
+INV-66 | every static console <pre> is locked to a canonical body in CLAUDE.md, and --assert FAILS if a new one appears with no manifest entry. Nine had no slash-command counterpart and sat outside every lock — including `setup`, which DID have one and had decayed to a pre-R18 copy that never asks about a user-facing surface. The derived half matters: the audit that found this set under-counted it by one | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
 
 ### Policy Configuration
 Policy threshold: 4/10
@@ -280,8 +284,17 @@ Promoted from the running "Decisions made" log — each implies a contract,
 so treat these as settled unless the reasoning below is what changed.
 
 - **The console's prompts are GENERATED/LOCKED from CLAUDE.md**, never
-  hand-maintained. Static §-prompts via `gen-html-prompts --write`; all nine
-  dynamic builders via `--assert` at 100% canonical coverage.
+  hand-maintained. Static §-prompts via `gen-html-prompts --write` — ALL 16 of
+  them since v1.29.0, including the nine that had no slash command and so sat
+  outside every lock; all nine dynamic builders via `--assert` at 100% canonical
+  coverage. `--assert` also fails if a NEW static `<pre>` appears with no
+  manifest entry, which is the derived half: the Cycle-6 audit itself
+  under-counted the unlocked set by one.
+- **A console prompt with no slash-command counterpart is a canonical SECTION
+  in CLAUDE.md, never a new command.** Each one extends a command that already
+  exists (§1 variants, the §4 pre-check, §5 add-ons, §7 tracking blocks, the
+  §4v output reference), so minting `/security-audit` would duplicate a command
+  body rather than extend one.
 - **There is no exemption tier in the lock manifest.** Every dynamic builder
   is locked (since v1.20.0). Adding a `locked:false` entry reopens the class
   of drift that F02 came from.

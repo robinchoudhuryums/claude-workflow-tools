@@ -1020,6 +1020,96 @@ if (loaded) {
   if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
 }
 
+// F11 — the fill form must offer the operator's inputs and ONLY those. It used
+// to do neither: an ALL-CAPS-only pattern missed every placeholder carrying a
+// lowercase clause after an em dash, while offering [ID], [INV-XX] and [X/10] —
+// tokens that belong to the output block the agent is told to emit, so filling
+// one rewrote the template. Checked against all 16 prompts, with the two rules
+// re-derived here independently of the implementation.
+if (loaded && typeof ctx.getPlaceholders === 'function') {
+  const unescPre2 = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const FILL = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  const DIRECTIVE = ['PASTE', 'LIST', 'DESCRIBE', 'NOTE', 'OPTIONAL', 'IF '];
+  const NEVER = ['[ID]', '[INV-XX]', '[INV-NEW-XX]', '[INV-N]', '[X/10]', '[N]', '[Severity]', '[Gap]', '[Suggestion]'];
+  const problems = [];
+  let offeredTotal = 0, promptsWithFields = 0, requiredSeen = 0;
+  for (const pid of FILL) {
+    const m = html.match(new RegExp('<pre id="' + pid + '">([\\s\\S]*?)</pre>'));
+    let text = m ? unescPre2(m[1]) : '';
+    if (!text.trim() && elStore[pid]) text = elStore[pid].textContent || '';
+    if (!text.trim()) { problems.push(`${pid}: no prompt text to classify`); continue; }
+    const lines = text.split('\n');
+    // Independent re-derivation: which lines sit inside an output block, and
+    // which carry more than one bracket token (a format row).
+    const inBlock = new Array(lines.length).fill(false);
+    let open = -1;
+    lines.forEach((l, i) => {
+      const t = l.trim();
+      if (!/^---[A-Z].*---$/.test(t)) return;
+      if (/^---END/.test(t)) { if (open !== -1) { for (let k = open; k <= i; k++) inBlock[k] = true; open = -1; } }
+      else if (open === -1) open = i;
+    });
+    if (open !== -1) for (let k = open; k < lines.length; k++) inBlock[k] = true;
+    const offered = ctx.getPlaceholders(text).map(x => x.full);
+    offeredTotal += offered.length;
+    if (offered.length) promptsWithFields++;
+    // (a) every directive-prefixed token that is alone on its line and outside a
+    //     block MUST be offered — these are the operator's actual inputs.
+    lines.forEach((line, i) => {
+      if (inBlock[i]) return;
+      const toks = [...line.matchAll(/\[[^\]]{0,199}\]?/g)].filter(t => t[0].endsWith(']'));
+      const opens = (line.match(/\[/g) || []).length;
+      if (opens !== 1) return;
+      const start = line.indexOf('[');
+      const whole = text.slice(text.split('\n').slice(0, i).join('\n').length + (i ? 1 : 0) + start);
+      const closed = whole.match(/^\[([^\]]{0,199})\]/);
+      if (!closed) return;
+      if (!DIRECTIVE.some(k => closed[1].startsWith(k))) return;
+      requiredSeen++;
+      if (!offered.includes(closed[0])) problems.push(`${pid}: operator placeholder not offered — ${JSON.stringify(closed[0].slice(0, 60))}`);
+    });
+    // (b) nothing from inside an output block, and (c) nothing from a format row.
+    for (const full of offered) {
+      const at = text.indexOf(full);
+      const ln = text.slice(0, at).split('\n').length - 1;
+      if (inBlock[ln]) problems.push(`${pid}: offers an output-block token as a field — ${JSON.stringify(full.slice(0, 40))}`);
+      if (((lines[ln] || '').match(/\[/g) || []).length > 1) problems.push(`${pid}: offers a format-row token as a field — ${JSON.stringify(full.slice(0, 40))}`);
+      if (NEVER.includes(full)) problems.push(`${pid}: offers ${full}, which belongs to the output template`);
+    }
+  }
+  if (!FILL.length || promptsWithFields < 8 || requiredSeen < 10) problems.push(`derived too little to check (prompts ${FILL.length}, with fields ${promptsWithFields}, required ${requiredSeen}) — the assertion would be vacuous`);
+  if (!problems.length) ok(`the fill form offers every operator placeholder and no output-format token across ${FILL.length} prompts (${offeredTotal} fields) — F11`);
+  else bad('F11: ' + problems.slice(0, 5).join('; '));
+}
+
+// F14 — §4v rotation probes must be REPRODUCIBLE, not a coin flip the
+// implementer can re-roll. They were Math.random() AND re-rolled on every Copy,
+// so the copied prompt differed from the displayed one and "do NOT substitute
+// your own picks" had no force. Same property R19 gave the script via the sha.
+if (loaded && typeof ctx.selectSeededInvariants === 'function' && typeof ctx.probeSeed === 'function') {
+  const lib = Array.from({ length: 20 }, (_, i) => ({ id: `INV-${String(i + 1).padStart(2, '0')}`, text: 't' + i }));
+  const a = ctx.selectSeededInvariants(lib, 5, 'seed-a').map(x => x.id);
+  const a2 = ctx.selectSeededInvariants(lib, 5, 'seed-a').map(x => x.id);
+  const b = ctx.selectSeededInvariants(lib, 5, 'seed-b').map(x => x.id);
+  // Seeds that differ only in their LAST character must still rotate: a
+  // non-avalanching hash with the seed appended shifts every value by the same
+  // constant and leaves the order untouched (which is what happened first).
+  const c = ctx.selectSeededInvariants(lib, 5, 'seed-c').map(x => x.id);
+  const problems = [];
+  if (a.join() !== a2.join()) problems.push('not deterministic for a given seed — a verifier could not reproduce the selection');
+  if (a.join() === b.join() || b.join() === c.join()) problems.push('ignores the seed — the probes would never rotate (a one-character seed change must reorder the selection)');
+  if (a.length !== 5 || new Set(a).size !== 5) problems.push(`returned ${a.length} probes (${new Set(a).size} distinct)`);
+  // Strip comments first: the prose explaining the fix names the anti-pattern.
+  if (/Math\.random/.test(src.replace(/^\s*\/\/.*$/gm, ''))) problems.push('Math.random() still present in the console — a probe selection must not be a coin flip');
+  const rendered = ctx.buildVerificationText(ctx.getProject());
+  if (!rendered.includes('Probe seed:')) problems.push('the rendered §4v prompt does not state its seed');
+  const again = ctx.buildVerificationText(ctx.getProject());
+  if (rendered !== again) problems.push('two renders of the §4v prompt differ — the probes are still being re-rolled');
+  if (/doCopyVerification/.test(html)) problems.push('the Copy button still re-renders the §4v prompt before copying (doCopyVerification)');
+  if (!problems.length) ok('§4v rotation probes are seeded, reproducible, stated in the prompt, and never re-rolled on copy (F14)');
+  else bad('F14: ' + problems.join('; '));
+} else if (loaded) bad('probeSeed/selectSeededInvariants not defined — F14 unguarded');
+
 console.log('HTML console check (claude-code-guide-v2.html):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} HTML check(s) failed.`); process.exit(1); }

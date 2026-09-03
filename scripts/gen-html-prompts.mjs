@@ -70,7 +70,13 @@ export function norm(text) {
     .map(l => l.toLowerCase());
 }
 
-// console <pre id> ← canonical command (+ console framing rules)
+// console <pre id> ← canonical body (+ console framing rules).
+// An entry names EITHER a slash `command:` or a `section:` heading in CLAUDE.md
+// (resolved by dynBody, the same resolver the dynamic lock uses). The section
+// form exists because nine static prompts had no slash-command counterpart and
+// therefore sat outside every lock — including `setup`, which DID have one and
+// had silently decayed to a pre-R18 copy that never asks about a user-facing
+// surface (Cycle-6 F16). Anything rendered into a <pre> is now locked.
 export const MANIFEST = [
   { id: 'p0', command: 'systems-map', drop: false, replace: [] },
   { id: 'p1', command: 'audit', drop: true, replace: [['$ARGUMENTS', '[SUBSYSTEM GROUP NAME]']] },
@@ -79,6 +85,20 @@ export const MANIFEST = [
   { id: 'p4post', command: 'regression', drop: false, replace: [] },
   { id: 'p4reflect', command: 'reflect', drop: false, replace: [] },
   { id: 'p5', command: 'roadmap', drop: false, replace: [] },
+  // F16 — was the largest unlocked prompt, and the drift was real: 36 canonical
+  // lines missing, among them the whole "user-facing surfaces" profile step and
+  // the interface-dimension instruction R18 shipped in v1.19.0.
+  { id: 'setup', command: 'setup-cycle', drop: false, replace: [] },
+  // F16 — no slash command exists for these; their canonical body now lives
+  // under "## Console Reference Prompts" in CLAUDE.md.
+  { id: 'p1sec', section: 'Console Prompt — Security & Compliance Audit Add-on', label: '§1 security add-on', drop: false, replace: [] },
+  { id: 'p1perf', section: 'Console Prompt — Performance & Scalability Audit Add-on', label: '§1 performance add-on', drop: false, replace: [] },
+  { id: 'p3single', section: 'Console Prompt — Single-Finding Implementation', label: '§3 single-finding variant', drop: false, replace: [] },
+  { id: 'p4pre', section: 'Console Prompt — Pre-Implementation Dependency Check', label: '§4 pre-implementation check', drop: false, replace: [] },
+  { id: 'p5opts', section: 'Console Prompt — Roadmap Add-ons', label: '§5 roadmap add-ons', drop: false, replace: [] },
+  { id: 'p7claude', section: 'Console Prompt — Project Health Pointer', label: '§7 CLAUDE.md addition', drop: false, replace: [] },
+  { id: 'p7tmpl', section: 'Console Prompt — PROJECT_HEALTH.md Template', label: '§7 PROJECT_HEALTH template', drop: false, replace: [] },
+  { id: 'vblockref', section: 'Console Prompt — Verification Block Output Reference', label: '§4v block reference', drop: false, replace: [] },
 ];
 
 // ── dynamic-builder lock (R16) ──────────────────────────────
@@ -120,7 +140,7 @@ export const DYNAMIC_MANIFEST = [
 // Resolve a manifest entry's canonical body + label, whether sourced from a
 // slash command (commandBody) or a ### section (sectionBody).
 export const dynBody = (md, d) => (d.section ? sectionBody(md, d.section) : commandBody(md, d.command));
-export const dynLabel = d => d.label || ('/' + d.command);
+export const dynLabel = d => d.label || (d.section ? d.section : '/' + d.command);
 
 // Coverage of a canonical command body by a rendered builder's output: every
 // canonical line must be present (set membership after norm()).
@@ -166,8 +186,8 @@ function main(argv) {
   if (argv.includes('--write')) {
     let updated = html, n = 0;
     for (const m of MANIFEST) {
-      const body = commandBody(claudeMd, m.command);
-      if (body == null) { console.error(`! no command body for /${m.command}`); continue; }
+      const body = dynBody(claudeMd, m);
+      if (body == null) { console.error(`! no canonical body for ${dynLabel(m)}`); continue; }
       const re = new RegExp(`(<pre id="${m.id}">)([\\s\\S]*?)(</pre>)`);
       if (!re.test(updated)) { console.error(`! no <pre id="${m.id}"> in HTML`); continue; }
       const gen = esc(transform(body, m));
@@ -181,11 +201,22 @@ function main(argv) {
   if (argv.includes('--assert')) {
     let drift = 0;
     for (const m of MANIFEST) {
-      const body = commandBody(claudeMd, m.command);
+      const body = dynBody(claudeMd, m);
       const cur = preBody(html, m.id);
-      if (body == null || cur == null) { console.error(`  ! ${m.id} ← /${m.command}: ${body == null ? 'command body' : '<pre>'} not found`); drift++; continue; }
-      if (cur.trim() !== transform(body, m).trim()) { console.error(`  ✗ ${m.id} has drifted from /${m.command}`); drift++; }
+      if (body == null || cur == null) { console.error(`  ! ${m.id} ← ${dynLabel(m)}: ${body == null ? 'canonical body' : '<pre>'} not found`); drift++; continue; }
+      if (cur.trim() !== transform(body, m).trim()) { console.error(`  ✗ ${m.id} has drifted from ${dynLabel(m)}`); drift++; }
     }
+    // F16 — DERIVED lock coverage. A <pre> with literal text is a static prompt
+    // and must be in MANIFEST; an empty one is written by a builder and is
+    // covered by the dynamic lock below. Without this, a new static prompt is
+    // simply unlocked and nothing says so — which is how nine of them
+    // accumulated, and how the audit that found them still under-counted by one.
+    const staticPres = [...html.matchAll(/<pre id="([^"]+)">([\s\S]*?)<\/pre>/g)]
+      .filter(m => m[2].trim().length).map(m => m[1]);
+    const covered = new Set(MANIFEST.map(m => m.id));
+    const unlocked = staticPres.filter(id => !covered.has(id));
+    if (!staticPres.length) { console.error('  ! no static <pre> prompts found — the lock-coverage check would be vacuous'); drift++; }
+    else if (unlocked.length) { console.error(`  ✗ ${unlocked.length} static console prompt(s) outside the lock manifest: ${unlocked.join(', ')}`); drift++; }
     // Locked dynamic builders (R16): require 100% canonical-line coverage.
     const locked = DYNAMIC_MANIFEST.filter(d => d.locked);
     for (const d of locked) {
@@ -196,7 +227,7 @@ function main(argv) {
       if (cov.missing.length) { console.error(`  ✗ ${d.id} is missing ${cov.missing.length}/${cov.total} canonical lines from ${dynLabel(d)} (locked):\n      - ${cov.missing.slice(0, 3).join('\n      - ')}`); drift++; }
     }
     if (drift) { console.error(`\n${drift} console prompt(s) drifted from CLAUDE.md — run: node scripts/gen-html-prompts.mjs --write (static) or reconcile the builder (dynamic)`); return 1; }
-    console.log(`All ${MANIFEST.length} console §-prompts match CLAUDE.md. ✓`);
+    console.log(`All ${MANIFEST.length} console §-prompts match CLAUDE.md — every static <pre> is locked. ✓`);
     console.log(`All ${locked.length} locked dynamic builder(s) cover their canonical command. ✓`);
     return 0;
   }
@@ -204,15 +235,15 @@ function main(argv) {
   console.log('HTML console prompt ↔ CLAUDE.md command drift report:\n');
   let totalDrift = 0;
   for (const m of MANIFEST) {
-    const body = commandBody(claudeMd, m.command);
+    const body = dynBody(claudeMd, m);
     const cur = preBody(html, m.id);
-    if (body == null || cur == null) { console.log(`  ? ${m.id} ← /${m.command}: ${body == null ? 'command body' : '<pre>'} not found`); continue; }
+    if (body == null || cur == null) { console.log(`  ? ${m.id} ← ${dynLabel(m)}: ${body == null ? 'canonical body' : '<pre>'} not found`); continue; }
     const want = new Set(norm(transform(body, m)));
     const have = new Set(norm(cur));
     const present = [...want].filter(l => have.has(l)).length;
     const missing = want.size - present;
     totalDrift += missing;
-    console.log(`  ${m.id} ← /${m.command}: ${want.size ? Math.round(100 * present / want.size) : 100}% of canonical lines present | ${missing} missing | ${[...have].filter(l => !want.has(l)).length} console-only`);
+    console.log(`  ${m.id} ← ${dynLabel(m)}: ${want.size ? Math.round(100 * present / want.size) : 100}% of canonical lines present | ${missing} missing | ${[...have].filter(l => !want.has(l)).length} console-only`);
   }
   console.log(`\nTotal canonical lines missing from the console: ${totalDrift}`);
   console.log('Run with --write to regenerate the console <pre> blocks from CLAUDE.md (then verify rendering in a browser).');

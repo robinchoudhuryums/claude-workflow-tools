@@ -449,11 +449,13 @@ Produce a PROJECT PROFILE:
   error handling patterns, logging patterns]
 - External dependencies: [APIs, databases, cloud services, SDKs]
 - Multi-tenant: [yes/no — how is data isolated?]
+- User-facing surfaces: [web UI / mobile / desktop / TUI / operator
+  console / none — and which subsystem owns each]
 - Key architectural patterns: [monolith/microservices, storage abstraction,
   auth model, job queue, real-time, etc.]
 
 ═══════════════════════════════════════════
-PHASE 2 — MODULE & DEPENDENCY ANALYSIS
+PHASE 2 — MODULE &amp; DEPENDENCY ANALYSIS
 ═══════════════════════════════════════════
 
 For every directory that contains source code:
@@ -489,18 +491,17 @@ For each proposed subsystem:
 Quality checks — verify all of these before proceeding:
 □ Every source file in the project is assigned to exactly one subsystem
 □ No subsystem has so many files that it can't be audited in one session
-  (rough guide: <20 files or <5000 lines for deep reading)
+  (rough guide: &lt;20 files or &lt;5000 lines for deep reading)
 □ Files within each subsystem are more tightly coupled to each other
   than to files in other subsystems
 □ The boundaries correspond to natural seams, not arbitrary directory splits
 □ High-fan-out modules are in the subsystem that owns their primary concern
-  (e.g., storage abstraction in the Storage subsystem even though 30+ files import it)
 
 If any check fails, adjust the groupings and explain the tradeoff.
 
 Flag SEAM FILES — files that sit at the boundary between subsystems
 and could reasonably belong to either. These are important for the
-Seams & Invariants audit.
+Seams &amp; Invariants audit.
 
 Flag FROZEN SUBSYSTEM CANDIDATES — subsystems that are explicitly
 legacy / being retired / being migrated out (e.g., a deprecated
@@ -510,16 +511,18 @@ candidate, note: (a) why it's frozen, (b) what's replacing it,
 Frozen Subsystems section.
 
 ═══════════════════════════════════════════
-PHASE 4 — HEALTH DIMENSIONS & POLICY
+PHASE 4 — HEALTH DIMENSIONS &amp; POLICY
 ═══════════════════════════════════════════
 
 Propose health dimensions for this project's scoring. These should:
 - Reflect what actually matters for THIS project's domain and users
-  (not generic "code quality" dimensions)
-- Be scorable with evidence from code reads (not aspirational)
+- Be scorable with evidence from code reads
 - Cover both technical health and feature/product effectiveness
-- Include domain-specific dimensions (e.g., "Clinical Documentation"
-  for a healthcare app, "AI Analysis Reliability" for an ML pipeline)
+- Include domain-specific dimensions
+- Include one interface dimension (e.g. "UI/UX &amp; Accessibility") if the
+  Phase 1 profile found any user-facing surface. Omit it only when the
+  profile found none — otherwise /broad-scan Stage 3's interface
+  findings have no dimension to score against.
 - Be between 10-15 dimensions total
 
 For each dimension:
@@ -528,25 +531,23 @@ For each dimension:
 - Which subsystem(s) primarily feed evidence into this score
 
 Also recommend:
-- Policy threshold: [score ≤ N triggers policy response — recommend
-  a value based on project maturity. 4/10 for mature projects,
-  5/10 for early-stage projects that need faster feedback loops]
+- Policy threshold: [score ≤ N triggers policy response — recommend a
+  value based on project maturity: 4/10 for mature projects, 5/10 for
+  early-stage projects that need faster feedback loops]
 - Consecutive cycles before trigger: [typically 2, but 1 for
   safety-critical projects]
 
-Also propose the project's HORIZONTAL (Axis B) bug-shape categories.
-These are cross-cutting failure patterns that no single subsystem owns;
-they are scored in Health Synthesis alongside the vertical dimensions.
-The default set fits most server/SaaS projects:
-- Silent Degradation Posture
-- Startup Ordering Guarantees
-- Operator-Only State Gaps
-- Parallel Source-of-Truth Drift
-- Test Coverage Quality
-Keep these unless the project's domain calls for different shapes —
-e.g., a data pipeline might add "Numerical / Precision Drift," a mobile
-app "Offline / Sync Integrity," a library "Public API Compatibility."
-Aim for 4–6 categories. For each: name + one-sentence "what it measures."
+Also propose the project's HORIZONTAL (Axis B) bug-shape categories —
+cross-cutting failure patterns that no single subsystem owns, scored in
+Health Synthesis alongside the vertical dimensions. The default set fits
+most server/SaaS projects: Silent Degradation Posture, Startup Ordering
+Guarantees, Operator-Only State Gaps, Parallel Source-of-Truth Drift,
+Test Coverage Quality. Keep these unless the domain calls for different
+shapes (e.g. a data pipeline might add "Numerical / Precision Drift," a
+mobile app "Offline / Sync Integrity," a library "Public API
+Compatibility," a client-heavy app "Visual / Interaction Regression
+Posture"). Aim for 4–6 categories, each with a name + one-sentence
+"what it measures."
 
 ═══════════════════════════════════════════
 PHASE 5 — INVARIANT EXTRACTION
@@ -556,27 +557,22 @@ Extract initial invariants from the project's documentation and code.
 Each invariant must be:
 - Specific enough to be pass/fail (not "auth should be secure")
 - Verifiable by code read or targeted test execution
-- High-consequence if violated (not style preferences)
+- High-consequence if violated
 
 Sources to mine (in priority order):
-1. Common Gotchas section of CLAUDE.md — these are documented foot-guns
-   that developers have already tripped over. Each one is a candidate.
-2. Key Design Decisions — each decision implies a contract that must hold
-3. Operator State Checklist (if present) — each item implies a startup
-   invariant
-4. Critical code patterns observed in Phase 2 — middleware ordering,
-   singleton initialization, encryption/decryption symmetry, auth
-   enforcement, data isolation
+1. Common Gotchas section of CLAUDE.md
+2. Key Design Decisions — each implies a contract
+3. Operator State Checklist (if present)
+4. Critical code patterns observed in Phase 2
 
 For each invariant:
 - ID: INV-XX
 - Rule: [one clear sentence]
-- Subsystem: [which subsystem this invariant belongs to]
-- How to verify: [code read / specific test / assertion to check]
-- Source: [which gotcha, design decision, or code pattern this came from]
+- Subsystem: [which subsystem]
+- How to verify: [code read / specific test / assertion]
+- Source: [which gotcha, decision, or pattern]
 
-Aim for 15-25 invariants. Prefer fewer high-quality invariants over
-many vague ones.
+Aim for 15-25 invariants.
 
 ═══════════════════════════════════════════
 OUTPUT — PROJECT CONFIGURATION
@@ -585,8 +581,6 @@ OUTPUT — PROJECT CONFIGURATION
 Produce two outputs:
 
 OUTPUT 1 — CYCLE WORKFLOW CONFIG (paste into the project's CLAUDE.md):
-This section is consumed by all slash commands — they reference it
-instead of inlining project-specific content.
 
 ## Cycle Workflow Config
 
@@ -636,19 +630,20 @@ S1 | [short scenario name] | Subsystem: [name]
 
 ### Deploy Command   ← optional; per-subsystem mapping; omit if project has no deploy step
 [subsystem name]: [command + any context, e.g. "clasp push -f then Apps Script editor → Deploy → New version"]
+[subsystem name]: [command + any context]
 (repeat for each subsystem with a deploy command)
 
 OUTPUT 2 — CYCLE ROTATION PLAN (for operator reference):
 
 Recommended first subsystem to audit: [name — why]
-Recommended cycle order: [ordered list with rationale — exclude any
-  subsystems marked frozen; note that they are skipped by default but
-  can be explicitly named to override]
+Recommended cycle order: [ordered list with rationale — exclude
+  any subsystems marked frozen; note that they are skipped by
+  default but can be explicitly named to override]
 Seams audit frequency: every [N] subsystem cycles
 
 CONFIDENCE ASSESSMENT:
-For each subsystem proposed, rate your confidence that the file list
-is complete and the boundary is correct: High / Medium / Low.
+For each subsystem, rate confidence that file list is complete
+and boundary is correct: High / Medium / Low.
 For any Medium or Low, explain what you'd need to verify.</pre>
     </div>
   </section>
@@ -1407,7 +1402,7 @@ reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</
         <div class="pb-meta">
           <span class="ptag">Fresh session — no implementation context</span>
           <button class="fill-btn" onclick="toggleFill('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
-          <button class="copy-btn" id="copy-p4v" onclick="doCopyVerification()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+          <button class="copy-btn" id="copy-p4v" onclick="doCopy('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
       <div class="fill-form" id="fill-p4v"></div>
@@ -1603,18 +1598,17 @@ Top horizontal priority: [bug-shape category most in need of policy intervention
 
 ### Cycle N — [date] — Synthesis
 
-AXIS A — VERTICAL (Subsystem Health):
-Architecture: X/10 | Security: X/10 | Call Analysis: X/10 | RAG: X/10 or N/A
-AI Output Quality: X/10 or N/A | Integrations: X/10 | UI/UX: X/10
-Ops Integrity: X/10 | Ops Readiness: X/10 | Viability: X/10 or N/A
+AXIS A — VERTICAL (Subsystem Health — one line per Health Dimension in the
+project's Cycle Workflow Config):
+[Dimension]: X/10 | [Dimension]: X/10 | [Dimension]: X/10 or N/A
+[Dimension]: X/10 | [Dimension]: X/10 | [Dimension]: X/10
 
-AXIS B — HORIZONTAL (Bug-Shape Posture — rows follow this project's configured Axis B categories):
-Silent Degradation: X/10 [trend] | Startup Ordering: X/10 [trend]
-Operator-Only Gaps: X/10 [trend] | Parallel Drift: X/10 [trend]
-Test Coverage Quality: X/10 [trend]
+AXIS B — HORIZONTAL (Bug-Shape Posture — one line per configured Axis B category):
+[Category]: X/10 [trend] | [Category]: X/10 [trend]
+[Category]: X/10 [trend]
 
 Overall (weighted avg): X/10
-Verification: [N] invariants probed, [N] passed | Net score: [fixed] − [regressions] = [net]
+Verification: [N] invariants probed, [N] passed | Net score: [fixed] - [regressions] = [net]
 Category D ratio: [X%]
 Key finding: [one sentence]
 Priority for next cycle: [one sentence]
@@ -2097,16 +2091,60 @@ function loadVal(pid,name){ try{return localStorage.getItem(lsKey(pid,name))||''
 function saveVal(pid,name,val){ try{localStorage.setItem(lsKey(pid,name),val)}catch(e){storageWarn(e)} }
 
 // ─── PLACEHOLDER FILL SYSTEM ─────────────────────────────────
-const PH_RE = /\[([A-Z][A-Z0-9\s\/\-&',:.()]+)\]/g;
+// F11 (Cycle 6): a prompt carries two kinds of bracket token — FILL FIELDS the
+// operator supplies, and FORMAT TOKENS that belong to an output block the agent
+// must emit. The old pattern was ALL-CAPS-only, so it missed every operator
+// placeholder containing a lowercase word or an em dash (5 of them, including
+// "[PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]")
+// while happily offering [ID], [INV-XX] and [X/10] as fields — filling those
+// rewrites the very template the agent is told to emit. The two are now told
+// apart STRUCTURALLY rather than by a keyword list: a token inside an
+// ---OUTPUT BLOCK--- span, or sharing its opening line with another token (a
+// template row), is a format token.
+const PH_RE = /\[([A-Z][^\]]{0,199})\]/g;
 const LARGE_KEYS=['PASTE','LIST','DESCRIBE','NOTE'];
 const OPT_KEYS=['OPTIONAL','IF APPLICABLE'];
+// The prompts' own vocabulary for "the operator supplies this". A token is a
+// fill field if it is written in the ALL-CAPS placeholder style OR opens with
+// one of these directives — the latter is what admits the long forms carrying a
+// lowercase clause after an em dash. Everything else bracketed is prose or an
+// output-format token ("[FROZEN: subsystem-name]" is an instruction about what
+// to WRITE, not a field to fill).
+const DIRECTIVE_KEYS=['PASTE','LIST','DESCRIBE','NOTE','OPTIONAL','IF '];
+const ALLCAPS_PH=/^[A-Z][A-Z0-9\s\/\-&',:.()]*$/;
+const ANY_TOKEN=/\[[^\]]{0,199}\]/g;
+function isFillField(name){ return ALLCAPS_PH.test(name)||DIRECTIVE_KEYS.some(k=>name.startsWith(k)); }
 function isLarge(name){return LARGE_KEYS.some(k=>name.startsWith(k))}
 function isOpt(name){return OPT_KEYS.some(k=>name.startsWith(k))}
 
+function outputBlockSpans(text){
+  const lines=text.split('\n'), spans=[]; let start=-1;
+  lines.forEach((l,i)=>{
+    const t=l.trim();
+    if(!/^---[A-Z].*---$/.test(t))return;
+    if(/^---END/.test(t)){ if(start!==-1){spans.push([start,i]);start=-1;} }
+    else if(start===-1) start=i;
+  });
+  if(start!==-1)spans.push([start,lines.length-1]);   // unterminated: treat the rest as block
+  return spans;
+}
 function getPlaceholders(text){
+  const spans=outputBlockSpans(text);
+  const nl=[]; for(let i=0;i<text.length;i++) if(text[i]==='\n') nl.push(i);
+  const lineOf=idx=>{ let lo=0,hi=nl.length; while(lo<hi){const mid=(lo+hi)>>1; if(nl[mid]<idx)lo=mid+1; else hi=mid;} return lo; };
+  // Count EVERY bracket token per line, not just the ones PH_RE matches: a
+  // template row is "[ID] | [Severity] | [one-line fix]" and its siblings are
+  // lowercase, so counting matches only would have seen a lone token.
+  const perLine={};
+  let mm; const scan=new RegExp(ANY_TOKEN.source,'g');
+  while((mm=scan.exec(text))!==null){ const ln=lineOf(mm.index); perLine[ln]=(perLine[ln]||0)+1; }
   const seen=new Set(),out=[];
   let m; PH_RE.lastIndex=0;
   while((m=PH_RE.exec(text))!==null){
+    const ln=lineOf(m.index);
+    if(spans.some(sp=>ln>=sp[0]&&ln<=sp[1]))continue;   // part of an output block
+    if((perLine[ln]||0)>1)continue;                      // a template row, not a field
+    if(!isFillField(m[1]))continue;                      // prose or an output token
     if(!seen.has(m[0])){seen.add(m[0]);out.push({full:m[0],name:m[1]})}
   }
   return out;
@@ -3826,10 +3864,13 @@ ${invLines}
 Conduct the following verification in four parts. Use code reads and targeted test executions — not prose assessments or trust in the cycle's self-reported results. (If the project's Test Command is \`manual\`, substitute the relevant Regression Scenarios from CLAUDE.md for test executions and rely on close code reads; treat a failed scenario as a failed probe.)
 
 PART 1 — INVARIANT PROBE RESULTS
-Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected at copy time — do NOT substitute your own picks):
+Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected deterministically from a stated seed, not chosen by the implementer — do NOT substitute your own picks):
 
 MANDATORY ROTATION PROBES:
-${invs.length>=5?selectRandomInvariants(invs,5).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
+${invs.length>=5?selectSeededInvariants(invs,5,probeSeed()).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
+(Probe seed: ${probeSeed()} — the selection is a pure function of the seed and
+the invariant ids, so a verifier can reproduce it and the implementer cannot
+re-roll it. It rotates once per UTC day.)
 
 For each invariant probed:
 - Read the relevant code directly (do not rely on the cycle's description of what changed)
@@ -3898,18 +3939,25 @@ Category D ratio: [X%]
 Finally, answer: "What invariants should be added to the library based on what this cycle revealed?" List any new invariants discovered during verification that should be probed in future cycles.`;
 }
 
-function selectRandomInvariants(invs,count){
-  const shuffled=[...invs];
-  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
-  return shuffled.slice(0,count);
-}
-
-function doCopyVerification(){
-  // Regenerate prompt with fresh random picks, then copy with fill values applied
-  const project=getProject();
-  const pre=document.getElementById('p4v');
-  if(pre) pre.textContent=buildVerificationText(project);
-  copyToClipboard(getFilledText('p4v'),document.getElementById('copy-p4v'));
+// F14 (Cycle 6): the rotation probes were drawn with Math.random() AND re-rolled
+// on every Copy, so the copied prompt differed from the one on screen and an
+// implementer could press Copy until the picks looked easy. The §4v prompt's own
+// rule — "pre-selected … do NOT substitute your own picks" — has no force if the
+// selection is a coin flip the implementer controls. R19 fixed exactly this for
+// scripts/verification-pack.mjs by seeding from the commit sha; this is the same
+// property in the browser, where there is no sha: seed from the project + UTC
+// day, state the seed in the prompt, and never re-roll on copy.
+function probeSeed(){ return `${activeProjectId}:${new Date().toISOString().slice(0,10)}`; }
+function hash32(str){ let h=2166136261>>>0; const s=String(str); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+function selectSeededInvariants(invs,count,seed){
+  return [...invs]
+    // The seed goes FIRST. FNV-1a does not avalanche on a trailing change: with
+    // the seed as a suffix every hash shifted by the SAME constant, so the sort
+    // order never moved and the probes never rotated (the guard caught it).
+    // sha256 in verification-pack.mjs has no such problem — this one does.
+    .map(inv=>({inv,h:hash32(seed+'|'+String(inv.id))}))
+    .sort((a,b)=>a.h-b.h||String(a.inv.id).localeCompare(String(b.inv.id)))
+    .slice(0,count).map(x=>x.inv);
 }
 
 function renderVerification(){

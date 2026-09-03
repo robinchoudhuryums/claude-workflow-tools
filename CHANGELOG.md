@@ -5,6 +5,69 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.29.0 — 2026-09-03
+
+Cycle-6 `/broad-implement` Batches 5 and 6 — the last four findings of the
+scan's batch plan. **`/setup-cycle` changed, so consuming projects should
+re-pull with `/sync-commands`.**
+
+### Batch 6 — every console prompt is now locked (F16)
+The audit found eight console prompts sitting outside every lock. There were
+**nine**, and the ninth was the one that mattered: `setup`, which *does* have a
+canonical counterpart and had quietly decayed to a **pre-R18 copy** — missing 36
+canonical lines including the entire "user-facing surfaces" profile step and the
+instruction to propose an interface Health Dimension. An operator running
+`/setup-cycle` from the console got a config that could never score the interface
+layer, which is precisely the gap R18 shipped to close in v1.19.0. The file-global
+markers could not see it, because the phrases appear elsewhere in the file.
+
+- The static `MANIFEST` now resolves a canonical body from EITHER a slash
+  `command:` or a `section:` heading, via the same resolver the dynamic lock
+  uses. All 16 static `<pre>` blocks are locked; the nine without a slash
+  command have canonical bodies under **"Console Reference Prompts"** in
+  `CLAUDE.md`.
+- `--assert` additionally fails if a *new* static prompt appears with no
+  manifest entry. That derived half is the point: the audit itself under-counted
+  the unlocked set, so a hand-maintained list would have been wrong on arrival.
+- Three elaborations the console had been shipping and canonical had lost are
+  restored to `/setup-cycle` (the policy-threshold maturity guidance, the seam
+  files → Seams audit pointer, and "for any Medium or Low, explain what you'd
+  need to verify"). `p7tmpl` is now project-agnostic instead of naming one
+  built-in project's dimensions.
+- These stay **sections, not commands**: each extends a command that already
+  exists, so minting `/security-audit` would duplicate a body rather than
+  extend one.
+
+### Batch 5
+- **F11.** The fill form classified bracket tokens by an ALL-CAPS-only pattern,
+  so it missed every operator placeholder carrying a lowercase clause after an
+  em dash (5 of them) while offering `[ID]`, `[INV-XX]` and `[X/10]` as fields —
+  filling one rewrites the output block the prompt tells the agent to emit.
+  Fields and format tokens are now told apart **structurally**: a token inside
+  an `---OUTPUT BLOCK---` span, or sharing its line with another bracket token,
+  is a template, not an input. Across all 16 prompts: 31 fields offered, every
+  one an operator input.
+- **F14.** The §4v rotation probes were `Math.random()` **re-rolled on every
+  Copy**, so the copied prompt differed from the one on screen and an
+  implementer could press Copy until the picks looked easy — the prompt's own
+  "do NOT substitute your own picks" had no force. They are now a pure function
+  of a stated seed (project + UTC day), reproducible by a verifier, never
+  re-rolled. R19 gave the script this property via the commit sha; the browser
+  has no sha, so it states the seed instead.
+- **F15.** `.cycle/STATE.md` had grown to 24 sections and 347 lines with two
+  `Decisions made` and two `Where I left off` — the substrate a new session
+  loads was buried in narrative. It is back to its own 7-section template (64
+  lines); the history moved to `.cycle/HISTORY.md`, and `check-template-sync`
+  now fails if the file grows a section the template does not define.
+
+### Guard notes
+`INV-63`–`INV-66` added (66 total, 66 runnable, 74 mutations). The F14 guard
+caught a real defect **in its own fix**: FNV-1a does not avalanche on a trailing
+change, so with the seed appended every hash shifted by the same constant and
+the selection never rotated. The seed is hashed as a prefix, and the guard now
+requires a one-character seed change to reorder the picks. (`verification-pack.mjs`
+is unaffected — sha256 avalanches.)
+
 ## 1.28.0 — 2026-09-03
 
 Cycle-6 `/broad-implement` Batches 3 and 4 (four findings). **Console and tooling

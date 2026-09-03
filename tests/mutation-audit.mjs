@@ -99,6 +99,10 @@ const CASES = {
     [HTML, '.nb-g{background:rgba(34,197,94,.15);color:var(--on-green)}', '.nb-g{background:rgba(34,197,94,.15);color:#86efac}', /literal text colour/i],
     [HTML, '--on-green:#166534;', '--on-green:#86efac;', /F13 contrast/],
   ],
+  'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/]],
+  'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
+  'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
+  'INV-66': [['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i]],
   'INV-62': [
     [HTML, 'id="navToggle" aria-label="Open navigation" aria-expanded="false"', 'id="navToggle" aria-label="Open navigation"', /F12/],
     [HTML, '<label class="fill-label" for="pf-name">', '<label class="fill-label" data-for="pf-name">', /F12/],

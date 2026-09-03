@@ -340,6 +340,39 @@ try {
   else console.log(`  ✓ all ${stepCount} .cycle/-writing command steps are gated on .cycle/ existing (INV-12/INV-18)`);
 }
 
+// ── Structural check 11 (F15): .cycle/STATE.md must keep the SHAPE its own
+// template defines. STATE.md is the rolling "where am I now" file that
+// /cycle-resume and the SessionStart hook read; over five cycles it had grown
+// to 24 sections and 347 lines with TWO "Decisions made" and TWO "Where I left
+// off", so the substrate a new session loads was buried in narrative history.
+// The template lives in CLAUDE.md ("Cycle State & Memory"), so derive the
+// expected headings from it rather than listing them here. Skipped when there
+// is no .cycle/ (a consuming project may not use one, and the guard's own
+// regression test copies only the tracked artifacts).
+{
+  const tmpl = claudeRaw.match(/`\.cycle\/STATE\.md` template:\s*\n+```\n([\s\S]*?)\n```/);
+  let stateRaw = null;
+  try { stateRaw = readFileSync(new URL('.cycle/STATE.md', root), 'utf8'); } catch (e) {}
+  if (!tmpl) { failures++; console.log('  ✗ could not find the .cycle/STATE.md template in CLAUDE.md — the state-shape check would be vacuous (F15)'); }
+  else if (stateRaw === null) console.log('  · no .cycle/STATE.md in this tree — state-shape check skipped (optional per project)');
+  else {
+    const heads = t => [...t.matchAll(/^##\s+(.+)$/gm)].map(m => m[1].trim());
+    const want = heads(tmpl[1]), have = heads(stateRaw);
+    const extra = have.filter(h => !want.includes(h));
+    const missing = want.filter(h => !have.includes(h));
+    const dupes = have.filter((h, i) => have.indexOf(h) !== i);
+    if (!want.length) { failures++; console.log('  ✗ the STATE.md template block defines no sections (F15)'); }
+    else if (extra.length || missing.length || dupes.length) {
+      failures++;
+      const bits = [];
+      if (extra.length) bits.push(`section(s) the template does not define: ${extra.map(h => JSON.stringify(h.slice(0, 40))).join(', ')}`);
+      if (missing.length) bits.push(`template section(s) missing: ${missing.map(h => JSON.stringify(h.slice(0, 40))).join(', ')}`);
+      if (dupes.length) bits.push(`duplicated section(s): ${[...new Set(dupes)].map(h => JSON.stringify(h.slice(0, 40))).join(', ')}`);
+      console.log(`  ✗ .cycle/STATE.md has drifted from its template (F15) — ${bits.join('; ')}. Narrative history belongs in .cycle/HISTORY.md.`);
+    } else console.log(`  ✓ .cycle/STATE.md matches its template — ${want.length} sections, no extras, no duplicates (F15)`);
+  }
+}
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');
