@@ -5,7 +5,7 @@ Cycle: 6
 Phase: implement — all six batches of the Cycle-6 /broad-scan IMPLEMENTATION BATCH PLAN are complete (v1.27.0, v1.28.0, v1.29.0)
 Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
-Subsystem cycles since last Seams audit: 2 (cadence 3 — /reflect for Cycle 6 increments to 3 = DUE)
+Subsystem cycles since last Seams audit: 3 (cadence 3 — **DUE**: run a Seams & Invariants audit; it resets this to 0)
 Updated: 2026-09-03
 
 ## In progress (facts to carry forward — NOT judgments)
