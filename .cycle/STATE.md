@@ -39,8 +39,9 @@ NOT in the repo): screenshots mid-animation were an artifact; geometry/DOM asser
 - Batch 5: F11 (PH_RE misses 5 operator placeholders, offers 5 output tokens), F15 (STATE.md back to
   template shape), F14 (console §4v probes re-roll on Copy).
 - Batch 6: F16 (lock the 8 console-only prompts as section bodies; fix the "fully closed" claims).
-- Then: /regression, /reflect (Cycle 6 → seam counter 3/3 DUE), /sync-docs (four new gotchas), §4v
-  in a fresh session (node scripts/verification-pack.mjs now scopes to cycle 6), §6a.
+- Then: /regression, /reflect (Cycle 6 → seam counter 3/3 DUE), §4v in a fresh session
+  (node scripts/verification-pack.mjs now scopes to cycle 6), §6a. (/sync-docs for Batches 1+2 DONE:
+  five gotchas + S8/S9 + operator checklist in config.md; README/CLAUDE pack bullets; ROADMAP R20.)
 
 ## Cycle 5 — R18 interface/visual audit lens — ✅ COMPLETE (v1.19.0)
 Shipped in 5 phases on branch claude/broad-scan-dyw3lo. Origin: operator observed the visual layer was not

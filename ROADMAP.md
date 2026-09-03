@@ -12,6 +12,20 @@ Item IDs (R#) are stable references for planning sessions.
 
 ## Tier 1 — Short-term (days–weeks)
 
+- **R20 — Real-DOM console test stage.** `effort: M (~1 day)`
+  The Cycle-6 scan found two High findings no headless check could see —
+  a fill-form XSS sink that only renders on interaction (F01) and a mobile
+  layout that put the top bar in a side column below 768px (F17) — by
+  driving the pre-installed headless Chromium with a small driver page and
+  asserting DOM geometry, `:focus-visible` box-shadow, and payload
+  execution. The vm-stub harness (`check-html`) cannot see layout,
+  transitions, or a real parser. Promote that driver into `tests/` as a CI
+  stage (geometry at 375/768px, focus ring on each control type, hostile
+  fixture executed through `toggleFill`), so S6/S7's structural halves stop
+  being "never walked" and F17's guard is a measurement rather than a
+  static CSS rule. Same lesson as R14/R16: what has no proof surface gets
+  no guard.
+
 - **R1 — Dogfood the workflow on this repo itself.** `effort: S`
   The tool ships its own `.claude/commands/` as skills but has never
   been run through its own cycle. Run `/setup-cycle`, write its Cycle

@@ -151,6 +151,21 @@ S7 | VISUAL — keyboard-only pass | Subsystem: Interactive Console (HTML)
     cycle-tracker dots, variant toggles, archive headers and "Use ↗" buttons all
     activate. (R18 (a)1 is now guarded structurally — this walk covers whether
     the focus indicator is actually VISIBLE, which code cannot tell you.)
+S8 | VISUAL — light-mode chips and badges | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Toggle light mode; view the sidebar badges ("Status", "Once", "Light",
+      "New"), the Session Flow chips, and the Projects → state message after
+      Connect repo folder
+  Expected: every badge, chip and message is legible without leaning in.
+    (Cycle-6 F13 computed 1.4–2.9:1 for the hardcoded dark-theme hexes; once
+    tokenised, this walk decides whether the replacement colours look right.)
+S9 | VISUAL — phone layout | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Open the hosted console on a phone or at 375px; scroll the Dashboard
+      and a prompt panel; open and close the drawer
+  Expected: one column, top bar pinned at the top, no horizontal scroll,
+    prompt blocks wrap inside the viewport. (Cycle-6 F17: body was a flex ROW
+    below 768px; the fix is pinned by a static CSS check, not by geometry.)
 
 ### Deploy Command
 Interactive Console (HTML): merge to `main` — GitHub Pages republishes
@@ -188,8 +203,37 @@ Cycle Workflow Config.
   one cycle: `WORKFLOW_BLOCKS` hand-listed 7 of 12 registered blocks; the
   panel fixture hardcoded ids and went stale the moment a panel was added;
   `check-html`'s `getEl()` auto-creates any id, so a `render*()` writing to
-  a mistyped element passes CI and renders an empty box. **Derive fixtures
-  from the artifact under test.**
+  a mistyped element passes CI and renders an empty box. A fourth, found by
+  the Cycle-6 scan: the hostile fixture's SINK list was hand-listed, and the
+  one sink it omitted (the fill form) was the one with the live XSS (F01).
+  **Derive fixtures from the artifact under test.** Since v1.27.0 no
+  hand-listed guard set remains.
+- **A derivation can narrow itself the moment it is introduced.** The first
+  version of the derived sink set (F09) placed its marker AFTER
+  `switchProject()`, so the init-time sinks silently left the scan and three
+  existing INV-20 mutation cases went green. Only the mutation audit caught
+  it. When you replace a list with a derivation, add a FLOOR the derivation
+  must reach (here: every element init wrote via innerHTML), or the new
+  guard can cover less than the list it replaced.
+- **A render that runs only on user interaction is invisible to an
+  init-time headless check.** `buildFillForm` renders on Fill fields, not at
+  load, so six releases of hostile-fixture passes never executed it. The
+  fixture must DRIVE the interaction paths (fill forms, the project editor),
+  not just the renders `switchProject()` happens to call.
+- **`metrics.csv` readers that split on a bare comma assume only `notes` is
+  quoted.** Subsystem names with commas ("Auth, Security & HIPAA" — both
+  built-in projects have them) shifted every column and two readers silently
+  skipped the row (Cycle-6 F03). `scripts/csv.mjs` is the one parser now;
+  never split a metrics row by hand, and quote any comma-bearing field.
+- **`.cycle/blocks/` accumulates across cycles.** The first Cycle-6 pack
+  would have handed the verifier all nine Cycle-5 blocks (F02). Anything
+  that reads the directory must filter by the `<cycle>-` prefix and SAY what
+  it excluded.
+- **`PROJECT_HEALTH.md` Current Standing is live status, not history.** The
+  Dashboard, both portfolio scripts and the SessionStart hook read it; it
+  reported a defect fixed in v1.24.0 as open for five weeks and the hook
+  loaded that into every session (F07). When remediation closes what a
+  synthesis reported, update the block in the same commit.
 - **`check-template-sync`'s markers are file-global substrings.** A marker
   satisfied anywhere in the HTML passes, so an individual *builder* can be
   stale while the guard is green. This is what let §T2b rot through P7 and
@@ -247,11 +291,13 @@ so treat these as settled unless the reasoning below is what changed.
   `WORKFLOW_BLOCKS` comes from the `check-output-blocks` registry; the console
   panel fixture and the keyboard-control set come from the markup. Hand-
   maintained lists drift toward omitting whatever is inconvenient. This has now
-  been the root cause **four times in one cycle** (F17's block list, the panel
-  fixture, the element stub, and §4v's finding that the hostile fixture's
-  payload set is hand-picked). Treat "I will list the cases" as a design smell:
-  derive the set from the artifact under test, or the guard proves only the
-  cases someone thought of.
+  been the root cause **six times across two cycles** (Cycle 5: F17's block
+  list, the panel fixture, the element stub, §4v's hand-picked payload set;
+  Cycle 6: the hostile fixture's hand-listed SINK set that omitted the one
+  sink with a live XSS, and — one level down — a derivation that narrowed
+  itself on introduction). Treat "I will list the cases" as a design smell:
+  derive the set from the artifact under test, give the derivation a floor,
+  or the guard proves only the cases someone thought of.
 - **R11 (Dynamic Workflows orchestrator) is HELD until DW leaves research
   preview** — a live integration cannot meet the verification bar in this
   environment. This is the same discipline that kept visual assessment out
@@ -271,10 +317,18 @@ machine or after a release.
 - **Run `/sync-commands` in consuming projects** whenever a command body
   changes. v1.19.0 changed `/broad-scan`, `/reflect` and `/setup-cycle`;
   **v1.23.0 changed the three implement commands and `/reflect`** (they now
-  persist their block to `.cycle/blocks/`). v1.19.1, v1.20.0, v1.21.0 and
-  v1.22.0 changed none — those were console/tooling only.
+  persist their block to `.cycle/blocks/`); **v1.26.0 changed `/broad-scan`**
+  (closing IMPLEMENTATION BATCH PLAN); **v1.27.0 changed `/reflect`** (quote
+  comma-bearing metrics fields) **and `/cycle-init`** (inline PROJECT_HEALTH
+  skeleton). v1.19.1, v1.20.0–v1.22.0, v1.24.0 and v1.25.0 changed none.
+- **One-time, consuming projects with comma-bearing subsystem names:** any
+  existing `metrics.csv` row whose subsystem is UNQUOTED has shifted columns
+  and cannot be repaired by the parser — quote those subsystem fields by
+  hand once (v1.27.0 / F03).
 - **Browser-verify console changes.** Rendering, light-mode contrast, the
   mobile drawer and `legacyCopy()`'s success path have no headless coverage.
+  After v1.27.0's F17 fix, walk S9 (phone layout) once Pages republishes —
+  the geometry is machine-checked (static CSS rule only), the look is not.
 - **`§4v` must run in a fresh session** with no implementation context.
 
 ## Cycle Rotation Plan (operator reference)

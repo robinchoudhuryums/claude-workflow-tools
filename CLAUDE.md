@@ -213,7 +213,9 @@ And two helpers operate on the invariant library:
 And one assembles the independent-verification input:
 - `scripts/verification-pack.mjs` — builds a ready-to-paste §4v prompt: the
   canonical body via the same `sectionBody()` the lock uses (no fourth copy),
-  the live invariant library, the cycle's blocks from `.cycle/blocks/`, and the
+  the live invariant library, the CURRENT cycle's blocks from `.cycle/blocks/`
+  (by `<cycle>-` filename prefix — blocks from other cycles are named as
+  excluded, never silently dropped, since the directory accumulates), and the
   **rotation probes seeded from the commit sha** so they are reproducible rather
   than chosen by the implementer — the prompt's "do NOT substitute your own
   picks" rule has no force if the implementer picks them. It also reads
