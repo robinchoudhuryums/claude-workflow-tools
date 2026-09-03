@@ -5,6 +5,50 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.30.0 — 2026-09-03
+
+Fixes the two duplicate-id collisions the Cycle-6 `/regression` pass found, and
+adds the invariant that makes the class impossible. Console + guard only — **no
+command body or config-schema change, so no `/sync-commands` re-pull**.
+
+### The Tier 1 panel was destroyed on every load
+`<section id="t1">` and `<pre id="t1">` shared an id. `getElementById` returns
+the **first** element in document order, so `renderTier1()` assigned
+`textContent` to the **section** — wiping its header, both prompts, both Copy
+buttons and both Fill buttons, and replacing them with unstyled, unwrapped
+prose. `<pre id="t1i">` (Broad Implement) went with it. The panel had rendered
+this way since the tabbed-nav rewrite, on the hosted console, for the Tier 1
+entry point this project's own workflow uses most.
+
+`doCopy('setup')` had the same collision with `<section id="setup">`: it copied
+the section, so the panel heading, purpose blurb and warning note were pasted
+into the prompt an operator handed to an agent (10,841 chars instead of 10,127).
+
+Both are fixed by renaming the **`<pre>`** ids — `t1` → `t1a` (matching the
+existing `t2a`/`t2b` pattern) and `setup` → `psetup` (matching `p*`) — never the
+section ids, which the nav `href`s and `showPanel()` depend on. No stored fill
+values are orphaned: the Tier 1 fill form was inside the destroyed subtree and
+could never have run, and Setup has no fill form.
+
+### Why nothing caught it
+`check-html`'s stubbed document is a flat id→element map with **no document
+order**, so it cannot represent "first match wins" — the collision is invisible
+to it by construction. `INV-50` passed throughout because `t1` *is* in the
+markup; it proves an id exists, not that the element resolved at runtime is the
+one intended. It took driving a real browser and counting `<pre>` elements.
+
+`INV-67` closes it with a check the harness *can* run: strip the `<script>`
+block, collect every markup `id`, fail on a duplicate. 177 ids checked,
+mutation-proven by reinstating the exact collision. Library: 67, all runnable.
+
+### Bookkeeping
+`/reflect` had already run for Cycle 6, and it is the sole writer of
+`net_score`/`prod_fixes`/`new_failure_modes`. These two production fixes are
+therefore **not** in the cycle-6 metrics row (13 − 0); §6a should count 15 − 0
+for the cycle. The reflect block is left intact as the honest record of what
+that reflection concluded, and `.cycle/blocks/06-1.30.0-broad-implement.md`
+supersedes its "carried out, unfixed" note.
+
 ## 1.29.0 — 2026-09-03
 
 Cycle-6 `/broad-implement` Batches 5 and 6 — the last four findings of the

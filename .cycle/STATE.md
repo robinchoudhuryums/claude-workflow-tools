@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 6
-Phase: implement — all six batches of the Cycle-6 /broad-scan IMPLEMENTATION BATCH PLAN are complete (v1.27.0, v1.28.0, v1.29.0)
+Phase: implement — batch plan complete (v1.27.0–v1.29.0), reflected, plus post-reflect remediation of the two duplicate-id defects /regression found (v1.30.0)
 Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 3 (cadence 3 — **DUE**: run a Seams & Invariants audit; it resets this to 0)
@@ -10,6 +10,9 @@ Updated: 2026-09-03
 
 ## In progress (facts to carry forward — NOT judgments)
 - Nothing partially done. Cycle 6 implementation is finished; the cycle itself is not closed.
+- POST-REFLECT: /reflect already ran and stamped the metrics row (13 − 0). The two production fixes in
+  v1.30.0 landed AFTER it and are deliberately NOT in that row — /reflect is the sole writer of those
+  columns. §6a should count 15 − 0 for the cycle; the v1.30.0 block states this.
 - The next concrete step is /regression, then /reflect (which increments the seam counter to 3/3 = DUE),
   then §4v in a FRESH session (`node scripts/verification-pack.mjs` now scopes to cycle 6 automatically),
   then §6a. The Cycle-6 blocks for §4v are already persisted in .cycle/blocks/06-*.md.
@@ -25,13 +28,20 @@ Updated: 2026-09-03
   colour tokens + computed contrast guard, F12 form labels + drawer keyboard dismissal.
 - v1.29.0 | Batches 5+6 | F11 fill-field classification, F14 seeded §4v probes, F15 this file,
   F16 every static console prompt locked (nine, not the eight the scan counted).
-- Invariant library 58 → 66, all runnable and mutation-proven.
+- v1.30.0 | post-reflect | the two duplicate-id collisions /regression found: <section id="t1"> shadowed
+  <pre id="t1"> and renderTier1() destroyed the whole Tier 1 panel on every load; doCopy('setup') copied
+  the section. Pre ids renamed t1→t1a, setup→psetup (sections untouched — nav depends on them). INV-67
+  added: every markup id is unique.
+- Invariant library 58 → 67, all runnable and mutation-proven (75 mutations).
 
 ## Pending / not yet done
-- /regression, /reflect, §4v (fresh session), §6a to close Cycle 6.
+- §4v (fresh session) then §6a to close Cycle 6. /regression and /reflect are DONE.
 - A Seams & Invariants audit is DUE once /reflect increments the counter to 3/3.
-- ROADMAP R20 (real-DOM console test stage) is recorded but not built: F17's fix is pinned by a static
-  CSS rule, and the Chromium driver used to verify it lives in a session scratchpad, not the repo.
+- ROADMAP R20 (real-DOM console test stage) is recorded but not built, and is now doubly earned: F17's
+  fix is pinned by a static CSS rule, and BOTH duplicate-id defects were invisible to the vm harness and
+  found only by driving Chromium from a session scratchpad.
+- /sync-docs owes one more gotcha: a stubbed DOM that is a flat id→element map cannot represent
+  "getElementById returns the first match", so id shadowing is invisible to it by construction.
 
 ## Open follow-on items
 - deleteProject() leaves ccg:<pid>:invariants / :archive / :cycle behind; a new project deriving the
@@ -56,9 +66,18 @@ Updated: 2026-09-03
   check-template-sync now fails if this file grows a section the template does not define.
 
 ## Where I left off
-v1.29.0 pushed on claude/broad-scan-8a6drq; full Test Command green (16 stages); 66/66 invariants
-runnable and mutation-proven. Cycle 6's batch plan is fully implemented — all 17 findings closed
-across three releases. Nothing is half-done. Next action is to CLOSE the cycle: /regression, then
-/reflect, then §4v in a fresh session, then §6a. Two of my own new guards were wrong on first write
-this cycle and the mutation audit caught both; a third (the F14 seed) was caught by the guard I had
-just written. That pattern — a new guard born narrower than it looks — is now a Common Gotcha.
+v1.30.0 pushed on claude/broad-scan-8a6drq; full Test Command green (16 stages, 292 ✓); 67/67 invariants
+runnable and mutation-proven across 75 mutations. Cycle 6 is implemented, regressed, reflected, and its
+two post-reflect defects are closed. The Tier 1 panel renders for the first time in many releases —
+browser-verified, not inferred. Nothing is half-done.
+
+Next action: §4v in a FRESH session (`node scripts/verification-pack.mjs` assembles cycle-6-scoped
+inputs, now four blocks plus the reflect block, with the self-report correction warning attached), then
+§6a. A Seams & Invariants audit is DUE (3/3) and can run before or after.
+
+Worth carrying: THREE of my own guards were wrong on first write this cycle and were caught — two by the
+mutation audit (a derivation that narrowed itself on introduction; a regex where \bfor= matched
+data-for=) and one by the guard I had just written (an FNV-1a seed appended instead of prefixed, so the
+probes never rotated). And the two worst defects of the cycle were invisible to the headless harness
+entirely: a flat id→element map cannot model document order. Guards are not free of the defects they
+guard against, and a harness's shape decides which bug classes it can never see.

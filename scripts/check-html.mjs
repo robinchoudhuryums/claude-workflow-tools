@@ -1110,6 +1110,28 @@ if (loaded && typeof ctx.selectSeededInvariants === 'function' && typeof ctx.pro
   else bad('F14: ' + problems.join('; '));
 } else if (loaded) bad('probeSeed/selectSeededInvariants not defined — F14 unguarded');
 
+// INV-67 — every id in the MARKUP is unique. getElementById() returns the FIRST
+// element in document order, so a collision does not error: it silently hands
+// the code a different element than the one it names. Two shipped for many
+// releases. <section id="t1"> shadowed <pre id="t1">, so renderTier1() assigned
+// textContent to the SECTION and destroyed the entire Tier 1 panel — header,
+// both prompts, both buttons — on every load; and doCopy('setup') read the
+// setup SECTION, pasting the panel heading and warning note into the prompt an
+// operator copied. Neither is visible to the harness above BY CONSTRUCTION: the
+// stubbed document is a flat id→element map with no document order, so it
+// cannot represent "first match wins". This check reads the markup instead.
+// Runtime-generated ids (dedit-<pid>, ${safeId}) are excluded with the script.
+{
+  const markup = html.replace(/<script>[\s\S]*?<\/script>/g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const ids = [...markup.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
+  const seen = new Map();
+  for (const id of ids) seen.set(id, (seen.get(id) || 0) + 1);
+  const dupes = [...seen].filter(([, n]) => n > 1).map(([id, n]) => `${id} (×${n})`);
+  if (ids.length < 50) bad(`INV-67: only ${ids.length} markup id(s) found — the duplicate-id check would be vacuous`);
+  else if (dupes.length) bad(`INV-67: duplicate id(s) in the markup — getElementById returns the FIRST match, so a render silently targets the wrong element: ${dupes.join(', ')}`);
+  else ok(`every id in the markup is unique (${ids.length} checked) — no render can silently target the wrong element (INV-67)`);
+}
+
 console.log('HTML console check (claude-code-guide-v2.html):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} HTML check(s) failed.`); process.exit(1); }

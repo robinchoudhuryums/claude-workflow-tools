@@ -399,15 +399,15 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
       <div class="spurp"><strong>Purpose:</strong> Thorough, multi-phase analysis that defines the foundation for the entire cycle workflow: subsystem boundaries, file lists, health dimensions, invariant library seed, and policy thresholds. Run once when onboarding a new project, or re-run after major restructures.</div>
     </div></div>
     <div class="wnote"><div class="ic">⚠</div><div><strong>This command's output is the foundation for everything else.</strong> Bad subsystem boundaries = shallow audits. Missing files = blind spots. Wrong dimensions = misleading scores. Take time to review the output and adjust before using the other commands.</div></div>
-    <div class="pb" id="block-setup">
+    <div class="pb" id="block-psetup">
       <div class="pb-header">
         <div class="pb-label">Setup Cycle Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Run once per project</span>
-          <button class="copy-btn" id="copy-setup" onclick="doCopy('setup')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+          <button class="copy-btn" id="copy-psetup" onclick="doCopy('psetup')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <pre id="setup">Do not make any changes to any files during this session.
+      <pre id="psetup">Do not make any changes to any files during this session.
 
 You are setting up the cycle workflow configuration for this project.
 This is the foundation for all future audit, implementation, and
@@ -655,17 +655,17 @@ For any Medium or Low, explain what you'd need to verify.</pre>
       <div class="spurp"><strong>Purpose:</strong> Fast, whole-codebase discovery. One session, audit-then-implement with your approval gate in between. Use when the project still has obvious issues, during rapid development, or for a quick pulse between formal cycles.</div>
     </div></div>
     <div class="inote"><div class="ic">📌</div><div><strong>When to use:</strong> Project is new or unaudited, rapid development phase, broad scans still produce real bugs. <strong>When to graduate:</strong> Broad scans start finding more speculative "improvements" than production bugs → move that subsystem to Tier 2.</div></div>
-    <div class="pb" id="block-t1">
+    <div class="pb" id="block-t1a">
       <div class="pb-header">
         <div class="pb-label">Tier 1 — Broad Scan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Single session</span>
-          <button class="fill-btn" onclick="toggleFill('t1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
-          <button class="copy-btn" id="copy-t1" onclick="doCopy('t1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
+          <button class="fill-btn" onclick="toggleFill('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="copy-btn" id="copy-t1a" onclick="doCopy('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div class="fill-form" id="fill-t1"></div>
-      <pre id="t1"></pre>
+      <div class="fill-form" id="fill-t1a"></div>
+      <pre id="t1a"></pre>
     </div>
     <div class="inote"><div class="ic">✋</div><div><strong>Approval gate:</strong> review the findings before anything is implemented, then name the ones you want fixed in the prompt below. Produces a <strong>BROAD SCAN IMPLEMENTATION SUMMARY</strong>.</div></div>
     <div class="pb" id="block-t1i">
@@ -3670,11 +3670,16 @@ function renderPrReview(){
 
 function renderTier1(){
   const project=getProject();
-  const pre=document.getElementById('t1');
+  // The <pre> is t1a, NOT t1: the enclosing <section> owns id="t1" (the nav
+  // href and showPanel depend on it), and getElementById returns the FIRST
+  // match in document order. Writing to 't1' here assigned textContent to the
+  // SECTION and destroyed the entire Tier 1 panel — header, both prompts, both
+  // buttons — on every load, for every release since the tabbed-nav rewrite.
+  const pre=document.getElementById('t1a');
   if(pre) pre.textContent=buildTier1Text(project);
-  const form=document.getElementById('fill-t1');
+  const form=document.getElementById('fill-t1a');
   if(form){form.innerHTML='';form.classList.remove('open');}
-  const btn=document.querySelector('#block-t1 .fill-btn');
+  const btn=document.querySelector('#block-t1a .fill-btn');
   if(btn)btn.classList.remove('active');
 }
 

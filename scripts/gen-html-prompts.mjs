@@ -88,7 +88,7 @@ export const MANIFEST = [
   // F16 — was the largest unlocked prompt, and the drift was real: 36 canonical
   // lines missing, among them the whole "user-facing surfaces" profile step and
   // the interface-dimension instruction R18 shipped in v1.19.0.
-  { id: 'setup', command: 'setup-cycle', drop: false, replace: [] },
+  { id: 'psetup', command: 'setup-cycle', drop: false, replace: [] },
   // F16 — no slash command exists for these; their canonical body now lives
   // under "## Console Reference Prompts" in CLAUDE.md.
   { id: 'p1sec', section: 'Console Prompt — Security & Compliance Audit Add-on', label: '§1 security add-on', drop: false, replace: [] },

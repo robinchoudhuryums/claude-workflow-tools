@@ -99,6 +99,9 @@ const CASES = {
     [HTML, '.nb-g{background:rgba(34,197,94,.15);color:var(--on-green)}', '.nb-g{background:rgba(34,197,94,.15);color:#86efac}', /literal text colour/i],
     [HTML, '--on-green:#166534;', '--on-green:#86efac;', /F13 contrast/],
   ],
+  // Reinstating the real collision: <pre id="t1a"> back to id="t1", which the
+  // enclosing <section id="t1"> then shadows.
+  'INV-67': [[HTML, '<pre id="t1a"></pre>', '<pre id="t1"></pre>', /duplicate id/i]],
   'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/]],
   'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
   'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
