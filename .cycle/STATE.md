@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 6
-Phase: idle — CYCLE 6 IS CLOSED. Audit → implement → regression → reflect → remediation → §4v → Seams audit → §6a all complete. Cycle 7 begins with a fresh /broad-scan, which increments Cycle to 7 (P3).
+Phase: idle — CYCLE 6 IS CLOSED (§6a ran 2026-09-04). One post-synthesis change landed after it: v1.33.0 made the policy trigger RELATIVE, closing the rubric weakness that synthesis flagged. Cycle 7 begins with a fresh /broad-scan, which increments Cycle to 7 (P3).
 Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 0 (cadence 3 — reset by the Seams & Invariants audit of 2026-09-04; its block is .cycle/blocks/06-c-seams.md)
@@ -72,10 +72,11 @@ NEXT: /broad-scan opens Cycle 7 and increments the Cycle field to 7.
   implementer prose and self-assessment — into every new session, including a §4v one, which contradicts
   §4v's own opening instruction. Either suppress the judgment-bearing sections when Phase is `verify`,
   or require §4v to run hook-free.
-- The POLICY MECHANISM has never engaged in six cycles. Threshold 4/10 with scores between 7 and 9.5
-  means the "≤ threshold for 2 consecutive cycles" trigger is unreachable. Flagged at Cycle 5 and again
-  at Cycle 6 — either the threshold is wrong for this project or the rule should be relative (a category
-  that FALLS two cycles running), and that is a config decision.
+- CLOSED in v1.33.0: the policy trigger is now RELATIVE (decline / sharp drop / persistent laggard /
+  absolute floor), validated by replaying six cycles of real Axis B history — Cycle 5 fires, Cycle 6
+  correctly does not. The Cycle-6 PROJECT_HEALTH entry still QUOTES the old reasoning ("lowest 8.0 vs
+  threshold 4/10"); the verdict is unchanged, so correct the wording at the next synthesis rather than
+  editing a historical entry.
 - INV-72 is a RATCHET, not a proof of completeness: its floor is derived from the versions this cycle
   already has blocks for, so a cycle whose FIRST release ships blockless sets its own floor above it.
 - ROADMAP R20 (real-DOM console test stage) is recorded but not built, and is now trebly earned.

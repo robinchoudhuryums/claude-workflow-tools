@@ -5,6 +5,50 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.33.0 — 2026-09-04
+
+Makes the §6a policy trigger RELATIVE. Post-synthesis change to a finding the
+Cycle-6 synthesis raised about itself.
+
+**The mechanism had never once engaged.** `Policy threshold: 4/10` with
+`Consecutive cycles: 2` means a category must sit at or below 4 twice running.
+Across six cycles of this repo, Axis B scores sat between 7.0 and 9.5 — so the
+rule could not fire, and did not, including the cycle where Guard / Test
+Coverage Quality fell **9.0 → 7.0** and the synthesis itself called it "the
+second consecutive cycle where this class was declared closed and wasn't".
+Flagged at Cycle 5, flagged again at Cycle 6.
+
+**Two defects, not one.** The floor was also written as a LITERAL inside the
+canonical §6a body (`≤5/10 for 2 consecutive cycles`) while the Cycle Workflow
+Config carried a `Policy threshold` field the body never read — so the config
+value was decorative, and the console (which DID interpolate it) and canonical
+disagreed. The lock passed only because the built-in projects happen to be
+configured at 5.
+
+The trigger is now four clauses, all parameterised:
+- **(a) DECLINE** — fell in `Consecutive cycles` consecutive cycles, any magnitude.
+- **(b) SHARP DROP** — fell by ≥1.5 in a single cycle. Deliberately fixed rather
+  than configurable: it is a property of the 10-point scale, not of the project,
+  and it is the clause that catches the fall that matters most.
+- **(c) PERSISTENT LAGGARD** — lowest-scoring for `Consecutive cycles` consecutive
+  cycles AND not improving. A category that is lowest but RECOVERING does not
+  trigger, and §6a must say so rather than silently omitting it.
+- **(d) ABSOLUTE FLOOR** — at or below `Policy threshold`, regardless of trend.
+  The old rule, kept as a backstop for a genuinely broken category.
+
+Validated against six cycles of this repo's real Axis B history: Cycle 5 fires
+(Guard / Test Coverage Quality, sharp drop 9.0 → 7.0) and Cycle 6 does not
+(that category improved 7.0 → 8.0, and clause (c) explicitly spares it). The
+Cycle-6 synthesis reported "no policy triggers" under the old rule and the new
+rule agrees, so that synthesis stands unchanged.
+
+The POLICY RESPONSE block gains a `Trigger clause:` field so the response names
+which clause fired. INV-75 guards the whole thing: all four clause labels
+present, both config fields read by name, and no hardcoded `≤N/10 for N
+consecutive cycles` floor back in the canonical body.
+
+Library 72 → 73. Full 16-stage Test Command green.
+
 ## 1.32.0 — 2026-09-04
 
 Cycle-6 remediation, Batches 3-5 — the contract seams that held only by luck,

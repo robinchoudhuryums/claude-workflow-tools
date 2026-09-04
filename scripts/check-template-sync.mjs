@@ -539,6 +539,35 @@ try {
   }
 }
 
+// ── Structural check 16 (INV-75): the §6a policy trigger must stay RELATIVE and
+// PARAMETERISED. It was a fixed floor ("≤5/10 for 2 consecutive cycles") written
+// as a literal INSIDE the canonical body, while the Cycle Workflow Config
+// carried a `Policy threshold` field the body never read — a parallel source of
+// truth in which the config value was decorative. Worse, a fixed floor cannot
+// fire on a healthy project: across six cycles of this repo, scores sat between
+// 7 and 9.5 and the mechanism never engaged ONCE, including the cycle where
+// Guard / Test Coverage Quality fell 9.0 → 7.0. The rule now names three clauses
+// and reads both config fields by name.
+{
+  const start = claudeRaw.indexOf('### Health Synthesis');
+  const body = start === -1 ? '' : claudeRaw.slice(start, claudeRaw.indexOf('\n---', start));
+  const problems = [];
+  if (!body) problems.push('could not locate the §6a "Health Synthesis" section — this check would be vacuous');
+  else {
+    for (const clause of ['DECLINE —', 'SHARP DROP —', 'PERSISTENT LAGGARD —', 'ABSOLUTE FLOOR —'])
+      if (!body.includes(clause)) problems.push(`the §6a policy rule no longer names the ${JSON.stringify(clause.replace(' —', ''))} clause`);
+    for (const field of ['`Policy threshold`', '`Consecutive cycles`'])
+      if (!body.includes(field)) problems.push(`the §6a policy rule does not read ${field} from the Cycle Workflow Config`);
+    // The regression to guard against: a literal score back in the canonical body.
+    const hard = body.match(/≤\s*\d+\s*\/\s*10\s+for\s+\d+\s+consecutive/i);
+    if (hard) problems.push(`a hardcoded policy floor is back in the canonical body (${JSON.stringify(hard[0])}) — the config field would be decorative again`);
+  }
+  if (problems.length) {
+    failures++;
+    console.log(`  ✗ relative policy trigger (INV-75): ${problems.join('; ')}. A fixed floor never fires on a healthy project — the primary trigger must be relative.`);
+  } else console.log('  ✓ the §6a policy trigger is relative and parameterised — four clauses, both config fields read by name, no hardcoded floor (INV-75)');
+}
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

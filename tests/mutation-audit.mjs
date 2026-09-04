@@ -154,6 +154,8 @@ const CASES = {
   // INV-74 — drop a stage from CI that the Test Command still documents.
   'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i]],
   // INV-72 — ship a release into the current cycle with no block for it.
+  // INV-75 — drop one of the three clause labels from the canonical rule.
+  'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger/i]],
   'INV-72': [['CHANGELOG.md', '## 1.30.1 — 2026-09-03', '## 1.30.2 — 2026-09-03\n\nmutation\n\n## 1.30.1 — 2026-09-03', /release with no block/i]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────

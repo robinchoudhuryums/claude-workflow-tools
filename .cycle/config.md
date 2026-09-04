@@ -116,10 +116,16 @@ INV-70 | the §4v pack's DISCLOSED seed reproduces the probes that pack PRINTED 
 INV-71 | PROJECT_HEALTH.md's "Current Standing" label set has ONE definition (scripts/health-fields.mjs) that both portfolio readers import, and every artifact that writes or parses the block carries it: the /cycle-init skeleton in CLAUDE.md, the generated command file, the live PROJECT_HEALTH.md, and the console's parseHealth — the console by BEHAVIOUR (it matches a loose pattern rather than spelling the labels, so a block built from the canonical labels must parse every field). Five labels were hard-coded in four places and matched only by luck; a label that drifts on one side does not error, it makes every reader fall back to "—" so the portfolio board, the status board and the Dashboard all render the project UNSCORED. Each copy is checked inside the span that writes it, never file-globally — every label appears twice per artifact | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 13)
 INV-74 | CI runs EVERY stage of the documented Test Command, in the same order. INV-14 asserted only that CI runs check-template-sync, so a stage added to the Test Command and forgotten in the workflow would be run by every contributor and by nothing in CI — or the reverse, a CI stage no contributor can reproduce locally. Parity is exact today (16 stages); this keeps it that way | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 14)
 INV-72 | every release of the CURRENT cycle has a summary block in .cycle/blocks/. §4v and §6a read that directory and nothing else — not the CHANGELOG, not the commit log — so a release that ships without a block is invisible to verification and synthesis BY CONSTRUCTION. v1.30.1 changed the console and had no block; §4v found it only by fetching origin, and the pack it was handed could not have shown it. The floor is DERIVED (the lowest version this cycle already has a block for) so the rule never reaches back into cycles predating the convention, and the ceiling is VERSION | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 15)
+INV-75 | the §6a policy trigger is RELATIVE and PARAMETERISED: the canonical body names all four clauses (DECLINE / SHARP DROP / PERSISTENT LAGGARD / ABSOLUTE FLOOR), reads `Policy threshold` and `Consecutive cycles` from the Cycle Workflow Config by name, and contains no hardcoded "≤N/10 for N consecutive cycles" floor. It WAS a literal in the canonical body while the config carried a threshold field the body never read — the config value was decorative. And a fixed floor cannot fire on a healthy project: across six cycles here the mechanism engaged ZERO times, scores sitting between 7 and 9.5, including the cycle Guard / Test Coverage Quality fell 9.0 → 7.0. The console builder renders the same clauses by canonicalCoverage (INV-36), so this guards the source | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 16)
 
 ### Policy Configuration
 Policy threshold: 4/10
 Consecutive cycles: 2
+(RELATIVE trigger as of v1.33.0. `Policy threshold` is now the ABSOLUTE FLOOR
+ backstop only; a category triggers primarily by DECLINING for `Consecutive
+ cycles` consecutive cycles, or by staying the lowest-scoring category that long
+ without recovering. The fixed floor never fired once in six cycles — scores sat
+ between 7 and 9.5 while Guard/Test Coverage Quality fell 9.0 → 7.0 unpoliced.)
 
 ### Seams Audit Cadence
 every 3 subsystem cycles
@@ -352,6 +358,14 @@ Cycle Workflow Config.
   Every file exists in this repo, so it was invisible here and caught by
   `guard.test.mjs`'s sandbox, which is precisely what that sandbox is for. A
   guard's rare branch is the one your own tree cannot exercise.
+- **A config field the canonical body never READS is decorative.** The Cycle
+  Workflow Config carried `Policy threshold: 4/10`, and the §6a canonical body
+  hardcoded `≤5/10 for 2 consecutive cycles` — so the field did nothing on the
+  canonical side while the console's builder DID interpolate it. Two artifacts,
+  two different rules, and the `--assert` lock passed only because both built-in
+  projects happen to be configured at 5. When a body states a project-specific
+  number, ask which artifact actually reads the config field of that name; if the
+  answer is "not this one", the field is decoration and the two will diverge.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
