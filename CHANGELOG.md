@@ -5,6 +5,33 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.30.1 — 2026-09-03
+
+Removes 26 dead CSS rules (17 classes) from the console. No behaviour change —
+none of the classes was applied to anything.
+
+- `.log-card`, `.log-hdr`, `.log-ttl`, `.log-meta`, `.log-date`, `.lsh3`,
+  `table.lt`, `.fr`, `.fn2`, `.fs`, `.fp0/1/2`, `.ft`, `.fl` — the residue of an
+  older archive rendering; `renderArchive()` builds entries with inline styles
+  now. `.log-body` is still used and stays.
+- `.ct-check` and its two `.done` rules — superseded by the phase dots
+  `renderCycle()` builds inline. Cycle-6 Batch 4 tokenised the colour inside
+  `.ct-check.done::after` without noticing the class is applied to nothing.
+- `.prose` — the four rules were never applied; the six textual occurrences of
+  "prose" in the file are the English word inside prompt bodies.
+
+Verified SAFE rather than assumed: the applied set was derived from real
+`class="…"` attributes including template-literal and concatenation forms plus
+`classList.add/remove/toggle` calls, not from raw text search — a raw search
+reported `fl`, `fr`, `fs`, `ft` and `lt` as "used" because they appear inside
+"flex", "from", "restoring" and `&lt;`. A rule was removed only when EVERY class
+in its selector was dead, so nothing styling a live class was touched. Archive,
+cycle tracker and Tier 1 re-verified rendering in headless Chromium afterwards.
+
+ROADMAP **R21** queues the `/broad-scan` lens change this exercise argued for —
+widening the dead-code bullet's nouns and adding a SAFE/PROPOSE proof gate,
+without adding a general simplification mandate.
+
 ## 1.30.0 — 2026-09-03
 
 Fixes the two duplicate-id collisions the Cycle-6 `/regression` pass found, and
