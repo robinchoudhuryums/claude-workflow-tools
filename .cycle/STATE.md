@@ -2,27 +2,24 @@
 
 ## Current
 Cycle: 6
-Phase: implement — Cycle-6 REMEDIATION. §4v and the Seams audit have both RUN; Batches 1+2 of the plan they produced landed as v1.31.0. Batches 3-5 remain, then §6a closes the cycle.
+Phase: implement — Cycle-6 REMEDIATION COMPLETE. §4v and the Seams audit have run; all five batches of the plan they produced landed (v1.31.0, v1.32.0). Only §6a remains to close the cycle.
 Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
-Subsystem cycles since last Seams audit: 3 — STALE: the Seams audit HAS run (2026-09-04). Resetting this to 0 is Batch 5 item E2 and was out of scope for the Batch 1+2 session, so /audit and portfolio-status will keep reporting DUE until it lands.
+Subsystem cycles since last Seams audit: 0 (cadence 3 — reset by the Seams & Invariants audit of 2026-09-04; its block is .cycle/blocks/06-c-seams.md)
 Updated: 2026-09-04
 
 ## In progress (facts to carry forward — NOT judgments)
-- Nothing partially done. Batches 1+2 are complete and pushed as v1.31.0; Batches 3-5 have not been started.
-- The remediation plan has 12 items in 5 batches. Batches 1+2 (A1 A2 B1 B2) are DONE. Remaining:
-  Batch 3 — C1 INV-71 (derive the PROJECT_HEALTH "Current Standing" label set across its four readers:
-  portfolio.mjs, portfolio-status.mjs, console parseHealth, /cycle-init's skeleton — they match today,
-  nothing asserts it) and C2 INV-74 (CI runs every stage of the documented Test Command, in order —
-  parity is exact today, INV-14 only asserts one script runs). Both go green on landing.
-  Batch 4 — D1 backfill .cycle/blocks/06-1.30.1-broad-implement.md, THEN D2 INV-72 (every release that
-  changes shipped code has a block). Order is load-bearing: D2 is RED until D1 lands.
-  Batch 5 — E1 the three owed Common Gotchas, E2 reset the seam counter to 0, E3 CHANGELOG/VERSION.
-- POST-REFLECT: /reflect stamped the cycle-6 metrics row (13 − 0) before v1.30.0. §6a should count
-  15 − 0 with 5 defensive for the cycle, PLUS v1.31.0's 1 − 0 with 3 defensive. No metrics row was
-  added for v1.30.0, v1.30.1 or v1.31.0 — /reflect is the sole writer of those columns.
-- §4v has run and its VERIFICATION BLOCK reported one FAIL (INV-52's reproducibility clause). B2/INV-70
-  closes it. §6a must be given the post-remediation state, not that block's verdict alone.
+- Nothing partially done. All five remediation batches are complete and pushed (v1.31.0, v1.32.0).
+- The ONLY step left in Cycle 6 is §6a HEALTH SYNTHESIS. Its inputs are the eight .cycle/blocks/06-*.md
+  files, which now include the §4v VERIFICATION BLOCK (06-b-verification.md) and the SEAMS & INVARIANTS
+  AUDIT BLOCK (06-c-seams.md) — both were persisted in the v1.32.0 batch, having existed only in a chat
+  transcript until then.
+- TELL §6a the bookkeeping it cannot derive: the cycle-6 metrics row reads 13 − 0 because /reflect ran
+  BEFORE the v1.30.0 duplicate-id fixes. Cycle total is 15 − 0 with 5 defensive, PLUS v1.31.0 (1 − 0,
+  3 defensive) and v1.32.0 (0 − 0, 6 defensive). No metrics row was added for v1.30.0, v1.30.1, v1.31.0
+  or v1.32.0 — /reflect is the sole writer of those columns (P1/INV-33).
+- §4v reported ONE failure, INV-52's reproducibility clause. v1.31.0's INV-70 closes it. §6a should
+  score the post-remediation state, not that block's verdict alone.
 - S5/S7/S8/S9 have still never been walked by a person in a browser.
 
 ## Completed this cycle
@@ -50,34 +47,36 @@ Updated: 2026-09-04
   scoping the file's one rule to .nav-item left 19 controls uncovered and the old check called them
   covered. B2 INV-70: the §4v pack's disclosed seed now reproduces its own printed probes; buildPack
   derives them from the seed it prints and takes no override.
-- Invariant library 58 → 69 (one retired, three added), all runnable and mutation-proven (78 mutations).
+- v1.32.0 | Cycle-6 remediation Batches 3-5 | C1 INV-71 the PROJECT_HEALTH "Current Standing" label
+  contract gets ONE definition (scripts/health-fields.mjs, keyed not positional); doc copies checked
+  inside the span that writes them, the console checked by BEHAVIOUR because parseHealth matches a loose
+  pattern rather than spelling the labels. C2 INV-74 CI runs every Test Command stage in order.
+  D1 three blocks backfilled: 06-1.30.1 (marked a reconstruction, claims re-verified), 06-b-verification
+  and 06-c-seams. D2 INV-72 every release of the current cycle has a block. E2 seams counter reset.
+- Invariant library 58 → 72 (one retired, six added), all runnable and mutation-proven (81 mutations).
 
 ## Pending / not yet done
-CLOSING CYCLE 6 — the Seams audit and §4v are DONE. What remains:
-1. REMEDIATION Batches 3, 4 and 5 (listed in "In progress" above). Batch 4's D1 must precede D2.
-2. §6a HEALTH SYNTHESIS. Inputs are .cycle/blocks/06-*.md — now SIX blocks (four implement, the
-   reflect block, and 06-1.31.0). The §4v VERIFICATION BLOCK and the SEAMS & INVARIANTS AUDIT BLOCK
-   from 2026-09-04 are NOT yet saved to .cycle/blocks/ — they live in the session transcript, and §6a
-   wants them (06-b-verification.md and 06-c-seams.md). Saving them is worth doing before §6a.
-   TELL §6a: the metrics row reads 13 − 0 because /reflect ran before v1.30.0; the cycle total is
-   15 − 0 with 5 defensive, plus v1.31.0's 1 − 0 with 3 defensive. §6a writes ONE phase=synthesis row
-   (category_d_ratio + axis_b_lowest only — never net_score, P1/INV-33) and the PROJECT_HEALTH.md
-   Current Standing block, which is LIVE status read by the Dashboard, both portfolio scripts and the hook.
-3. Then Cycle 7 begins with a fresh /broad-scan (which increments Cycle to 7 per P3).
-- DEFERRED pending a decision, not forgotten: INV-73 (§1s must ask about the project's CONFIGURED Axis B
-  categories — buildSeamsText hardcodes the five defaults, and THIS project's five are all custom, so the
-  Seams audit that just ran was asked about categories it does not use). Closing it means editing an
+CLOSING CYCLE 6 — remediation is COMPLETE. One step remains:
+1. §6a HEALTH SYNTHESIS. Inputs: the eight .cycle/blocks/06-*.md files. §6a writes the PROJECT_HEALTH.md
+   update and ONE phase=synthesis metrics row (category_d_ratio + axis_b_lowest only — never net_score,
+   P1/INV-33). Then update PROJECT_HEALTH.md Current Standing, which is LIVE status read by the
+   Dashboard, both portfolio scripts and the hook — and is now guarded by INV-71.
+2. Then Cycle 7 begins with a fresh /broad-scan (which increments Cycle to 7 per P3).
+- OPEN, pending a DECISION rather than work — INV-73: §1s must ask about the project's CONFIGURED Axis B
+  categories. buildSeamsText hardcodes the five defaults, and THIS project's five are all custom, so the
+  Seams audit of 2026-09-04 was asked about categories it does not use. Closing it means editing an
   --assert-locked canonical body AND the SEAMS block's registered field names; making those dynamic
-  weakens the shape check that guards them. Decide before spending it.
-- DEFERRED pending a decision: §4v independence vs the SessionStart hook. The hook injects STATE.md —
+  weakens the shape check that guards them.
+- OPEN, pending a DECISION: §4v independence vs the SessionStart hook. The hook injects STATE.md —
   implementer prose and self-assessment — into every new session, including a §4v one, which contradicts
   §4v's own opening instruction. Either suppress the judgment-bearing sections when Phase is `verify`,
   or require §4v to run hook-free.
+- INV-72 is a RATCHET, not a proof of completeness: its floor is derived from the versions this cycle
+  already has blocks for, so a cycle whose FIRST release ships blockless sets its own floor above that
+  release. Worth a second look in Cycle 7.
 - ROADMAP R21 is queued as Cycle 7's first item (the /broad-scan dead-artifact lens). It changes a
   command body → downstream re-pull.
-- ROADMAP R20 (real-DOM console test stage) is recorded but not built, and is now trebly earned: F17's
-  fix is pinned by a static CSS rule, BOTH duplicate-id defects were invisible to the vm harness, and
-  INV-69 was written only after driving Chromium to confirm what the universal rule actually does.
+- ROADMAP R20 (real-DOM console test stage) is recorded but not built, and is now trebly earned.
 
 ## Open follow-on items
 - deleteProject() leaves ccg:<pid>:invariants / :archive / :cycle behind; a new project deriving the
@@ -108,21 +107,20 @@ CLOSING CYCLE 6 — the Seams audit and §4v are DONE. What remains:
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-v1.31.0 pushed: Cycle-6 remediation Batches 1+2. Full Test Command green (16 stages, 298 ✓, was 292);
-69/69 invariants runnable, PASS, and mutation-proven across 78 mutations. Rebased onto origin/main
-(v1.30.1) before committing — the branch was based on a stale main and would have reverted the
-dead-CSS release. Nothing is half-done.
+v1.32.0 pushed: Cycle-6 remediation Batches 3-5, after v1.31.0's Batches 1-2. Full Test Command green
+(16 stages, 304 ✓, from 292 at the start of remediation); 72/72 invariants runnable, PASS, and
+mutation-proven across 81 mutations. The Seams counter is reset to 0. Nothing is half-done.
 
-Next action: Batch 3 (C1 INV-71, C2 INV-74), then Batch 4 (D1 backfill the v1.30.1 block, THEN D2
-INV-72 — that order is load-bearing), then Batch 5. Before §6a, save the §4v VERIFICATION BLOCK and
-the SEAMS & INVARIANTS AUDIT BLOCK from the 2026-09-04 session into .cycle/blocks/ as
-06-b-verification.md and 06-c-seams.md; §6a reads that directory and cannot see a transcript.
+Next action: §6a HEALTH SYNTHESIS — the last step of Cycle 6 — then /broad-scan opens Cycle 7.
 
-Worth carrying: every finding in this batch was a guard that reported green while proving less than its
-rule text claimed, and the pattern behind all four is one question — WHAT UNSTATED PROPERTY MAKES THIS
-CHECK'S CONCLUSION TRUE? INV-56's rested on its one :focus-visible rule being universal; the "N/N
-invariants proven" line rested on two parsers agreeing; §4v's anti-steering rested on the printed seed
-being the seed used. None of the three was asserted. Also: I got INV-56 WRONG first — I reported a
-false green, then found the covering rule is universal and my test control was genuinely covered. The
-real defect was narrower (a scoped rule still passes). Driving the browser before writing the guard is
-what corrected it; the mutation audit alone would not have.
+Worth carrying: TWO of my own guards were wrong on first write this remediation and both were caught
+before landing. Check 13 originally scanned whole FILES for the health labels, which would have passed
+with the console's parseHealth broken — every label appears twice per artifact, so a file-global
+`includes` proves nothing; scoping each check to the span that writes it, and moving the console to a
+behavioural check, is the corrected form. Then check 13 shadowed an outer `absent` with an inner one,
+a TDZ that only fires when a file is MISSING — invisible in this repo, caught by guard.test.mjs's
+sandbox, which is exactly the case the sandbox exists for. The pattern across this whole remediation is
+one question: WHAT UNSTATED PROPERTY MAKES THIS CHECK'S CONCLUSION TRUE? INV-56's rested on its one
+:focus-visible rule being universal; "N/N invariants proven" rested on two parsers agreeing; §4v's
+anti-steering rested on the printed seed being the seed used; the health board rested on four
+hard-coded label lists matching. None of the four was asserted. Ask it of every new guard.

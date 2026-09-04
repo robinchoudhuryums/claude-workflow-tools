@@ -149,6 +149,12 @@ const CASES = {
   // still listed it.
   'INV-68': [['.cycle/config.md', 'INV-40 | credentials never leave', '  INV-40 | credentials never leave', /parse floor/i]],
   'INV-69': [[HTML, ':focus-visible{outline:2px', '.nav-item:focus-visible{outline:2px', /must apply, not merely exist/i]],
+  // INV-71 — drift the ONE definition; every doc copy must stop matching it.
+  'INV-71': [['scripts/health-fields.mjs', "topVertical:    'Top vertical priority:'", "topVertical:    'Top vertical priorities:'", /health-field contract/i]],
+  // INV-74 — drop a stage from CI that the Test Command still documents.
+  'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i]],
+  // INV-72 — ship a release into the current cycle with no block for it.
+  'INV-72': [['CHANGELOG.md', '## 1.30.1 — 2026-09-03', '## 1.30.2 — 2026-09-03\n\nmutation\n\n## 1.30.1 — 2026-09-03', /release with no block/i]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────
   'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i]],

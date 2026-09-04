@@ -13,6 +13,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, basename, resolve } from 'node:path';
+import { HEALTH_FIELDS, HEALTH_SECTION } from './health-fields.mjs';   // INV-71: one definition of the Current Standing labels
 
 const args = process.argv.slice(2);
 const outIdx = args.indexOf('--out');
@@ -35,18 +36,18 @@ for (const p of paths) {
   let md;
   try { md = readFileSync(p, 'utf8'); }
   catch { console.error(`! skipped ${p} (cannot read)`); continue; }
-  const standing = section(md, 'Current Standing');
+  const standing = section(md, HEALTH_SECTION);
   if (!standing.trim()) { console.error(`! skipped ${p} (no "## Current Standing" section)`); continue; }
-  const overallStr = field(standing, 'Overall (weighted avg):');
+  const overallStr = field(standing, HEALTH_FIELDS.overall);
   const overall = parseFloat(overallStr);
   projects.push({
     label: basename(dirname(resolve(p))) || p,
     overall: Number.isFinite(overall) ? overall : null,
     overallStr: overallStr || '—',
-    lastSynthesis: field(standing, 'Last synthesis:') || '—',
-    summary: field(standing, 'One-line summary:') || '',
-    topV: field(standing, 'Top vertical priority:') || '—',
-    topH: field(standing, 'Top horizontal priority:') || '—',
+    lastSynthesis: field(standing, HEALTH_FIELDS.lastSynthesis) || '—',
+    summary: field(standing, HEALTH_FIELDS.summary) || '',
+    topV: field(standing, HEALTH_FIELDS.topVertical) || '—',
+    topH: field(standing, HEALTH_FIELDS.topHorizontal) || '—',
   });
 }
 

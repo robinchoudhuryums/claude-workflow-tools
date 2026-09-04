@@ -14,6 +14,7 @@
 // Usage: node scripts/check-html.mjs   (exit 0 = ok, 1 = failure)
 
 import { readFileSync } from 'node:fs';
+import { HEALTH_FIELDS } from './health-fields.mjs';   // INV-71: the canonical Current Standing labels
 import vm from 'node:vm';
 
 const root = new URL('..', import.meta.url);
@@ -381,9 +382,20 @@ if (loaded && typeof ctx.connectRepoFolder === 'function') {
 // Dashboard live-status parsers — the GitHub-backed dashboard renders from these
 // pure parsers; lock them so a regex regression can't silently blank the board.
 if (loaded && typeof ctx.parseHealth === 'function' && typeof ctx.parseRepoSpec === 'function') {
-  const h = ctx.parseHealth('## Current Standing\nOverall (weighted avg): 8.8/10\nOne-line summary: solid.\nTop vertical priority: HTML.\n');
-  if (h.overall === '8.8' && h.summary === 'solid.' && h.topVertical === 'HTML.') ok('parseHealth extracts overall/summary/priority from PROJECT_HEALTH.md');
-  else bad('parseHealth did not extract expected fields (got ' + JSON.stringify(h) + ')');
+  // INV-71 — the console half, verified by BEHAVIOUR not by text. parseHealth
+  // matches `Overall[^:\n]*:` rather than spelling the label, so a literal scan
+  // for the canonical labels would fail here even though the parser is correct.
+  // Build the fixture FROM the canonical labels instead and require every field
+  // to come back: that is the contract (a block written the way /cycle-init
+  // writes it must parse), and it survives any rewording of the regexes.
+  const sample = { lastSynthesis: '2026-01-02', overall: '8.8/10', summary: 'solid.', topVertical: 'HTML.', topHorizontal: 'Drift.' };
+  const standing = '## Current Standing\n'
+    + Object.entries(HEALTH_FIELDS).map(([k, label]) => `${label} ${sample[k]}`).join('\n') + '\n';
+  const h = ctx.parseHealth(standing);
+  const blank = Object.keys(HEALTH_FIELDS).filter(k => !h[k]);
+  if (!blank.length && h.overall === '8.8' && h.summary === 'solid.' && h.topVertical === 'HTML.')
+    ok(`parseHealth reads every one of the ${Object.keys(HEALTH_FIELDS).length} canonical Current Standing labels (INV-37/INV-71)`);
+  else bad(`parseHealth left ${blank.length ? blank.join(', ') : 'a field'} blank for a block written with the canonical labels — the Dashboard would render the project unscored (got ${JSON.stringify(h)}) (INV-71)`);
   const s = ctx.parseState('Cycle: 4\nPhase: idle (done)\nUpdated: 2026-06-16\n');
   if (s.phase === 'idle (done)' && s.updated === '2026-06-16') ok('parseState extracts phase/updated from STATE.md');
   else bad('parseState did not extract phase/updated (got ' + JSON.stringify(s) + ')');

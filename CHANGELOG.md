@@ -5,6 +5,50 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.32.0 — 2026-09-04
+
+Cycle-6 remediation, Batches 3-5 — the contract seams that held only by luck,
+and the release that verification could not see.
+
+**INV-71 — the PROJECT_HEALTH label contract now has ONE definition.** The five
+"Current Standing" labels were hard-coded independently in four artifacts:
+`portfolio.mjs`, `portfolio-status.mjs`, the console's `parseHealth()`, and the
+skeleton `/cycle-init` tells a project to create. They matched, and nothing
+asserted it. The failure mode is silent in the worst way — a label that drifts on
+one side makes every reader fall back to `—`, so the portfolio board, the status
+board and the console Dashboard all render the project as UNSCORED rather than
+erroring, and that block is LIVE status, not history. `scripts/health-fields.mjs`
+is now the single definition; both script readers import it (keyed, not
+positional, so reordering cannot silently re-map fields). The copies that cannot
+import it are checked against it — each **inside the span that writes it**, never
+file-globally, because every label appears twice per artifact and a whole-file
+`includes` would pass with the skeleton broken. The console is checked by
+BEHAVIOUR instead: `parseHealth` matches a loose pattern rather than spelling the
+labels, so a block built from the canonical labels must parse every field.
+
+**INV-74 — CI must run every stage of the documented Test Command, in order.**
+INV-14 only asserted that CI runs `check-template-sync`, so a stage added to the
+Test Command and forgotten in the workflow would be run by every contributor and
+by nothing in CI — or the reverse, a CI stage no contributor can reproduce
+locally. Parity is exact today (16 stages, same order); this keeps it.
+
+**INV-72 — every release of the current cycle has a block in `.cycle/blocks/`.**
+§4v and §6a read that directory and nothing else — not the CHANGELOG, not the
+commit log — so a release that ships without a block is invisible to verification
+and synthesis by construction. v1.30.1 changed the console and had no block; the
+§4v pass found it only by fetching origin, and the pack it was handed could not
+have shown it. The floor is derived (the lowest version this cycle already has a
+block for), so the rule never reaches back into cycles predating the convention.
+
+**Three blocks backfilled.** `06-1.30.1` (marked as a reconstruction, with its
+claims re-verified rather than copied from the commit message), plus the §4v
+VERIFICATION BLOCK and the SEAMS & INVARIANTS AUDIT BLOCK from the 2026-09-04
+session, which until now existed only in a chat transcript — the exact gap INV-72
+describes, one level up.
+
+Library 69 → 72, all runnable, 81 mutations. Full 16-stage Test Command green.
+The Seams audit counter is reset to 0.
+
 ## 1.31.0 — 2026-09-04
 
 Cycle-6 remediation, Batches 1+2 — the four findings the Seams & Invariants
