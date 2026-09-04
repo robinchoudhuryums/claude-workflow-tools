@@ -708,18 +708,43 @@ if (loaded) {
 // INV-56 — focus VISIBILITY, the structural half. Suppressing the UA focus ring
 // with outline:none and supplying nothing in its place makes every focusable
 // control invisible to keyboard users — strictly worse than not being focusable.
-// 15 of the 17 suppressions are INLINE on form controls, where a stylesheet
-// :focus rule can never win on specificity, so the replacement must use
-// box-shadow (which inline outline:none cannot suppress). Whether the indicator
-// has adequate CONTRAST is perceptual and stays with S7/INV-52.
+// Most suppressions are INLINE on form controls, where a stylesheet :focus rule
+// can never win on specificity, so the replacement must use box-shadow (which
+// inline outline:none cannot suppress). The count is derived, never stated: the
+// rule text used to say "15 of the 17" and there are now 19.
+// Whether the indicator has adequate CONTRAST is perceptual and stays with S8.
+//
+// INV-69 (Cycle 6 remediation) — the second half, and the one this check was
+// missing: a covering rule must APPLY to the suppressed controls, not merely
+// EXIST. Coverage here rests entirely on the single :focus-visible rule being
+// UNIVERSAL (no selector prefix), which was an unstated property nothing
+// asserted. Scoping that one rule to `.nav-item` strips the indicator from every
+// inline-suppressed form control and the old check still reported all of them
+// "covered". Verified in Chromium: with the universal rule, a control carrying
+// inline outline:none still receives box-shadow 0 0 0 3px on focus.
 {
   const suppressors = (html.match(/outline:\s*none/g) || []).length;
-  const fv = html.match(/:focus-visible\s*\{[^}]*\}/g) || [];
-  const usesBoxShadow = fv.some(r => /box-shadow\s*:/.test(r));
+  // Strip CSS comments BEFORE capturing the selector: a comment contains no
+  // braces, so `[^{}]*` happily swallows the one sitting above this very rule
+  // and every selector reads as "scoped". Caught on the clean tree — the
+  // near-miss-regex gotcha, in the guard written to close a near-miss guard.
+  const css = html.replace(/\/\*[\s\S]*?\*\//g, '');
+  const fvRules = [...css.matchAll(/([^{}]*):focus-visible\s*\{([^}]*)\}/g)]
+    .map(m => ({ prefix: m[1].trim(), decls: m[2] }));
+  const withShadow = fvRules.filter(r => /box-shadow\s*:/.test(r.decls));
+  // '' (bare `:focus-visible`) and '*' both match every element; anything else
+  // is scoped and cannot be assumed to reach an arbitrary suppressed control.
+  const universal = withShadow.filter(r => r.prefix === '' || r.prefix === '*');
+
   if (!suppressors) ok('no outline:none in the file — UA focus ring intact everywhere (INV-56)');
-  else if (fv.length && usesBoxShadow) ok(`${suppressors} outline:none suppression(s) are covered by a :focus-visible rule using box-shadow (INV-56)`);
-  else if (fv.length) bad(`:focus-visible exists but sets no box-shadow — inline outline:none (${suppressors} of them) will win, leaving those controls focusable but invisible`);
-  else bad(`${suppressors} outline:none suppression(s) with NO :focus-visible replacement — focusable but invisible to keyboard users (INV-56)`);
+  else if (!fvRules.length) bad(`${suppressors} outline:none suppression(s) with NO :focus-visible replacement — focusable but invisible to keyboard users (INV-56)`);
+  else if (!withShadow.length) bad(`:focus-visible exists but sets no box-shadow — inline outline:none (${suppressors} of them) will win, leaving those controls focusable but invisible (INV-56)`);
+  else ok(`${suppressors} outline:none suppression(s) are covered by a :focus-visible rule using box-shadow (INV-56)`);
+
+  if (suppressors && withShadow.length) {
+    if (universal.length) ok(`the covering :focus-visible box-shadow rule is universal, so it reaches every one of the ${suppressors} suppressed control(s) (INV-69)`);
+    else bad(`every :focus-visible rule supplying box-shadow is SCOPED (${withShadow.map(r => r.prefix).join(', ')}) — the ${suppressors} inline outline:none suppression(s) on form controls are left with no indicator; a covering rule must apply, not merely exist (INV-69)`);
+  }
 }
 
 // F06 — Axis B must round-trip through the project form WITHOUT losing `pulse`.

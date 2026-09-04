@@ -169,8 +169,10 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .copy-btn:hover{background:rgba(79,142,247,.2)}
 .copy-btn.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:var(--green)}
 .copy-btn.fail{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--red);white-space:normal}
-/* FOCUS VISIBILITY (INV-56). 17 rules set outline:none — 15 of them inline on
-   form controls, where a stylesheet :focus rule can never win on specificity.
+/* FOCUS VISIBILITY (INV-56/INV-69). Many rules set outline:none, most of them
+   inline on form controls, where a stylesheet :focus rule can never win on
+   specificity. (The count is derived by check-html and deliberately not stated
+   here: it read "17 … 15 of them" while the file had 19.)
    box-shadow is the escape: inline outline:none cannot suppress it, so this
    restores a visible indicator everywhere including those controls. Cycle-5
    Batch 6 made 9 elements focusable and routed focus VISIBILITY entirely to the

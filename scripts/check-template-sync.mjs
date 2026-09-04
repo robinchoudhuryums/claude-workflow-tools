@@ -373,6 +373,58 @@ try {
   }
 }
 
+// ── Structural check 12 (INV-68): the invariant library's PARSE FLOOR.
+// TWO parsers read the same library file and they disagreed: invariant-check's
+// `^(INV-\d+)\s*\|` has no `\s*` before the anchor, while verification-pack
+// trims each line first. So a rule written with ONE leading space vanished from
+// invariant-check AND from the mutation audit (which derives its set from that
+// same parse, so no case was orphaned and nothing failed) while the §4v pack
+// still showed the verifier a library one rule longer. Both tools reported
+// "67/67 … Every runnable invariant fails closed ✓" against a 68-rule file.
+// A derivation needs a floor or it can silently cover less than it claims —
+// INV-58 gives the mutation-case dimension one; this is the same floor a level
+// up, on the parse itself. Skipped when there is no .cycle/ library (a
+// consuming project may keep its invariants in CLAUDE.md, and the guard's own
+// regression sandbox copies neither .cycle/ nor these modules).
+{
+  let libRaw = null;
+  try { libRaw = readFileSync(new URL('.cycle/config.md', root), 'utf8'); } catch (e) {}
+  if (libRaw === null) console.log('  · no .cycle/config.md in this tree — invariant-library parse floor skipped (optional per project)');
+  else {
+    // Imported dynamically and defensively: a consuming project may have copied
+    // this guard and kept a .cycle/ library WITHOUT the two reader modules. The
+    // .cycle/ helpers are additive by design, so a missing module degrades to a
+    // reported skip — it must never crash a guard the project runs in CI.
+    let parseInvariants, readInvariants;
+    try {
+      ({ parseInvariants } = await import('./invariant-check.mjs'));
+      ({ readInvariants } = await import('./verification-pack.mjs'));
+    } catch (e) {
+      console.log(`  · invariant-library parse floor skipped — a reader module is not present in this tree (${e.code || e.message})`);
+    }
+    if (!parseInvariants || !readInvariants) { /* skipped above */ } else {
+    // PERMISSIVE on purpose — this is the ground truth the parsers are measured
+    // against, so it must see a line neither of them may.
+    const rawIds = [...libRaw.matchAll(/^[ \t]*(INV-\d+)\s*\|/gm)].map(m => m[1]);
+    const strictIds = parseInvariants(libRaw).map(i => i.id);
+    const packIds = readInvariants(libRaw).map(l => l.split('|')[0].trim());
+    const diff = (a, b) => a.filter(x => !b.includes(x));
+    const bits = [];
+    if (JSON.stringify(strictIds) !== JSON.stringify(rawIds))
+      bits.push(`invariant-check sees ${strictIds.length} of ${rawIds.length} (dropped: ${diff(rawIds, strictIds).join(', ') || 'none — order differs'})`);
+    if (JSON.stringify(packIds) !== JSON.stringify(rawIds))
+      bits.push(`verification-pack sees ${packIds.length} of ${rawIds.length} (dropped: ${diff(rawIds, packIds).join(', ') || 'none — order differs'})`);
+    if (JSON.stringify(strictIds) !== JSON.stringify(packIds))
+      bits.push(`the two parsers disagree: only-in-check ${diff(strictIds, packIds).join(', ') || '—'} / only-in-pack ${diff(packIds, strictIds).join(', ') || '—'}`);
+    if (!rawIds.length) { failures++; console.log('  ✗ invariant-library parse floor: the library file contains no INV- lines — this check would be vacuous (INV-68)'); }
+    else if (bits.length) {
+      failures++;
+      console.log(`  ✗ invariant-library parse floor (INV-68): ${bits.join('; ')}. A rule that parses in one reader and not the other leaves the proven set silently — check the line's leading whitespace and its "INV-N |" shape.`);
+    } else console.log(`  ✓ invariant-library parse floor: all ${rawIds.length} INV- lines parse identically in invariant-check and verification-pack (INV-68)`);
+    }
+  }
+}
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

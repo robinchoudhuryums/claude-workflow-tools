@@ -5,6 +5,59 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.31.0 — 2026-09-04
+
+Cycle-6 remediation, Batches 1+2 — the four findings the Seams & Invariants
+audit and §4v raised against the guard family itself. Every one of them was a
+guard that reported green while proving less than its rule text claimed.
+
+**INV-68 — the invariant library's parse floor (the one that mattered most).**
+Two parsers read the same library file and disagreed: `invariant-check.mjs`
+anchors on `^(INV-\d+)` with no leading-whitespace tolerance, while
+`verification-pack.mjs` trims each line first. A rule written with ONE leading
+space therefore vanished from `invariant-check` **and** from the mutation audit
+that derives its set from that same parse — so no case was orphaned, nothing
+failed, and both reported `67/67 … Every runnable invariant fails closed ✓`
+against a 68-rule file, while the §4v pack showed the verifier all 68. An
+operator could add an invariant, see green, and believe it was proven.
+`check-template-sync` structural check 12 now measures both parsers against a
+permissive count of the file itself and fails if either sees fewer, or if they
+disagree. INV-58 floors the mutation-case dimension; this floors the parse one
+level up.
+
+**INV-69 — a covering rule must APPLY, not merely EXIST.** INV-56 checked that
+*some* `:focus-visible` rule using `box-shadow` existed somewhere in the file.
+Scoping the file's single rule to `.nav-item` strips the focus indicator from
+all 19 inline-suppressed form controls, and the check still reported every one
+of them "covered". Coverage was real but rested on an unstated property — that
+the rule is universal — which nothing asserted. Now asserted. (Confirmed in
+Chromium first that the universal rule genuinely reaches a control carrying
+inline `outline:none`.)
+
+**INV-70 — the §4v pack's disclosed seed now reproduces its own probes.**
+`main()` selected probes with the full 40-char HEAD sha and printed
+`seed.slice(0, 12)`, in both the "seeded from" line and the `--seed` reproduce
+command — so following the pack's own instructions returned a *different* five
+invariants, and §4v's "do NOT substitute your own picks" was unauditable. Proved
+at the last pack's own commit: the full sha yields the printed five, the printed
+12-char seed yields five others. The seed is now resolved once at the source
+(`git rev-parse --short=12`) and `buildPack` derives the probes itself from the
+seed it prints, accepting no `probes` override — disclosure and use cannot
+diverge by construction. The old test asserted determinism and the seed's
+presence separately and never the composition; the new one re-derives from the
+built pack, including a >12-char seed.
+
+**Library text repairs.** INV-50 now states the scope it actually proves
+(presence of an id, not that `getElementById` resolves to the intended element —
+both Cycle-6 duplicate-id defects passed under it). INV-66's sentence said nine
+prompts had no slash-command counterpart *and* named `setup`, which had one, as
+one of them. **INV-29 is retired** — it enumerated 7 of the 16 locked static
+prompts and is subsumed by INV-66; its drift mutation moved to INV-66 rather
+than being retired with it.
+
+Library 67 → 69 (one retired, three added), all runnable, 78 mutations. Full
+16-stage Test Command green, 298 assertions.
+
 ## 1.30.1 — 2026-09-03
 
 Removes 26 dead CSS rules (17 classes) from the console. No behaviour change —
