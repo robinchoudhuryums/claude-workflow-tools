@@ -12,6 +12,59 @@ Item IDs (R#) are stable references for planning sessions.
 
 ## Tier 1 — Short-term (days–weeks)
 
+- **R21 — Dead/superseded-artifact lens in `/broad-scan` (queued for Cycle 7).** `effort: S (~30 min)`
+  The Stage 1 flag list reads *"Dead code, unused exports, stale TODOs only if
+  they create confusion"* — all **code** nouns. Nothing names styles, classes,
+  markup, config or exemptions, so the lens is JS-shaped and slides past the
+  rest. Evidence: **17 dead CSS classes / 26 rules** survived six audits and
+  were removed in v1.30.1; in Cycle-6 Batch 4 the audit *edited* one of them
+  (`.ct-check.done::after`) to tokenise its colour without noticing the class
+  is applied to nothing.
+  Two further shapes the wording misses, both with Cycle-6 instances:
+  **superseded implementations** left behind after a fix centralises behaviour
+  (`selectRandomInvariants` after F14; render-metrics' private `parseCSV` after
+  F03) — the inverse of the "a fix at the helper is not applied at every call
+  site" gotcha — and **vestigial config/exemptions** (§T2b's `locked:false` hid
+  drift for four releases).
+  DELIBERATELY NOT a general simplification lens. A sweep of this repo produced
+  23 candidates of which 12 were false positives (substring matches like `fl`
+  inside "flex", `lt` inside `&lt;`; exports used only inside their own file).
+  Told to "find simplification opportunities", an agent surfaces all 23 and the
+  pressure to act risks deleting `preBody` or `ct-item`. The existing rule —
+  *"DO NOT flag code for simplification unless the current code is actively
+  wrong"* — is load-bearing and has held for six cycles. This widens the NOUN,
+  not the mandate, and adds a proof gate that does not exist today.
+  Apply verbatim; replace the dead-code bullet in `/broad-scan` Stage 1 with:
+
+  ```
+  - Dead or superseded artifacts — code, exports, styles/classes, markup,
+    config, feature flags, exemptions — but ONLY where the thing is
+    actively misleading: it hides a live defect, contradicts what the code
+    does now, or survives a change that replaced it. Volume is not a
+    finding; concealment is. For each, state how you verified it is
+    unreferenced, and mark it SAFE (mechanically verified — no reference in
+    any code path, template string, or generated markup) or PROPOSE (looks
+    unused, but dynamic or generated references cannot be ruled out).
+    PROPOSE items are questions for the operator, never removals.
+  ```
+
+  and append to the existing DO-NOT rule:
+
+  ```
+  Removing something is a change like any other and needs the same evidence
+  a fix needs. If you cannot name the check that proves nothing references
+  it, it is a PROPOSE, not a finding.
+  ```
+
+  Then: `gen-commands.mjs`, mirror into `buildTier1Text` (--assert-locked),
+  bump VERSION + CHANGELOG. Downstream `/sync-commands` re-pull required.
+  `/audit` focus area 2 carries the same terse bullet and wants the same
+  treatment; `/targeted-audit` omits dead code entirely — decide that
+  asymmetry deliberately rather than fixing it by reflex.
+  Queued for Cycle 7 rather than applied in Cycle 6: changing `/broad-scan`
+  mid-cycle would mean §4v verifies findings produced by a different version
+  of the command that produced them.
+
 - **R20 — Real-DOM console test stage.** `effort: M (~1 day)`
   The Cycle-6 scan found two High findings no headless check could see —
   a fill-form XSS sink that only renders on interaction (F01) and a mobile
