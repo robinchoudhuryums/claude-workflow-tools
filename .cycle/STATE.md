@@ -2,7 +2,7 @@
 
 ## Current
 Cycle: 6
-Phase: implement — Cycle-6 REMEDIATION COMPLETE. §4v and the Seams audit have run; all five batches of the plan they produced landed (v1.31.0, v1.32.0). Only §6a remains to close the cycle.
+Phase: idle — CYCLE 6 IS CLOSED. Audit → implement → regression → reflect → remediation → §4v → Seams audit → §6a all complete. Cycle 7 begins with a fresh /broad-scan, which increments Cycle to 7 (P3).
 Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 0 (cadence 3 — reset by the Seams & Invariants audit of 2026-09-04; its block is .cycle/blocks/06-c-seams.md)
@@ -56,26 +56,28 @@ Updated: 2026-09-04
 - Invariant library 58 → 72 (one retired, six added), all runnable and mutation-proven (81 mutations).
 
 ## Pending / not yet done
-CLOSING CYCLE 6 — remediation is COMPLETE. One step remains:
-1. §6a HEALTH SYNTHESIS. Inputs: the eight .cycle/blocks/06-*.md files. §6a writes the PROJECT_HEALTH.md
-   update and ONE phase=synthesis metrics row (category_d_ratio + axis_b_lowest only — never net_score,
-   P1/INV-33). Then update PROJECT_HEALTH.md Current Standing, which is LIVE status read by the
-   Dashboard, both portfolio scripts and the hook — and is now guarded by INV-71.
-2. Then Cycle 7 begins with a fresh /broad-scan (which increments Cycle to 7 per P3).
+CYCLE 6 IS COMPLETE — §6a ran on 2026-09-04 (overall 9.0 → 9.2; PROJECT_HEALTH.md and one
+phase=synthesis metrics row written). Nothing remains in this cycle.
+NEXT: /broad-scan opens Cycle 7 and increments the Cycle field to 7.
+- Cycle 7's queued first items: R21 (the /broad-scan dead-artifact lens — changes a command body, so
+  downstream re-pull) and R22 (scripts/synthesis-pack.mjs, the §6a assembler; recorded 2026-09-04 after
+  §6a had to be hand-fed a reconciliation that had already rotted in four places).
 - OPEN, pending a DECISION rather than work — INV-73: §1s must ask about the project's CONFIGURED Axis B
   categories. buildSeamsText hardcodes the five defaults, and THIS project's five are all custom, so the
-  Seams audit of 2026-09-04 was asked about categories it does not use. Closing it means editing an
-  --assert-locked canonical body AND the SEAMS block's registered field names; making those dynamic
-  weakens the shape check that guards them.
+  Seams audit of 2026-09-04 was asked about categories it does not use. It is the single finding that
+  pulled TWO Axis A dimensions down at synthesis (Prompt Quality, Adaptability) and holds Silent Prompt
+  Degradation at 8.5. Closing it means editing an --assert-locked canonical body AND the SEAMS block's
+  registered field names; making those dynamic weakens the shape check that guards them.
 - OPEN, pending a DECISION: §4v independence vs the SessionStart hook. The hook injects STATE.md —
   implementer prose and self-assessment — into every new session, including a §4v one, which contradicts
   §4v's own opening instruction. Either suppress the judgment-bearing sections when Phase is `verify`,
   or require §4v to run hook-free.
+- The POLICY MECHANISM has never engaged in six cycles. Threshold 4/10 with scores between 7 and 9.5
+  means the "≤ threshold for 2 consecutive cycles" trigger is unreachable. Flagged at Cycle 5 and again
+  at Cycle 6 — either the threshold is wrong for this project or the rule should be relative (a category
+  that FALLS two cycles running), and that is a config decision.
 - INV-72 is a RATCHET, not a proof of completeness: its floor is derived from the versions this cycle
-  already has blocks for, so a cycle whose FIRST release ships blockless sets its own floor above that
-  release. Worth a second look in Cycle 7.
-- ROADMAP R21 is queued as Cycle 7's first item (the /broad-scan dead-artifact lens). It changes a
-  command body → downstream re-pull.
+  already has blocks for, so a cycle whose FIRST release ships blockless sets its own floor above it.
 - ROADMAP R20 (real-DOM console test stage) is recorded but not built, and is now trebly earned.
 
 ## Open follow-on items
@@ -107,20 +109,21 @@ CLOSING CYCLE 6 — remediation is COMPLETE. One step remains:
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-v1.32.0 pushed: Cycle-6 remediation Batches 3-5, after v1.31.0's Batches 1-2. Full Test Command green
-(16 stages, 304 ✓, from 292 at the start of remediation); 72/72 invariants runnable, PASS, and
-mutation-proven across 81 mutations. The Seams counter is reset to 0. Nothing is half-done.
+CYCLE 6 CLOSED. §6a ran 2026-09-04: overall 9.0 → 9.2, Category D 20% → 16%, no policy triggers.
+PROJECT_HEALTH.md Current Standing + a Cycle 6 Score History entry written; one phase=synthesis metrics
+row appended (category_d_ratio + axis_b_lowest only — net_score columns left blank per P1/INV-33).
+Full Test Command green (16 stages, 304 ✓); 72/72 invariants runnable, PASS, mutation-proven across 81
+mutations. Seams counter 0/3.
 
-Next action: §6a HEALTH SYNTHESIS — the last step of Cycle 6 — then /broad-scan opens Cycle 7.
+Next action: /broad-scan opens Cycle 7 (and increments Cycle to 7). R21 and R22 are its queued first
+items; two decisions (INV-73, §4v-vs-hook) are waiting on the operator, not on work.
 
-Worth carrying: TWO of my own guards were wrong on first write this remediation and both were caught
-before landing. Check 13 originally scanned whole FILES for the health labels, which would have passed
-with the console's parseHealth broken — every label appears twice per artifact, so a file-global
-`includes` proves nothing; scoping each check to the span that writes it, and moving the console to a
-behavioural check, is the corrected form. Then check 13 shadowed an outer `absent` with an inner one,
-a TDZ that only fires when a file is MISSING — invisible in this repo, caught by guard.test.mjs's
-sandbox, which is exactly the case the sandbox exists for. The pattern across this whole remediation is
-one question: WHAT UNSTATED PROPERTY MAKES THIS CHECK'S CONCLUSION TRUE? INV-56's rested on its one
-:focus-visible rule being universal; "N/N invariants proven" rested on two parsers agreeing; §4v's
-anti-steering rested on the printed seed being the seed used; the health board rested on four
-hard-coded label lists matching. None of the four was asserted. Ask it of every new guard.
+Worth carrying: the cycle's whole shape was "the finding machinery is working better than the guards it
+inspects." Four guards proved less than their rule text claimed, and EVERY instance was caught by this
+project's own processes — §4v caught INV-52, the Seams audit caught INV-56, the mutation audit and
+guard.test.mjs each caught one of my own new guards mid-write. The question that found all four is worth
+asking of every guard: WHAT UNSTATED PROPERTY MAKES THIS CHECK'S CONCLUSION TRUE? INV-56's rested on its
+one :focus-visible rule being universal; "N/N invariants proven" rested on two parsers agreeing; §4v's
+anti-steering rested on the printed seed being the seed used; the health board rested on four hard-coded
+label lists matching. None was asserted. Also worth carrying: §6a itself had to be hand-fed a
+reconciliation that had already rotted in four places — that is R22, and it is the same argument R19 won.

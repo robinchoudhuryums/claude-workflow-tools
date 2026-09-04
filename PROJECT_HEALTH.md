@@ -1,14 +1,40 @@
 # Project Health
 
 ## Current Standing
-Last synthesis: 2026-07-27 (Cycle 5)
-Overall (weighted avg): 9.0/10
-One-line summary: The most productive cycle this project has run — 21 findings closed across six releases, net +10, zero regressions, independently verified — including a Critical credential leak that was writing a GitHub token into the user's own repository. Coverage is now DERIVED rather than hand-listed in three places where hand-listing was the root cause. But independent verification found the cycle's confidence in its own guards was misplaced: an invariant it declared proven is a false green, one fix was only partially applied, and a fifth of the fixes have no regression test.
-Top vertical priority: Console UI/UX & Accessibility (7.0, First measurement) — structural keyboard access is fixed and guarded, and focus visibility now has a `:focus-visible` box-shadow rule (INV-56, v1.24.0); S5/S6/S7 have still never been walked in a browser, and the Cycle-6 scan found the mobile layout broken below 768px (F17, fixed in v1.27.0).
-Top horizontal priority: Guard / Test Coverage Quality (7.0, ↓ from 9.0) — SECOND consecutive cycle where this class was declared closed and wasn't. §4v's field-level false green in INV-20 was closed by deriving the hostile payload set (INV-53, v1.24.0) and the F11 mutation audit is now a CI stage with per-invariant signals (v1.25.0); the Cycle-6 scan then found the fixture's SINK list still hand-listed and missing the interaction-only fill form (F01/F09, fixed in v1.27.0). Category D 20% at synthesis.
-Open live defect: none. The archive "Copy content" bypass reported here at synthesis was closed in v1.24.0 (INV-54); post-synthesis remediation through v1.25.0 closed every §4v finding. This block is LIVE STATUS read by the Dashboard, portfolio scripts and the SessionStart hook — update it whenever remediation closes what a synthesis reported (Cycle-6 F07).
+Last synthesis: 2026-09-04 (Cycle 6)
+Overall (weighted avg): 9.2/10
+One-line summary: The cycle that audited its own guards and found four of them proving less than they claimed — a fill-form XSS, a mobile layout broken below 768px, a pre-R18 /setup-cycle prompt handing new projects a config that could never score their interface, and a duplicate id that had been destroying the entire Tier 1 panel on every page load for many releases without one guard noticing. All closed and independently browser-verified; the library grew 58 → 72, every rule runnable and mutation-proven across 81 mutations. Independent verification found one live false green of its own (the §4v pack disclosed a seed that reproduced a different probe set, so its anti-steering property was unauditable for two releases), and a Seams audit found a second (a focus rule proved to exist, never to apply). Both are now closed. The honest read: the finding machinery is working better than the guards it inspects.
+Top vertical priority: Console UI/UX & Accessibility (8.5, ↑ from 7.0) — the structural half is now strong and independently verified in a real browser (57 controls labelled, drawer keyboard-dismissable with focus return, 48/48 token/surface pairs ≥4.5:1, layout stacked at 375px). What remains is entirely perceptual: S5/S7/S8/S9 have STILL never been walked by a person, `--accent` sits at 3.4:1 on the light surface and the phase-dot label at 2.3:1. Machine-checkable is not the same as looks right.
+Top horizontal priority: Guard / Test Coverage Quality (8.0, ↑ from 7.0) — improving, but THIRD consecutive cycle in which this class fired. What changed is that the project now catches itself: §4v caught INV-52, the Seams audit caught INV-56, the mutation audit and guard.test.mjs each caught one of my own new guards mid-write, and INV-68 finally floors the level above INV-58 (both the runner and the mutation audit could report "67/67 proven" against a 68-rule library). Category D 20% → 16%.
+Open live defect: none in shipped behaviour. TWO items remain OPEN pending a decision rather than work: INV-73 (§1s hardcodes the five DEFAULT Axis B categories, so this project — whose five are all custom — got a Seams audit asking about categories it does not use), and §4v independence versus the SessionStart hook (the hook injects implementer prose into every session, including a verification one, contradicting §4v's own opening instruction). This block is LIVE STATUS read by the Dashboard, portfolio scripts and the SessionStart hook — update it whenever remediation closes what a synthesis reported (Cycle-6 F07).
 
 ## Score History
+
+### Cycle 6 — 2026-09-04 — Synthesis
+Scope this cycle: /broad-scan (17 findings) → six implement batches (v1.26.0 → v1.29.0) → /regression → /reflect → post-reflect remediation (v1.30.0, v1.30.1) → §4v in a fresh session → the project's FIRST Seams & Invariants audit → remediation Batches 1-5 (v1.31.0, v1.32.0) → /sync-docs. Ten blocks in .cycle/blocks/, including the §4v and Seams blocks.
+
+AXIS A — VERTICAL (Subsystem Health):
+Overall: 9.0/10 (held) | Prompt Quality & Efficacy: 9.0/10 (↓ from 9.5 — INV-73 is a live prompt defect that demonstrably degraded this cycle's own Seams audit) | Cross-Artifact Consistency: 9.5/10 (held)
+HTML Console Correctness: 9.0/10 (↑ from 8.5 — seven real defects closed incl. a High XSS and a panel dead for many releases; 188 ids, 0 duplicates, all 25 prompts render, browser-verified)
+Console UI/UX & Accessibility: 8.5/10 (↑ from 7.0 — structural half strong and verified; perceptual half still never walked)
+Command Completeness & Coverage: 9.5/10 (held) | Documentation Accuracy: 9.5/10 (held) | Config-Schema Robustness: 9.5/10 (held)
+Guard & Tooling Coverage: 8.5/10 (↑ from 8.0 — library 58→72, 81 mutations, four unstated-property classes closed; not higher because the class fired four times in one cycle)
+Adaptability / Project-Agnosticism: 9.0/10 (↓ from 9.5 — INV-73: a canonical body that cannot adapt to a project's configured categories)
+Onboarding & Adoption Friction: 9.5/10 (↑ from 9.0 — F16: the console's Setup prompt was a pre-R18 copy; a new project got a config that could never score its interface layer)
+Backward Compatibility: 9.5/10 (held) | State & Memory Integrity: 9.5/10 (↑ from 9.0 — STATE.md restored to template shape and guarded; blocks cycle-scoped and now required per release)
+
+AXIS B — HORIZONTAL (Bug-Shape Posture):
+Cross-Artifact Drift: 9.5/10 (Stable — every static prompt and dynamic builder locked, manifest coverage DERIVED, CI/Test-Command parity and the health-label contract now asserted)
+Silent Prompt Degradation: 8.5/10 (Degrading — three instances closed (F11, F14, F16) but ONE remains live and known: INV-73)
+Generated-Artifact Staleness: 9.0/10 (Stable — generators proven idempotent; invariant TEXT staleness remains unguarded, three stale rules found by audit rather than by a check)
+Backward-Compatibility Breakage: 9.0/10 (Stable — dead-CSS removal verified against real class attributes, not raw text; readBlocks, metrics columns and legacy Axis B lines all still parse)
+Guard / Test Coverage Quality: 8.0/10 (Improving, ↑ from 7.0 — third consecutive cycle the class fired, first cycle in which the project's own machinery caught every instance)
+
+Overall (weighted avg): 9.2/10 (equal weights across the 12 non-Overall dimensions, unchanged).
+Verification: independent §4v in a fresh session — 67 invariants executed and mutation-proven (75 mutations at the time), 66 PASS / 1 FAIL (INV-52, disclosed seed did not reproduce its own probes); 0 regressions from eleven candidates examined and rejected on evidence; all 16 stages re-run by the verifier at two commits; Category D 16%.
+Cycle total: 16 − 0 (13 in the metrics row, which /reflect stamped before v1.30.0; +2 v1.30.0, +1 v1.31.0). ~15 defensive/structural — the batch-level counts and /reflect's re-tally overlap, which is itself the argument for R22.
+Self-report accuracy: ONE correction (/reflect demoted F15 from production to defensive, 14 → 13) — down from four corrections in Cycle 5, and in the same conservative direction.
+Policy: none triggered (lowest Axis B 8.0 vs threshold 4/10). SECOND cycle flagging the same rubric weakness — a fixed threshold of 4 cannot fire on a project whose scores sit between 7 and 9.5, so the "2 consecutive cycles" mechanism has never once engaged.
 
 ### Cycle 5 — 2026-07-27 — Synthesis
 Scope this cycle: Tier-1 dogfood — /broad-scan (F01–F21) → five implement batches (v1.19.0 → v1.22.0) → /regression → /reflect ×2 → /sync-docs → R19 (v1.23.0) → §4v in a genuinely fresh session. No Session Handoff Block (Tier 1, not Tier 3); the finding set served that role.
