@@ -5,6 +5,147 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.33.0 — 2026-09-04
+
+Makes the §6a policy trigger RELATIVE. Post-synthesis change to a finding the
+Cycle-6 synthesis raised about itself.
+
+**The mechanism had never once engaged.** `Policy threshold: 4/10` with
+`Consecutive cycles: 2` means a category must sit at or below 4 twice running.
+Across six cycles of this repo, Axis B scores sat between 7.0 and 9.5 — so the
+rule could not fire, and did not, including the cycle where Guard / Test
+Coverage Quality fell **9.0 → 7.0** and the synthesis itself called it "the
+second consecutive cycle where this class was declared closed and wasn't".
+Flagged at Cycle 5, flagged again at Cycle 6.
+
+**Two defects, not one.** The floor was also written as a LITERAL inside the
+canonical §6a body (`≤5/10 for 2 consecutive cycles`) while the Cycle Workflow
+Config carried a `Policy threshold` field the body never read — so the config
+value was decorative, and the console (which DID interpolate it) and canonical
+disagreed. The lock passed only because the built-in projects happen to be
+configured at 5.
+
+The trigger is now four clauses, all parameterised:
+- **(a) DECLINE** — fell in `Consecutive cycles` consecutive cycles, any magnitude.
+- **(b) SHARP DROP** — fell by ≥1.5 in a single cycle. Deliberately fixed rather
+  than configurable: it is a property of the 10-point scale, not of the project,
+  and it is the clause that catches the fall that matters most.
+- **(c) PERSISTENT LAGGARD** — lowest-scoring for `Consecutive cycles` consecutive
+  cycles AND not improving. A category that is lowest but RECOVERING does not
+  trigger, and §6a must say so rather than silently omitting it.
+- **(d) ABSOLUTE FLOOR** — at or below `Policy threshold`, regardless of trend.
+  The old rule, kept as a backstop for a genuinely broken category.
+
+Validated against six cycles of this repo's real Axis B history: Cycle 5 fires
+(Guard / Test Coverage Quality, sharp drop 9.0 → 7.0) and Cycle 6 does not
+(that category improved 7.0 → 8.0, and clause (c) explicitly spares it). The
+Cycle-6 synthesis reported "no policy triggers" under the old rule and the new
+rule agrees, so that synthesis stands unchanged.
+
+The POLICY RESPONSE block gains a `Trigger clause:` field so the response names
+which clause fired. INV-75 guards the whole thing: all four clause labels
+present, both config fields read by name, and no hardcoded `≤N/10 for N
+consecutive cycles` floor back in the canonical body.
+
+Library 72 → 73. Full 16-stage Test Command green.
+
+## 1.32.0 — 2026-09-04
+
+Cycle-6 remediation, Batches 3-5 — the contract seams that held only by luck,
+and the release that verification could not see.
+
+**INV-71 — the PROJECT_HEALTH label contract now has ONE definition.** The five
+"Current Standing" labels were hard-coded independently in four artifacts:
+`portfolio.mjs`, `portfolio-status.mjs`, the console's `parseHealth()`, and the
+skeleton `/cycle-init` tells a project to create. They matched, and nothing
+asserted it. The failure mode is silent in the worst way — a label that drifts on
+one side makes every reader fall back to `—`, so the portfolio board, the status
+board and the console Dashboard all render the project as UNSCORED rather than
+erroring, and that block is LIVE status, not history. `scripts/health-fields.mjs`
+is now the single definition; both script readers import it (keyed, not
+positional, so reordering cannot silently re-map fields). The copies that cannot
+import it are checked against it — each **inside the span that writes it**, never
+file-globally, because every label appears twice per artifact and a whole-file
+`includes` would pass with the skeleton broken. The console is checked by
+BEHAVIOUR instead: `parseHealth` matches a loose pattern rather than spelling the
+labels, so a block built from the canonical labels must parse every field.
+
+**INV-74 — CI must run every stage of the documented Test Command, in order.**
+INV-14 only asserted that CI runs `check-template-sync`, so a stage added to the
+Test Command and forgotten in the workflow would be run by every contributor and
+by nothing in CI — or the reverse, a CI stage no contributor can reproduce
+locally. Parity is exact today (16 stages, same order); this keeps it.
+
+**INV-72 — every release of the current cycle has a block in `.cycle/blocks/`.**
+§4v and §6a read that directory and nothing else — not the CHANGELOG, not the
+commit log — so a release that ships without a block is invisible to verification
+and synthesis by construction. v1.30.1 changed the console and had no block; the
+§4v pass found it only by fetching origin, and the pack it was handed could not
+have shown it. The floor is derived (the lowest version this cycle already has a
+block for), so the rule never reaches back into cycles predating the convention.
+
+**Three blocks backfilled.** `06-1.30.1` (marked as a reconstruction, with its
+claims re-verified rather than copied from the commit message), plus the §4v
+VERIFICATION BLOCK and the SEAMS & INVARIANTS AUDIT BLOCK from the 2026-09-04
+session, which until now existed only in a chat transcript — the exact gap INV-72
+describes, one level up.
+
+Library 69 → 72, all runnable, 81 mutations. Full 16-stage Test Command green.
+The Seams audit counter is reset to 0.
+
+## 1.31.0 — 2026-09-04
+
+Cycle-6 remediation, Batches 1+2 — the four findings the Seams & Invariants
+audit and §4v raised against the guard family itself. Every one of them was a
+guard that reported green while proving less than its rule text claimed.
+
+**INV-68 — the invariant library's parse floor (the one that mattered most).**
+Two parsers read the same library file and disagreed: `invariant-check.mjs`
+anchors on `^(INV-\d+)` with no leading-whitespace tolerance, while
+`verification-pack.mjs` trims each line first. A rule written with ONE leading
+space therefore vanished from `invariant-check` **and** from the mutation audit
+that derives its set from that same parse — so no case was orphaned, nothing
+failed, and both reported `67/67 … Every runnable invariant fails closed ✓`
+against a 68-rule file, while the §4v pack showed the verifier all 68. An
+operator could add an invariant, see green, and believe it was proven.
+`check-template-sync` structural check 12 now measures both parsers against a
+permissive count of the file itself and fails if either sees fewer, or if they
+disagree. INV-58 floors the mutation-case dimension; this floors the parse one
+level up.
+
+**INV-69 — a covering rule must APPLY, not merely EXIST.** INV-56 checked that
+*some* `:focus-visible` rule using `box-shadow` existed somewhere in the file.
+Scoping the file's single rule to `.nav-item` strips the focus indicator from
+all 19 inline-suppressed form controls, and the check still reported every one
+of them "covered". Coverage was real but rested on an unstated property — that
+the rule is universal — which nothing asserted. Now asserted. (Confirmed in
+Chromium first that the universal rule genuinely reaches a control carrying
+inline `outline:none`.)
+
+**INV-70 — the §4v pack's disclosed seed now reproduces its own probes.**
+`main()` selected probes with the full 40-char HEAD sha and printed
+`seed.slice(0, 12)`, in both the "seeded from" line and the `--seed` reproduce
+command — so following the pack's own instructions returned a *different* five
+invariants, and §4v's "do NOT substitute your own picks" was unauditable. Proved
+at the last pack's own commit: the full sha yields the printed five, the printed
+12-char seed yields five others. The seed is now resolved once at the source
+(`git rev-parse --short=12`) and `buildPack` derives the probes itself from the
+seed it prints, accepting no `probes` override — disclosure and use cannot
+diverge by construction. The old test asserted determinism and the seed's
+presence separately and never the composition; the new one re-derives from the
+built pack, including a >12-char seed.
+
+**Library text repairs.** INV-50 now states the scope it actually proves
+(presence of an id, not that `getElementById` resolves to the intended element —
+both Cycle-6 duplicate-id defects passed under it). INV-66's sentence said nine
+prompts had no slash-command counterpart *and* named `setup`, which had one, as
+one of them. **INV-29 is retired** — it enumerated 7 of the 16 locked static
+prompts and is subsumed by INV-66; its drift mutation moved to INV-66 rather
+than being retired with it.
+
+Library 67 → 69 (one retired, three added), all runnable, 78 mutations. Full
+16-stage Test Command green, 298 assertions.
+
 ## 1.30.1 — 2026-09-03
 
 Removes 26 dead CSS rules (17 classes) from the console. No behaviour change —

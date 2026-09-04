@@ -122,9 +122,12 @@ For each dimension:
 - Which subsystem(s) primarily feed evidence into this score
 
 Also recommend:
-- Policy threshold: [score ≤ N triggers policy response — recommend a
-  value based on project maturity: 4/10 for mature projects, 5/10 for
-  early-stage projects that need faster feedback loops]
+- Policy threshold: [the ABSOLUTE FLOOR backstop — recommend a value based
+  on project maturity: 4/10 for mature projects, 5/10 for early-stage
+  projects that need faster feedback loops. Note this is NOT the primary
+  trigger: the primary trigger is relative (a category that declines, or
+  stays lowest without recovering), because a fixed floor never fires on a
+  healthy project]
 - Consecutive cycles before trigger: [typically 2, but 1 for
   safety-critical projects]
 

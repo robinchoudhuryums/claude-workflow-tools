@@ -70,6 +70,10 @@ INV-02 | Rule text here | Subsystem: Security
 ### Policy Configuration
 Policy threshold: 4/10
 Consecutive cycles: 2
+(The policy trigger is RELATIVE — a category that DECLINES, or that stays lowest
+ without recovering, for `Consecutive cycles` consecutive cycles. `Policy
+ threshold` is the ABSOLUTE FLOOR backstop only: a fixed floor alone never fires
+ on a healthy project, so it cannot be the primary rule. See §6a section 7.)
 
 ### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles
 every 4 subsystem cycles
@@ -223,7 +227,10 @@ And one assembles the independent-verification input:
   excluded, never silently dropped, since the directory accumulates), and the
   **rotation probes seeded from the commit sha** so they are reproducible rather
   than chosen by the implementer — the prompt's "do NOT substitute your own
-  picks" rule has no force if the implementer picks them. It also reads
+  picks" rule has no force if the implementer picks them. The pack DERIVES its
+  probes from the seed it prints and accepts no override, so the disclosed seed
+  and the used seed cannot diverge; until v1.31.0 they did, and the reproduce
+  command the pack printed returned a different five. It also reads
   `metrics.csv` and warns the verifier automatically when `/reflect` recorded a
   correction to a self-reported count.
   `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]`
@@ -410,9 +417,12 @@ For each dimension:
 - Which subsystem(s) primarily feed evidence into this score
 
 Also recommend:
-- Policy threshold: [score ≤ N triggers policy response — recommend a
-  value based on project maturity: 4/10 for mature projects, 5/10 for
-  early-stage projects that need faster feedback loops]
+- Policy threshold: [the ABSOLUTE FLOOR backstop — recommend a value based
+  on project maturity: 4/10 for mature projects, 5/10 for early-stage
+  projects that need faster feedback loops. Note this is NOT the primary
+  trigger: the primary trigger is relative (a category that declines, or
+  stays lowest without recovering), because a fixed floor never fires on a
+  healthy project]
 - Consecutive cycles before trigger: [typically 2, but 1 for
   safety-critical projects]
 
@@ -1864,7 +1874,7 @@ Reading the grid:
 - Vertical: the dimension most in need of attention before the next development cycle
 - Horizontal: the category most in need of policy intervention
 - Any subsystem where the Verification Block signals failed invariants or unresolved Critical/High findings
-- Any Axis B category at ≤5/10 for 2 consecutive cycles — this triggers an automatic policy response (see section 7 below)
+- Any Axis B category that fires a POLICY TRIGGER this cycle (see section 7) — the trigger is RELATIVE: a category that is DECLINING, not merely one that is low
 - The dimension closest to a meaningful threshold (nearly production-ready, or at risk of regression)
 
 5. PLAIN-LANGUAGE SUMMARY:
@@ -1874,12 +1884,21 @@ One paragraph summarizing where the project stands, written for a technical stak
 Produce a ready-to-paste block containing the Current Standing section and a new Cycle entry with both axes formatted for the score history.
 
 7. POLICY RESPONSE TRIGGERS:
-Check each Axis B category against its prior cycle score. If any category scored ≤5/10 in BOTH this cycle and the prior cycle (2 consecutive cycles), it triggers a mandatory policy response in the next cycle's scope.
+The trigger is RELATIVE, not a fixed floor. A fixed floor cannot fire on a healthy project: a category can fall from 9.5 to 7.0 and still sit far above any sensible absolute threshold, so the degradation that matters most goes unpoliced — which is exactly what happened for six cycles in the project this workflow was built on. Read `Policy threshold` and `Consecutive cycles` from the Cycle Workflow Config and compare each Axis B category against its scores in the prior cycles.
+
+A category triggers a mandatory policy response when ANY of these holds:
+(a) DECLINE — its score fell in `Consecutive cycles` consecutive cycles, at any magnitude.
+(b) SHARP DROP — it fell by 1.5 or more in a SINGLE cycle. This magnitude is deliberately fixed rather than configurable: it is a property of the 10-point scale, not of the project, and it is the clause that catches the fall that matters most — a category dropping 9.0 → 7.0 is in trouble whether or not it drops again next cycle.
+(c) PERSISTENT LAGGARD — it has been the lowest-scoring Axis B category for `Consecutive cycles` consecutive cycles AND did not improve in the most recent cycle. A category that is lowest but RECOVERING does not trigger; say so explicitly rather than silently omitting it.
+(d) ABSOLUTE FLOOR — it is at or below `Policy threshold`, regardless of trend. This is a backstop for a genuinely broken category, not the primary rule.
+
+Name which clause fired for each triggered category. If no prior score exists for a category (first measurement), it cannot trigger on (a) or (b) — say "First measurement" and check only (c).
 
 For each triggered category, produce a POLICY RESPONSE entry:
 
 ---POLICY RESPONSE TRIGGERED---
 Category: [Axis B category name]
+Trigger clause: [decline | sharp drop | persistent laggard | absolute floor]
 Consecutive poor cycles: [N]
 Current score: [X/10] | Prior score: [X/10]
 Root pattern: [one-sentence description of the systemic pattern causing the persistent low score]
@@ -2539,6 +2558,7 @@ RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
 ```
 ---POLICY RESPONSE TRIGGERED---
 Category: [Axis B category name]
+Trigger clause: [decline | sharp drop | persistent laggard | absolute floor]
 Consecutive poor cycles: [N]
 Current score: [X/10] | Prior score: [X/10]
 Root pattern: [one-sentence description of the systemic pattern causing the persistent low score]

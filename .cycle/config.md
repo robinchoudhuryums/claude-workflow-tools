@@ -35,7 +35,8 @@ Tooling & Sync Infrastructure:
   scripts/gen-commands.mjs, scripts/gen-html-prompts.mjs, scripts/check-template-sync.mjs,
   scripts/check-html.mjs, scripts/check-output-blocks.mjs, scripts/cycle-context.mjs,
   scripts/render-metrics.mjs, scripts/invariant-check.mjs, scripts/portfolio.mjs,
-  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/csv.mjs, tests/ (10 regression tests + mutation-audit.mjs),
+  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/csv.mjs,
+  scripts/health-fields.mjs, tests/ (10 regression tests + mutation-audit.mjs),
   .github/workflows/sync-check.yml, .claude/commands/ (generated), .claude/settings.json, .gitignore
 Cycle state (not audited as source, but read/written by the tooling above):
   .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/,
@@ -71,7 +72,6 @@ INV-25 | render-metrics.mjs parses metrics.csv (incl. quoted comma fields) and r
 INV-26 | invariant-check.mjs runs command-style Verify fields (stripping trailing annotations), FAILs on a failing command, classifies prose/test-name Verify as MANUAL, and dedupes identical commands | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/invariant-check.test.mjs
 INV-27 | portfolio.mjs aggregates multiple PROJECT_HEALTH.md "Current Standing" sections, ranks lowest overall first, averages only scored projects, and flags unscored ones | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/portfolio.test.mjs
 INV-28 | the R14 transform engine (gen-html-prompts.mjs) extracts command bodies, drops the usage guard, applies placeholder replacements, and HTML-escapes — import-safe (no CLI side effects on import) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/gen-html-prompts.test.mjs
-INV-29 | the console's static §-prompts (p0,p1,p2,p3,p4post,p4reflect,p5) are generated from CLAUDE.md and must not drift from it | Subsystem: Interactive Console (HTML) | Verify: node scripts/gen-html-prompts.mjs --assert
 INV-30 | the R3 File System Access flow degrades gracefully (connectRepoFolder shows a fallback message, does not throw) when window.showDirectoryPicker is absent | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs (R3 fallback check)
 INV-31 | every workflow output block in CLAUDE.md is shape-valid (balanced open/close delimiters, all required fields present) and is emitted by its producing command | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-output-blocks.mjs
 INV-32 | the R13 output-block harness fails closed on injected drift (dropped field, broken/renamed delimiter, non-emitting producer, unregistered new block) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs
@@ -89,7 +89,7 @@ INV-56 | any outline:none suppression is covered by a :focus-visible rule that u
 INV-57 | the CI workflow declares least-privilege permissions (contents: read) and requests no write scope — every stage only reads the checkout | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/guard.test.mjs
 INV-58 | the invariant mutation audit fails closed three ways — a runnable invariant with no mutation case, a case whose find string has rotted away, and a mutation credited to some OTHER invariant’s assertion are all FAILURES, never a silently smaller proven set. The scratchpad version scored a stale case as a neutral "?" and still reported "0 false greens" | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/mutation-audit.test.mjs
 INV-49 | every click-only control built on a non-interactive element (div/span/tr) is keyboard-reachable — role="button" + tabindex="0" + a key handler, or it delegates to a nested native <button>. The check derives the control set from the markup rather than a hand-listed set | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
-INV-50 | every element a render writes to during init exists in the markup — the headless stub returns a live element for ANY id, so a render writing to a mistyped id used to pass CI and render an empty box in the browser | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-html.mjs
+INV-50 | every id a render writes to during init is PRESENT in the markup — presence only. The headless stub returns a live element for ANY id, so a render writing to a mistyped id used to pass CI and render an empty box in the browser. It does NOT prove the element getElementById RESOLVES to is the intended one: both Cycle-6 duplicate-id defects passed under this rule, because the stub's document is a flat id→element map with no document order. INV-67 is the complement, not a replacement — a render targeting a WRONG-but-unique id is still caught only by this presence check | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-html.mjs
 INV-51 | render-metrics never reports a synthesis row's net_score (blank by P1/INV-33); the summary line reports the columns a synthesis row owns and sources that cycle's net from its reflect rows | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/render-metrics.test.mjs
 INV-45 | no `on*=` inline handler builds a JS argument with esc() — attribute-context args go through jsArg() (JSON.stringify supplies the quoting, esc() makes it attribute-safe). esc() alone renders ' as &#39;, which the browser decodes back before parsing the handler, so the guarded-looking form is the vulnerable one | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-46 | Axis B round-trips through the project form without losing `pulse` — the serializer emits four fields (name|measures|pulse|playbook), the parser reads four, and a legacy three-field line is still read as name|measures|playbook | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
@@ -108,12 +108,24 @@ INV-62 | every form control in the markup AND in the render-only forms (fill for
 INV-63 | the fill form offers EVERY operator placeholder and NO output-format token, across all 16 prompts. Fields and format tokens are told apart structurally — a token inside an ---OUTPUT BLOCK--- span, or sharing its line with another bracket token, is part of a template the agent must emit, not an input. The ALL-CAPS-only pattern missed 5 operator placeholders (any containing a lowercase clause after an em dash) while offering [ID], [INV-XX] and [X/10], so filling one rewrote the block the prompt tells the agent to produce | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-64 | the §4v rotation probes are a pure function of a stated seed and the invariant ids — reproducible by a verifier, never re-rolled on Copy, and rotating when the seed changes by ONE character. They were Math.random() re-rolled on every copy, so the prompt's own "do NOT substitute your own picks" had no force. The seed is hashed as a PREFIX: FNV-1a does not avalanche on a trailing change, and with the seed appended every hash shifted by the same constant and the selection never rotated | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-65 | .cycle/STATE.md keeps the shape its own template defines in CLAUDE.md — every template section present, none invented, none duplicated. It is the rolling substrate /cycle-resume and the SessionStart hook read; unchecked it grew to 24 sections and 347 lines with two "Decisions made" and two "Where I left off". Narrative history belongs in .cycle/HISTORY.md | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 11)
-INV-66 | every static console <pre> is locked to a canonical body in CLAUDE.md, and --assert FAILS if a new one appears with no manifest entry. Nine had no slash-command counterpart and sat outside every lock — including `setup`, which DID have one and had decayed to a pre-R18 copy that never asks about a user-facing surface. The derived half matters: the audit that found this set under-counted it by one | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
+INV-66 | every static console <pre> is locked to a canonical body in CLAUDE.md and must not drift from it, and --assert FAILS if a new one appears with no manifest entry. NINE sat outside every lock: eight had no slash-command counterpart, and the ninth was `setup`, which DID have one and had decayed to a pre-R18 copy that never asks about a user-facing surface. The derived half matters: the audit that found this set under-counted it by one. Subsumes the retired INV-29, which named only 7 of the 16 locked prompts | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-html-prompts.mjs --assert
 INV-67 | Every id in the console MARKUP is unique. getElementById returns the FIRST element in document order, so a collision does not error — it silently hands the code a different element than the one it names. Two shipped for many releases: <section id="t1"> shadowed <pre id="t1">, so renderTier1() assigned textContent to the SECTION and destroyed the whole Tier 1 panel on every load; and doCopy('setup') read the setup SECTION, pasting the panel heading and warning note into the copied prompt. The vm harness cannot see this class BY CONSTRUCTION — its document is a flat id→element map with no document order | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-68 | the invariant library's PARSE FLOOR: every INV- line in the library file parses identically in invariant-check.mjs and verification-pack.mjs, and neither sees fewer than the file contains. The two parsers disagreed — invariant-check anchors on `^(INV-\d+)` with no leading-whitespace tolerance, verification-pack trims first — so a rule written with ONE leading space vanished from invariant-check AND from the mutation audit that derives its set from the same parse (no orphaned case, nothing failed) while the §4v pack showed the verifier one rule more. Both reported "67/67 … fails closed ✓" against a 68-rule file. INV-58 floors the mutation-case dimension; this floors the parse a level up | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 12)
+INV-69 | the :focus-visible rule that supplies box-shadow is UNIVERSAL, so it reaches every control carrying inline outline:none. INV-56 proved a covering rule EXISTS and never that it APPLIES: scoping the file's single rule to `.nav-item` strips the indicator from every inline-suppressed form control and the check still reported all of them "covered". Coverage rested on an unstated property. Confirmed in Chromium that the universal rule does reach such a control (box-shadow 0 0 0 3px on focus) — this makes that the guarded contract rather than a coincidence | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-70 | the §4v pack's DISCLOSED seed reproduces the probes that pack PRINTED — asserted end-to-end by re-deriving from the pack's own `--seed` line, including a seed longer than 12 characters. buildPack now derives the probes itself and accepts no `probes` override, so disclosure and use cannot diverge by construction. main() selected with the full 40-char sha and disclosed seed.slice(0, 12), so the printed reproduce command returned a DIFFERENT five for two releases and §4v's "do NOT substitute your own picks" was unauditable; the unit test asserted determinism and the seed's presence separately and never the composition | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/verification-pack.test.mjs
+INV-71 | PROJECT_HEALTH.md's "Current Standing" label set has ONE definition (scripts/health-fields.mjs) that both portfolio readers import, and every artifact that writes or parses the block carries it: the /cycle-init skeleton in CLAUDE.md, the generated command file, the live PROJECT_HEALTH.md, and the console's parseHealth — the console by BEHAVIOUR (it matches a loose pattern rather than spelling the labels, so a block built from the canonical labels must parse every field). Five labels were hard-coded in four places and matched only by luck; a label that drifts on one side does not error, it makes every reader fall back to "—" so the portfolio board, the status board and the Dashboard all render the project UNSCORED. Each copy is checked inside the span that writes it, never file-globally — every label appears twice per artifact | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 13)
+INV-74 | CI runs EVERY stage of the documented Test Command, in the same order. INV-14 asserted only that CI runs check-template-sync, so a stage added to the Test Command and forgotten in the workflow would be run by every contributor and by nothing in CI — or the reverse, a CI stage no contributor can reproduce locally. Parity is exact today (16 stages); this keeps it that way | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 14)
+INV-72 | every release of the CURRENT cycle has a summary block in .cycle/blocks/. §4v and §6a read that directory and nothing else — not the CHANGELOG, not the commit log — so a release that ships without a block is invisible to verification and synthesis BY CONSTRUCTION. v1.30.1 changed the console and had no block; §4v found it only by fetching origin, and the pack it was handed could not have shown it. The floor is DERIVED (the lowest version this cycle already has a block for) so the rule never reaches back into cycles predating the convention, and the ceiling is VERSION | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 15)
+INV-75 | the §6a policy trigger is RELATIVE and PARAMETERISED: the canonical body names all four clauses (DECLINE / SHARP DROP / PERSISTENT LAGGARD / ABSOLUTE FLOOR), reads `Policy threshold` and `Consecutive cycles` from the Cycle Workflow Config by name, and contains no hardcoded "≤N/10 for N consecutive cycles" floor. It WAS a literal in the canonical body while the config carried a threshold field the body never read — the config value was decorative. And a fixed floor cannot fire on a healthy project: across six cycles here the mechanism engaged ZERO times, scores sitting between 7 and 9.5, including the cycle Guard / Test Coverage Quality fell 9.0 → 7.0. The console builder renders the same clauses by canonicalCoverage (INV-36), so this guards the source | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 16)
 
 ### Policy Configuration
 Policy threshold: 4/10
 Consecutive cycles: 2
+(RELATIVE trigger as of v1.33.0. `Policy threshold` is now the ABSOLUTE FLOOR
+ backstop only; a category triggers primarily by DECLINING for `Consecutive
+ cycles` consecutive cycles, or by staying the lowest-scoring category that long
+ without recovering. The fixed floor never fired once in six cycles — scores sat
+ between 7 and 9.5 while Guard/Test Coverage Quality fell 9.0 → 7.0 unpoliced.)
 
 ### Seams Audit Cadence
 every 3 subsystem cycles
@@ -254,7 +266,12 @@ Cycle Workflow Config.
   "user-facing surfaces" step and the interface-dimension instruction — while
   every R18 marker passed, because those phrases appear elsewhere in the file
   (in the §T1 builder). It was the largest prompt in the console and nothing
-  had compared it to canonical for four releases.
+  had compared it to canonical for four releases. Cycle-6 remediation hit the
+  same shape a THIRD time, in a guard being written to close a different one:
+  the first draft of the health-label check scanned whole FILES, and every one
+  of those labels appears twice per artifact (the writer and the §7 template),
+  so it would have passed with the console's parser broken. Scope a check to the
+  span that produces the thing, never to the file that contains it.
 - **A documented exemption stops being re-read — and an exemption pinned to
   SYNTAX stops matching.** §T2b's `locked:false` was recorded in three places
   with a sound rationale that went unexamined for four releases while the
@@ -299,13 +316,56 @@ Cycle Workflow Config.
   character shifts every hash by the *same constant*, so the sort order — and
   therefore the selection — never moved. Seed as a PREFIX, and assert that a
   one-character seed change reorders the picks. (`verification-pack.mjs` was
-  never affected: sha256 avalanches. The property belongs to the hash, not to
-  the idea of seeding.)
+  never affected *by this*: sha256 avalanches. The property belongs to the hash,
+  not to the idea of seeding.) But that parenthetical gave false reassurance for
+  two releases: `verification-pack.mjs` had a DIFFERENT seed defect — it selected
+  with the full 40-char sha and disclosed `seed.slice(0, 12)`, so the seed it
+  printed reproduced a different five. Clearing one seed defect in a file says
+  nothing about the others (INV-70, v1.31.0).
 - **An audit's own count of what sits outside a guard can be wrong.** The
   Cycle-6 scan reported eight unlocked console prompts. There were nine, and
   the ninth (`setup`) was the consequential one. A finding that says "these N
   things are unguarded" is a hand-maintained list with all the usual failure
   modes — derive the set from the artifact and let the guard report the count.
+- **A stubbed DOM that is a flat id→element map cannot see id shadowing.**
+  `getElementById` returns the FIRST match in document order; a stub keyed by id
+  has no document order, so a duplicate id is invisible to it BY CONSTRUCTION —
+  not missed, unrepresentable. Both Cycle-6 duplicate-id defects (the destroyed
+  Tier 1 panel, `doCopy('setup')` copying its section) passed every headless
+  stage and were found by driving a real browser. The MARKUP, not the harness,
+  is where that class has to be checked (INV-67). A harness's shape decides
+  which bug classes it can never see; ask what yours cannot represent.
+- **A guard that proves a covering rule EXISTS has not proved it APPLIES.**
+  INV-56 checked that some `:focus-visible` rule using box-shadow existed
+  somewhere in the file. Coverage actually rested on that rule being UNIVERSAL —
+  scoping it to `.nav-item` leaves every inline-suppressed control with no
+  indicator and the check still reports them all covered. The coverage was real;
+  the property it rested on was unstated and therefore unguarded (INV-69). The
+  general question, and the one that found four of this cycle's defects: WHAT
+  UNSTATED PROPERTY MAKES THIS CHECK'S CONCLUSION TRUE?
+- **Two parsers of one file is a seam — measure both against the FILE.** The
+  invariant library had two readers: `invariant-check` anchors on `^(INV-\d+)`
+  with no leading-whitespace tolerance, `verification-pack` trims first. A rule
+  written with ONE leading space vanished from `invariant-check` AND from the
+  mutation audit that derives its set from the same parse — so nothing was
+  orphaned, nothing failed, and both reported "67/67 … fails closed ✓" against a
+  68-rule file while the §4v pack showed the verifier all 68. Comparing the two
+  parsers to each other would not have helped either; the floor has to be the
+  file itself (INV-68).
+- **A shadowed binding fails only on the branch your repo never takes.** An
+  inner `const absent` inside a loop shadowed the outer `absent` it was pushing
+  to — a temporal-dead-zone error that fires ONLY when a target file is missing.
+  Every file exists in this repo, so it was invisible here and caught by
+  `guard.test.mjs`'s sandbox, which is precisely what that sandbox is for. A
+  guard's rare branch is the one your own tree cannot exercise.
+- **A config field the canonical body never READS is decorative.** The Cycle
+  Workflow Config carried `Policy threshold: 4/10`, and the §6a canonical body
+  hardcoded `≤5/10 for 2 consecutive cycles` — so the field did nothing on the
+  canonical side while the console's builder DID interpolate it. Two artifacts,
+  two different rules, and the `--assert` lock passed only because both built-in
+  projects happen to be configured at 5. When a body states a project-specific
+  number, ask which artifact actually reads the config field of that name; if the
+  answer is "not this one", the field is decoration and the two will diverge.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
@@ -370,8 +430,8 @@ machine or after a release.
   (closing IMPLEMENTATION BATCH PLAN); **v1.27.0 changed `/reflect`** (quote
   comma-bearing metrics fields) **and `/cycle-init`** (inline PROJECT_HEALTH
   skeleton); **v1.29.0 changed `/setup-cycle`** (three elaborations restored
-  from the console copy). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0 and
-  v1.28.0 changed none.
+  from the console copy). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0,
+  v1.28.0, v1.30.0–v1.30.1 and v1.31.0–v1.32.0 changed none.
 - **One-time, projects configured from the CONSOLE's Setup prompt before
   v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing
   surfaces and never proposed an interface Health Dimension. Re-check whether
@@ -381,6 +441,16 @@ machine or after a release.
   existing `metrics.csv` row whose subsystem is UNQUOTED has shifted columns
   and cannot be repaired by the parser — quote those subsystem fields by
   hand once (v1.27.0 / F03).
+- **Regenerate any §4v pack produced before v1.31.0.** Those packs selected
+  their rotation probes with the full commit sha but printed a 12-character
+  seed, so the `--seed` line they hand the verifier reproduces a DIFFERENT five
+  invariants. The pack is not wrong about the library, only unauditable about
+  its own probe selection; `node scripts/verification-pack.mjs` now discloses
+  the seed it used (INV-70).
+- **Consuming projects that copy individual scripts:** `portfolio.mjs` and
+  `portfolio-status.mjs` now import `scripts/health-fields.mjs` (the one
+  definition of the PROJECT_HEALTH "Current Standing" labels, INV-71). Copy it
+  alongside them or both will fail at import.
 - **Browser-verify console changes.** Rendering, light-mode contrast, the
   mobile drawer and `legacyCopy()`'s success path have no headless coverage.
   After v1.27.0's F17 fix, walk S9 (phone layout) once Pages republishes —

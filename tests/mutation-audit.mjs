@@ -105,7 +105,13 @@ const CASES = {
   'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/]],
   'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
   'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
-  'INV-66': [['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i]],
+  'INV-66': [
+    ['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i],
+    // inherited from the retired INV-29: the DRIFT half. Retiring a rule must
+    // not retire its proof — INV-66's own case only covered the unlocked-new-
+    // prompt half, so without this the drift mutation would have been lost.
+    [HTML, '<pre id="p0">Read CLAUDE.md and README before starting.', '<pre id="p0">Read README before starting.', /drift|does not match|p0/i],
+  ],
   'INV-62': [
     [HTML, 'id="navToggle" aria-label="Open navigation" aria-expanded="false"', 'id="navToggle" aria-label="Open navigation"', /F12/],
     [HTML, '<label class="fill-label" for="pf-name">', '<label class="fill-label" data-for="pf-name">', /F12/],
@@ -138,9 +144,21 @@ const CASES = {
   // the audit with --only) rather than the audit itself — an invariant whose
   // Verify command is the audit would recurse into its own coverage set.
   'INV-58': [['tests/mutation-audit.mjs', 'if (uncovered.length) bad(', 'if (false && uncovered.length) bad(', /no mutation case|\u2717/]],
+  // INV-68 — the proven vector: ONE leading space made a rule invisible to
+  // invariant-check and to this audit's own derived set, while the §4v pack
+  // still listed it.
+  'INV-68': [['.cycle/config.md', 'INV-40 | credentials never leave', '  INV-40 | credentials never leave', /parse floor/i]],
+  'INV-69': [[HTML, ':focus-visible{outline:2px', '.nav-item:focus-visible{outline:2px', /must apply, not merely exist/i]],
+  // INV-71 — drift the ONE definition; every doc copy must stop matching it.
+  'INV-71': [['scripts/health-fields.mjs', "topVertical:    'Top vertical priority:'", "topVertical:    'Top vertical priorities:'", /health-field contract/i]],
+  // INV-74 — drop a stage from CI that the Test Command still documents.
+  'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i]],
+  // INV-72 — ship a release into the current cycle with no block for it.
+  // INV-75 — drop one of the three clause labels from the canonical rule.
+  'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger/i]],
+  'INV-72': [['CHANGELOG.md', '## 1.30.1 — 2026-09-03', '## 1.30.2 — 2026-09-03\n\nmutation\n\n## 1.30.1 — 2026-09-03', /release with no block/i]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────
-  'INV-29': [[HTML, '<pre id="p0">Read CLAUDE.md and README before starting.', '<pre id="p0">Read README before starting.', /drift|does not match|p0/i]],
   'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i]],
 
   // ── node scripts/check-output-blocks.mjs ────────────────────────────────────
@@ -158,6 +176,9 @@ const CASES = {
   'INV-35': [['scripts/portfolio-status.mjs', 'function seamsCadence(cycleDir, root) {', 'function seamsCadence(cycleDir, root) { return \'\';', /✗|error/i]],
   'INV-51': [['scripts/render-metrics.mjs', "that cycle's net ${synthNet}", "that cycle's net ${lastSynth.net_score}", /✗/]],
   'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i]],
+  // INV-70 — reintroduce the disclosure/use split: select with a truncated
+  // seed while the header still prints the full one.
+  'INV-70': [['scripts/verification-pack.mjs', 'const probes = selectProbes(invariants, seed);', 'const probes = selectProbes(invariants, String(seed).slice(0, 4));', /does NOT reproduce/i]],
 };
 
 // ── Coverage, derived from the live library ───────────────────────────────────

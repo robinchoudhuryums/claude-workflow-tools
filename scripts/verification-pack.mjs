@@ -94,7 +94,15 @@ export function cycleTotals(metricsCsv, cycle) {
   return { rows: n, net, fixes, nfm, defensive, corrections };
 }
 
-export function buildPack({ body, invariants, probes, blocks, totals, cycle, seed, project }) {
+// INV-70 (Cycle 6 remediation): the probes are derived HERE, from the same `seed`
+// string the header prints, so the pack cannot disclose one seed and select with
+// another. It used to take `probes` as a parameter while main() passed
+// selectProbes(invariants, fullSha) alongside seed.slice(0, 12) — so the printed
+// reproduce command returned a different five, and §4v's "do NOT substitute your
+// own picks" was unauditable. A `probes` override is deliberately NOT accepted:
+// an override reopens exactly that divergence.
+export function buildPack({ body, invariants, blocks, totals, cycle, seed, project }) {
+  const probes = selectProbes(invariants, seed);
   const header = [
     `CYCLE UNDER VERIFICATION: ${project} — Cycle ${cycle}`,
     '',
@@ -168,9 +176,13 @@ function main(argv) {
   }
   if (!cycle) { console.error('No cycle number — pass --cycle N or add a Cycle: field to .cycle/STATE.md.'); return 1; }
 
+  // INV-70: resolve the seed to its FINAL form here and never post-process it.
+  // `--short=12` at the source replaces the old `seed.slice(0, 12)` applied at
+  // the print site only — truncating after selection is what made the disclosed
+  // seed and the used seed different strings.
   let seed = arg('seed');
   if (!seed) {
-    try { seed = execSync('git rev-parse HEAD', { cwd: at('.'), stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); }
+    try { seed = execSync('git rev-parse --short=12 HEAD', { cwd: at('.'), stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); }
     catch { seed = 'no-git-' + cycle; }
   }
 
@@ -179,10 +191,9 @@ function main(argv) {
 
   const pack = buildPack({
     body, invariants,
-    probes: selectProbes(invariants, seed),
     blocks: readBlocks(at('.cycle/blocks'), { cycle }),
     totals: cycleTotals(metrics, cycle),
-    cycle, seed: seed.slice(0, 12), project: 'claude-workflow-tools',
+    cycle, seed, project: 'claude-workflow-tools',
   });
 
   const out = arg('out');

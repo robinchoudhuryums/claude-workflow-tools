@@ -20,6 +20,7 @@
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { dirname, basename, resolve, join } from 'node:path';
 import { parseRow } from './csv.mjs';
+import { HEALTH_FIELDS } from './health-fields.mjs';   // INV-71
 
 const args = process.argv.slice(2);
 const outIdx = args.indexOf('--out');
@@ -80,7 +81,7 @@ for (const p of paths) {
   try { md = readFileSync(p, 'utf8'); }
   catch { console.error(`! skipped ${p} (cannot read)`); continue; }
   const standing = section(md, 'Current Standing');
-  const overall = parseFloat(field(standing, 'Overall (weighted avg):'));
+  const overall = parseFloat(field(standing, HEALTH_FIELDS.overall));
   const root = dirname(resolve(p));
   const cycleDir = join(root, '.cycle');
   const statePath = join(cycleDir, 'STATE.md');
@@ -105,9 +106,9 @@ for (const p of paths) {
   projects.push({
     label: basename(root) || p,
     overall: Number.isFinite(overall) ? overall : null,
-    overallStr: field(standing, 'Overall (weighted avg):') || '—',
+    overallStr: field(standing, HEALTH_FIELDS.overall) || '—',
     phase, inProgress, trend, seamsCell, seamsDue,
-    updated: updated || field(standing, 'Last synthesis:') || '—',
+    updated: updated || field(standing, HEALTH_FIELDS.lastSynthesis) || '—',
   });
 }
 

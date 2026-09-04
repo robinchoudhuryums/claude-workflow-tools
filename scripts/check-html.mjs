@@ -14,6 +14,7 @@
 // Usage: node scripts/check-html.mjs   (exit 0 = ok, 1 = failure)
 
 import { readFileSync } from 'node:fs';
+import { HEALTH_FIELDS } from './health-fields.mjs';   // INV-71: the canonical Current Standing labels
 import vm from 'node:vm';
 
 const root = new URL('..', import.meta.url);
@@ -381,9 +382,20 @@ if (loaded && typeof ctx.connectRepoFolder === 'function') {
 // Dashboard live-status parsers — the GitHub-backed dashboard renders from these
 // pure parsers; lock them so a regex regression can't silently blank the board.
 if (loaded && typeof ctx.parseHealth === 'function' && typeof ctx.parseRepoSpec === 'function') {
-  const h = ctx.parseHealth('## Current Standing\nOverall (weighted avg): 8.8/10\nOne-line summary: solid.\nTop vertical priority: HTML.\n');
-  if (h.overall === '8.8' && h.summary === 'solid.' && h.topVertical === 'HTML.') ok('parseHealth extracts overall/summary/priority from PROJECT_HEALTH.md');
-  else bad('parseHealth did not extract expected fields (got ' + JSON.stringify(h) + ')');
+  // INV-71 — the console half, verified by BEHAVIOUR not by text. parseHealth
+  // matches `Overall[^:\n]*:` rather than spelling the label, so a literal scan
+  // for the canonical labels would fail here even though the parser is correct.
+  // Build the fixture FROM the canonical labels instead and require every field
+  // to come back: that is the contract (a block written the way /cycle-init
+  // writes it must parse), and it survives any rewording of the regexes.
+  const sample = { lastSynthesis: '2026-01-02', overall: '8.8/10', summary: 'solid.', topVertical: 'HTML.', topHorizontal: 'Drift.' };
+  const standing = '## Current Standing\n'
+    + Object.entries(HEALTH_FIELDS).map(([k, label]) => `${label} ${sample[k]}`).join('\n') + '\n';
+  const h = ctx.parseHealth(standing);
+  const blank = Object.keys(HEALTH_FIELDS).filter(k => !h[k]);
+  if (!blank.length && h.overall === '8.8' && h.summary === 'solid.' && h.topVertical === 'HTML.')
+    ok(`parseHealth reads every one of the ${Object.keys(HEALTH_FIELDS).length} canonical Current Standing labels (INV-37/INV-71)`);
+  else bad(`parseHealth left ${blank.length ? blank.join(', ') : 'a field'} blank for a block written with the canonical labels — the Dashboard would render the project unscored (got ${JSON.stringify(h)}) (INV-71)`);
   const s = ctx.parseState('Cycle: 4\nPhase: idle (done)\nUpdated: 2026-06-16\n');
   if (s.phase === 'idle (done)' && s.updated === '2026-06-16') ok('parseState extracts phase/updated from STATE.md');
   else bad('parseState did not extract phase/updated (got ' + JSON.stringify(s) + ')');
@@ -708,18 +720,43 @@ if (loaded) {
 // INV-56 — focus VISIBILITY, the structural half. Suppressing the UA focus ring
 // with outline:none and supplying nothing in its place makes every focusable
 // control invisible to keyboard users — strictly worse than not being focusable.
-// 15 of the 17 suppressions are INLINE on form controls, where a stylesheet
-// :focus rule can never win on specificity, so the replacement must use
-// box-shadow (which inline outline:none cannot suppress). Whether the indicator
-// has adequate CONTRAST is perceptual and stays with S7/INV-52.
+// Most suppressions are INLINE on form controls, where a stylesheet :focus rule
+// can never win on specificity, so the replacement must use box-shadow (which
+// inline outline:none cannot suppress). The count is derived, never stated: the
+// rule text used to say "15 of the 17" and there are now 19.
+// Whether the indicator has adequate CONTRAST is perceptual and stays with S8.
+//
+// INV-69 (Cycle 6 remediation) — the second half, and the one this check was
+// missing: a covering rule must APPLY to the suppressed controls, not merely
+// EXIST. Coverage here rests entirely on the single :focus-visible rule being
+// UNIVERSAL (no selector prefix), which was an unstated property nothing
+// asserted. Scoping that one rule to `.nav-item` strips the indicator from every
+// inline-suppressed form control and the old check still reported all of them
+// "covered". Verified in Chromium: with the universal rule, a control carrying
+// inline outline:none still receives box-shadow 0 0 0 3px on focus.
 {
   const suppressors = (html.match(/outline:\s*none/g) || []).length;
-  const fv = html.match(/:focus-visible\s*\{[^}]*\}/g) || [];
-  const usesBoxShadow = fv.some(r => /box-shadow\s*:/.test(r));
+  // Strip CSS comments BEFORE capturing the selector: a comment contains no
+  // braces, so `[^{}]*` happily swallows the one sitting above this very rule
+  // and every selector reads as "scoped". Caught on the clean tree — the
+  // near-miss-regex gotcha, in the guard written to close a near-miss guard.
+  const css = html.replace(/\/\*[\s\S]*?\*\//g, '');
+  const fvRules = [...css.matchAll(/([^{}]*):focus-visible\s*\{([^}]*)\}/g)]
+    .map(m => ({ prefix: m[1].trim(), decls: m[2] }));
+  const withShadow = fvRules.filter(r => /box-shadow\s*:/.test(r.decls));
+  // '' (bare `:focus-visible`) and '*' both match every element; anything else
+  // is scoped and cannot be assumed to reach an arbitrary suppressed control.
+  const universal = withShadow.filter(r => r.prefix === '' || r.prefix === '*');
+
   if (!suppressors) ok('no outline:none in the file — UA focus ring intact everywhere (INV-56)');
-  else if (fv.length && usesBoxShadow) ok(`${suppressors} outline:none suppression(s) are covered by a :focus-visible rule using box-shadow (INV-56)`);
-  else if (fv.length) bad(`:focus-visible exists but sets no box-shadow — inline outline:none (${suppressors} of them) will win, leaving those controls focusable but invisible`);
-  else bad(`${suppressors} outline:none suppression(s) with NO :focus-visible replacement — focusable but invisible to keyboard users (INV-56)`);
+  else if (!fvRules.length) bad(`${suppressors} outline:none suppression(s) with NO :focus-visible replacement — focusable but invisible to keyboard users (INV-56)`);
+  else if (!withShadow.length) bad(`:focus-visible exists but sets no box-shadow — inline outline:none (${suppressors} of them) will win, leaving those controls focusable but invisible (INV-56)`);
+  else ok(`${suppressors} outline:none suppression(s) are covered by a :focus-visible rule using box-shadow (INV-56)`);
+
+  if (suppressors && withShadow.length) {
+    if (universal.length) ok(`the covering :focus-visible box-shadow rule is universal, so it reaches every one of the ${suppressors} suppressed control(s) (INV-69)`);
+    else bad(`every :focus-visible rule supplying box-shadow is SCOPED (${withShadow.map(r => r.prefix).join(', ')}) — the ${suppressors} inline outline:none suppression(s) on form controls are left with no indicator; a covering rule must apply, not merely exist (INV-69)`);
+  }
 }
 
 // F06 — Axis B must round-trip through the project form WITHOUT losing `pulse`.

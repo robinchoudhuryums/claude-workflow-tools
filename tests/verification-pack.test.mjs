@@ -85,7 +85,7 @@ const BODY = [
   '---VERIFICATION BLOCK---',
 ].join('\n');
 const pack = buildPack({
-  body: BODY, invariants: parsed, probes: a1,
+  body: BODY, invariants: parsed,
   blocks: [{ name: '05-x-reflect.md', text: '---CYCLE SUMMARY BLOCK---\nNet score: 5\n---END CYCLE SUMMARY BLOCK---' }],
   totals: t, cycle: 5, seed: 'abc123', project: 'testproj',
 });
@@ -101,12 +101,35 @@ if (/seeded from abc123/.test(pack) && /--seed abc123/.test(pack))
   ok('pack states the seed and how to reproduce the probe selection');
 else bad('pack does not disclose the seed — the selection would be unauditable');
 
+// 4b) INV-70 — END-TO-END: the seed the pack PRINTS must reproduce the probes the
+// pack PRINTS. Asserting selectProbes' determinism (test 2) and the seed's
+// presence (above) proved the two halves separately and missed the composition:
+// main() selected with the full 40-char sha and disclosed seed.slice(0, 12), so
+// the printed reproduce command returned a different five for two releases.
+// The long-seed case is the one that matters — a seed of 12 or fewer chars
+// cannot expose a truncation bug.
+function probesReproduce(builtPack, invariants, label) {
+  const seedOut = (builtPack.match(/--seed (\S+)/) || [])[1];
+  const printed = (builtPack.split('MANDATORY ROTATION PROBES:')[1] || '')
+    .split('\n').map(l => (l.match(/^(INV-\d+)/) || [])[1]).filter(Boolean);
+  if (!seedOut || !printed.length) { bad(`${label}: pack disclosed no seed or no probes`); return; }
+  const recomputed = selectProbes(invariants, seedOut).map(l => l.split('|')[0].trim());
+  if (JSON.stringify(printed) === JSON.stringify(recomputed))
+    ok(`${label}: the pack's own --seed reproduces the probes it printed (INV-70)`);
+  else bad(`${label}: the disclosed seed does NOT reproduce the printed probes — printed ${printed.join(',')} but --seed ${seedOut} yields ${recomputed.join(',')} (INV-70)`);
+}
+probesReproduce(pack, parsed, 'short seed');
+probesReproduce(buildPack({
+  body: BODY, invariants: parsed, blocks: [],
+  totals: t, cycle: 5, seed: '8e5a58ef4ec0def02132b7965a5b594ab44c816f', project: 'testproj',
+}), parsed, 'full 40-char sha');
+
 if (/CORRECTED ITS OWN COUNTS/.test(pack)) ok('pack carries the do-not-trust-the-self-report warning');
 else bad('pack omitted the correction warning');
 
 // 5) No blocks is a REPORTED state, never a silent empty section.
 const empty = buildPack({
-  body: BODY, invariants: parsed, probes: a1, blocks: [],
+  body: BODY, invariants: parsed, blocks: [],
   totals: { rows: 0, net: 0, fixes: 0, nfm: 0, defensive: 0, corrections: [] },
   cycle: 9, seed: 'z', project: 'p',
 });
@@ -134,7 +157,7 @@ else bad('readBlocks threw on a missing directory');
   const all = readBlocks('/x', fake);
   if (all.length === 4 && all.excluded.length === 0) ok('readBlocks with no cycle returns every block (backward-compatible)');
   else bad('unscoped readBlocks changed: ' + JSON.stringify(all.map(b => b.name)));
-  const packSix = buildPack({ body: BODY, invariants: parsed, probes: a1, blocks: six, totals: t, cycle: 6, seed: 'z', project: 'p' });
+  const packSix = buildPack({ body: BODY, invariants: parsed, blocks: six, totals: t, cycle: 6, seed: 'z', project: 'p' });
   if (/2 block\(s\) from OTHER cycles .* excluded: 05-1\.24\.0-broad-implement\.md, 05-a-reflect\.md/.test(packSix) && !packSix.includes('body of 05-'))
     ok('the pack names the excluded other-cycle blocks and does not carry their text');
   else bad('pack did not state/exclude other-cycle blocks correctly');

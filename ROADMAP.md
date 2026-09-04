@@ -12,6 +12,33 @@ Item IDs (R#) are stable references for planning sessions.
 
 ## Tier 1 — Short-term (days–weeks)
 
+- **R22 — `scripts/synthesis-pack.mjs`, the §6a sibling of the §4v pack (queued for Cycle 7).** `effort: M (~½ day)`
+  §6a is the ONLY stage of the cycle with no assembler. Its canonical body still
+  says *"Paste three blocks per subsystem"*, while §4v has had
+  `verification-pack.mjs` since R19 — deriving its prompt body from canonical,
+  scoping blocks to the cycle, and **generating** the self-report warning from
+  `metrics.csv` rather than relying on anyone remembering it.
+  Evidence from Cycle 6, which is what earned this entry: ONE fact — *the metrics
+  row reads 13 but the cycle total is higher, because /reflect ran before
+  v1.30.0* — had to be hand-carried into `STATE.md`, three separate blocks and
+  two chat messages. That is a parallel source of truth, the exact Axis B
+  category this tool polices, and it rotted exactly as predicted: every copy
+  said **15** while the correct figure had become **16** once v1.31.0 added a
+  production fix. The defensive count is worse — the batch-level tallies and
+  /reflect's re-tally overlap, so no copy agrees.
+  A synthesis pack should DERIVE, not be told:
+  - sum the `NET SCORE` lines across `<cycle>-*` blocks, compare to the
+    `phase=reflect` row, and print the discrepancy WITH its cause;
+  - flag which subsystems have no Verification Block — §6a already carries a
+    confidence-downgrade rule for that case and nothing enforces it;
+  - extract the prior cycle's Axis A/B scores from `PROJECT_HEALTH.md` so the
+    delta and the policy-trigger check are computed rather than eyeballed;
+  - cycle-scope the blocks, reusing `readBlocks` (F02 solved this already).
+  Plus a cheap consistency guard: the synthesis writes THREE artifacts that must
+  agree — the `axis_b_lowest` column, Current Standing's "Top horizontal
+  priority", and the Score History entry. INV-71 guarded those *labels* in
+  v1.32.0; nothing checks the *values* match.
+
 - **R21 — Dead/superseded-artifact lens in `/broad-scan` (queued for Cycle 7).** `effort: S (~30 min)`
   The Stage 1 flag list reads *"Dead code, unused exports, stale TODOs only if
   they create confusion"* — all **code** nouns. Nothing names styles, classes,

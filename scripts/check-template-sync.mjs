@@ -15,7 +15,7 @@
 // Usage:  node scripts/check-template-sync.mjs
 // Exit 0 = in sync, exit 1 = drift detected.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { BLOCKS } from './check-output-blocks.mjs';   // single source of truth for the block registry (F17)
@@ -371,6 +371,201 @@ try {
       console.log(`  ✗ .cycle/STATE.md has drifted from its template (F15) — ${bits.join('; ')}. Narrative history belongs in .cycle/HISTORY.md.`);
     } else console.log(`  ✓ .cycle/STATE.md matches its template — ${want.length} sections, no extras, no duplicates (F15)`);
   }
+}
+
+// ── Structural check 12 (INV-68): the invariant library's PARSE FLOOR.
+// TWO parsers read the same library file and they disagreed: invariant-check's
+// `^(INV-\d+)\s*\|` has no `\s*` before the anchor, while verification-pack
+// trims each line first. So a rule written with ONE leading space vanished from
+// invariant-check AND from the mutation audit (which derives its set from that
+// same parse, so no case was orphaned and nothing failed) while the §4v pack
+// still showed the verifier a library one rule longer. Both tools reported
+// "67/67 … Every runnable invariant fails closed ✓" against a 68-rule file.
+// A derivation needs a floor or it can silently cover less than it claims —
+// INV-58 gives the mutation-case dimension one; this is the same floor a level
+// up, on the parse itself. Skipped when there is no .cycle/ library (a
+// consuming project may keep its invariants in CLAUDE.md, and the guard's own
+// regression sandbox copies neither .cycle/ nor these modules).
+{
+  let libRaw = null;
+  try { libRaw = readFileSync(new URL('.cycle/config.md', root), 'utf8'); } catch (e) {}
+  if (libRaw === null) console.log('  · no .cycle/config.md in this tree — invariant-library parse floor skipped (optional per project)');
+  else {
+    // Imported dynamically and defensively: a consuming project may have copied
+    // this guard and kept a .cycle/ library WITHOUT the two reader modules. The
+    // .cycle/ helpers are additive by design, so a missing module degrades to a
+    // reported skip — it must never crash a guard the project runs in CI.
+    let parseInvariants, readInvariants;
+    try {
+      ({ parseInvariants } = await import('./invariant-check.mjs'));
+      ({ readInvariants } = await import('./verification-pack.mjs'));
+    } catch (e) {
+      console.log(`  · invariant-library parse floor skipped — a reader module is not present in this tree (${e.code || e.message})`);
+    }
+    if (!parseInvariants || !readInvariants) { /* skipped above */ } else {
+    // PERMISSIVE on purpose — this is the ground truth the parsers are measured
+    // against, so it must see a line neither of them may.
+    const rawIds = [...libRaw.matchAll(/^[ \t]*(INV-\d+)\s*\|/gm)].map(m => m[1]);
+    const strictIds = parseInvariants(libRaw).map(i => i.id);
+    const packIds = readInvariants(libRaw).map(l => l.split('|')[0].trim());
+    const diff = (a, b) => a.filter(x => !b.includes(x));
+    const bits = [];
+    if (JSON.stringify(strictIds) !== JSON.stringify(rawIds))
+      bits.push(`invariant-check sees ${strictIds.length} of ${rawIds.length} (dropped: ${diff(rawIds, strictIds).join(', ') || 'none — order differs'})`);
+    if (JSON.stringify(packIds) !== JSON.stringify(rawIds))
+      bits.push(`verification-pack sees ${packIds.length} of ${rawIds.length} (dropped: ${diff(rawIds, packIds).join(', ') || 'none — order differs'})`);
+    if (JSON.stringify(strictIds) !== JSON.stringify(packIds))
+      bits.push(`the two parsers disagree: only-in-check ${diff(strictIds, packIds).join(', ') || '—'} / only-in-pack ${diff(packIds, strictIds).join(', ') || '—'}`);
+    if (!rawIds.length) { failures++; console.log('  ✗ invariant-library parse floor: the library file contains no INV- lines — this check would be vacuous (INV-68)'); }
+    else if (bits.length) {
+      failures++;
+      console.log(`  ✗ invariant-library parse floor (INV-68): ${bits.join('; ')}. A rule that parses in one reader and not the other leaves the proven set silently — check the line's leading whitespace and its "INV-N |" shape.`);
+    } else console.log(`  ✓ invariant-library parse floor: all ${rawIds.length} INV- lines parse identically in invariant-check and verification-pack (INV-68)`);
+    }
+  }
+}
+
+// ── Structural check 13 (INV-71): PROJECT_HEALTH.md's "Current Standing" label
+// contract. Five labels were hard-coded independently in four artifacts. They
+// matched, and nothing asserted it. The failure mode is silent by construction:
+// a label that drifts on one side makes every reader fall back to "—", so the
+// portfolio board, the status board and the console Dashboard all render the
+// project as UNSCORED rather than erroring — a wrong answer about live status.
+// The two script readers now import the list; the copies that cannot import it
+// (the self-contained console, the CLAUDE.md skeleton, the generated command)
+// are checked against it here.
+{
+  // Guarded like check 12: a project may have copied this guard without the
+  // shared module, and the guard's own regression sandbox copies neither.
+  let HEALTH_LABELS, HEALTH_SECTION;
+  try { ({ HEALTH_LABELS, HEALTH_SECTION } = await import('./health-fields.mjs')); }
+  catch (e) { console.log(`  · health-field contract skipped — scripts/health-fields.mjs not present in this tree (${e.code || e.message})`); }
+  if (HEALTH_LABELS) {
+  // Each label is checked inside the SPAN THAT WRITES IT, never against the
+  // whole file: every one of these labels appears twice per artifact (the writer
+  // and the §7 template), so a file-global `includes` would pass with the
+  // skeleton broken — the exact marker gotcha this repo already documented. An
+  // anchor that stops matching FAILS rather than silently checking nothing.
+  // The CONSOLE is absent from this list on purpose: parseHealth matches a loose
+  // pattern rather than spelling the labels, so it is verified by behaviour in
+  // check-html (build a block from these labels, require every field to parse).
+  const spans = [
+    ['CLAUDE.md', /If PROJECT_HEALTH\.md does not exist[\s\S]*?Keep the field labels/, '/cycle-init step 5 skeleton'],
+    ['.claude/commands/cycle-init.md', /If PROJECT_HEALTH\.md does not exist[\s\S]*?Keep the field labels/, '/cycle-init step 5 skeleton'],
+    ['PROJECT_HEALTH.md', /##\s+Current Standing[\s\S]*?(?=\n##\s)/, 'the live Current Standing block'],
+  ];
+  // FLOOR: a shrinking list would make this check pass by covering less.
+  if (HEALTH_LABELS.length < 5) {
+    failures++;
+    console.log(`  ✗ health-field contract: HEALTH_FIELDS defines only ${HEALTH_LABELS.length} label(s) — the Current Standing block has five, so this check would cover less than it claims (INV-71)`);
+  } else {
+    const problems = [], absentFiles = [];
+    for (const [file, anchor, what] of spans) {
+      let raw;
+      try { raw = readFileSync(new URL(file, root), 'utf8'); }
+      catch (e) { absentFiles.push(file); continue; }
+      const span = (raw.match(anchor) || [])[0];
+      if (!span) { problems.push(`${file}: could not locate ${what} — this check would be vacuous`); continue; }
+      const missingLabels = HEALTH_LABELS.filter(l => !span.includes(l));
+      if (missingLabels.length) problems.push(`${file} ${what} does not carry ${missingLabels.map(l => JSON.stringify(l)).join(', ')}`);
+      if (!span.includes(HEALTH_SECTION))
+        problems.push(`${file} ${what} does not name the "${HEALTH_SECTION}" section`);
+    }
+    if (problems.length) {
+      failures++;
+      console.log(`  ✗ health-field contract (INV-71): ${problems.join('; ')}. A label that drifts on one side does not error — every reader silently falls back to "—" and the project renders as unscored.`);
+    } else console.log(`  ✓ health-field contract: all ${HEALTH_LABELS.length} Current Standing labels present in every artifact that reads or writes them${absentFiles.length ? ` (${absentFiles.length} not in this tree: ${absentFiles.join(', ')})` : ''} (INV-71)`);
+  }
+  }
+}
+
+// ── Structural check 14 (INV-74): CI must run EVERY stage of the documented Test
+// Command, in order. INV-14 only asserted that CI runs check-template-sync, so a
+// stage added to the Test Command and forgotten in the workflow would be run by
+// every developer and by nothing in CI. Parity is exact today; this keeps it.
+// Skipped where either side is absent, or where the Test Command names no
+// script stages (a consuming project running `npm test` has nothing to compare).
+{
+  let ciRaw = null, libRaw = null;
+  try { ciRaw = readFileSync(new URL('.github/workflows/sync-check.yml', root), 'utf8'); } catch (e) {}
+  try { libRaw = readFileSync(new URL('.cycle/config.md', root), 'utf8'); } catch (e) { libRaw = claudeRaw; }
+  const tc = (libRaw.match(/^###\s+Test Command\s*\n([\s\S]*?)(?=\n###\s|\n##\s)/m) || [])[1] || '';
+  const stages = s => [...s.matchAll(/node\s+((?:scripts|tests)\/[\w.-]+\.mjs(?:\s+--[\w-]+)?)/g)]
+    .map(m => m[1].replace(/\s+/g, ' ').trim());
+  const want = stages(tc), have = ciRaw ? stages(ciRaw) : [];
+  if (!ciRaw) console.log('  · no .github/workflows/sync-check.yml — CI/Test-Command parity skipped (optional per project)');
+  else if (!want.length) console.log('  · the Test Command names no script stages — CI/Test-Command parity skipped (nothing to compare)');
+  else if (JSON.stringify(want) !== JSON.stringify(have)) {
+    failures++;
+    const missing = want.filter(s => !have.includes(s));
+    const extra = have.filter(s => !want.includes(s));
+    const bits = [];
+    if (missing.length) bits.push(`CI never runs: ${missing.join(', ')}`);
+    if (extra.length) bits.push(`CI runs stages the Test Command omits: ${extra.join(', ')}`);
+    if (!missing.length && !extra.length) bits.push('same stages, different ORDER — a stage that depends on an earlier one would run first');
+    console.log(`  ✗ CI/Test-Command parity (INV-74): ${bits.join('; ')}. A stage in one and not the other is a stage nobody runs, or one no contributor can reproduce.`);
+  } else console.log(`  ✓ CI runs every stage of the documented Test Command, in order — ${want.length} stages (INV-74)`);
+}
+
+// ── Structural check 15 (INV-72): every release of the CURRENT cycle has a
+// summary block in .cycle/blocks/. §4v and §6a read that directory and nothing
+// else — not the CHANGELOG, not the commit log — so a release that ships without
+// a block is invisible to verification and synthesis BY CONSTRUCTION. v1.30.1
+// changed the console and had no block; §4v found it only by fetching origin.
+// The floor is DERIVED (the lowest version this cycle already has a block for)
+// rather than hard-coded, so the rule never reaches back into cycles that
+// predate the convention, and the ceiling is VERSION.
+{
+  const semver = v => v.split('.').map(Number);
+  const cmp = (a, b) => { const x = semver(a), y = semver(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+  let stateRaw = null, blockNames = [];
+  try { stateRaw = readFileSync(new URL('.cycle/STATE.md', root), 'utf8'); } catch (e) {}
+  try { blockNames = readdirSync(new URL('.cycle/blocks', root)); } catch (e) {}
+  const cycle = stateRaw && (stateRaw.match(/^Cycle:\s*(\d+)/m) || [])[1];
+  const blocked = blockNames
+    .map(n => (n.match(new RegExp('^0?' + cycle + '-(\\d+\\.\\d+\\.\\d+)-')) || [])[1])
+    .filter(Boolean).sort(cmp);
+  if (!stateRaw || !cycle) console.log('  · no .cycle/STATE.md cycle number — release-block coverage skipped (optional per project)');
+  else if (!blocked.length) console.log(`  · no versioned blocks for cycle ${cycle} yet — release-block coverage skipped (nothing to derive a floor from)`);
+  else {
+    const floor = blocked[0];
+    const released = [...changelogRaw.matchAll(/^##\s+(\d+\.\d+\.\d+)\b/gm)].map(m => m[1]);
+    const inCycle = released.filter(v => cmp(v, floor) >= 0 && (!versionRaw || cmp(v, versionRaw) <= 0));
+    const orphans = inCycle.filter(v => !blocked.includes(v));
+    if (orphans.length) {
+      failures++;
+      console.log(`  ✗ release with no block (INV-72): cycle ${cycle} shipped ${orphans.join(', ')} with nothing in .cycle/blocks/. §4v and §6a read that directory and nothing else, so those releases are invisible to verification and synthesis.`);
+    } else console.log(`  ✓ every cycle-${cycle} release from ${floor} to ${versionRaw || blocked[blocked.length - 1]} has a block in .cycle/blocks/ — ${inCycle.length} release(s) (INV-72)`);
+  }
+}
+
+// ── Structural check 16 (INV-75): the §6a policy trigger must stay RELATIVE and
+// PARAMETERISED. It was a fixed floor ("≤5/10 for 2 consecutive cycles") written
+// as a literal INSIDE the canonical body, while the Cycle Workflow Config
+// carried a `Policy threshold` field the body never read — a parallel source of
+// truth in which the config value was decorative. Worse, a fixed floor cannot
+// fire on a healthy project: across six cycles of this repo, scores sat between
+// 7 and 9.5 and the mechanism never engaged ONCE, including the cycle where
+// Guard / Test Coverage Quality fell 9.0 → 7.0. The rule now names three clauses
+// and reads both config fields by name.
+{
+  const start = claudeRaw.indexOf('### Health Synthesis');
+  const body = start === -1 ? '' : claudeRaw.slice(start, claudeRaw.indexOf('\n---', start));
+  const problems = [];
+  if (!body) problems.push('could not locate the §6a "Health Synthesis" section — this check would be vacuous');
+  else {
+    for (const clause of ['DECLINE —', 'SHARP DROP —', 'PERSISTENT LAGGARD —', 'ABSOLUTE FLOOR —'])
+      if (!body.includes(clause)) problems.push(`the §6a policy rule no longer names the ${JSON.stringify(clause.replace(' —', ''))} clause`);
+    for (const field of ['`Policy threshold`', '`Consecutive cycles`'])
+      if (!body.includes(field)) problems.push(`the §6a policy rule does not read ${field} from the Cycle Workflow Config`);
+    // The regression to guard against: a literal score back in the canonical body.
+    const hard = body.match(/≤\s*\d+\s*\/\s*10\s+for\s+\d+\s+consecutive/i);
+    if (hard) problems.push(`a hardcoded policy floor is back in the canonical body (${JSON.stringify(hard[0])}) — the config field would be decorative again`);
+  }
+  if (problems.length) {
+    failures++;
+    console.log(`  ✗ relative policy trigger (INV-75): ${problems.join('; ')}. A fixed floor never fires on a healthy project — the primary trigger must be relative.`);
+  } else console.log('  ✓ the §6a policy trigger is relative and parameterised — four clauses, both config fields read by name, no hardcoded floor (INV-75)');
 }
 
 if (failures) {

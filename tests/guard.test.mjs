@@ -23,7 +23,7 @@ function setup() {
   mkdirSync(join(dir, 'scripts'), { recursive: true });
   // check-output-blocks.mjs is copied because check-template-sync now imports
   // BLOCKS from it (F17) — the guard cannot run in the temp dir without it.
-  for (const s of ['gen-commands.mjs', 'check-template-sync.mjs', 'check-output-blocks.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
+  for (const s of ['gen-commands.mjs', 'check-template-sync.mjs', 'check-output-blocks.mjs', 'health-fields.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
   cpSync(join(repo, '.claude'), join(dir, '.claude'), { recursive: true });
   // The guard now asserts the CI workflow's permissions block (F15), so the
   // temp copy needs it — without this the baseline case fails for a reason
