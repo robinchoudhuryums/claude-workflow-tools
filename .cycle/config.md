@@ -35,7 +35,8 @@ Tooling & Sync Infrastructure:
   scripts/gen-commands.mjs, scripts/gen-html-prompts.mjs, scripts/check-template-sync.mjs,
   scripts/check-html.mjs, scripts/check-output-blocks.mjs, scripts/cycle-context.mjs,
   scripts/render-metrics.mjs, scripts/invariant-check.mjs, scripts/portfolio.mjs,
-  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/csv.mjs, tests/ (10 regression tests + mutation-audit.mjs),
+  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/csv.mjs,
+  scripts/health-fields.mjs, tests/ (10 regression tests + mutation-audit.mjs),
   .github/workflows/sync-check.yml, .claude/commands/ (generated), .claude/settings.json, .gitignore
 Cycle state (not audited as source, but read/written by the tooling above):
   .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/,
@@ -259,7 +260,12 @@ Cycle Workflow Config.
   "user-facing surfaces" step and the interface-dimension instruction — while
   every R18 marker passed, because those phrases appear elsewhere in the file
   (in the §T1 builder). It was the largest prompt in the console and nothing
-  had compared it to canonical for four releases.
+  had compared it to canonical for four releases. Cycle-6 remediation hit the
+  same shape a THIRD time, in a guard being written to close a different one:
+  the first draft of the health-label check scanned whole FILES, and every one
+  of those labels appears twice per artifact (the writer and the §7 template),
+  so it would have passed with the console's parser broken. Scope a check to the
+  span that produces the thing, never to the file that contains it.
 - **A documented exemption stops being re-read — and an exemption pinned to
   SYNTAX stops matching.** §T2b's `locked:false` was recorded in three places
   with a sound rationale that went unexamined for four releases while the
@@ -304,13 +310,48 @@ Cycle Workflow Config.
   character shifts every hash by the *same constant*, so the sort order — and
   therefore the selection — never moved. Seed as a PREFIX, and assert that a
   one-character seed change reorders the picks. (`verification-pack.mjs` was
-  never affected: sha256 avalanches. The property belongs to the hash, not to
-  the idea of seeding.)
+  never affected *by this*: sha256 avalanches. The property belongs to the hash,
+  not to the idea of seeding.) But that parenthetical gave false reassurance for
+  two releases: `verification-pack.mjs` had a DIFFERENT seed defect — it selected
+  with the full 40-char sha and disclosed `seed.slice(0, 12)`, so the seed it
+  printed reproduced a different five. Clearing one seed defect in a file says
+  nothing about the others (INV-70, v1.31.0).
 - **An audit's own count of what sits outside a guard can be wrong.** The
   Cycle-6 scan reported eight unlocked console prompts. There were nine, and
   the ninth (`setup`) was the consequential one. A finding that says "these N
   things are unguarded" is a hand-maintained list with all the usual failure
   modes — derive the set from the artifact and let the guard report the count.
+- **A stubbed DOM that is a flat id→element map cannot see id shadowing.**
+  `getElementById` returns the FIRST match in document order; a stub keyed by id
+  has no document order, so a duplicate id is invisible to it BY CONSTRUCTION —
+  not missed, unrepresentable. Both Cycle-6 duplicate-id defects (the destroyed
+  Tier 1 panel, `doCopy('setup')` copying its section) passed every headless
+  stage and were found by driving a real browser. The MARKUP, not the harness,
+  is where that class has to be checked (INV-67). A harness's shape decides
+  which bug classes it can never see; ask what yours cannot represent.
+- **A guard that proves a covering rule EXISTS has not proved it APPLIES.**
+  INV-56 checked that some `:focus-visible` rule using box-shadow existed
+  somewhere in the file. Coverage actually rested on that rule being UNIVERSAL —
+  scoping it to `.nav-item` leaves every inline-suppressed control with no
+  indicator and the check still reports them all covered. The coverage was real;
+  the property it rested on was unstated and therefore unguarded (INV-69). The
+  general question, and the one that found four of this cycle's defects: WHAT
+  UNSTATED PROPERTY MAKES THIS CHECK'S CONCLUSION TRUE?
+- **Two parsers of one file is a seam — measure both against the FILE.** The
+  invariant library had two readers: `invariant-check` anchors on `^(INV-\d+)`
+  with no leading-whitespace tolerance, `verification-pack` trims first. A rule
+  written with ONE leading space vanished from `invariant-check` AND from the
+  mutation audit that derives its set from the same parse — so nothing was
+  orphaned, nothing failed, and both reported "67/67 … fails closed ✓" against a
+  68-rule file while the §4v pack showed the verifier all 68. Comparing the two
+  parsers to each other would not have helped either; the floor has to be the
+  file itself (INV-68).
+- **A shadowed binding fails only on the branch your repo never takes.** An
+  inner `const absent` inside a loop shadowed the outer `absent` it was pushing
+  to — a temporal-dead-zone error that fires ONLY when a target file is missing.
+  Every file exists in this repo, so it was invisible here and caught by
+  `guard.test.mjs`'s sandbox, which is precisely what that sandbox is for. A
+  guard's rare branch is the one your own tree cannot exercise.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
@@ -375,8 +416,8 @@ machine or after a release.
   (closing IMPLEMENTATION BATCH PLAN); **v1.27.0 changed `/reflect`** (quote
   comma-bearing metrics fields) **and `/cycle-init`** (inline PROJECT_HEALTH
   skeleton); **v1.29.0 changed `/setup-cycle`** (three elaborations restored
-  from the console copy). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0 and
-  v1.28.0 changed none.
+  from the console copy). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0,
+  v1.28.0, v1.30.0–v1.30.1 and v1.31.0–v1.32.0 changed none.
 - **One-time, projects configured from the CONSOLE's Setup prompt before
   v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing
   surfaces and never proposed an interface Health Dimension. Re-check whether
@@ -386,6 +427,16 @@ machine or after a release.
   existing `metrics.csv` row whose subsystem is UNQUOTED has shifted columns
   and cannot be repaired by the parser — quote those subsystem fields by
   hand once (v1.27.0 / F03).
+- **Regenerate any §4v pack produced before v1.31.0.** Those packs selected
+  their rotation probes with the full commit sha but printed a 12-character
+  seed, so the `--seed` line they hand the verifier reproduces a DIFFERENT five
+  invariants. The pack is not wrong about the library, only unauditable about
+  its own probe selection; `node scripts/verification-pack.mjs` now discloses
+  the seed it used (INV-70).
+- **Consuming projects that copy individual scripts:** `portfolio.mjs` and
+  `portfolio-status.mjs` now import `scripts/health-fields.mjs` (the one
+  definition of the PROJECT_HEALTH "Current Standing" labels, INV-71). Copy it
+  alongside them or both will fail at import.
 - **Browser-verify console changes.** Rendering, light-mode contrast, the
   mobile drawer and `legacyCopy()`'s success path have no headless coverage.
   After v1.27.0's F17 fix, walk S9 (phone layout) once Pages republishes —

@@ -223,7 +223,10 @@ And one assembles the independent-verification input:
   excluded, never silently dropped, since the directory accumulates), and the
   **rotation probes seeded from the commit sha** so they are reproducible rather
   than chosen by the implementer — the prompt's "do NOT substitute your own
-  picks" rule has no force if the implementer picks them. It also reads
+  picks" rule has no force if the implementer picks them. The pack DERIVES its
+  probes from the seed it prints and accepts no override, so the disclosed seed
+  and the used seed cannot diverge; until v1.31.0 they did, and the reproduce
+  command the pack printed returned a different five. It also reads
   `metrics.csv` and warns the verifier automatically when `/reflect` recorded a
   correction to a self-reported count.
   `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]`
