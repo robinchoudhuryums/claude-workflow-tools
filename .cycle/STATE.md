@@ -9,7 +9,7 @@ Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it
 Updated: 2026-10-12
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1–4 are complete (v1.35.0–v1.38.0). Batches 5–8 and the expansion plan are not started.
+- Batches 1–5 are complete (v1.35.0–v1.39.0; 1–4 merged in PR #26). Batches 6–8 and the expansion plan are not started.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -36,9 +36,12 @@ Updated: 2026-10-12
   link after the slide-in; F22 invariant tables' own column rules; F23 main min-width:0. Browser-verified with the
   scan's probes. Also: INV-49 delegation guard tightened (false green exposed by this batch); v1.36.0's false
   "repaired" warning for a blank Axis B fixed.
+- v1.39.0 | Batch 5 | F30 fill tokens never used as text (37 → --on-*), --text-muted ≥4.5:1, custom invariant rows on
+  --surface2, contrast guard extended; F27 tracker restores focus, forms focus in and back, deletes focus a neighbour;
+  F29 live regions, copy announced, errors role=alert + aria-invalid/describedby, aria-expanded on every disclosure;
+  F28 empty required fields explained and focused. Also: INV-45 regex false red on aria-controls fixed.
 
 ## Pending / not yet done
-- Batch 5 — focus, feedback, theme: F30, F27, F29, F28.
 - Batch 6 — guard false greens I: F31 (CI YAML read as text), F45 (hostile fixture never seeds remote Dashboard
   data), F18 (199-char placeholder cap), F48, F49, F20. Lands AFTER Batches 2–3.
 - Batch 7 — guard false greens II: F47 (order-blind canonicalCoverage), F46, F50 (block copies disagree now),
@@ -83,6 +86,6 @@ Updated: 2026-10-12
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; Batches 1–4 shipped (v1.35.0–v1.38.0), all on branch claude/tender-clarke-x722xl, not yet merged.
-Next: /broad-implement Batch 5 (focus, feedback, theme — F27 builds on Batch 4's handlers). Batches 6–7 tighten
-guards and can follow. Console rendering of Batches 2 and 4 still wants a person at a browser after merge.
+Cycle 7 open; Batches 1–5 shipped (v1.35.0–v1.39.0). 1–4 are merged (PR #26); 5 is on branch
+claude/tender-clarke-x722xl. Next: /broad-implement Batch 6 (guard false greens I — every defect it would expose is
+now fixed). The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).

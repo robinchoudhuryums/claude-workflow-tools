@@ -5,6 +5,41 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.39.0 — 2026-10-12
+
+Cycle-7 Batch 5: console focus, feedback and theme. Console-only — **no
+command-body or config-schema change, so no `/sync-commands` re-pull.** Verified
+in headless Chromium; each fix pinned by a check-html case proven to fail with
+the fix reverted.
+
+- **F30 — light-mode text that could not flip.** 37 text colours used a FILL
+  token (`--amber`, `--teal`, `--purple`, `--green`, `--red`), which does not
+  change with the theme, so on the light surfaces they read at 1.7–2.4:1. They
+  now use the `--on-*` text tokens. `--text-muted` was 2.4–3.0:1 in BOTH themes
+  and now clears 4.5:1 on every surface text sits on. Custom invariant rows
+  paired the dark `--prompt-bg` with a flipping text colour (2.4:1 in light);
+  they now sit on `--surface2`. The contrast guard gained both halves: no fill
+  token as text, and `--text-sec`/`--text-muted` ≥ 4.5:1 on `--bg`, `--surface`
+  and `--surface2`. The `--accent` blue (2.6–3.0:1 on tinted light surfaces)
+  remains the one deliberate exception, as before.
+- **F27 — focus lost after re-renders and form toggles.** The cycle tracker gives
+  focus back to the control that had it; "+ Add invariant", "Add project" and the
+  archive's add button move focus into the form they open and back when it
+  closes; deleting a custom invariant or a subsystem row focuses its neighbour.
+- **F29 — results nobody announced.** The Dashboard status line and the state
+  message are live regions, copy success/failure is announced through a polite
+  live region, form errors are `role="alert"` and linked to their field with
+  `aria-invalid` + `aria-describedby`, and every disclosure — the 16 Fill fields
+  buttons, 6 variant toggles, archive entries, the GitHub-token and ⚙ source
+  panels — reports `aria-expanded`.
+- **F28 — empty required fields failed silently.** Saving an invariant with no
+  rule, or an archive entry with no title or content, now says which field is
+  missing and moves focus to it.
+
+Also: the INV-45 handler guard matched "aria-c**on**trols=" as an event handler
+the first time an `aria-controls` value went through `esc()` — a false red; the
+attribute name must now START with "on".
+
 ## 1.38.0 — 2026-10-12
 
 Cycle-7 Batch 4: console keyboard and layout. Console-only — **no command-body

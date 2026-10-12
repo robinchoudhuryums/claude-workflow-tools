@@ -634,7 +634,10 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
 // attribute text is correct and stays allowed.
 {
   const noComments = src.replace(/^\s*\/\/.*$/gm, '');   // skip prose that names the anti-pattern
-  const offenders = [...noComments.matchAll(/on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
+  // (?<![\w-]) — the attribute NAME must start with "on". Without it "aria-controls"
+  // matched as a handler ("ontrols=") the first time an aria-controls value went
+  // through esc() (Cycle-7 Batch 4/5) — a false red, the mirror of the \b gotcha.
+  const offenders = [...noComments.matchAll(/(?<![\w-])on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
   if (!offenders.length) ok('no inline handler builds a JS argument with esc() — jsArg() only (F04/F11)');
   else bad(`inline handler(s) using esc() as a JS argument (use jsArg): ${offenders.join(' | ')}`);
 
@@ -1025,6 +1028,26 @@ if (loaded && typeof ctx.renderDashboard === 'function' && typeof ctx.dashErrHin
   }
   if (!failures.length) ok(`every --on-* text token clears 4.5:1 on every surface of its theme (${checked} pairs computed) — F13`);
   else bad('F13 contrast: ' + failures.join(' | '));
+
+  // F30 (Cycle 7) — two more halves, the ones F13 did not reach.
+  //   (c) a FILL token (--amber/--teal/--purple/--green/--red/--orange) is never
+  //       used as a text colour: fills do not flip, so as text they fell to
+  //       1.7–2.4:1 on the light surfaces (37 uses). Text uses --on-*.
+  //   (d) the neutral text tokens --text-sec and --text-muted clear 4.5:1 on the
+  //       surfaces text actually sits on (--bg, --surface, --surface2; --surface3
+  //       is only a hover background). --text-muted was 2.4–3.0:1 in BOTH themes.
+  const fillText = [...scanned.matchAll(/(?<![-\w])color:\s*var\(--(amber|teal|purple|green|red|orange)\)/g)].map(m => m[1]);
+  const TEXT_SURFACES = ['--bg', '--surface', '--surface2'];
+  const neutral = [];
+  for (const [theme, map] of [['dark', dark], ['light', light]])
+    for (const t of ['--text-sec', '--text-muted'])
+      for (const surf of TEXT_SURFACES) {
+        if (!map[t] || !map[surf]) { neutral.push(`${theme}: ${t} or ${surf} is not a hex token`); continue; }
+        const r = ratio(map[t], map[surf]);
+        if (r < 4.5) neutral.push(`${theme} ${t} (${map[t]}) on ${surf} (${map[surf]}) = ${r.toFixed(2)}:1`);
+      }
+  if (!fillText.length && !neutral.length) ok('no fill token is used as text, and --text-sec/--text-muted clear 4.5:1 on every text surface in both themes (F30)');
+  else bad(`F30: ${fillText.length ? fillText.length + ' fill-token text colour(s) that cannot flip (' + [...new Set(fillText)].join(', ') + ')' : ''}${fillText.length && neutral.length ? '; ' : ''}${neutral.join(' | ')}`);
 }
 
 // F12 — every form control must be programmatically labelled. Derived from the
@@ -1339,6 +1362,59 @@ if (loaded) {
   // F23 — main can shrink below its content's min-content width.
   if (!/\nmain\{[^}]*min-width:0/.test(html)) problems.push('main has no min-width:0 — unwrappable content widens it past the viewport between 769px and ~1136px (F23)');
   if (!problems.length) ok('keyboard & layout: activation stops at its control, no nested controls in tracker/archive, the closed drawer leaves the tab order and the open one wraps focus, invariant tables wrap, main can shrink (F22–F26)');
+  else bad(problems.join('; '));
+}
+
+// Cycle-7 Batch 5 — focus, feedback, announcements. Driven through the real
+// functions; the visual/timing half was walked in Chromium.
+if (loaded) {
+  const problems = [];
+  const resetFocus = () => { focused = null; };
+  // F28 — an empty required field says so, and is linked to its message (F29).
+  getEl('inv-text').value = ''; getEl('inv-sub').value = '';
+  for (const k of Object.keys(store)) if (/:invariants$/.test(k)) delete store[k];
+  const before = ctx.loadCustomInvariants().length;
+  resetFocus(); ctx.saveInvariant();
+  if (ctx.loadCustomInvariants().length !== before) problems.push('saveInvariant saved an empty rule');
+  if (!/required|Write the rule/i.test(getEl('inv-text-err').textContent)) problems.push('an empty invariant rule fails silently (F28)');
+  if (getEl('inv-text').getAttribute('aria-invalid') !== 'true' || getEl('inv-text').getAttribute('aria-describedby') !== 'inv-text-err') problems.push('the invariant error is not linked to its field (aria-invalid/aria-describedby) — F29');
+  if (focused !== 'inv-text') problems.push('focus does not move to the empty invariant field (F28)');
+  getEl('af-title').value = ''; getEl('af-content').value = 'x';
+  resetFocus(); ctx.saveArchiveEntry();
+  if (!getEl('af-title-err').textContent || getEl('af-content-err').textContent) problems.push('an empty archive title fails silently, or the filled field is flagged too (F28)');
+  if (focused !== 'af-title') problems.push('focus does not move to the empty archive field (F28)');
+  // F27 — focus moves into a form that hides its opener, and back on close.
+  getEl('invariantForm').style.display = 'none';
+  resetFocus(); ctx.toggleInvariantForm(); if (focused !== 'inv-text') problems.push(`opening the invariant form leaves focus on the hidden button (focused ${focused}) — F27`);
+  resetFocus(); ctx.toggleInvariantForm(); if (focused !== 'addInvariantBtn') problems.push('closing the invariant form does not return focus to its button (F27)');
+  resetFocus(); ctx.openArchiveForm(); if (focused !== 'af-title') problems.push('opening the archive form does not focus its first field (F27)');
+  resetFocus(); ctx.cancelArchiveForm(); if (focused !== 'addArchiveBtn') problems.push('cancelling the archive form does not return focus (F27)');
+  resetFocus(); ctx.openProjectForm(); if (focused !== 'pf-name') problems.push('opening the project form leaves focus on the hidden "Add project" button (F27)');
+  resetFocus(); ctx.cancelProjectForm(); if (focused !== 'addProjectBtn') problems.push('cancelling the project form does not return focus (F27)');
+  // F27 — the tracker gives focus back to the control that had it.
+  ctx.renderCycle();
+  if (!/data-fk="g0-l"/.test(getEl('ctItems').innerHTML) || !/data-fk="g0-d0"/.test(getEl('ctItems').innerHTML)) problems.push('tracker controls carry no stable focus key (F27)');
+  if (!/const had=document\.activeElement/.test(src.slice(src.indexOf('function renderCycle'), src.indexOf('function renderCycle') + 2500))) problems.push('renderCycle does not capture the focused control before re-rendering (F27)');
+  // F29 — status regions are live; toggles report expanded state; copy is announced.
+  const tagOf = id => (html.match(new RegExp('<[a-z]+\\b[^>]*\\bid="' + id + '"[^>]*>')) || [''])[0];
+  for (const id of ['dashStatus', 'stateIoMsg', 'srAnnounce']) if (!/aria-live="polite"/.test(tagOf(id))) problems.push(`#${id} is not a live region (F29)`);
+  for (const id of ['pf-name-err', 'pf-dims-err', 'pf-subs-err', 'inv-text-err', 'af-title-err', 'af-content-err']) if (!/role="alert"/.test(tagOf(id))) problems.push(`#${id} is not role="alert" (F29)`);
+  const fillBtns = [...html.matchAll(/<button class="fill-btn"[^>]*>/g)].map(m => m[0]);
+  const vts = [...html.matchAll(/<div class="vt"[^>]*>/g)].map(m => m[0]);
+  if (!fillBtns.length || fillBtns.some(b => !/aria-expanded="false"/.test(b) || !/aria-controls="fill-/.test(b))) problems.push('a Fill fields button carries no aria-expanded/aria-controls (F29)');
+  if (!vts.length || vts.some(v => !/aria-expanded="false"/.test(v))) problems.push('a variant toggle carries no aria-expanded (F29)');
+  const vt0 = { querySelector: () => ({ classList: makeClassList(new Set()) }), _a: {}, setAttribute(n, v) { this._a[n] = v; } };
+  const realGet = ctx.document.getElementById;
+  const body = { classList: makeClassList(new Set()) };
+  ctx.document.getElementById = id => (id === 'v-test' ? body : realGet(id));
+  try { ctx.toggleVariant('v-test', vt0); } finally { ctx.document.getElementById = realGet; }
+  if (vt0._a['aria-expanded'] !== 'true') problems.push('toggleVariant does not set aria-expanded (F29)');
+  ctx.renderArchive();
+  if (!/aria-expanded="false" aria-controls="arlog-/.test(getEl('archiveEntries').innerHTML)) problems.push('archive toggles carry no aria-expanded (F29)');
+  getEl('srAnnounce')._text = '';
+  ctx.copyFeedback(getEl('copy-test'), false);
+  if (!/Copy failed/.test(getEl('srAnnounce').textContent)) problems.push('a copy failure is not announced (F29)');
+  if (!problems.length) ok('empty required fields explain themselves and take focus, forms move focus in and back, the tracker restores focus, status regions are live and toggles report state (F27–F29)');
   else bad(problems.join('; '));
 }
 
