@@ -9,7 +9,7 @@ Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it
 Updated: 2026-10-12
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batch 1 is complete (v1.35.0). Batches 2–8 and the expansion plan are not started.
+- Batches 1–2 are complete (v1.35.0, v1.36.0). Batches 3–8 and the expansion plan are not started.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -21,11 +21,13 @@ Updated: 2026-10-12
   Cycle at 0; INV-12 gating check covers the new step. F02 §1s body ends with a gated SEAM COUNTER reset and
   reads the configured cadence. F03 §6a opener permits its step-8 metrics append. F04 /reflect exemption covers
   BLOCKS; <letter> defined. F06 /broad-implement points at the Invariant Library.
+- v1.36.0 | Batch 2 | F12 editing the active project re-renders every prompt; F13 §6a block placeholders are
+  per subsystem; F14 malformed repo spec is a visible failure, fetch timeout, STATE.md reason kept, bad spec
+  refused at save; F15 stale active id resolved at load; F16 loaders tolerate wrong-shape values, Axis B repaired,
+  import refuses wrong-shape keys whole; F17 closed fill forms discarded on switch. Six check-html cases, each
+  proven to fail with its fix reverted.
 
 ## Pending / not yet done
-- Batch 2 — console data correctness: F12 (stale prompts after editing the active project), F13 (§6a fill form
-  copies one block to every subsystem), F14 (malformed repo spec shows green Live; no fetch timeout), F15 (stale
-  activeProjectId), F16 (malformed non-project keys brick init via import), F17 (stale fill forms after switch).
 - Batch 3 — consumer script correctness: F33 (symlinked scripts no-op exit 0), F34 (verification-pack unusable
   in a consumer), F32 (render-metrics/netTrend sum synthesis net; test asserts it), F35 (CRLF parsers disagree),
   F36 (seams cadence reads the template default), F39, F40, F41.
@@ -74,6 +76,6 @@ Updated: 2026-10-12
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; Batch 1 shipped as v1.35.0 (state ownership — CYCLE OPEN). Next: /broad-implement Batch 2
-(console data correctness), then Batch 3 (consumer scripts). Batches 6–7 tighten guards and must land after
-the defects they would expose are fixed. The scan output is in chat only; the batch list above is the record.
+Cycle 7 open; Batches 1–2 shipped (v1.35.0 state ownership, v1.36.0 console data correctness), both on branch
+claude/tender-clarke-x722xl, not yet merged. Next: /broad-implement Batch 3 (consumer scripts). Batches 6–7 tighten
+guards and must land after the defects they would expose are fixed. The batch list above is the record.

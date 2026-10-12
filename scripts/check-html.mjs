@@ -1147,6 +1147,135 @@ if (loaded && typeof ctx.selectSeededInvariants === 'function' && typeof ctx.pro
   else bad('F14: ' + problems.join('; '));
 } else if (loaded) bad('probeSeed/selectSeededInvariants not defined — F14 unguarded');
 
+// Cycle-7 Batch 2 — console data correctness. Each case drives the real function
+// path (the F07 lesson: a helper-level assertion passes while the fix is unwired).
+if (loaded) {
+  const bootWith = (seed) => {
+    const st = { ...seed };
+    const els2 = {};
+    const el2 = () => { const t = { _html: '', _text: '', value: '', style: {}, dataset: {}, classList: makeClassList(new Set()) }; return new Proxy(t, { get(o, p) { if (p === 'innerHTML') return o._html; if (p === 'textContent') return o._text; if (p in o) return o[p]; if (p === 'querySelector') return () => el2(); if (p === 'querySelectorAll') return () => []; return () => {}; }, set(o, p, v) { if (p === 'innerHTML') o._html = String(v); else if (p === 'textContent') o._text = String(v); else o[p] = v; return true; } }); };
+    const c = {
+      localStorage: { getItem: k => (k in st ? st[k] : null), setItem: (k, v) => { st[k] = String(v); }, removeItem: k => { delete st[k]; }, get length() { return Object.keys(st).length; }, key: i => Object.keys(st)[i] },
+      document: { getElementById: id => (els2[id] || (els2[id] = el2())), querySelector: () => dummy, querySelectorAll: () => [], addEventListener() {}, body: dummy, createElement: () => ({ click() {}, style: {}, setAttribute() {}, select() {}, appendChild() {} }), execCommand: () => false },
+      navigator: { clipboard: { writeText: () => Promise.resolve() } }, window: { addEventListener() {} },
+      IntersectionObserver: class { observe() {} disconnect() {} }, MutationObserver: class { observe() {} disconnect() {} },
+      Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, FileReader: class { readAsText() {} },
+      console: { ...console, warn: () => {} }, setTimeout: () => 0, clearTimeout() {}, alert: () => {}, confirm: () => true, Date, Math, JSON, Object, Array, Set, RegExp,
+    };
+    c.globalThis = c; vm.createContext(c);
+    try { vm.runInContext(src, c, { filename: 'console-boot' }); } catch (e) { return { threw: e.message, ctx: c, st, els: els2 }; }
+    return { threw: null, ctx: c, st, els: els2 };
+  };
+  const firstId = vm.runInContext('PROJECTS[0].id', ctx);
+
+  // F15 — a stored active id naming a project that no longer exists is resolved
+  // at load, so storage keys stop pointing at a dead project.
+  {
+    const b = bootWith({ 'ccg:activeProject': 'gone-project' });
+    const active = b.threw ? null : vm.runInContext('activeProjectId', b.ctx);
+    if (!b.threw && active === firstId && b.st['ccg:activeProject'] === firstId && vm.runInContext('invariantKey()', b.ctx) === `ccg:${firstId}:invariants`)
+      ok('a stale stored active-project id is resolved at load — storage keys follow the project actually rendered (F15)');
+    else bad(`F15: stale active id not resolved at load (threw=${b.threw}, active=${active}, stored=${b.st['ccg:activeProject']})`);
+  }
+
+  // F16 — a stored value of the wrong SHAPE in any structured key must not brick
+  // init, and an import carrying one must be refused whole, naming the key.
+  {
+    const poisoned = bootWith({
+      [`ccg:${firstId}:cycle`]: 'null', [`ccg:${firstId}:invariants`]: '{}', [`ccg:${firstId}:archive`]: 'null',
+      'ccg:dashCache': JSON.stringify({ [firstId]: { ok: true, fetchedAt: null, status: { phase: 5, summary: 7 } } }), 'ccg:dashRepos': 'null', 'ccg:dashManual': '[]',
+    });
+    const badAxis = bootWith({ 'ccg:customProjects': JSON.stringify([{ id: 'ax', name: 'Ax', subsystems: [{ name: 'S', files: '' }], healthDimensions: 'A', axisB: [{ measures: 'no name' }, 'junk'] }]), 'ccg:activeProject': 'ax' });
+    const problems = [];
+    if (poisoned.threw) problems.push('a malformed tracker/invariants/archive/dashboard value bricks init: ' + poisoned.threw);
+    else if (!((poisoned.els['dashCards'] || {}).innerHTML || '').includes('dcard')) problems.push('init survived but the Dashboard did not render');
+    if (badAxis.threw) problems.push('a nameless Axis B entry bricks init: ' + badAxis.threw);
+    else if (!vm.runInContext('buildP6aText(getProject())', badAxis.ctx).includes('Cross-Artifact') && !vm.runInContext('JSON.stringify(getAxisB(getProject()))', badAxis.ctx).includes(vm.runInContext('DEFAULT_AXIS_B[0].name', badAxis.ctx))) problems.push('an Axis B list with no usable entry did not fall back to the defaults');
+    const refuse = ctx.stateBackupKeys({ data: { [`ccg:${firstId}:cycle`]: 'null', 'ccg:customProjects': '[]' } });
+    const refuse2 = ctx.stateBackupKeys({ data: { 'ccg:dashRepos': '"a string"' } });
+    const accept = ctx.stateBackupKeys({ data: { [`ccg:${firstId}:cycle`]: '{}', [`ccg:${firstId}:archive`]: '[]', 'ccg:dashCache': '{}' } });
+    if (refuse.reason !== 'bad-shape' || refuse.badKey !== `ccg:${firstId}:cycle` || refuse2.reason !== 'bad-shape' || accept.reason) problems.push(`import shape validation wrong (refuse=${refuse.reason}/${refuse.badKey}, refuse2=${refuse2.reason}, accept=${accept.reason})`);
+    if (!/bad-shape/.test(src.slice(src.indexOf('function importStateFile'), src.indexOf('function importStateFile') + 3000)) || !/bad-shape/.test(src.slice(src.indexOf('async function loadStateFromRepo'), src.indexOf('async function loadStateFromRepo') + 2500))) problems.push('a bad-shape rejection is not reported by BOTH import paths (file import and load-from-repo)');
+    if (!problems.length) ok('malformed tracker, invariants, archive, dashboard and Axis B values neither brick init nor get past import (F16)');
+    else bad('F16: ' + problems.join('; '));
+  }
+
+  // F12 + F17 — editing the ACTIVE project re-renders the prompts; fill forms
+  // built and closed under the previous project are discarded on switch.
+  if (typeof ctx.saveProjectForm === 'function' && typeof ctx.openEditProject === 'function') {
+    for (const k of Object.keys(store)) delete store[k];
+    const set = (id, v) => { getEl(id).value = v; };
+    vm.runInContext("pfEditingId=null; pfSubRows=[{name:'OldSubsystem',files:'a.ts'}];", ctx);
+    set('pf-name', 'Edit Rerender'); set('pf-dims', 'Dim A, Dim B'); set('pf-axisb', ''); set('pf-thresh', '4'); set('pf-consec', '2'); set('pf-invs', '');
+    ctx.saveProjectForm();
+    const created = ctx.loadCustomProjects().find(p => p.name === 'Edit Rerender');
+    const problems = [];
+    if (!created) problems.push('project was not created');
+    else {
+      ctx.switchProject(created.id);
+      ctx.openEditProject(created.id);
+      vm.runInContext("pfSubRows=[{name:'NewSubsystem',files:'b.ts'}];", ctx);
+      ctx.saveProjectForm();
+      const p6a = getEl('p6a').textContent;
+      if (!p6a.includes('NewSubsystem') || p6a.includes('OldSubsystem')) problems.push('editing the active project left §6a rendering the old subsystems (F12)');
+      // F17
+      const mk = (id, open) => ({ id, innerHTML: 'built for the previous project', classList: makeClassList(new Set(open ? ['open'] : [])) });
+      const closed = mk('fill-p1', false);
+      const realQSA = ctx.document.querySelectorAll;
+      ctx.document.querySelectorAll = sel => (sel === '.fill-form' ? [closed] : realQSA(sel));
+      try { ctx.switchProject(firstId); } finally { ctx.document.querySelectorAll = realQSA; }
+      if (closed.innerHTML !== '') problems.push('a closed fill form built for the previous project survived the switch and would reopen stale (F17)');
+    }
+    if (!problems.length) ok('editing the active project re-renders its prompts, and closed fill forms are discarded on project switch (F12/F17)');
+    else bad(problems.join('; '));
+  }
+
+  // F13 — §6a gets one set of block fields PER subsystem, so a pasted block is
+  // not replicated under every subsystem.
+  {
+    const proj = { ...ctx.getProject(), cycleGroups: ['Alpha', 'Beta [legacy]'] };
+    const text = ctx.buildP6aText(proj);
+    const fields = ctx.getPlaceholders(text).map(p => p.name);
+    const handoffs = fields.filter(n => n.startsWith('PASTE SESSION HANDOFF BLOCK'));
+    const verifs = fields.filter(n => n.startsWith('PASTE VERIFICATION BLOCK'));
+    if (handoffs.length === 2 && verifs.length === 2 && handoffs.some(n => n.includes('Beta (legacy)')))
+      ok('§6a offers its three block fields once PER subsystem (a bracketed name stays one token) — F13');
+    else bad(`F13: §6a block fields not per-subsystem (handoff=${JSON.stringify(handoffs)}, verification=${verifs.length})`);
+  }
+
+  // F14 — a malformed repo spec is an error, never a green "Live"; a STATE.md
+  // failure other than 404 keeps its reason; the card refuses to save a bad spec.
+  {
+    const problems = [];
+    const pid = firstId;
+    const realFetch = ctx.fetch;
+    const calls = [];
+    ctx.fetch = async (url) => { calls.push(url); return url.includes('STATE.md') ? { ok: false, status: 500, text: async () => '' } : { ok: true, status: 200, text: async () => 'Overall (weighted avg): 8.0/10' }; };
+    try {
+      store['ccg:dashRepos'] = JSON.stringify({ [pid]: 'myrepo' });
+      store['ccg:dashCache'] = '{}';
+      await ctx.refreshDashboard();
+      const c1 = JSON.parse(store['ccg:dashCache'])[pid];
+      if (!c1 || c1.ok !== false || !/not a repo/.test(c1.error || '')) problems.push(`a malformed spec was recorded as ${JSON.stringify(c1)} — it must be a failure with a reason`);
+      if (calls.length) problems.push('a malformed spec still issued a fetch');
+      store['ccg:dashRepos'] = JSON.stringify({ [pid]: 'owner/repo' });
+      await ctx.refreshDashboard();
+      const c2 = JSON.parse(store['ccg:dashCache'])[pid];
+      if (!c2 || !c2.ok || !/HTTP 500/.test((c2.status || {}).stateError || '')) problems.push('a STATE.md fetch failure (not 404) was swallowed');
+      else if (!getEl('dashCards').innerHTML.includes('phase unavailable')) problems.push('the STATE.md failure reason is not shown on the card');
+      getEl('dspec-' + pid).value = 'not-a-spec';
+      ctx.saveDashCard(pid);
+      if (JSON.parse(store['ccg:dashRepos'])[pid] !== 'owner/repo') problems.push('the card saved a malformed spec');
+      if (!/not a repo/.test(getEl('dspec-err-' + pid).textContent)) problems.push('the card did not say why the spec was refused');
+      if (vm.runInContext('dashRefreshing', ctx) !== false) problems.push('dashRefreshing left set after a refresh');
+    } catch (e) { problems.push('threw: ' + e.message); }
+    finally { ctx.fetch = realFetch; delete store['ccg:dashRepos']; delete store['ccg:dashCache']; }
+    if (!/AbortController/.test(src.slice(src.indexOf('async function ghFetchFile'), src.indexOf('async function fetchProjectStatus')))) problems.push('ghFetchFile has no timeout (AbortController)');
+    if (!problems.length) ok('a malformed repo spec is a visible failure, STATE.md errors keep their reason, bad specs are refused at save, fetches time out (F14)');
+    else bad('F14: ' + problems.join('; '));
+  }
+}
+
 // INV-67 — every id in the MARKUP is unique. getElementById() returns the FIRST
 // element in document order, so a collision does not error: it silently hands
 // the code a different element than the one it names. Two shipped for many

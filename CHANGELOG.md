@@ -5,6 +5,39 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.36.0 — 2026-10-12
+
+Cycle-7 Batch 2: console data correctness. Console-only — **no command-body or
+config-schema change, so no `/sync-commands` re-pull.** Each fix has a
+check-html case that drives the real function path, and each case was proven to
+fail with its own fix reverted.
+
+- **F12 — editing the active project left every prompt stale.** `saveProjectForm`
+  re-rendered only the Projects tab and the selector, so §6a, §T1, §4v, §1s, the
+  cycle tracker and the invariant tables kept the old subsystems until a switch
+  or reload — and Copy pasted the stale text. It now re-renders through
+  `switchProject` when the edited project is the active one.
+- **F13 — the §6a fill form copied one pasted block under every subsystem.** The
+  three block placeholders were identical per subsystem and the form dedupes by
+  token. Each now names its subsystem (brackets in a name become parentheses so
+  the token stays whole), giving every subsystem its own fields. Values saved
+  under the old shared placeholders no longer attach.
+- **F14 — a mistyped Dashboard repo showed "🟢 Live".** A malformed spec now
+  fails with a reason instead of being recorded as a successful empty fetch, and
+  the card refuses to save one. Fetches time out after 15s (a hung request used
+  to disable Refresh for the session), and a STATE.md failure other than 404
+  keeps its reason on the card instead of being swallowed.
+- **F15 — a stale active-project id wrote data where no project could reach it.**
+  It is now resolved at load (it already was after an import).
+- **F16 — malformed stored values in six keys bricked init, and import let them
+  in.** The tracker, invariants, archive and dashboard loaders tolerate a value
+  of the wrong shape, Axis B entries are repaired like the rest of a project,
+  and an import or repo load carrying any of those keys in the wrong shape is
+  refused whole, naming the key. A render failure after a successful write no
+  longer reports "failed while writing".
+- **F17 — fill forms built and closed under one project reopened with its data
+  after a switch.** Closed forms are now discarded on switch.
+
 ## 1.35.0 — 2026-10-12
 
 Cycle-7 Batch 1: every `.cycle/` state write now has an owner, and no prompt

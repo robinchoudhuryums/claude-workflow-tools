@@ -1951,6 +1951,13 @@ function normalizeProject(p){
   q.invariants=q.invariants.filter(i=>i&&typeof i==='object').map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
   if(!Array.isArray(q.seeds)) q.seeds=[];
   if(q.cycleGroups!=null&&!Array.isArray(q.cycleGroups)) delete q.cycleGroups;
+  // F16 (Cycle 7): axisB entries were never repaired — one with no name threw in
+  // the §6a grid's padEnd at init. Keep entries that have a name; an empty list
+  // falls back to the default categories, exactly as an absent one does.
+  if(q.axisB!=null){
+    q.axisB=Array.isArray(q.axisB)?q.axisB.filter(c=>c&&typeof c==='object'&&c.name!=null&&String(c.name).trim()).map(c=>({...c,name:String(c.name),measures:String(c.measures==null?'':c.measures),pulse:String(c.pulse==null?'':c.pulse),playbook:String(c.playbook==null?'':c.playbook)})):[];
+    if(!q.axisB.length) delete q.axisB;
+  }
   if(typeof q.healthDimensions!=='string') q.healthDimensions=q.healthDimensions==null?'':String(q.healthDimensions);
   return q;
 }
@@ -1968,8 +1975,19 @@ function loadCustomProjects(){
 }
 function saveCustomProjects(arr){ try{localStorage.setItem('ccg:customProjects',JSON.stringify(arr))}catch(e){storageWarn(e)} }
 
-let activeProjectId = loadActiveProjectId();
 function getAllProjects(){ return [...PROJECTS,...loadCustomProjects()]; }
+// F15 (Cycle 7): the stored id was trusted at load. When it named a project that
+// no longer exists (F04's repair dropped it, another tab deleted it), getProject()
+// fell back to the first built-in for RENDERING while every storage key —
+// invariants, cycle, archive, bank, fill values — kept the dead id, so new data
+// was written where no project could reach it. Resolve it once, here, the same
+// way applyStateKeys already did after an import.
+function resolveActiveProjectId(id){
+  if(getAllProjects().some(p=>p.id===id)) return id;
+  saveActiveProjectId(PROJECTS[0].id);
+  return PROJECTS[0].id;
+}
+let activeProjectId = resolveActiveProjectId(loadActiveProjectId());
 function getProject(id){ return getAllProjects().find(p=>p.id===(id||activeProjectId))||PROJECTS[0]; }
 function deriveId(name){ return String(name==null?'':name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
 // F07: a name with no ASCII alphanumerics — "日本語プロジェクト", "!!!" — derives
@@ -2003,13 +2021,27 @@ function switchProject(id){
   renderInvariantTable();
   renderCustomInvariantsList();
   renderSubsysTable();
-  // Rebuild any open fill forms for subsystem dropdowns
-  document.querySelectorAll('.fill-form.open').forEach(f=>{ buildFillForm(f.id.replace('fill-','')); });
+  // Rebuild open fill forms; DISCARD closed ones. toggleFill builds a form only
+  // when it is empty, so a form built and closed under the previous project kept
+  // that project's subsystem options and values and reopened stale (F17, Cycle 7).
+  document.querySelectorAll('.fill-form').forEach(f=>{
+    if(f.classList.contains('open')) buildFillForm(f.id.replace('fill-',''));
+    else f.innerHTML='';
+  });
 }
 
 // ─── INVARIANT STORAGE (per project) ─────────────────────────
 function invariantKey(){ return `ccg:${activeProjectId}:invariants`; }
-function loadCustomInvariants(){ try{return JSON.parse(localStorage.getItem(invariantKey())||'[]')}catch(e){return []} }
+// F16 (Cycle 7): every loader below trusted the stored SHAPE, so one malformed
+// value — "{}", "null", a number where a string belongs — threw at init and
+// blanked everything rendered after it. Parse failures were caught; wrong
+// shapes were not.
+function isPlainObj(v){ return !!v&&typeof v==='object'&&!Array.isArray(v); }
+function loadCustomInvariants(){
+  let v; try{v=JSON.parse(localStorage.getItem(invariantKey())||'[]')}catch(e){return []}
+  if(!Array.isArray(v)) return [];
+  return v.filter(isPlainObj).map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
+}
 function saveCustomInvariants(arr){ try{localStorage.setItem(invariantKey(),JSON.stringify(arr))}catch(e){storageWarn(e)} }
 function getProjectInvariants(){
   const project=getProject();
@@ -2340,7 +2372,7 @@ function fillSubsystem(name,files){
 
 // ─── CYCLE TRACKER ───────────────────────────────────────────
 function cycleKey(){ return `ccg:${activeProjectId}:cycle`; }
-function loadCycle(){ try{return JSON.parse(localStorage.getItem(cycleKey())||'{}')}catch(e){return {}} }
+function loadCycle(){ let v; try{v=JSON.parse(localStorage.getItem(cycleKey())||'{}')}catch(e){return {}} return isPlainObj(v)?v:{}; }
 function saveCycle(d){ try{localStorage.setItem(cycleKey(),JSON.stringify(d))}catch(e){storageWarn(e)} }
 
 const CYCLE_PHASES=['audit','implement','verify'];
@@ -2418,7 +2450,13 @@ function renderProjectSelector(){
 // ─── HEALTH SYNTHESIS PROMPT (p6a) — dynamic per project ────
 function buildP6aText(project){
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
-  const subsystemLines=groups.map(g=>`- ${g}:\n  [PASTE SESSION HANDOFF BLOCK]\n  [PASTE CYCLE SUMMARY BLOCK]\n  [PASTE VERIFICATION BLOCK — or note "Verification not run" if skipped]`).join('\n\n');
+  // F13 (Cycle 7): the three tokens were IDENTICAL for every subsystem, and the
+  // fill form dedupes by token — so one field per block type, and the single
+  // block you pasted was replicated under all N subsystems. Name the subsystem
+  // in each token so every subsystem gets its own fields. Brackets in a name
+  // would end the token early, so they are swapped for parentheses.
+  const tok=g=>String(g).replace(/\[/g,'(').replace(/\]/g,')');
+  const subsystemLines=groups.map(g=>`- ${g}:\n  [PASTE SESSION HANDOFF BLOCK — ${tok(g)}]\n  [PASTE CYCLE SUMMARY BLOCK — ${tok(g)}]\n  [PASTE VERIFICATION BLOCK — ${tok(g)} — or note "Verification not run" if skipped]`).join('\n\n');
   const dims=project.healthDimensions;
   const thresh=project.policyThreshold||4;
   const consecCycles=project.policyConsecutiveCycles||2;
@@ -2807,7 +2845,12 @@ function saveProjectForm(){
   const custom=loadCustomProjects();
   const updated=pfEditingId?custom.map(p=>p.id===pfEditingId?project:p):[...custom,project];
   saveCustomProjects(updated);
+  // F12 (Cycle 7): only the Projects tab and the selector used to re-render, so
+  // editing the ACTIVE project left every prompt, the tracker and the invariant
+  // tables showing the old subsystems — and Copy pasted the stale <pre>.
+  const editedActive=!!pfEditingId&&pfEditingId===activeProjectId;
   cancelProjectForm();
+  if(editedActive){ switchProject(activeProjectId); return; }
   renderProjectsTab();
   renderProjectSelector();
 }
@@ -2877,6 +2920,7 @@ function exportState(){
 // lives in ONE place (was duplicated — the Parallel Source-of-Truth shape the
 // tool itself polices). Returns {data, keys, reason}: reason is 'no-data' (not
 // a recognized backup) or 'no-keys' (no ccg:* state) when keys is null.
+const STATE_SHAPES=[[/^ccg:[^:]+:cycle$/,'object'],[/^ccg:[^:]+:invariants$/,'array'],[/^ccg:[^:]+:archive$/,'array'],[/^ccg:dash(Repos|Cache|Manual)$/,'object']];
 function stateBackupKeys(parsed){
   const data=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:null;
   if(!data) return {data:null,keys:null,reason:'no-data'};
@@ -2893,6 +2937,16 @@ function stateBackupKeys(parsed){
     let list; try{ list=JSON.parse(data['ccg:customProjects']); }catch(e){ return {data:null,keys:null,reason:'bad-projects'}; }
     if(!Array.isArray(list)) return {data:null,keys:null,reason:'bad-projects'};
   }
+  // F16 (Cycle 7): the project list was the ONLY key checked, but six others
+  // could brick init too (tracker, invariants, archive, dashboard repos/cache/
+  // fallbacks). Same rule: a backup carrying any of them in the wrong shape is
+  // refused whole, and the message names the key.
+  for(const k of Object.keys(data)){
+    const want=STATE_SHAPES.find(([re])=>re.test(k));
+    if(!want) continue;
+    let v; try{ v=JSON.parse(data[k]); }catch(e){ return {data:null,keys:null,reason:'bad-shape',badKey:k}; }
+    if(want[1]==='array'?!Array.isArray(v):!isPlainObj(v)) return {data:null,keys:null,reason:'bad-shape',badKey:k};
+  }
   // Secrets are filtered on the APPLY side too, not just on export: a backup
   // handed over by someone else (or loaded from a shared repo) must not be able
   // to install a credential into this browser.
@@ -2900,6 +2954,7 @@ function stateBackupKeys(parsed){
   if(!keys.length) return {data,keys:null,reason:'no-keys'};
   return {data,keys,reason:null};
 }
+function stateBadKey(parsed){ return stateBackupKeys(parsed).badKey||'a stored item'; }
 // Write the validated keys and re-derive the active project. Caller owns the
 // confirm prompt, switchProject(), re-render, and status message. Returns count.
 function applyStateKeys(data,keys){
@@ -2923,14 +2978,19 @@ function importStateFile(input){
     if(reason==='newer-version'){ setStateIoMsg('Import failed: backup uses a newer format than this console understands — update the console first.','error'); input.value=''; return; }
     if(reason==='no-keys'){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
     if(reason==='bad-projects'){ setStateIoMsg('Import failed: the backup\'s project list is not valid (not a JSON array of projects) — nothing was imported.','error'); input.value=''; return; }
+    if(reason==='bad-shape'){ setStateIoMsg(`Import failed: "${stateBadKey(parsed)}" in the backup is not in the expected format — nothing was imported.`,'error'); input.value=''; return; }
     if(!confirm(`Import ${keys.length} stored item(s)? This OVERWRITES matching projects, invariants, archive entries, and tracker state in this browser.`)){ input.value=''; return; }
+    // F16: writing and rendering fail differently. A write failure may leave some
+    // items saved; a render failure means everything WAS saved. The old single
+    // "failed while writing" message said the opposite of the second case.
+    try{ applyStateKeys(data,keys); }
+    catch(e){ setStateIoMsg('Import failed while writing — some items may already be saved: '+(e&&e.message?e.message:'unknown error'),'error'); input.value=''; return; }
     try{
-      applyStateKeys(data,keys);
       switchProject(activeProjectId);
       renderProjectsTab();
       setStateIoMsg(`Imported ${keys.length} stored item${keys.length===1?'':'s'}.`,'ok');
     }catch(e){
-      setStateIoMsg('Import failed while writing: '+(e&&e.message?e.message:'unknown error'),'error');
+      setStateIoMsg(`Imported ${keys.length} item(s), but the console could not display them: `+(e&&e.message?e.message:'unknown error')+' — reload the page.','error');
     }
     input.value='';
   };
@@ -3005,6 +3065,7 @@ async function loadStateFromRepo(){
     if(reason==='newer-version'){ setStateIoMsg('That state file uses a newer format than this console understands — update the console first.','error'); return; }
     if(reason==='no-keys'){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
     if(reason==='bad-projects'){ setStateIoMsg('That state file\'s project list is not valid (not a JSON array of projects) — nothing was loaded.','error'); return; }
+    if(reason==='bad-shape'){ setStateIoMsg(`"${stateBadKey(parsed)}" in that state file is not in the expected format — nothing was loaded.`,'error'); return; }
     if(!confirm(`Load ${keys.length} item(s) from the connected repo? This OVERWRITES matching state in this browser.`)) return;
     applyStateKeys(data,keys);
     switchProject(activeProjectId); renderProjectsTab();
@@ -3014,7 +3075,7 @@ async function loadStateFromRepo(){
 
 // ─── ARCHIVE ─────────────────────────────────────────────────
 function archiveKey(){ return `ccg:${activeProjectId}:archive`; }
-function loadArchiveEntries(){ try{return JSON.parse(localStorage.getItem(archiveKey())||'[]')}catch(e){return []} }
+function loadArchiveEntries(){ let v; try{v=JSON.parse(localStorage.getItem(archiveKey())||'[]')}catch(e){return []} return Array.isArray(v)?v.filter(isPlainObj):[]; }
 function saveArchiveEntries(arr){ try{localStorage.setItem(archiveKey(),JSON.stringify(arr))}catch(e){storageWarn(e)} }
 
 function renderArchive(){
@@ -4141,7 +4202,7 @@ function closeNav(restoreFocus){ setNavOpen(false,restoreFocus); }
 try{ document.addEventListener('keydown',function(e){ if(e&&e.key==='Escape')closeNav(true); }); }catch(e){}
 
 // ─── DASHBOARD (live project status: GitHub primary, cache + self-reported fallback) ──
-function dashLoad(key){ try{return JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}} }
+function dashLoad(key){ let v; try{v=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}} return isPlainObj(v)?v:{}; }
 function dashSave(key,obj){ try{localStorage.setItem(key,JSON.stringify(obj))}catch(e){storageWarn(e)} }
 function dashRepos(){ return dashLoad('ccg:dashRepos'); }
 function dashCache(){ return dashLoad('ccg:dashCache'); }
@@ -4163,19 +4224,35 @@ function parseRepoSpec(spec){ if(!spec)return null; const at=String(spec).split(
 function parseHealth(md){ const g=re=>{const m=md.match(re);return m?m[1].trim():'';}; return { overall:g(/Overall[^:\n]*:\s*([\d.]+)\s*\/\s*10/i), lastSynthesis:g(/Last synthesis:\s*([^\n]+)/i), summary:g(/One-line summary:\s*([^\n]+)/i), topVertical:g(/Top vertical priority:\s*([^\n]+)/i), topHorizontal:g(/Top horizontal priority:\s*([^\n]+)/i) }; }
 function parseState(md){ const g=re=>{const m=md.match(re);return m?m[1].trim():'';}; return { phase:g(/^Phase:\s*([^\n]+)/im), updated:g(/^Updated:\s*([^\n]+)/im), cycle:g(/^Cycle:\s*([^\n]+)/im) }; }
 
+const DASH_FETCH_TIMEOUT_MS=15000;
 async function ghFetchFile(spec,path){
-  const r=parseRepoSpec(spec); if(!r||typeof fetch!=='function')return null;
+  if(typeof fetch!=='function')return null;
+  // F14 (Cycle 7): a malformed spec returned null, which fetchProjectStatus
+  // turned into an empty status and refreshDashboard recorded as ok:true — a
+  // typo like "myrepo" rendered "🟢 Live · just now" with nothing fetched.
+  const r=parseRepoSpec(spec); if(!r) throw new Error('"'+spec+'" is not a repo — use owner/repo or owner/repo@branch');
   const tok=dashToken(); let url, opts={headers:{}};
   if(tok){ url='https://api.github.com/repos/'+r.owner+'/'+r.repo+'/contents/'+path+'?ref='+encodeURIComponent(r.branch); opts.headers['Accept']='application/vnd.github.raw'; opts.headers['Authorization']='Bearer '+tok; }
   else { url='https://raw.githubusercontent.com/'+r.owner+'/'+r.repo+'/'+r.branch+'/'+path; }
-  const resp=await fetch(url,opts);
+  // F14: no timeout meant a hung request left dashRefreshing set, and Refresh
+  // did nothing for the rest of the session.
+  const ctl=typeof AbortController==='function'?new AbortController():null;
+  const timer=ctl?setTimeout(()=>ctl.abort(),DASH_FETCH_TIMEOUT_MS):null;
+  if(ctl) opts.signal=ctl.signal;
+  let resp;
+  try{ resp=await fetch(url,opts); }
+  catch(e){ if(e&&e.name==='AbortError') throw new Error(path+' → timed out after '+(DASH_FETCH_TIMEOUT_MS/1000)+'s'); throw e; }
+  finally{ if(timer) clearTimeout(timer); }
   if(!resp.ok) throw new Error(path+' → HTTP '+resp.status);
   return await resp.text();
 }
 async function fetchProjectStatus(spec){
   const health=await ghFetchFile(spec,'PROJECT_HEALTH.md');
   const status=parseHealth(health||'');
-  try{ const st=await ghFetchFile(spec,'.cycle/STATE.md'); if(st) Object.assign(status,parseState(st)); }catch(e){}
+  // A 404 here is normal (a project without .cycle/); any other failure keeps
+  // its reason so the card can say why the phase is missing (F14).
+  try{ const st=await ghFetchFile(spec,'.cycle/STATE.md'); if(st) Object.assign(status,parseState(st)); }
+  catch(e){ const msg=String((e&&e.message)||e); if(!/HTTP 404/.test(msg)) status.stateError=msg; }
   return status;
 }
 let dashRefreshing=false;
@@ -4186,6 +4263,7 @@ async function refreshDashboard(){
   const ids=Object.keys(repos).filter(id=>repos[id]);
   const st=document.getElementById('dashStatus'); if(st) st.textContent=ids.length?'Refreshing…':'No repos configured — add one per card below (⚙ source)';
   let okN=0, failN=0;
+  try{
   for(const id of ids){
     try{ const status=await fetchProjectStatus(repos[id]); cache[id]={status,fetchedAt:new Date().toISOString(),ok:true}; okN++; }
     // F06 (Cycle 6): the error was recorded ONLY when there was no prior cache
@@ -4194,7 +4272,9 @@ async function refreshDashboard(){
     // unexplained stale "Cached" chip. Always record the reason.
     catch(e){ const msg=String((e&&e.message)||e); if(cache[id]){ cache[id].ok=false; cache[id].error=msg; } else { cache[id]={status:null,fetchedAt:null,ok:false,error:msg}; } failN++; }
   }
-  dashSave('ccg:dashCache',cache); dashRefreshing=false; renderDashboard();
+  dashSave('ccg:dashCache',cache);
+  } finally { dashRefreshing=false; }
+  renderDashboard();
   if(st&&ids.length) st.textContent='Updated '+okN+' live'+(failN?(', '+failN+' failed — reason on the card'):'');
 }
 function dashboardCard(p){
@@ -4202,14 +4282,18 @@ function dashboardCard(p){
   const spec=repos[p.id]||'', c=cache[p.id], man=manual[p.id]||{};
   let status=null, src='', icon='○';
   const err=(c&&c.ok===false&&c.error)?dashErrHint(c.error):'';
+  const stErr=(c&&c.ok&&c.status&&c.status.stateError)?dashErrHint(c.status.stateError):'';
   if(c&&c.ok&&c.status){ status=c.status; src='Live · '+relTime(c.fetchedAt); icon='🟢'; }
   else if(c&&c.status){ status=c.status; src='Cached · '+relTime(c.fetchedAt); icon='🟡'; }
   else if(man.overall||man.phase||man.note){ status={overall:man.overall,phase:man.phase,summary:man.note}; src='Self-reported'; icon='✎'; }
   else if(err){ src='Fetch failed'; icon='🔴'; }
   else { src=spec?'No data yet':'No source — add a repo'; }
-  const overall=(status&&status.overall)||'—';
-  const phase=(status&&status.phase)||'';
-  const summary=(status&&status.summary)||'';
+  // F16: cached fields are coerced — a non-string phase threw in .split() and,
+  // renderDashboard being an early init call, blanked almost the whole console.
+  const str=v=>(v==null?'':String(v));
+  const overall=str(status&&status.overall)||'—';
+  const phase=str(status&&status.phase);
+  const summary=str(status&&status.summary);
   const r=parseRepoSpec(spec), ghUrl=r?('https://github.com/'+r.owner+'/'+r.repo):'';
   const active=(p.id===activeProjectId)?' active':'';
   // Attribute-context JS arg (INV-20). esc() ALONE is not enough here: it turns
@@ -4221,12 +4305,14 @@ function dashboardCard(p){
     +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span class="note-mut">/10</span>':'')+'</div></div>'
     +'<div class="dcard-row"><span class="dsrc">'+icon+' '+esc(src)+'</span>'+(phase?'<span class="dchip" title="'+esc(phase)+'">'+esc(phase.split('(')[0].trim().slice(0,30))+'</span>':'')+'</div>'
     +(err?'<div class="dcard-err" role="status">⚠ '+esc(err)+'</div>':'')
+    +(stErr?'<div class="dcard-err" role="status">⚠ phase unavailable: '+esc(stErr)+'</div>':'')
     +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
     +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
     +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
     +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+esc(ghUrl)+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit('+argId+')">⚙ source</button></div>'
     +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
     +'<label for="dspec-'+esc(p.id)+'">GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
+    +'<div class="dcard-err" id="dspec-err-'+esc(p.id)+'" role="alert" style="display:none"></div>'
     +'<label for="dman-o-'+esc(p.id)+'">Fallback when no GitHub data (overall / phase / note)</label>'
     +'<input id="dman-o-'+esc(p.id)+'" aria-label="Fallback overall score" value="'+esc(man.overall||'')+'" placeholder="overall e.g. 8.5">'
     +'<input id="dman-p-'+esc(p.id)+'" aria-label="Fallback phase" value="'+esc(man.phase||'')+'" placeholder="phase e.g. idle">'
@@ -4242,6 +4328,10 @@ function toggleDashEdit(id){ const e=document.getElementById('dedit-'+id); if(e)
 function saveDashCard(id){
   const v=i=>{const e=document.getElementById(i);return e&&e.value?e.value.trim():'';};
   const spec=v('dspec-'+id), repos=dashRepos();
+  // F14: refuse a spec that is not owner/repo[@branch] instead of saving it.
+  const specErr=document.getElementById('dspec-err-'+id);
+  if(spec&&!parseRepoSpec(spec)){ if(specErr){ specErr.textContent='"'+spec+'" is not a repo — use owner/repo or owner/repo@branch.'; specErr.style.display='block'; } return; }
+  if(specErr){ specErr.textContent=''; specErr.style.display='none'; }
   if(spec) repos[id]=spec; else delete repos[id]; dashSave('ccg:dashRepos',repos);
   const o=v('dman-o-'+id), ph=v('dman-p-'+id), nt=v('dman-n-'+id), manual=dashManual();
   if(o||ph||nt) manual[id]={overall:o,phase:ph,note:nt}; else delete manual[id]; dashSave('ccg:dashManual',manual);
