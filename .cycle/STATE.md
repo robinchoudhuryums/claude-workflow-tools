@@ -9,7 +9,7 @@ Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it
 Updated: 2026-10-12
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1–3 are complete (v1.35.0, v1.36.0, v1.37.0). Batches 4–8 and the expansion plan are not started.
+- Batches 1–4 are complete (v1.35.0–v1.38.0). Batches 5–8 and the expansion plan are not started.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -31,9 +31,14 @@ Updated: 2026-10-12
   F35 CRLF/indent-tolerant invariant parsing in all three readers; F36 cadence read from its line; F39 shared CSV
   parser + numeric cycle match; F40 line-bounded fields, escaped pipes, HEALTH_SECTION; F41 maxBuffer, --timeout,
   capped reason, exitCode. INV-68 mutation case re-targeted (went false green once both parsers agreed).
+- v1.38.0 | Batch 4 | F24 kbdActivate stops propagation; F25 tracker dots and archive delete are native sibling
+  buttons (named, aria-pressed); F26 closed drawer visibility:hidden, open drawer traps focus and focuses its first
+  link after the slide-in; F22 invariant tables' own column rules; F23 main min-width:0. Browser-verified with the
+  scan's probes. Also: INV-49 delegation guard tightened (false green exposed by this batch); v1.36.0's false
+  "repaired" warning for a blank Axis B fixed.
 
 ## Pending / not yet done
-- Batch 4 — keyboard & layout: F24, F25, F26, F22, F23. Batch 5 — focus, feedback, theme: F30, F27, F29, F28.
+- Batch 5 — focus, feedback, theme: F30, F27, F29, F28.
 - Batch 6 — guard false greens I: F31 (CI YAML read as text), F45 (hostile fixture never seeds remote Dashboard
   data), F18 (199-char placeholder cap), F48, F49, F20. Lands AFTER Batches 2–3.
 - Batch 7 — guard false greens II: F47 (order-blind canonicalCoverage), F46, F50 (block copies disagree now),
@@ -78,6 +83,6 @@ Updated: 2026-10-12
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; Batches 1–3 shipped (v1.35.0 state ownership, v1.36.0 console data, v1.37.0 consumer scripts), all on
-branch claude/tender-clarke-x722xl, not yet merged. Next: /broad-implement Batch 4 (keyboard & layout). Batches 6–7
-tighten guards and can now follow, since the defects they would expose (Batches 2–3) are fixed.
+Cycle 7 open; Batches 1–4 shipped (v1.35.0–v1.38.0), all on branch claude/tender-clarke-x722xl, not yet merged.
+Next: /broad-implement Batch 5 (focus, feedback, theme — F27 builds on Batch 4's handlers). Batches 6–7 tighten
+guards and can follow. Console rendering of Batches 2 and 4 still wants a person at a browser after merge.

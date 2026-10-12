@@ -110,7 +110,10 @@ nav a.active{color:var(--accent);border-left-color:var(--accent);background:rgba
 .ct-complete{font-size:11px;color:var(--green);text-align:center;padding:4px 0 0;display:none}
 
 /* MAIN */
-main{margin-left:var(--nav-w);flex:1;max-width:880px;padding:40px 44px 80px}
+/* F23 (Cycle 7): min-width:0 — a flex item defaults to min-width:auto, so any
+   unwrappable content (a nowrap table cell, a long tag) widened main past the
+   viewport and the page scrolled sideways between 769px and ~1136px. */
+main{margin-left:var(--nav-w);flex:1;min-width:0;max-width:880px;padding:40px 44px 80px}
 
 /* FLOW */
 .flow-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:40px}
@@ -148,7 +151,13 @@ main > .panel.active{display:block;animation:panelIn .18s ease}
 table.st{width:100%;border-collapse:collapse;font-size:12.5px}
 table.st td{padding:8px 14px;border-bottom:1px solid var(--border-light);vertical-align:top}
 table.st tr:last-child td{border-bottom:none}
-table.st td:first-child{color:var(--text);font-weight:500;white-space:nowrap;width:44%}
+table.st td:first-child{color:var(--text);font-weight:500;width:44%;overflow-wrap:anywhere}
+/* F22 (Cycle 7): invariant tables reuse .st, whose first column was nowrap at
+   44% — sized for a subsystem name, not a rule. The rule text pushed the
+   Subsystem column past the wrapper's edge (clipped on every row at every
+   width) and was cut mid-sentence on mobile. */
+table.st.inv td:first-child{width:auto;font-weight:400}
+table.st.inv td:last-child{width:28%;font-family:inherit;font-size:11.5px;overflow-wrap:anywhere}
 table.st td:last-child{color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6}
 table.st tr{cursor:pointer;transition:background .12s}
 table.st tr:hover td{background:var(--surface2)}
@@ -161,7 +170,7 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .pb-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--surface2);border-bottom:1px solid var(--border);gap:10px}
 .pb-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .pb-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
-.ptag{font-size:10.5px;padding:2px 6px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);font-weight:500;white-space:nowrap}
+.ptag{font-size:10.5px;padding:2px 6px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);font-weight:500;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
 .fill-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--r-sm);color:var(--amber);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
 .fill-btn:hover{background:rgba(245,158,11,.18)}
 .fill-btn.active{background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.5)}
@@ -254,8 +263,12 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
      top bar became a 174px left column and main overflowed the viewport. */
   body{flex-direction:column}
   .mobilebar{display:flex}
-  nav{transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 14px 40px rgba(0,0,0,.45)}
-  nav.open{transform:translateX(0)}
+  /* F26 (Cycle 7): off-screen is not hidden. The closed drawer kept all its
+     links in the tab order — 71 invisible stops before the page. visibility
+     removes them (and from the accessibility tree); the delay lets the slide-out
+     finish before it applies. */
+  nav{transform:translateX(-100%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+  nav.open{transform:translateX(0);visibility:visible;transition:transform .22s ease,visibility 0s}
   nav.open ~ .navbackdrop{display:block}
   main{margin-left:0;padding:18px 16px 60px}
   .tips-grid{grid-template-columns:1fr}
@@ -943,7 +956,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
         <span id="seamsInvariantTitle">Current Invariant Library</span>
         <small>Review, validate, and extend during this audit</small>
       </div>
-      <table class="st" id="seamsInvariantTable">
+      <table class="st inv" id="seamsInvariantTable">
         <tbody id="seamsInvariantBody">
         </tbody>
       </table>
@@ -1351,7 +1364,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
         <span id="invariantTableTitle">Invariant Library</span>
         <small>Project-specific rules that must always hold — grows via /reflect</small>
       </div>
-      <table class="st" id="invariantTable">
+      <table class="st inv" id="invariantTable">
         <tbody id="invariantTableBody">
         </tbody>
       </table>
@@ -1919,6 +1932,11 @@ function jsArg(v){ return esc(JSON.stringify(v)); }
 function kbdActivate(e){
   if(!e||(e.key!=='Enter'&&e.key!==' '&&e.key!=='Spacebar'))return;
   e.preventDefault();
+  // F24 (Cycle 7): stop the keydown here. A nested control's activation used to
+  // bubble on to its parent's kbdActivate as well, so Enter on a cycle-tracker
+  // phase dot ran setPhase AND the row's advancePhase — keyboard users recorded
+  // a different phase than a mouse click on the same dot.
+  if(typeof e.stopPropagation==='function') e.stopPropagation();
   const t=e.currentTarget||e.target;
   if(t&&typeof t.click==='function')t.click();
 }
@@ -1953,10 +1971,11 @@ function normalizeProject(p){
   if(q.cycleGroups!=null&&!Array.isArray(q.cycleGroups)) delete q.cycleGroups;
   // F16 (Cycle 7): axisB entries were never repaired — one with no name threw in
   // the §6a grid's padEnd at init. Keep entries that have a name; an empty list
-  // falls back to the default categories, exactly as an absent one does.
+  // falls back to the default categories in getAxisB, exactly as an absent one
+  // does. An empty list is left AS IS: the project form saves [] for a blank
+  // Axis B field, and deleting it reported every such project as "repaired".
   if(q.axisB!=null){
     q.axisB=Array.isArray(q.axisB)?q.axisB.filter(c=>c&&typeof c==='object'&&c.name!=null&&String(c.name).trim()).map(c=>({...c,name:String(c.name),measures:String(c.measures==null?'':c.measures),pulse:String(c.pulse==null?'':c.pulse),playbook:String(c.playbook==null?'':c.playbook)})):[];
-    if(!q.axisB.length) delete q.axisB;
   }
   if(typeof q.healthDimensions!=='string') q.healthDimensions=q.healthDimensions==null?'':String(q.healthDimensions);
   return q;
@@ -2399,10 +2418,17 @@ function renderCycle(){
     const phaseDots=CYCLE_PHASES.map((p,i)=>{
       const active=i<=phaseIdx;
       const color=active?PHASE_COLORS[p]:'var(--border)';
-      return `<span title="${PHASE_TITLES[p]}" role="button" tabindex="0" onkeydown="kbdActivate(event)" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'var(--fg-on-solid)':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</span>`;
+      // F25 (Cycle 7): native <button>s. They sat INSIDE a role="button" row, so
+      // assistive tech saw one button with its children flattened into its name,
+      // and a key press on a dot also reached the row. aria-pressed states which
+      // phases are marked; the name says which phase the dot sets.
+      return `<button type="button" class="ct-dot" title="${PHASE_TITLES[p]}" aria-label="${esc(g)}: ${PHASE_TITLES[p]}" aria-pressed="${active?'true':'false'}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'var(--fg-on-solid)':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</button>`;
     }).join('');
-    return `<div class="ct-item${isDone?' done':''}" role="button" tabindex="0" onkeydown="kbdActivate(event)" onclick="advancePhase(${argG})" style="justify-content:space-between">
-      <span class="ct-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g)}</span>
+    // The row stays clickable for the mouse; the keyboard reaches the same
+    // action through the label <button> — the label and the dots are siblings in
+    // the tab order, never controls nested inside another control.
+    return `<div class="ct-item${isDone?' done':''}" onclick="advancePhase(${argG})" style="justify-content:space-between">
+      <button type="button" class="ct-label" onclick="event.stopPropagation();advancePhase(${argG})" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:0;padding:0;font:inherit;font-size:11.5px;text-align:left;cursor:pointer">${esc(g)}</button>
       <div style="display:flex;gap:3px;flex-shrink:0;margin-left:6px">${phaseDots}</div>
     </div>`;
   }).join('');
@@ -3089,14 +3115,14 @@ function renderArchive(){
   el.innerHTML=all.map((e,i)=>{
     const isSeed=seeds.find(s=>s.id===e.id);
     return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
-      <div role="button" tabindex="0" onkeydown="kbdActivate(event)" onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+      <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
+        <button type="button" onclick="event.stopPropagation();toggleLog('arlog-${i}',this.parentNode)" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer">
           <span style="color:var(--accent);font-size:11px;flex-shrink:0">▶</span>
           <span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
-        </div>
+        </button>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
           <span style="font-size:11px;color:var(--text-muted);font-family:monospace">${esc(e.date)}</span>
-          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${jsArg((e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
+          ${!isSeed?`<button type="button" aria-label="Delete archive entry: ${esc(e.title)}" onclick="event.stopPropagation();deleteArchiveEntry(${jsArg((e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
           <span style="color:var(--text-muted);font-size:10px">▼</span>
         </div>
       </div>
@@ -4189,7 +4215,17 @@ function setNavOpen(open,restoreFocus){
   n.classList.toggle('open',!!open);
   const t=document.getElementById('navToggle');
   if(t&&t.setAttribute)t.setAttribute('aria-expanded',open?'true':'false');
-  if(open){ const first=n.querySelector&&n.querySelector('a[href^="#"]'); if(first&&first.focus)first.focus(); }
+  // F26: focus once the slide-in has FINISHED. The drawer is visibility:hidden
+  // while closed, and Chromium refused focus to its links until the transform
+  // transition ended (measured: synchronous, one rAF, two rAFs and setTimeout 0
+  // all failed; 250ms and transitionend worked). The timeout is the fallback for
+  // when no transition runs. Neither fires if focus is already in the drawer, so
+  // a fast Tab is never pulled back.
+  if(open){ const first=n.querySelector&&n.querySelector('a[href^="#"]'); if(first&&first.focus){
+    const go=()=>{ if(n.classList.contains('open')&&!(n.contains&&n.contains(document.activeElement))) first.focus(); };
+    if(typeof n.addEventListener==='function'){ const once=e=>{ if(e&&e.target!==n)return; n.removeEventListener('transitionend',once); go(); }; n.addEventListener('transitionend',once); }
+    if(typeof setTimeout==='function') setTimeout(go,300); else go();
+  } }
   // Only hand focus back if the drawer WAS open: Escape is a document-wide
   // listener, so on desktop (where the toggle is display:none) an unguarded
   // restore would fire on every Escape press.
@@ -4199,7 +4235,18 @@ function toggleNav(){ const n=document.getElementById('sidebar'); setNavOpen(!(n
 // Called on every nav-link click too, where focus is already on the link — only
 // an explicit dismissal (Escape, backdrop) hands focus back to the toggle.
 function closeNav(restoreFocus){ setNavOpen(false,restoreFocus); }
-try{ document.addEventListener('keydown',function(e){ if(e&&e.key==='Escape')closeNav(true); }); }catch(e){}
+// F26 (Cycle 7): while the mobile drawer is open, Tab and Shift+Tab wrap inside
+// it. Focus used to walk out of the open drawer onto controls it was covering.
+function trapNavFocus(e){
+  const n=document.getElementById('sidebar');
+  if(!n||!n.classList||!n.classList.contains('open')||!n.querySelectorAll)return;
+  const f=[...n.querySelectorAll('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent!==null);
+  if(!f.length)return;
+  const first=f[0], last=f[f.length-1], at=document.activeElement;
+  if(e.shiftKey&&(at===first||!n.contains(at))){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey&&(at===last||!n.contains(at))){ e.preventDefault(); first.focus(); }
+}
+try{ document.addEventListener('keydown',function(e){ if(!e)return; if(e.key==='Escape')closeNav(true); else if(e.key==='Tab')trapNavFocus(e); }); }catch(e){}
 
 // ─── DASHBOARD (live project status: GitHub primary, cache + self-reported fallback) ──
 function dashLoad(key){ let v; try{v=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}} return isPlainObj(v)?v:{}; }

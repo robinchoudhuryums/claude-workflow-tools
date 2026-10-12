@@ -709,8 +709,14 @@ if (loaded) {
     if (keyboardable) continue;
     // A <tr> may instead delegate to a native button carrying the same handler.
     const fn = (tag.match(/onclick="(?:event\.stopPropagation\(\);)?([a-zA-Z0-9_]+)\(/) || [])[1];
-    const after = markup.slice(m.index, m.index + 700);
-    if (fn && /<button\b[^>]*onclick="[^"]*\b/.test(after) && after.includes(fn + '(')) continue;
+    // The nested button must come AFTER the row's own tag and its OWN onclick
+    // must call the same function. The first version searched a window that
+    // began at the row's tag — whose onclick always contains fn( — so ANY button
+    // with any onclick within 700 chars counted as delegation. It went unnoticed
+    // until Cycle-7 Batch 4 put real buttons inside the tracker and archive rows,
+    // and stripping role="button" from the variant toggles still passed.
+    const rest = markup.slice(m.index + tag.length, m.index + tag.length + 700);
+    if (fn && [...rest.matchAll(/<button\b[^>]*\bonclick="([^"]*)"/g)].some(b => b[1].includes(fn + '('))) continue;
     bad_.push(tag.slice(0, 70));
   }
   if (!bad_.length) ok('every click-only control is keyboard-reachable (role+tabindex+keydown, or a native button) — R18 (a)1');
@@ -1196,6 +1202,11 @@ if (loaded) {
     const accept = ctx.stateBackupKeys({ data: { [`ccg:${firstId}:cycle`]: '{}', [`ccg:${firstId}:archive`]: '[]', 'ccg:dashCache': '{}' } });
     if (refuse.reason !== 'bad-shape' || refuse.badKey !== `ccg:${firstId}:cycle` || refuse2.reason !== 'bad-shape' || accept.reason) problems.push(`import shape validation wrong (refuse=${refuse.reason}/${refuse.badKey}, refuse2=${refuse2.reason}, accept=${accept.reason})`);
     if (!/bad-shape/.test(src.slice(src.indexOf('function importStateFile'), src.indexOf('function importStateFile') + 3000)) || !/bad-shape/.test(src.slice(src.indexOf('async function loadStateFromRepo'), src.indexOf('async function loadStateFromRepo') + 2500))) problems.push('a bad-shape rejection is not reported by BOTH import paths (file import and load-from-repo)');
+    // A blank Axis B field saves axisB: [] — a valid project, not a repair. The
+    // first F16 version deleted the empty list and reported every such project
+    // as "repaired" on each load.
+    const blank = { id: 'b', name: 'B', subsystems: [], invariants: [], seeds: [], healthDimensions: 'A', axisB: [] };
+    if (JSON.stringify(ctx.normalizeProject(blank)) !== JSON.stringify(blank)) problems.push('a project saved with a blank Axis B field is treated as needing repair');
     if (!problems.length) ok('malformed tracker, invariants, archive, dashboard and Axis B values neither brick init nor get past import (F16)');
     else bad('F16: ' + problems.join('; '));
   }
@@ -1274,6 +1285,61 @@ if (loaded) {
     if (!problems.length) ok('a malformed repo spec is a visible failure, STATE.md errors keep their reason, bad specs are refused at save, fetches time out (F14)');
     else bad('F14: ' + problems.join('; '));
   }
+}
+
+// Cycle-7 Batch 4 — keyboard & layout. Behaviour that needs real geometry or
+// focus was verified in Chromium (the scan's probes, re-run after the fix); what
+// is pinned here is the structure each fix rests on.
+if (loaded) {
+  const problems = [];
+  // F24 — a key activation stops at the control that handled it.
+  let stopped = false, clicked = false;
+  ctx.kbdActivate({ key: 'Enter', preventDefault() {}, stopPropagation() { stopped = true; }, currentTarget: { click() { clicked = true; } } });
+  if (!stopped || !clicked) problems.push(`kbdActivate must click its control AND stop propagation (clicked=${clicked}, stopped=${stopped}) — F24`);
+  // F25 — no control nested inside a role="button" row; dots are named, pressed-state buttons.
+  ctx.renderCycle();
+  const ct = getEl('ctItems').innerHTML;
+  if (/role="button"/.test(ct)) problems.push('the cycle tracker still renders a role="button" row containing controls (F25)');
+  const dots = [...ct.matchAll(/<button\b[^>]*class="ct-dot"[^>]*>/g)].map(m => m[0]);
+  if (!dots.length || dots.some(d => !/aria-pressed="(true|false)"/.test(d) || !/aria-label="[^"]+"/.test(d))) problems.push('tracker phase dots must be <button>s with aria-label and aria-pressed (F25)');
+  for (const k of Object.keys(store)) if (/:archive$/.test(k)) delete store[k];
+  store[`ccg:${vm.runInContext('activeProjectId', ctx)}:archive`] = JSON.stringify([{ id: 'x1', title: 'Entry', date: '2026-01-01', content: 'c' }]);
+  ctx.renderArchive();
+  const ar = getEl('archiveEntries').innerHTML;
+  if (/role="button"/.test(ar)) problems.push('an archive header is still a role="button" containing the delete button (F25)');
+  if (!/<button\b[^>]*aria-label="Delete archive entry: Entry"/.test(ar)) problems.push('the archive delete button has no accessible name beyond "×" (F25)');
+  // F26 — the closed drawer is out of the tab order; the open one wraps focus.
+  const mq = (html.match(/@media\(max-width:768px\)\{([\s\S]*?)\n\}/) || [])[1] || '';
+  if (!/\bnav\{[^}]*visibility:hidden/.test(mq) || !/nav\.open\{[^}]*visibility:visible/.test(mq)) problems.push('the closed mobile drawer is only moved off-screen, not visibility:hidden — its links stay in the tab order (F26)');
+  if (typeof ctx.trapNavFocus !== 'function') problems.push('no focus trap for the open drawer (F26)');
+  else {
+    const fakeFocus = id => ({ id, disabled: false, offsetParent: {}, focus() { focusedTo = id; } });
+    let focusedTo = null;
+    const first = fakeFocus('first'), last = fakeFocus('last');
+    const navStub = { classList: makeClassList(new Set(['open'])), querySelectorAll: () => [first, last], contains: el => el === first || el === last };
+    const realGet = ctx.document.getElementById;
+    ctx.document.getElementById = id => (id === 'sidebar' ? navStub : realGet(id));
+    try {
+      let prevented = false;
+      ctx.document.activeElement = last;
+      ctx.trapNavFocus({ key: 'Tab', shiftKey: false, preventDefault() { prevented = true; } });
+      if (focusedTo !== 'first' || !prevented) problems.push('Tab on the last drawer control does not wrap to the first (F26)');
+      focusedTo = null; ctx.document.activeElement = first;
+      ctx.trapNavFocus({ key: 'Tab', shiftKey: true, preventDefault() {} });
+      if (focusedTo !== 'last') problems.push('Shift+Tab on the first drawer control does not wrap to the last (F26)');
+      navStub.classList.remove('open'); focusedTo = null; ctx.document.activeElement = last;
+      ctx.trapNavFocus({ key: 'Tab', shiftKey: false, preventDefault() {} });
+      if (focusedTo !== null) problems.push('the focus trap acts while the drawer is CLOSED (F26)');
+    } finally { ctx.document.getElementById = realGet; delete ctx.document.activeElement; }
+  }
+  // F22 — invariant tables do not inherit the subsystem table's nowrap first column.
+  if (!/<table class="st inv" id="invariantTable">/.test(html) || !/<table class="st inv" id="seamsInvariantTable">/.test(html)) problems.push('the invariant tables do not carry the .inv modifier (F22)');
+  if (/table\.st td:first-child\{[^}]*white-space:nowrap/.test(html)) problems.push('table.st td:first-child is nowrap again — rule text pushes the Subsystem column out of the wrapper (F22)');
+  if (!/table\.st\.inv td:first-child\{[^}]*width:auto/.test(html)) problems.push('no width rule for the invariant table rule column (F22)');
+  // F23 — main can shrink below its content's min-content width.
+  if (!/\nmain\{[^}]*min-width:0/.test(html)) problems.push('main has no min-width:0 — unwrappable content widens it past the viewport between 769px and ~1136px (F23)');
+  if (!problems.length) ok('keyboard & layout: activation stops at its control, no nested controls in tracker/archive, the closed drawer leaves the tab order and the open one wraps focus, invariant tables wrap, main can shrink (F22–F26)');
+  else bad(problems.join('; '));
 }
 
 // INV-67 — every id in the MARKUP is unique. getElementById() returns the FIRST

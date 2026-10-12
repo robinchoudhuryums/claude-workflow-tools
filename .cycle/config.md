@@ -436,7 +436,7 @@ machine or after a release.
   `/audit`, `/targeted-audit`** (CYCLE OPEN step), **the three implement
   commands, `/cycle-resume`, `/reflect` and `/cycle-init`** (who writes Cycle
   and Phase). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0,
-  v1.28.0, v1.30.0–v1.30.1, v1.31.0–v1.32.0, v1.36.0 and v1.37.0 changed none.
+  v1.28.0, v1.30.0–v1.30.1, v1.31.0–v1.32.0 and v1.36.0–v1.38.0 changed none.
 - **One-time, projects configured from the CONSOLE's Setup prompt before
   v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing
   surfaces and never proposed an interface Health Dimension. Re-check whether

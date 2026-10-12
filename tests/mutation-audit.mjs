@@ -67,7 +67,8 @@ const CASES = {
   'INV-15': [[HTML, 'const axisB=getAxisB(project);', 'const axisB=DEFAULT_AXIS_B;', /INV-15/]],
   // Field-level tier: one sink at a time (§4v found the all-at-once form green).
   'INV-20': [
-    [HTML, 'white-space:nowrap">${esc(g)}</span>', 'white-space:nowrap">${g}</span>', /unescaped stored content|injected data executed/i],
+    // Cycle-7 Batch 4 (F25): the tracker label became a native <button>.
+    [HTML, 'text-align:left;cursor:pointer">${esc(g)}</button>', 'text-align:left;cursor:pointer">${g}</button>', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.text)}', '${inv.text}', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.subsystem)}', '${inv.subsystem}', /unescaped stored content|injected data executed/i],
     // F01/F09 — the fill form renders only on interaction; these prove the

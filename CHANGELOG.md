@@ -5,6 +5,43 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.38.0 — 2026-10-12
+
+Cycle-7 Batch 4: console keyboard and layout. Console-only — **no command-body
+or config-schema change, so no `/sync-commands` re-pull.** Every fix was verified
+in headless Chromium by re-running the scan's own probes, and pinned by a
+check-html case that was proven to fail with its fix reverted.
+
+- **F24 — Enter on a cycle-tracker phase dot recorded the wrong phase.**
+  `kbdActivate` did not stop the event, so the dot's keydown also reached the
+  row's handler: a click marked "audit", Enter marked "implement". It now stops
+  at the control that handled it.
+- **F25 — controls nested inside `role="button"` rows.** The archive's "×" sat
+  inside a role-button header, so Enter toggled the entry and never deleted it;
+  the tracker's phase dots sat inside a role-button row, so screen readers heard
+  one button with its children flattened into its name. Both are now native
+  buttons that are siblings, not descendants: the archive delete button is named
+  "Delete archive entry: <title>", and each phase dot is named and carries
+  `aria-pressed`.
+- **F26 — the mobile drawer.** Closed, it was only moved off-screen, so its 71
+  links stayed in the tab order ahead of the page; it is now `visibility:hidden`
+  (applied after the slide-out). Open, focus now wraps inside it, and opening it
+  moves focus to the first link once the slide-in ends (Chromium refused focus
+  until then — measured).
+- **F22 — invariant tables clipped their Subsystem column.** They reused the
+  subsystem table's nowrap 44% first column, so rule text pushed the Subsystem
+  column out of view on every row at every width, and cut the rule mid-sentence
+  on mobile. They now carry their own column rules.
+- **F23 — sideways page scroll from 769px to ~1136px.** `main` is a flex item and
+  had no `min-width:0`, so unwrappable content widened it past the viewport.
+
+Also: the INV-49 keyboard-reachability guard counted ANY nearby button with an
+onclick as "delegation", because it searched a window that began at the row's
+own tag. Putting real buttons inside the tracker and archive rows exposed it (the
+INV-49 mutation case went false green); it now requires a later button whose own
+onclick calls the row's function. And a Batch-2 (v1.36.0) slip is fixed: a
+project saved with a blank Axis B field was reported as "repaired" on every load.
+
 ## 1.37.0 — 2026-10-12
 
 Cycle-7 Batch 3: the scripts consuming projects run. **No command-body or
