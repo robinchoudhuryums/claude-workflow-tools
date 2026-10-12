@@ -432,7 +432,10 @@ machine or after a release.
   skeleton); **v1.29.0 changed `/setup-cycle`** (three elaborations restored
   from the console copy); **v1.34.0 changed `/broad-scan`** (Stage 1
   dead/superseded-artifact lens; G/ST IDs and a separate EXPANSION PLAN)
-  **and `/broad-implement`** (accepts G/ST IDs). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0,
+  **and `/broad-implement`** (accepts G/ST IDs); **v1.35.0 changed `/broad-scan`,
+  `/audit`, `/targeted-audit`** (CYCLE OPEN step), **the three implement
+  commands, `/cycle-resume`, `/reflect` and `/cycle-init`** (who writes Cycle
+  and Phase). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0,
   v1.28.0, v1.30.0–v1.30.1 and v1.31.0–v1.32.0 changed none.
 - **One-time, projects configured from the CONSOLE's Setup prompt before
   v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing

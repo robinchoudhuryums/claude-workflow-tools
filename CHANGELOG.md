@@ -5,6 +5,44 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.35.0 — 2026-10-12
+
+Cycle-7 Batch 1: every `.cycle/` state write now has an owner, and no prompt
+forbids the write it asks for. **Command-body change** — consuming projects
+should re-pull with `/sync-commands` (`/broad-scan`, `/audit`,
+`/targeted-audit`, `/broad-implement`, `/targeted-implement`, `/implement`,
+`/cycle-resume`, `/reflect`, `/cycle-init`).
+
+- **F01 — nothing incremented `Cycle:`.** The rule said it "increments by 1
+  when a NEW audit cycle begins", but every audit is read-only and no command
+  mentioned the field, so it moved only by hand (Cycle 6's bump happened inside
+  an implement commit). `/broad-scan`, `/audit` and `/targeted-audit` now carry
+  a **CYCLE OPEN** step — their one permitted write — that increments Cycle and
+  sets `Phase: audit`, unless Phase is already `audit` (a parallel or re-run
+  audit of an open cycle). Implement CHECKPOINTs and `/cycle-resume` set
+  `Phase: implement` and never touch Cycle; `/reflect` sets `Phase: reflect`;
+  `/cycle-init` starts the field at 0 instead of copying the template
+  placeholder, so the first audit makes it 1. The rule no longer requires a
+  prior `/reflect` — Tier-1 cycles never run one. `check-template-sync`'s
+  `.cycle/`-write gating check (INV-12) now covers the new step name.
+- **F02 — the Seams counter reset never reached the agent.** It sat in prose
+  outside the §1s prompt body, whose first line forbade any write. The body now
+  ends with a gated SEAM COUNTER step and permits exactly that write; its
+  hardcoded "every 3–4 subsystem cycles" now points at the configured cadence.
+- **F03 — §6a's step 8 metrics append contradicted its own opener.** The opener
+  now permits it.
+- **F04 — `/reflect`'s write exemption omitted its BLOCKS step**, and the block
+  filename's `<letter>` was never defined. Both fixed.
+- **F06 — `/broad-implement` sent the agent to Common Gotchas for the invariant
+  library**; it now names the Invariant Library section.
+
+Mirrored into the console (the dynamic builders by hand, the static prompts by
+`gen-html-prompts --write`); `.claude/commands/` regenerated. The INV-72 mutation
+case was cycle-bound (a fake 1.30.2 release only fell inside the floor while the
+cycle was 6) and went FALSE GREEN the moment Cycle 7 opened; it now pins STATE.md
+back to Cycle 6 instead, which stays violating in every later cycle. A second
+INV-12 case proves the gating check covers CYCLE OPEN. 83 mutations, 73/73 proven.
+
 ## 1.34.0 — 2026-10-12
 
 Two `/broad-scan` changes bundled into one release, plus a small

@@ -808,7 +808,7 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
       <div class="fill-form" id="fill-p1"></div>
       <pre id="p1">Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
 Cycle Workflow Config) before starting. Do not make any changes to any
-files during this session.
+files during this session, other than the optional CYCLE OPEN step below.
 
 This session's scope: [SUBSYSTEM GROUP NAME]
 
@@ -821,6 +821,16 @@ This session's scope: [SUBSYSTEM GROUP NAME]
 If this scope is listed under Frozen Subsystems in the Cycle Workflow
 Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from
@@ -1116,7 +1126,8 @@ DOCUMENTATION UPDATES NEEDED:
    "Where I left off") so /cycle-resume can continue, AND write the
    summary block verbatim to
    .cycle/blocks/&lt;cycle&gt;-&lt;version-or-scope&gt;-implement.md so §4v and §6a
-   can read it in a fresh session. Skip both if no .cycle/.
+   can read it in a fresh session. Set Phase: implement; never change
+   Cycle — the audit's CYCLE OPEN step owns it. Skip both if no .cycle/.
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
@@ -1225,8 +1236,8 @@ Prioritize the verification list by likelihood of breakage. Then:
           </div>
         </div>
         <pre id="p4reflect">Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics / estimates / STATE
-counter appends below).
+during this session (other than the optional metrics / estimates / blocks
+writes and the STATE counter and phase update below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -1305,7 +1316,9 @@ spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
 
 BLOCKS (optional — only if .cycle/ exists): write the CYCLE SUMMARY BLOCK
-verbatim to .cycle/blocks/&lt;cycle&gt;-&lt;letter&gt;-reflect.md. §4v and §6a consume it
+verbatim to .cycle/blocks/&lt;cycle&gt;-&lt;letter&gt;-reflect.md, where &lt;letter&gt; is the
+next unused lowercase letter among this cycle's non-release blocks (a for the
+first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
 summary reported, say so in the metrics `notes` field — the pack assembler
@@ -1316,7 +1329,9 @@ remembered. Skip if no .cycle/.
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
 completes a subsystem cycle, and the count drives /audit's seams-cadence
-reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</pre>
+reminder. (A Seams &amp; Invariants audit resets it to 0.) In the same write,
+set Phase: reflect and Updated — leave Cycle alone; the next audit's CYCLE
+OPEN step opens the next cycle. Skip if no .cycle/.</pre>
       </div>
     </div>
   </section>
@@ -2411,7 +2426,8 @@ function buildP6aText(project){
   const axisBList=axisB.map((c,i)=>`${i+1}. ${c.name} (score 1–10)\n   Measured by: ${c.measures||'trend in findings of this shape this cycle vs. prior, and whether a durable guard exists against the pattern.'}`).join('\n\n');
   const axisBGrid=axisB.map(c=>`${c.name.padEnd(32)}X/10      Improving/Stable/Degrading`).join('\n');
   const axisBPlaybooks=axisB.map(c=>`${c.name} triggered → ${c.playbook||'Identify the systemic root cause and add a concrete, durable guard (test, lint rule, startup check, or consolidation) so the pattern cannot silently recur. One guard per cycle until the category score recovers.'}`).join('\n\n');
-  return `Do not make any changes to any files during this session.
+  return `Do not make any changes to any files during this session, other than the
+optional metrics.csv append in step 8.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
 (Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
@@ -3068,7 +3084,18 @@ function buildTier1Text(project){
   return `Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
 README, and the roadmap carefully before doing anything else.
 
-Do not make any changes to any files during the audit phase.
+Do not make any changes to any files during the audit phase, other than
+the optional CYCLE OPEN step below.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 This audit runs in three stages within this session. Complete each stage fully before starting the next.
 
@@ -3292,13 +3319,24 @@ items) to implement. Do not implement anything until then.`;
 function buildTier2AuditText(project){
   return `Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
 the Cycle Workflow Config) before starting. Do not make any changes
-to any files during this session.
+to any files during this session, other than the optional CYCLE OPEN
+step below.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 
 This session's scope: [SUBSYSTEM GROUP NAME]
 Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 If [SUBSYSTEM GROUP NAME] names a subsystem listed in \`Frozen Subsystems\`:
 print this banner at the top of your output before continuing, then
@@ -3442,7 +3480,9 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed actions, any actions
 not finished, open follow-on items, decisions made, and a "Where I left
 off" line. This lets /cycle-resume continue cleanly in a fresh session
-if context runs out. If .cycle/ does not exist, skip this step.
+if context runs out. Set Phase: implement; leave Cycle exactly as the
+audit's CYCLE OPEN step set it — implement sessions never increment it.
+If .cycle/ does not exist, skip this step.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-targeted-implement.md (create the
@@ -3530,7 +3570,8 @@ Tally: [production fixes] − [new failure modes] = [net score]
 
 4. INVARIANT CHECK
 Check whether any changes could have violated invariants from the project's
-invariant library (listed in CLAUDE.md Common Gotchas). Flag any at risk.
+invariant library (the Invariant Library section of CLAUDE.md's Cycle
+Workflow Config). Flag any at risk.
 
 5. SUMMARY
 Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
@@ -3571,8 +3612,11 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed findings, any
 selected findings not finished, open follow-on items, decisions made,
 and a "Where I left off" line. This lets /cycle-resume continue cleanly
-in a fresh session if context runs out. If .cycle/ does not exist, skip
-this step — the summary block above is the record, as usual.
+in a fresh session if context runs out. Set Phase: implement; leave Cycle
+exactly as the audit's CYCLE OPEN step set it — implement sessions never
+increment it, so every batch from one audit names its block with the
+same number. If .cycle/ does not exist, skip this step — the summary
+block above is the record, as usual.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-broad-implement.md (create the
@@ -3759,11 +3803,12 @@ function buildSeamsText(project){
     : '  (No invariants defined yet — this audit will create the initial library)';
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
   const subsysList=groups.map(g=>`  - ${g}`).join('\n');
-  return `Do not make any changes to any files during this session.
+  return `Do not make any changes to any files during this session, other than the
+optional SEAM COUNTER reset at the end.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 
-This is a Seams & Invariants Audit. It runs every 3–4 subsystem cycles and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
+This is a Seams & Invariants Audit. It runs on the project's Seams Audit Cadence (Cycle Workflow Config; default every 4 subsystem cycles) and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
 
 Project subsystems for reference:
 ${subsysList}
@@ -3854,7 +3899,13 @@ Test Coverage: [observations]
 
 RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
 [Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
----END SEAMS & INVARIANTS AUDIT BLOCK---`;
+---END SEAMS & INVARIANTS AUDIT BLOCK---
+
+SEAM COUNTER (optional — only if .cycle/ exists): reset "Subsystem cycles
+since last Seams audit" in .cycle/STATE.md to 0. This audit is what that
+counter measures — /audit and /cycle-status read it to report the next one
+DUE — so leaving it unreset reports DUE forever. This is the only file
+write this session may make. Skip if no .cycle/.`;
 }
 
 function renderSeams(){

@@ -1,7 +1,18 @@
-Do not make any changes to any files during the audit phase.
+Do not make any changes to any files during the audit phase, other than
+the optional CYCLE OPEN step below.
 
 Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
 README, and the roadmap carefully before doing anything else.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 This audit runs in three stages within this session. Complete each stage fully before starting the next.
 

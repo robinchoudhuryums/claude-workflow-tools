@@ -1,6 +1,6 @@
 Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics / estimates / STATE
-counter appends below).
+during this session (other than the optional metrics / estimates / blocks
+writes and the STATE counter and phase update below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -79,7 +79,9 @@ spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
 
 BLOCKS (optional — only if .cycle/ exists): write the CYCLE SUMMARY BLOCK
-verbatim to .cycle/blocks/<cycle>-<letter>-reflect.md. §4v and §6a consume it
+verbatim to .cycle/blocks/<cycle>-<letter>-reflect.md, where <letter> is the
+next unused lowercase letter among this cycle's non-release blocks (a for the
+first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
 summary reported, say so in the metrics `notes` field — the pack assembler
@@ -90,4 +92,6 @@ remembered. Skip if no .cycle/.
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
 completes a subsystem cycle, and the count drives /audit's seams-cadence
-reminder. (A Seams & Invariants audit resets it to 0.) Skip if no .cycle/.
+reminder. (A Seams & Invariants audit resets it to 0.) In the same write,
+set Phase: reflect and Updated — leave Cycle alone; the next audit's CYCLE
+OPEN step opens the next cycle. Skip if no .cycle/.
