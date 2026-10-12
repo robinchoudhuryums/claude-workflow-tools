@@ -432,8 +432,11 @@ machine or after a release.
   skeleton); **v1.29.0 changed `/setup-cycle`** (three elaborations restored
   from the console copy); **v1.34.0 changed `/broad-scan`** (Stage 1
   dead/superseded-artifact lens; G/ST IDs and a separate EXPANSION PLAN)
-  **and `/broad-implement`** (accepts G/ST IDs). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0,
-  v1.28.0, v1.30.0–v1.30.1 and v1.31.0–v1.32.0 changed none.
+  **and `/broad-implement`** (accepts G/ST IDs); **v1.35.0 changed `/broad-scan`,
+  `/audit`, `/targeted-audit`** (CYCLE OPEN step), **the three implement
+  commands, `/cycle-resume`, `/reflect` and `/cycle-init`** (who writes Cycle
+  and Phase). v1.19.1, v1.20.0–v1.22.0, v1.24.0, v1.25.0,
+  v1.28.0, v1.30.0–v1.30.1, v1.31.0–v1.32.0 and v1.36.0–v1.38.0 changed none.
 - **One-time, projects configured from the CONSOLE's Setup prompt before
   v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing
   surfaces and never proposed an interface Health Dimension. Re-check whether
@@ -449,6 +452,11 @@ machine or after a release.
   invariants. The pack is not wrong about the library, only unauditable about
   its own probe selection; `node scripts/verification-pack.mjs` now discloses
   the seed it used (INV-70).
+- **Consuming projects using the §4v pack (v1.37.0):** `verification-pack.mjs`
+  reads the §4v body from the template repo's CLAUDE.md, which a consuming
+  project does not have. Run the template checkout's script from inside the
+  project, or pass `--template <claude-workflow-tools>/CLAUDE.md`. A copied
+  script also needs `gen-html-prompts.mjs` and `csv.mjs` beside it.
 - **Consuming projects that copy individual scripts:** `portfolio.mjs` and
   `portfolio-status.mjs` now import `scripts/health-fields.mjs` (the one
   definition of the PROJECT_HEALTH "Current Standing" labels, INV-71). Copy it

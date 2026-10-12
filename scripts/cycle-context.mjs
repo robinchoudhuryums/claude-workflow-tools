@@ -43,7 +43,9 @@ try {
 
   const hasCfg = existsSync(join(root, '.cycle', 'config.md'));
   const cfg = (hasCfg && read(join(root, '.cycle', 'config.md'))) || read(join(root, 'CLAUDE.md'));
-  const invCount = cfg ? (cfg.match(/^INV-\d+\s*\|/gm) || []).length : 0;
+  // F35 (Cycle 7): tolerate leading whitespace, matching the INV-68 floor's
+  // ground truth, so the hook counts what invariant-check and the pack parse.
+  const invCount = cfg ? (cfg.match(/^[ \t]*INV-\d+\s*\|/gm) || []).length : 0;
   if (invCount) out.push(`\nInvariant library: ${invCount} invariants (see ${hasCfg ? '.cycle/config.md' : 'CLAUDE.md'}). Carry these forward; re-derive audit findings with fresh eyes.`);
 
   out.push('\nSubstrate above carries forward; a new audit uses fresh eyes. Run /cycle-status for the full picture, /cycle-resume to continue in-progress work.');

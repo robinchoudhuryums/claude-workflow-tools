@@ -71,7 +71,9 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed actions, any actions
 not finished, open follow-on items, decisions made, and a "Where I left
 off" line. This lets /cycle-resume continue cleanly in a fresh session
-if context runs out. If .cycle/ does not exist, skip this step.
+if context runs out. Set Phase: implement; leave Cycle exactly as the
+audit's CYCLE OPEN step set it — implement sessions never increment it.
+If .cycle/ does not exist, skip this step.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-targeted-implement.md (create the

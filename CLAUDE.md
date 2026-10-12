@@ -133,11 +133,17 @@ always fresh** and never inherits the previous scan's findings as conclusions.
 
 **Cycle numbering (single source of truth):** the `Cycle:` field in
 `.cycle/STATE.md` is authoritative. It increments by 1 when a NEW audit
-cycle begins — a fresh `/broad-scan` or `/audit` started after the prior
-cycle's `/reflect` (or its Health Synthesis) completed; the initial
-`/setup-cycle` + first broad-scan is **Cycle 1**. Every phase within a
-cycle (audit → plan → implement → regression → reflect) carries the SAME
-number. `/reflect` stamps the `metrics.csv` `cycle` column from this field
+cycle begins, and the audit that begins it owns the write: `/broad-scan`,
+`/audit` and `/targeted-audit` each carry a CYCLE OPEN step — their one
+permitted file write — that increments it and sets `Phase: audit`, unless
+Phase is already `audit` (a parallel or re-run audit of a cycle that is
+already open). `/cycle-init` starts the field at 0, so the initial
+`/setup-cycle` + first broad-scan is **Cycle 1**. Every later phase within
+a cycle (plan → implement → regression → reflect) carries the SAME number
+and never increments it; the implement CHECKPOINTs set `Phase: implement`
+and `/reflect` sets `Phase: reflect`. (Until v1.35.0 no command performed
+this write — every audit was read-only — so the number moved only when
+someone edited it by hand.) `/reflect` stamps the `metrics.csv` `cycle` column from this field
 (never invents one), and `/cycle-status` surfaces it.
 
 ### Optional `.cycle/` state directory (per project)
@@ -204,7 +210,8 @@ And two helpers operate on the invariant library:
   reports PASS/FAIL; prose/test-name `Verify:` fields are reported
   MANUAL. This is the automated half of the §4v invariant probe — write
   `Verify:` as a runnable command and the invariant becomes a test.
-  `--list` shows the classification without running.
+  `--list` shows the classification without running; `--timeout SECONDS`
+  (default 1800) kills a hung Verify command and reports it as a timeout.
 - `tests/mutation-audit.mjs` — the **other half of that proof**. A
   `Verify:` command passing on a clean tree is not evidence it would FAIL
   if the rule were violated; a command that cannot see its own invariant
@@ -233,7 +240,11 @@ And one assembles the independent-verification input:
   command the pack printed returned a different five. It also reads
   `metrics.csv` and warns the verifier automatically when `/reflect` recorded a
   correction to a self-reported count.
-  `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]`
+  `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE] [--root DIR] [--project NAME] [--template PATH]`
+  The project is the working directory (or `--root`). The §4v body exists only
+  in this repo's CLAUDE.md, so from a consuming project either run this repo's
+  copy of the script from inside the project, or pass `--template <path to this
+  repo's CLAUDE.md>`; it needs `gen-html-prompts.mjs` and `csv.mjs` beside it.
 
 And two operate across projects:
 - `scripts/portfolio.mjs` — aggregates several projects' `PROJECT_HEALTH.md`
@@ -259,7 +270,7 @@ the pure copy-paste workflow with no loss.
 # Cycle State
 
 ## Current
-Cycle: [N — single source of truth; increments only when a new audit cycle begins]
+Cycle: [N — single source of truth; the audit that opens a cycle increments it (CYCLE OPEN)]
 Phase: [audit | plan | implement | regression | verify | reflect | idle]
 Scope: [subsystem(s) or "broad"]
 Test Command: [from Cycle Workflow Config]
@@ -543,10 +554,21 @@ For any Medium or Low, explain what you'd need to verify.
 ### /broad-scan
 
 ```
-Do not make any changes to any files during the audit phase.
+Do not make any changes to any files during the audit phase, other than
+the optional CYCLE OPEN step below.
 
 Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
 README, and the roadmap carefully before doing anything else.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 This audit runs in three stages within this session. Complete each stage fully before starting the next.
 
@@ -842,7 +864,8 @@ Tally: [production fixes] − [new failure modes] = [net score]
 
 4. INVARIANT CHECK
 Check whether any changes could have violated invariants from the project's
-invariant library (listed in CLAUDE.md Common Gotchas). Flag any at risk.
+invariant library (the Invariant Library section of CLAUDE.md's Cycle
+Workflow Config). Flag any at risk.
 
 5. SUMMARY
 Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
@@ -883,8 +906,11 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed findings, any
 selected findings not finished, open follow-on items, decisions made,
 and a "Where I left off" line. This lets /cycle-resume continue cleanly
-in a fresh session if context runs out. If .cycle/ does not exist, skip
-this step — the summary block above is the record, as usual.
+in a fresh session if context runs out. Set Phase: implement; leave Cycle
+exactly as the audit's CYCLE OPEN step set it — implement sessions never
+increment it, so every batch from one audit names its block with the
+same number. If .cycle/ does not exist, skip this step — the summary
+block above is the record, as usual.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-broad-implement.md (create the
@@ -916,11 +942,22 @@ Example: /targeted-audit Security & Compliance
 
 Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
 the Cycle Workflow Config) before starting. Do not make any changes
-to any files during this session.
+to any files during this session, other than the optional CYCLE OPEN
+step below.
 
 This session's scope: $ARGUMENTS
 Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 If $ARGUMENTS names a subsystem listed in `Frozen Subsystems`:
 print this banner at the top of your output before continuing, then
@@ -1065,7 +1102,9 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed actions, any actions
 not finished, open follow-on items, decisions made, and a "Where I left
 off" line. This lets /cycle-resume continue cleanly in a fresh session
-if context runs out. If .cycle/ does not exist, skip this step.
+if context runs out. Set Phase: implement; leave Cycle exactly as the
+audit's CYCLE OPEN step set it — implement sessions never increment it.
+If .cycle/ does not exist, skip this step.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-targeted-implement.md (create the
@@ -1091,7 +1130,7 @@ Workflow Config.
 
 Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
 Cycle Workflow Config) before starting. Do not make any changes to any
-files during this session.
+files during this session, other than the optional CYCLE OPEN step below.
 
 This session's scope: $ARGUMENTS
 
@@ -1104,6 +1143,16 @@ This session's scope: $ARGUMENTS
 If this scope is listed under Frozen Subsystems in the Cycle Workflow
 Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from
@@ -1317,7 +1366,8 @@ DOCUMENTATION UPDATES NEEDED:
    "Where I left off") so /cycle-resume can continue, AND write the
    summary block verbatim to
    .cycle/blocks/<cycle>-<version-or-scope>-implement.md so §4v and §6a
-   can read it in a fresh session. Skip both if no .cycle/.
+   can read it in a fresh session. Set Phase: implement; never change
+   Cycle — the audit's CYCLE OPEN step owns it. Skip both if no .cycle/.
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.
 ```
@@ -1360,8 +1410,8 @@ Prioritize the verification list by likelihood of breakage. Then:
 
 ```
 Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics / estimates / STATE
-counter appends below).
+during this session (other than the optional metrics / estimates / blocks
+writes and the STATE counter and phase update below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -1440,7 +1490,9 @@ spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
 
 BLOCKS (optional — only if .cycle/ exists): write the CYCLE SUMMARY BLOCK
-verbatim to .cycle/blocks/<cycle>-<letter>-reflect.md. §4v and §6a consume it
+verbatim to .cycle/blocks/<cycle>-<letter>-reflect.md, where <letter> is the
+next unused lowercase letter among this cycle's non-release blocks (a for the
+first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
 summary reported, say so in the metrics `notes` field — the pack assembler
@@ -1451,7 +1503,9 @@ remembered. Skip if no .cycle/.
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
 completes a subsystem cycle, and the count drives /audit's seams-cadence
-reminder. (A Seams & Invariants audit resets it to 0.) Skip if no .cycle/.
+reminder. (A Seams & Invariants audit resets it to 0.) In the same write,
+set Phase: reflect and Updated — leave Cycle alone; the next audit's CYCLE
+OPEN step opens the next cycle. Skip if no .cycle/.
 ```
 
 ### /health-pulse
@@ -1716,8 +1770,10 @@ No implementation phase. Produces:
 - Invariant discovery (new rules from seam analysis; assign INV-N = library max + 1, never reuse a number)
 - Horizontal bug-shape observations (evidence for Axis B scoring)
 
-On completion, reset "Subsystem cycles since last Seams audit" to 0 in
-`.cycle/STATE.md` (if the project uses `.cycle/`).
+The body's closing SEAM COUNTER step resets "Subsystem cycles since last
+Seams audit" to 0 in `.cycle/STATE.md` (if the project uses `.cycle/`). Until
+v1.35.0 that instruction sat here, outside the prompt body, so it never reached
+the agent and the counter reset only by hand.
 
 Canonical prompt body — the §1s console builder (`buildSeamsText`) is locked to
 this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16). The project
@@ -1725,11 +1781,12 @@ subsystem list and the current invariant library are injected at render time;
 bracketed lines are render-time placeholders.
 
 ```
-Do not make any changes to any files during this session.
+Do not make any changes to any files during this session, other than the
+optional SEAM COUNTER reset at the end.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 
-This is a Seams & Invariants Audit. It runs every 3–4 subsystem cycles and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
+This is a Seams & Invariants Audit. It runs on the project's Seams Audit Cadence (Cycle Workflow Config; default every 4 subsystem cycles) and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
 
 Project subsystems for reference:
 [the project subsystem list is injected here per project]
@@ -1820,6 +1877,12 @@ Test Coverage: [observations]
 RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
 [Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
 ---END SEAMS & INVARIANTS AUDIT BLOCK---
+
+SEAM COUNTER (optional — only if .cycle/ exists): reset "Subsystem cycles
+since last Seams audit" in .cycle/STATE.md to 0. This audit is what that
+counter measures — /audit and /cycle-status read it to report the next one
+DUE — so leaving it unreset reports DUE forever. This is the only file
+write this session may make. Skip if no .cycle/.
 ```
 
 ### Health Synthesis (Section 6a in HTML tool)
@@ -1837,7 +1900,8 @@ bracketed lines are render-time placeholders. (This is the builder Cycle-4 F1
 silently broke — the metrics-ownership rule in step 8 is now locked.)
 
 ```
-Do not make any changes to any files during this session.
+Do not make any changes to any files during this session, other than the
+optional metrics.csv append in step 8.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
 (Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
@@ -2218,7 +2282,7 @@ same scope discipline as /implement:
   to Completed, refresh "Where I left off").
 
 When pending work is complete (or you must stop), update
-.cycle/STATE.md, run the test step per CLAUDE.md's Test Command (or walk
+.cycle/STATE.md (Phase: implement; never change Cycle), run the test step per CLAUDE.md's Test Command (or walk
 the Regression Scenarios if `manual`), then emit the same
 implementation summary block the original implement command would have.
 Suggest /regression, /reflect, /test-sync, and /sync-docs as applicable.
@@ -2234,8 +2298,9 @@ missing — NEVER overwrite or modify a file that already exists.
 
 1. If .cycle/ does not exist, create it.
 2. If .cycle/STATE.md does not exist, create it from the template in
-   CLAUDE.md's "Cycle State & Memory" section, with Phase: idle and a
-   "Where I left off" line pointing at the first audit.
+   CLAUDE.md's "Cycle State & Memory" section, with Cycle: 0 (no cycle
+   opened yet — the first audit's CYCLE OPEN step makes it 1), Phase: idle
+   and a "Where I left off" line pointing at the first audit.
 3. If .cycle/metrics.csv does not exist, create it with just the header:
    date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count
 4. If .cycle/estimates.csv does not exist, create it with just the header:

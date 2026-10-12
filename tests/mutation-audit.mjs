@@ -67,7 +67,8 @@ const CASES = {
   'INV-15': [[HTML, 'const axisB=getAxisB(project);', 'const axisB=DEFAULT_AXIS_B;', /INV-15/]],
   // Field-level tier: one sink at a time (§4v found the all-at-once form green).
   'INV-20': [
-    [HTML, 'white-space:nowrap">${esc(g)}</span>', 'white-space:nowrap">${g}</span>', /unescaped stored content|injected data executed/i],
+    // Cycle-7 Batch 4 (F25): the tracker label became a native <button>.
+    [HTML, 'text-align:left;cursor:pointer">${esc(g)}</button>', 'text-align:left;cursor:pointer">${g}</button>', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.text)}', '${inv.text}', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.subsystem)}', '${inv.subsystem}', /unescaped stored content|injected data executed/i],
     // F01/F09 — the fill form renders only on interaction; these prove the
@@ -120,7 +121,9 @@ const CASES = {
   // ── node scripts/check-template-sync.mjs ────────────────────────────────────
   'INV-02': [['README.md', '## Slash Commands Reference', '## Slash Commands Reference\n\nBogus `/totally-made-up` reference.\n', /without a CLAUDE.md template/i]],
   'INV-03': [['README.md', 'Dynamic Workflows', 'DWF-renamed', /marker "dynamic workflows"/i]],
-  'INV-12': [['.claude/commands/reflect.md', 'METRICS (optional — only if .cycle/ exists)', 'METRICS', /not gated on the directory existing/i]],
+  'INV-12': [['.claude/commands/reflect.md', 'METRICS (optional — only if .cycle/ exists)', 'METRICS', /not gated on the directory existing/i],
+             // v1.35.0: the audits' CYCLE OPEN write must be inside the gating check's step set.
+             ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing/i]],
   'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i]],
   'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/]],
   'INV-16': [[HTML, '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery [N] subsystem cycles\n\n', '', /INV-16/]],
@@ -147,7 +150,13 @@ const CASES = {
   // INV-68 — the proven vector: ONE leading space made a rule invisible to
   // invariant-check and to this audit's own derived set, while the §4v pack
   // still listed it.
-  'INV-68': [['.cycle/config.md', 'INV-40 | credentials never leave', '  INV-40 | credentials never leave', /parse floor/i]],
+  // INV-68 — make ONE reader drop rules the file contains. The first version of
+  // this case indented a library line, which only violated the floor while the
+  // two parsers disagreed about leading whitespace; F35 (Cycle 7) made both
+  // tolerant, the indent stopped being a violation, and the case went FALSE GREEN.
+  // A reader that silently narrows is what the floor exists to catch.
+  'INV-68': [['scripts/verification-pack.mjs', "filter(l => /^INV-\\d+\\s*\\|/.test(l.trim()))", "filter(l => /^INV-[0-6]\\d\\s*\\|/.test(l.trim()))", /parse floor/i],
+             ['scripts/invariant-check.mjs', "const m = line.match(/^(INV-\\d+)\\s*\\|(.+)$/);", "const m = line.match(/^(INV-[0-6]\\d)\\s*\\|(.+)$/);", /parse floor/i]],
   'INV-69': [[HTML, ':focus-visible{outline:2px', '.nav-item:focus-visible{outline:2px', /must apply, not merely exist/i]],
   // INV-71 — drift the ONE definition; every doc copy must stop matching it.
   'INV-71': [['scripts/health-fields.mjs', "topVertical:    'Top vertical priority:'", "topVertical:    'Top vertical priorities:'", /health-field contract/i]],
@@ -156,7 +165,12 @@ const CASES = {
   // INV-72 — ship a release into the current cycle with no block for it.
   // INV-75 — drop one of the three clause labels from the canonical rule.
   'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger/i]],
-  'INV-72': [['CHANGELOG.md', '## 1.30.1 — 2026-09-03', '## 1.30.2 — 2026-09-03\n\nmutation\n\n## 1.30.1 — 2026-09-03', /release with no block/i]],
+  // Pin STATE.md back to Cycle 6: every release after Cycle 6's (v1.35.0 on) then
+  // sits in range with no 06- block. The first version of this case inserted a
+  // fake 1.30.2 release, which only fell inside the floor while the cycle WAS 6 —
+  // it went FALSE GREEN the moment Cycle 7 opened. Blocks accumulate and are
+  // never deleted, so this form stays violating in every later cycle.
+  'INV-72': [['.cycle/STATE.md', '\nCycle: ', '\nCycle: 6\nPinned-by-mutation: ', /release with no block/i]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────
   'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i]],

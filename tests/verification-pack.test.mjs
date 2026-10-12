@@ -163,6 +163,57 @@ else bad('readBlocks threw on a missing directory');
   else bad('pack did not state/exclude other-cycle blocks correctly');
 }
 
+// 8) F39 (Cycle 7): a quoted notes field containing a NEWLINE must not split its
+// row (the CORRECTION warning and the defensive count were silently dropped),
+// and `--cycle 09` must match rows stamped 9.
+{
+  const H = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count';
+  const csv = `${H}\n2026-01-01,9,Core,reflect,2,2,0,,,"line one\nCORRECTION: demoted F3",4\n`;
+  const t9 = cycleTotals(csv, 9), t09 = cycleTotals(csv, '09');
+  if (t9.rows === 1 && t9.defensive === 4 && t9.corrections.length === 1) ok('a multi-line quoted note keeps its row, its defensive count and its CORRECTION warning (F39)');
+  else bad(`multi-line note broke the row: ${JSON.stringify(t9)}`);
+  if (t09.rows === 1) ok('--cycle 09 matches rows stamped 9 (F39)'); else bad('--cycle 09 matched no rows');
+}
+
+// 9) F34 (Cycle 7): the pack must work for a CONSUMING project — whose own
+// CLAUDE.md has no "Verification Pass" section — run from that project's
+// directory. The project is the working directory, the body comes from
+// --template (or the CLAUDE.md beside the script), and the project is named
+// after its directory instead of a hardcoded 'claude-workflow-tools'.
+{
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync } = await import('node:fs');
+  const { execFileSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  const proj = join(mkdtempSync(join(tmpdir(), 'cwt-vp-')), 'acme-app');
+  mkdirSync(join(proj, '.cycle', 'blocks'), { recursive: true });
+  writeFileSync(join(proj, 'CLAUDE.md'), '# Acme\n\n## Cycle Workflow Config\n### Invariant Library\nINV-01 | acme rule | Subsystem: Core\n');
+  writeFileSync(join(proj, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 2\n');
+  writeFileSync(join(proj, '.cycle', 'blocks', '02-1.0.0-broad-implement.md'), '---BROAD SCAN IMPLEMENTATION SUMMARY---\nacme block\n---END BROAD SCAN IMPLEMENTATION SUMMARY---\n');
+  const run = (script, args) => { try { return { code: 0, out: execFileSync('node', [script, ...args], { cwd: proj, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; } catch (e) { return { code: e.status ?? 1, out: (e.stdout || '') + (e.stderr || '') }; } };
+  const problems = [];
+  // (a) the template checkout's script, run from inside the consumer project.
+  const a = run(join(repo, 'scripts', 'verification-pack.mjs'), ['--seed', 's']);
+  if (a.code !== 0) problems.push('template script run from a consumer project failed: ' + a.out.slice(0, 120));
+  else {
+    if (!/acme-app — Cycle 2/.test(a.out)) problems.push('pack not named after the project directory, or wrong cycle');
+    if (!/acme block/.test(a.out) || !/INV-01 \| acme rule/.test(a.out)) problems.push("pack did not read the CONSUMER's blocks and library");
+    if (/claude-workflow-tools — Cycle/.test(a.out)) problems.push('project name still hardcoded');
+  }
+  // (b) scripts COPIED into the consumer: no section anywhere locally → a clear
+  // error naming --template; with --template → works.
+  cpSync(join(repo, 'scripts'), join(proj, 'scripts'), { recursive: true });
+  const b = run(join(proj, 'scripts', 'verification-pack.mjs'), ['--seed', 's']);
+  if (b.code === 0 || !/--template/.test(b.out)) problems.push('copied scripts without a template did not fail with a --template hint');
+  const c = run(join(proj, 'scripts', 'verification-pack.mjs'), ['--seed', 's', '--template', join(repo, 'CLAUDE.md'), '--project', 'Acme']);
+  if (c.code !== 0 || !/Acme — Cycle 2/.test(c.out) || !/PART 1 — INVARIANT PROBE RESULTS/.test(c.out)) problems.push('copied scripts with --template/--project did not produce a pack: ' + c.out.slice(0, 120));
+  rmSync(join(proj, '..'), { recursive: true, force: true });
+  if (!problems.length) ok('the pack works for a consuming project: cwd is the project, body from --template or the script\'s repo, named after the project (F34)');
+  else bad('F34: ' + problems.join('; '));
+}
+
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} verification-pack test(s) failed.`); process.exit(1); }

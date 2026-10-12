@@ -24,6 +24,10 @@ const high = project('alpha', 'Last synthesis: 2026-06-01\nOverall (weighted avg
 const low = project('beta', 'Last synthesis: 2026-06-02\nOverall (weighted avg): 5.0/10\nOne-line summary: shaky\nTop vertical priority: Storage\nTop horizontal priority: Silent Degradation');
 const none = project('gamma', 'Last synthesis: n/a\nOne-line summary: not yet scored\nTop vertical priority: —\nTop horizontal priority: —');
 
+// F40 (Cycle 7): an EMPTY field must stay empty (it used to capture the next
+// line's label), and a pipe in a value must not open an extra table column.
+const delta = project('delta', 'Last synthesis:\nOverall (weighted avg): 7.5/10\nOne-line summary: ok\nTop vertical priority: A | B\nTop horizontal priority: C');
+
 let failures = 0;
 const log = [];
 const ok = m => log.push('  ✓ ' + m);
@@ -41,6 +45,12 @@ if (/Audit next: beta/.test(out)) ok('flags the lowest-scoring project to audit 
 if (/average overall: \*\*6\.8\/10\*\* across 2 scored/.test(out)) ok('averages only scored projects (6.8 across 2)'); else bad('average wrong');
 if (/No synthesis score yet: gamma/.test(out)) ok('flags the unscored project'); else bad('did not flag unscored gamma');
 
+{
+  let dOut = ''; try { dOut = execFileSync('node', [script, delta], { encoding: 'utf8' }); } catch (e) { bad('renderer threw on the F40 fixture: ' + (e.message || e)); }
+  const dRow = dOut.split('\n').find(l => l.startsWith('| delta |')) || '';
+  if (dRow && !/Overall \(weighted avg\)/.test(dRow)) ok('an empty "Last synthesis:" stays empty instead of capturing the next line (F40)'); else bad(`empty field captured the next line: ${dRow}`);
+  if (/A \\\| B/.test(dRow) && dRow.split(/(?<!\\)\|/).length === 7) ok('a pipe inside a value is escaped and opens no extra column (F40)'); else bad(`pipe not escaped: ${dRow}`);
+}
 rmSync(root, { recursive: true, force: true });
 
 console.log('portfolio dashboard regression test (scripts/portfolio.mjs):\n');

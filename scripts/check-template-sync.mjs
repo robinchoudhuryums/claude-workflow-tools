@@ -319,7 +319,7 @@ try {
 // command text", i.e. nothing was checking it; an ungated CHECKPOINT would
 // silently make .cycle/ mandatory for every consumer.
 {
-  const STEP = /^(?:\d+\.\s*)?(CHECKPOINT|METRICS|ESTIMATE CALIBRATION|BLOCKS|SEAM COUNTER)\b(.*)$/;
+  const STEP = /^(?:\d+\.\s*)?(CHECKPOINT|METRICS|ESTIMATE CALIBRATION|BLOCKS|SEAM COUNTER|CYCLE OPEN)\b(.*)$/;
   const GATE = /optional\s*—\s*only if|if a \.cycle\/ directory exists|skip if no \.cycle\//i;
   const ungated = [];
   let stepCount = 0;

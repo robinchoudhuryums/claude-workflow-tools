@@ -9,7 +9,7 @@
 // invariant probe.
 //
 // Usage:
-//   node scripts/invariant-check.mjs [--source FILE] [--list]
+//   node scripts/invariant-check.mjs [--source FILE] [--list] [--timeout SECONDS]
 //   Default source: .cycle/config.md, else CLAUDE.md.
 // Exit 0 if no runnable invariant FAILED; 1 if any FAILED.
 //
@@ -22,14 +22,21 @@
 // source of truth in the one place that can least afford it — the audit that
 // decides whether these Verify commands actually work.
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, realpathSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 /** Parse `INV-XX | rule | Subsystem: … | Verify: …` lines out of a library. */
+// F35 (Cycle 7): split on CRLF as well as LF and tolerate leading whitespace.
+// `.` does not match `\r`, so on a CRLF file (Windows, core.autocrlf=true) EVERY
+// line failed the match and this reported "No invariants found", while the
+// hook counted one number and the §4v pack another — three readers, three
+// counts. The INV-68 floor's ground truth (`^[ \t]*INV-\d+\s*\|`) is what this
+// now agrees with.
 export function parseInvariants(text) {
   const invs = [];
-  for (const line of text.split('\n')) {
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
     const m = line.match(/^(INV-\d+)\s*\|(.+)$/);
     if (!m) continue;
     const parts = m[2].split('|').map(s => s.trim());
@@ -58,13 +65,22 @@ export function defaultSource(dir = '.') {
 // Importing this module must have no CLI side effects (the same rule INV-28
 // pins for the R14 engine) — mutation-audit imports it from inside every
 // mutated repo copy.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+// F33 (Cycle 7): compare REAL paths. Node resolves symlinks for import.meta.url
+// but leaves process.argv[1] as typed, so run through a symlinked scripts/
+// directory the check was false and the script did NOTHING and exited 0 —
+// a guard that passes silently.
+function isMain() { try { return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } }
+if (isMain()) main();
 
 function main() {
   const args = process.argv.slice(2);
   const srcIdx = args.indexOf('--source');
   const source = srcIdx !== -1 ? args[srcIdx + 1] : defaultSource();
   const listOnly = args.includes('--list');
+  // F41: a Verify command is killed after this many seconds (default 30 min —
+  // generous, because a full mutation audit is a legitimate Verify command).
+  const toIdx = args.indexOf('--timeout');
+  const timeoutSec = toIdx !== -1 ? Math.max(1, parseInt(args[toIdx + 1], 10) || 0) : 1800;
 
   let text;
   try { text = readFileSync(source, 'utf8'); }
@@ -93,8 +109,20 @@ function main() {
   const results = [];
   for (const [cmd, list] of byCmd) {
     let okRun = true, err = '';
-    try { execSync(cmd, { stdio: 'pipe' }); }
-    catch (e) { okRun = false; err = ((e.stderr?.toString() || e.stdout?.toString() || e.message || '').trim().split('\n').pop()) || 'command failed'; }
+    // F41: the default 1MB maxBuffer turned a PASSING command with a lot of
+    // output into a FAIL (ENOBUFS), and with no timeout a hung command hung the
+    // whole probe. Output is only kept for the failure line, so the buffer is
+    // large rather than exact.
+    try { execSync(cmd, { stdio: 'pipe', maxBuffer: 256 * 1024 * 1024, timeout: timeoutSec * 1000 }); }
+    catch (e) {
+      okRun = false;
+      err = (e.signal === 'SIGTERM' && e.code !== 'ENOBUFS' && e.status == null)
+        ? `timed out after ${timeoutSec}s (raise it with --timeout SECONDS)`
+        : ((e.stderr?.toString() || e.stdout?.toString() || e.message || '').trim().split('\n').pop()) || 'command failed';
+      // The reason is ONE line for a human: a command whose last output line is
+      // megabytes long used to be echoed whole (F41).
+      if (err.length > 300) err = err.slice(0, 300) + ' …';
+    }
     for (const inv of list) { results.push({ inv, ok: okRun, cmd, err }); okRun ? passed++ : failed++; }
   }
 
@@ -102,5 +130,7 @@ function main() {
   for (const r of results) console.log(`  ${r.ok ? '✓' : '✗'} ${r.inv.id} ${r.ok ? 'PASS' : 'FAIL'} via \`${r.cmd}\`${r.ok ? '' : '  — ' + r.err}`);
   for (const inv of manual) console.log(`  • ${inv.id} MANUAL (Verify: ${inv.verify || '—'})`);
   console.log(`\nProbed ${passed + failed} runnable | Passed ${passed} | Failed ${failed} | Manual ${manual.length}`);
-  process.exit(failed ? 1 : 0);
+  // exitCode, not exit(): process.exit() can cut off piped stdout that is still
+  // being flushed, which dropped the later results AND this summary line (F41).
+  process.exitCode = failed ? 1 : 0;
 }

@@ -110,7 +110,10 @@ nav a.active{color:var(--accent);border-left-color:var(--accent);background:rgba
 .ct-complete{font-size:11px;color:var(--green);text-align:center;padding:4px 0 0;display:none}
 
 /* MAIN */
-main{margin-left:var(--nav-w);flex:1;max-width:880px;padding:40px 44px 80px}
+/* F23 (Cycle 7): min-width:0 — a flex item defaults to min-width:auto, so any
+   unwrappable content (a nowrap table cell, a long tag) widened main past the
+   viewport and the page scrolled sideways between 769px and ~1136px. */
+main{margin-left:var(--nav-w);flex:1;min-width:0;max-width:880px;padding:40px 44px 80px}
 
 /* FLOW */
 .flow-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:40px}
@@ -148,7 +151,13 @@ main > .panel.active{display:block;animation:panelIn .18s ease}
 table.st{width:100%;border-collapse:collapse;font-size:12.5px}
 table.st td{padding:8px 14px;border-bottom:1px solid var(--border-light);vertical-align:top}
 table.st tr:last-child td{border-bottom:none}
-table.st td:first-child{color:var(--text);font-weight:500;white-space:nowrap;width:44%}
+table.st td:first-child{color:var(--text);font-weight:500;width:44%;overflow-wrap:anywhere}
+/* F22 (Cycle 7): invariant tables reuse .st, whose first column was nowrap at
+   44% — sized for a subsystem name, not a rule. The rule text pushed the
+   Subsystem column past the wrapper's edge (clipped on every row at every
+   width) and was cut mid-sentence on mobile. */
+table.st.inv td:first-child{width:auto;font-weight:400}
+table.st.inv td:last-child{width:28%;font-family:inherit;font-size:11.5px;overflow-wrap:anywhere}
 table.st td:last-child{color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6}
 table.st tr{cursor:pointer;transition:background .12s}
 table.st tr:hover td{background:var(--surface2)}
@@ -161,7 +170,7 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .pb-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--surface2);border-bottom:1px solid var(--border);gap:10px}
 .pb-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .pb-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
-.ptag{font-size:10.5px;padding:2px 6px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);font-weight:500;white-space:nowrap}
+.ptag{font-size:10.5px;padding:2px 6px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);font-weight:500;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
 .fill-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--r-sm);color:var(--amber);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
 .fill-btn:hover{background:rgba(245,158,11,.18)}
 .fill-btn.active{background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.5)}
@@ -254,8 +263,12 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
      top bar became a 174px left column and main overflowed the viewport. */
   body{flex-direction:column}
   .mobilebar{display:flex}
-  nav{transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 14px 40px rgba(0,0,0,.45)}
-  nav.open{transform:translateX(0)}
+  /* F26 (Cycle 7): off-screen is not hidden. The closed drawer kept all its
+     links in the tab order — 71 invisible stops before the page. visibility
+     removes them (and from the accessibility tree); the delay lets the slide-out
+     finish before it applies. */
+  nav{transform:translateX(-100%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+  nav.open{transform:translateX(0);visibility:visible;transition:transform .22s ease,visibility 0s}
   nav.open ~ .navbackdrop{display:block}
   main{margin-left:0;padding:18px 16px 60px}
   .tips-grid{grid-template-columns:1fr}
@@ -808,7 +821,7 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
       <div class="fill-form" id="fill-p1"></div>
       <pre id="p1">Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
 Cycle Workflow Config) before starting. Do not make any changes to any
-files during this session.
+files during this session, other than the optional CYCLE OPEN step below.
 
 This session's scope: [SUBSYSTEM GROUP NAME]
 
@@ -821,6 +834,16 @@ This session's scope: [SUBSYSTEM GROUP NAME]
 If this scope is listed under Frozen Subsystems in the Cycle Workflow
 Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from
@@ -933,7 +956,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
         <span id="seamsInvariantTitle">Current Invariant Library</span>
         <small>Review, validate, and extend during this audit</small>
       </div>
-      <table class="st" id="seamsInvariantTable">
+      <table class="st inv" id="seamsInvariantTable">
         <tbody id="seamsInvariantBody">
         </tbody>
       </table>
@@ -1116,7 +1139,8 @@ DOCUMENTATION UPDATES NEEDED:
    "Where I left off") so /cycle-resume can continue, AND write the
    summary block verbatim to
    .cycle/blocks/&lt;cycle&gt;-&lt;version-or-scope&gt;-implement.md so §4v and §6a
-   can read it in a fresh session. Skip both if no .cycle/.
+   can read it in a fresh session. Set Phase: implement; never change
+   Cycle — the audit's CYCLE OPEN step owns it. Skip both if no .cycle/.
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
@@ -1225,8 +1249,8 @@ Prioritize the verification list by likelihood of breakage. Then:
           </div>
         </div>
         <pre id="p4reflect">Read CLAUDE.md before starting. Do not make any changes to any files
-during this session (other than the optional metrics / estimates / STATE
-counter appends below).
+during this session (other than the optional metrics / estimates / blocks
+writes and the STATE counter and phase update below).
 
 [PASTE IMPLEMENTATION SUMMARY BLOCK — and REGRESSION results if available]
 
@@ -1305,7 +1329,9 @@ spent. End with one line on your calibration trend (e.g. "L items are
 running ~2x the estimate"). Skip if no .cycle/.
 
 BLOCKS (optional — only if .cycle/ exists): write the CYCLE SUMMARY BLOCK
-verbatim to .cycle/blocks/&lt;cycle&gt;-&lt;letter&gt;-reflect.md. §4v and §6a consume it
+verbatim to .cycle/blocks/&lt;cycle&gt;-&lt;letter&gt;-reflect.md, where &lt;letter&gt; is the
+next unused lowercase letter among this cycle's non-release blocks (a for the
+first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
 summary reported, say so in the metrics `notes` field — the pack assembler
@@ -1316,7 +1342,9 @@ remembered. Skip if no .cycle/.
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
 completes a subsystem cycle, and the count drives /audit's seams-cadence
-reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</pre>
+reminder. (A Seams &amp; Invariants audit resets it to 0.) In the same write,
+set Phase: reflect and Updated — leave Cycle alone; the next audit's CYCLE
+OPEN step opens the next cycle. Skip if no .cycle/.</pre>
       </div>
     </div>
   </section>
@@ -1336,7 +1364,7 @@ reminder. (A Seams &amp; Invariants audit resets it to 0.) Skip if no .cycle/.</
         <span id="invariantTableTitle">Invariant Library</span>
         <small>Project-specific rules that must always hold — grows via /reflect</small>
       </div>
-      <table class="st" id="invariantTable">
+      <table class="st inv" id="invariantTable">
         <tbody id="invariantTableBody">
         </tbody>
       </table>
@@ -1904,6 +1932,11 @@ function jsArg(v){ return esc(JSON.stringify(v)); }
 function kbdActivate(e){
   if(!e||(e.key!=='Enter'&&e.key!==' '&&e.key!=='Spacebar'))return;
   e.preventDefault();
+  // F24 (Cycle 7): stop the keydown here. A nested control's activation used to
+  // bubble on to its parent's kbdActivate as well, so Enter on a cycle-tracker
+  // phase dot ran setPhase AND the row's advancePhase — keyboard users recorded
+  // a different phase than a mouse click on the same dot.
+  if(typeof e.stopPropagation==='function') e.stopPropagation();
   const t=e.currentTarget||e.target;
   if(t&&typeof t.click==='function')t.click();
 }
@@ -1936,6 +1969,14 @@ function normalizeProject(p){
   q.invariants=q.invariants.filter(i=>i&&typeof i==='object').map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
   if(!Array.isArray(q.seeds)) q.seeds=[];
   if(q.cycleGroups!=null&&!Array.isArray(q.cycleGroups)) delete q.cycleGroups;
+  // F16 (Cycle 7): axisB entries were never repaired — one with no name threw in
+  // the §6a grid's padEnd at init. Keep entries that have a name; an empty list
+  // falls back to the default categories in getAxisB, exactly as an absent one
+  // does. An empty list is left AS IS: the project form saves [] for a blank
+  // Axis B field, and deleting it reported every such project as "repaired".
+  if(q.axisB!=null){
+    q.axisB=Array.isArray(q.axisB)?q.axisB.filter(c=>c&&typeof c==='object'&&c.name!=null&&String(c.name).trim()).map(c=>({...c,name:String(c.name),measures:String(c.measures==null?'':c.measures),pulse:String(c.pulse==null?'':c.pulse),playbook:String(c.playbook==null?'':c.playbook)})):[];
+  }
   if(typeof q.healthDimensions!=='string') q.healthDimensions=q.healthDimensions==null?'':String(q.healthDimensions);
   return q;
 }
@@ -1953,8 +1994,19 @@ function loadCustomProjects(){
 }
 function saveCustomProjects(arr){ try{localStorage.setItem('ccg:customProjects',JSON.stringify(arr))}catch(e){storageWarn(e)} }
 
-let activeProjectId = loadActiveProjectId();
 function getAllProjects(){ return [...PROJECTS,...loadCustomProjects()]; }
+// F15 (Cycle 7): the stored id was trusted at load. When it named a project that
+// no longer exists (F04's repair dropped it, another tab deleted it), getProject()
+// fell back to the first built-in for RENDERING while every storage key —
+// invariants, cycle, archive, bank, fill values — kept the dead id, so new data
+// was written where no project could reach it. Resolve it once, here, the same
+// way applyStateKeys already did after an import.
+function resolveActiveProjectId(id){
+  if(getAllProjects().some(p=>p.id===id)) return id;
+  saveActiveProjectId(PROJECTS[0].id);
+  return PROJECTS[0].id;
+}
+let activeProjectId = resolveActiveProjectId(loadActiveProjectId());
 function getProject(id){ return getAllProjects().find(p=>p.id===(id||activeProjectId))||PROJECTS[0]; }
 function deriveId(name){ return String(name==null?'':name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
 // F07: a name with no ASCII alphanumerics — "日本語プロジェクト", "!!!" — derives
@@ -1988,13 +2040,27 @@ function switchProject(id){
   renderInvariantTable();
   renderCustomInvariantsList();
   renderSubsysTable();
-  // Rebuild any open fill forms for subsystem dropdowns
-  document.querySelectorAll('.fill-form.open').forEach(f=>{ buildFillForm(f.id.replace('fill-','')); });
+  // Rebuild open fill forms; DISCARD closed ones. toggleFill builds a form only
+  // when it is empty, so a form built and closed under the previous project kept
+  // that project's subsystem options and values and reopened stale (F17, Cycle 7).
+  document.querySelectorAll('.fill-form').forEach(f=>{
+    if(f.classList.contains('open')) buildFillForm(f.id.replace('fill-',''));
+    else f.innerHTML='';
+  });
 }
 
 // ─── INVARIANT STORAGE (per project) ─────────────────────────
 function invariantKey(){ return `ccg:${activeProjectId}:invariants`; }
-function loadCustomInvariants(){ try{return JSON.parse(localStorage.getItem(invariantKey())||'[]')}catch(e){return []} }
+// F16 (Cycle 7): every loader below trusted the stored SHAPE, so one malformed
+// value — "{}", "null", a number where a string belongs — threw at init and
+// blanked everything rendered after it. Parse failures were caught; wrong
+// shapes were not.
+function isPlainObj(v){ return !!v&&typeof v==='object'&&!Array.isArray(v); }
+function loadCustomInvariants(){
+  let v; try{v=JSON.parse(localStorage.getItem(invariantKey())||'[]')}catch(e){return []}
+  if(!Array.isArray(v)) return [];
+  return v.filter(isPlainObj).map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
+}
 function saveCustomInvariants(arr){ try{localStorage.setItem(invariantKey(),JSON.stringify(arr))}catch(e){storageWarn(e)} }
 function getProjectInvariants(){
   const project=getProject();
@@ -2325,7 +2391,7 @@ function fillSubsystem(name,files){
 
 // ─── CYCLE TRACKER ───────────────────────────────────────────
 function cycleKey(){ return `ccg:${activeProjectId}:cycle`; }
-function loadCycle(){ try{return JSON.parse(localStorage.getItem(cycleKey())||'{}')}catch(e){return {}} }
+function loadCycle(){ let v; try{v=JSON.parse(localStorage.getItem(cycleKey())||'{}')}catch(e){return {}} return isPlainObj(v)?v:{}; }
 function saveCycle(d){ try{localStorage.setItem(cycleKey(),JSON.stringify(d))}catch(e){storageWarn(e)} }
 
 const CYCLE_PHASES=['audit','implement','verify'];
@@ -2352,10 +2418,17 @@ function renderCycle(){
     const phaseDots=CYCLE_PHASES.map((p,i)=>{
       const active=i<=phaseIdx;
       const color=active?PHASE_COLORS[p]:'var(--border)';
-      return `<span title="${PHASE_TITLES[p]}" role="button" tabindex="0" onkeydown="kbdActivate(event)" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'var(--fg-on-solid)':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</span>`;
+      // F25 (Cycle 7): native <button>s. They sat INSIDE a role="button" row, so
+      // assistive tech saw one button with its children flattened into its name,
+      // and a key press on a dot also reached the row. aria-pressed states which
+      // phases are marked; the name says which phase the dot sets.
+      return `<button type="button" class="ct-dot" title="${PHASE_TITLES[p]}" aria-label="${esc(g)}: ${PHASE_TITLES[p]}" aria-pressed="${active?'true':'false'}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'var(--fg-on-solid)':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</button>`;
     }).join('');
-    return `<div class="ct-item${isDone?' done':''}" role="button" tabindex="0" onkeydown="kbdActivate(event)" onclick="advancePhase(${argG})" style="justify-content:space-between">
-      <span class="ct-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g)}</span>
+    // The row stays clickable for the mouse; the keyboard reaches the same
+    // action through the label <button> — the label and the dots are siblings in
+    // the tab order, never controls nested inside another control.
+    return `<div class="ct-item${isDone?' done':''}" onclick="advancePhase(${argG})" style="justify-content:space-between">
+      <button type="button" class="ct-label" onclick="event.stopPropagation();advancePhase(${argG})" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:0;padding:0;font:inherit;font-size:11.5px;text-align:left;cursor:pointer">${esc(g)}</button>
       <div style="display:flex;gap:3px;flex-shrink:0;margin-left:6px">${phaseDots}</div>
     </div>`;
   }).join('');
@@ -2403,7 +2476,13 @@ function renderProjectSelector(){
 // ─── HEALTH SYNTHESIS PROMPT (p6a) — dynamic per project ────
 function buildP6aText(project){
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
-  const subsystemLines=groups.map(g=>`- ${g}:\n  [PASTE SESSION HANDOFF BLOCK]\n  [PASTE CYCLE SUMMARY BLOCK]\n  [PASTE VERIFICATION BLOCK — or note "Verification not run" if skipped]`).join('\n\n');
+  // F13 (Cycle 7): the three tokens were IDENTICAL for every subsystem, and the
+  // fill form dedupes by token — so one field per block type, and the single
+  // block you pasted was replicated under all N subsystems. Name the subsystem
+  // in each token so every subsystem gets its own fields. Brackets in a name
+  // would end the token early, so they are swapped for parentheses.
+  const tok=g=>String(g).replace(/\[/g,'(').replace(/\]/g,')');
+  const subsystemLines=groups.map(g=>`- ${g}:\n  [PASTE SESSION HANDOFF BLOCK — ${tok(g)}]\n  [PASTE CYCLE SUMMARY BLOCK — ${tok(g)}]\n  [PASTE VERIFICATION BLOCK — ${tok(g)} — or note "Verification not run" if skipped]`).join('\n\n');
   const dims=project.healthDimensions;
   const thresh=project.policyThreshold||4;
   const consecCycles=project.policyConsecutiveCycles||2;
@@ -2411,7 +2490,8 @@ function buildP6aText(project){
   const axisBList=axisB.map((c,i)=>`${i+1}. ${c.name} (score 1–10)\n   Measured by: ${c.measures||'trend in findings of this shape this cycle vs. prior, and whether a durable guard exists against the pattern.'}`).join('\n\n');
   const axisBGrid=axisB.map(c=>`${c.name.padEnd(32)}X/10      Improving/Stable/Degrading`).join('\n');
   const axisBPlaybooks=axisB.map(c=>`${c.name} triggered → ${c.playbook||'Identify the systemic root cause and add a concrete, durable guard (test, lint rule, startup check, or consolidation) so the pattern cannot silently recur. One guard per cycle until the category score recovers.'}`).join('\n\n');
-  return `Do not make any changes to any files during this session.
+  return `Do not make any changes to any files during this session, other than the
+optional metrics.csv append in step 8.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
 (Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
@@ -2791,7 +2871,12 @@ function saveProjectForm(){
   const custom=loadCustomProjects();
   const updated=pfEditingId?custom.map(p=>p.id===pfEditingId?project:p):[...custom,project];
   saveCustomProjects(updated);
+  // F12 (Cycle 7): only the Projects tab and the selector used to re-render, so
+  // editing the ACTIVE project left every prompt, the tracker and the invariant
+  // tables showing the old subsystems — and Copy pasted the stale <pre>.
+  const editedActive=!!pfEditingId&&pfEditingId===activeProjectId;
   cancelProjectForm();
+  if(editedActive){ switchProject(activeProjectId); return; }
   renderProjectsTab();
   renderProjectSelector();
 }
@@ -2861,6 +2946,7 @@ function exportState(){
 // lives in ONE place (was duplicated — the Parallel Source-of-Truth shape the
 // tool itself polices). Returns {data, keys, reason}: reason is 'no-data' (not
 // a recognized backup) or 'no-keys' (no ccg:* state) when keys is null.
+const STATE_SHAPES=[[/^ccg:[^:]+:cycle$/,'object'],[/^ccg:[^:]+:invariants$/,'array'],[/^ccg:[^:]+:archive$/,'array'],[/^ccg:dash(Repos|Cache|Manual)$/,'object']];
 function stateBackupKeys(parsed){
   const data=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:null;
   if(!data) return {data:null,keys:null,reason:'no-data'};
@@ -2877,6 +2963,16 @@ function stateBackupKeys(parsed){
     let list; try{ list=JSON.parse(data['ccg:customProjects']); }catch(e){ return {data:null,keys:null,reason:'bad-projects'}; }
     if(!Array.isArray(list)) return {data:null,keys:null,reason:'bad-projects'};
   }
+  // F16 (Cycle 7): the project list was the ONLY key checked, but six others
+  // could brick init too (tracker, invariants, archive, dashboard repos/cache/
+  // fallbacks). Same rule: a backup carrying any of them in the wrong shape is
+  // refused whole, and the message names the key.
+  for(const k of Object.keys(data)){
+    const want=STATE_SHAPES.find(([re])=>re.test(k));
+    if(!want) continue;
+    let v; try{ v=JSON.parse(data[k]); }catch(e){ return {data:null,keys:null,reason:'bad-shape',badKey:k}; }
+    if(want[1]==='array'?!Array.isArray(v):!isPlainObj(v)) return {data:null,keys:null,reason:'bad-shape',badKey:k};
+  }
   // Secrets are filtered on the APPLY side too, not just on export: a backup
   // handed over by someone else (or loaded from a shared repo) must not be able
   // to install a credential into this browser.
@@ -2884,6 +2980,7 @@ function stateBackupKeys(parsed){
   if(!keys.length) return {data,keys:null,reason:'no-keys'};
   return {data,keys,reason:null};
 }
+function stateBadKey(parsed){ return stateBackupKeys(parsed).badKey||'a stored item'; }
 // Write the validated keys and re-derive the active project. Caller owns the
 // confirm prompt, switchProject(), re-render, and status message. Returns count.
 function applyStateKeys(data,keys){
@@ -2907,14 +3004,19 @@ function importStateFile(input){
     if(reason==='newer-version'){ setStateIoMsg('Import failed: backup uses a newer format than this console understands — update the console first.','error'); input.value=''; return; }
     if(reason==='no-keys'){ setStateIoMsg('Import failed: backup contains no workflow-tools state.','error'); input.value=''; return; }
     if(reason==='bad-projects'){ setStateIoMsg('Import failed: the backup\'s project list is not valid (not a JSON array of projects) — nothing was imported.','error'); input.value=''; return; }
+    if(reason==='bad-shape'){ setStateIoMsg(`Import failed: "${stateBadKey(parsed)}" in the backup is not in the expected format — nothing was imported.`,'error'); input.value=''; return; }
     if(!confirm(`Import ${keys.length} stored item(s)? This OVERWRITES matching projects, invariants, archive entries, and tracker state in this browser.`)){ input.value=''; return; }
+    // F16: writing and rendering fail differently. A write failure may leave some
+    // items saved; a render failure means everything WAS saved. The old single
+    // "failed while writing" message said the opposite of the second case.
+    try{ applyStateKeys(data,keys); }
+    catch(e){ setStateIoMsg('Import failed while writing — some items may already be saved: '+(e&&e.message?e.message:'unknown error'),'error'); input.value=''; return; }
     try{
-      applyStateKeys(data,keys);
       switchProject(activeProjectId);
       renderProjectsTab();
       setStateIoMsg(`Imported ${keys.length} stored item${keys.length===1?'':'s'}.`,'ok');
     }catch(e){
-      setStateIoMsg('Import failed while writing: '+(e&&e.message?e.message:'unknown error'),'error');
+      setStateIoMsg(`Imported ${keys.length} item(s), but the console could not display them: `+(e&&e.message?e.message:'unknown error')+' — reload the page.','error');
     }
     input.value='';
   };
@@ -2989,6 +3091,7 @@ async function loadStateFromRepo(){
     if(reason==='newer-version'){ setStateIoMsg('That state file uses a newer format than this console understands — update the console first.','error'); return; }
     if(reason==='no-keys'){ setStateIoMsg('That file has no workflow-tools state.','error'); return; }
     if(reason==='bad-projects'){ setStateIoMsg('That state file\'s project list is not valid (not a JSON array of projects) — nothing was loaded.','error'); return; }
+    if(reason==='bad-shape'){ setStateIoMsg(`"${stateBadKey(parsed)}" in that state file is not in the expected format — nothing was loaded.`,'error'); return; }
     if(!confirm(`Load ${keys.length} item(s) from the connected repo? This OVERWRITES matching state in this browser.`)) return;
     applyStateKeys(data,keys);
     switchProject(activeProjectId); renderProjectsTab();
@@ -2998,7 +3101,7 @@ async function loadStateFromRepo(){
 
 // ─── ARCHIVE ─────────────────────────────────────────────────
 function archiveKey(){ return `ccg:${activeProjectId}:archive`; }
-function loadArchiveEntries(){ try{return JSON.parse(localStorage.getItem(archiveKey())||'[]')}catch(e){return []} }
+function loadArchiveEntries(){ let v; try{v=JSON.parse(localStorage.getItem(archiveKey())||'[]')}catch(e){return []} return Array.isArray(v)?v.filter(isPlainObj):[]; }
 function saveArchiveEntries(arr){ try{localStorage.setItem(archiveKey(),JSON.stringify(arr))}catch(e){storageWarn(e)} }
 
 function renderArchive(){
@@ -3012,14 +3115,14 @@ function renderArchive(){
   el.innerHTML=all.map((e,i)=>{
     const isSeed=seeds.find(s=>s.id===e.id);
     return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
-      <div role="button" tabindex="0" onkeydown="kbdActivate(event)" onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+      <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
+        <button type="button" onclick="event.stopPropagation();toggleLog('arlog-${i}',this.parentNode)" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer">
           <span style="color:var(--accent);font-size:11px;flex-shrink:0">▶</span>
           <span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
-        </div>
+        </button>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
           <span style="font-size:11px;color:var(--text-muted);font-family:monospace">${esc(e.date)}</span>
-          ${!isSeed?`<button onclick="event.stopPropagation();deleteArchiveEntry(${jsArg((e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
+          ${!isSeed?`<button type="button" aria-label="Delete archive entry: ${esc(e.title)}" onclick="event.stopPropagation();deleteArchiveEntry(${jsArg((e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
           <span style="color:var(--text-muted);font-size:10px">▼</span>
         </div>
       </div>
@@ -3068,7 +3171,18 @@ function buildTier1Text(project){
   return `Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
 README, and the roadmap carefully before doing anything else.
 
-Do not make any changes to any files during the audit phase.
+Do not make any changes to any files during the audit phase, other than
+the optional CYCLE OPEN step below.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 This audit runs in three stages within this session. Complete each stage fully before starting the next.
 
@@ -3292,13 +3406,24 @@ items) to implement. Do not implement anything until then.`;
 function buildTier2AuditText(project){
   return `Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
 the Cycle Workflow Config) before starting. Do not make any changes
-to any files during this session.
+to any files during this session, other than the optional CYCLE OPEN
+step below.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 
 This session's scope: [SUBSYSTEM GROUP NAME]
 Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
+
+CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
+a new cycle, and this is the ONLY file write the session may make. Unless
+STATE.md's Phase is already "audit" (a parallel or re-run audit of a
+cycle that is already open — then leave Cycle alone and say so),
+increment its Cycle field by 1 (treat a missing or non-numeric value as
+0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
+this audit's scope, and Updated to today's date. Every later phase of
+this cycle carries that number; none of them increments it. Skip if
+.cycle/STATE.md does not exist.
 
 If [SUBSYSTEM GROUP NAME] names a subsystem listed in \`Frozen Subsystems\`:
 print this banner at the top of your output before continuing, then
@@ -3442,7 +3567,9 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed actions, any actions
 not finished, open follow-on items, decisions made, and a "Where I left
 off" line. This lets /cycle-resume continue cleanly in a fresh session
-if context runs out. If .cycle/ does not exist, skip this step.
+if context runs out. Set Phase: implement; leave Cycle exactly as the
+audit's CYCLE OPEN step set it — implement sessions never increment it.
+If .cycle/ does not exist, skip this step.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-targeted-implement.md (create the
@@ -3530,7 +3657,8 @@ Tally: [production fixes] − [new failure modes] = [net score]
 
 4. INVARIANT CHECK
 Check whether any changes could have violated invariants from the project's
-invariant library (listed in CLAUDE.md Common Gotchas). Flag any at risk.
+invariant library (the Invariant Library section of CLAUDE.md's Cycle
+Workflow Config). Flag any at risk.
 
 5. SUMMARY
 Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
@@ -3571,8 +3699,11 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed findings, any
 selected findings not finished, open follow-on items, decisions made,
 and a "Where I left off" line. This lets /cycle-resume continue cleanly
-in a fresh session if context runs out. If .cycle/ does not exist, skip
-this step — the summary block above is the record, as usual.
+in a fresh session if context runs out. Set Phase: implement; leave Cycle
+exactly as the audit's CYCLE OPEN step set it — implement sessions never
+increment it, so every batch from one audit names its block with the
+same number. If .cycle/ does not exist, skip this step — the summary
+block above is the record, as usual.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-broad-implement.md (create the
@@ -3759,11 +3890,12 @@ function buildSeamsText(project){
     : '  (No invariants defined yet — this audit will create the initial library)';
   const groups=project.cycleGroups||project.subsystems.map(s=>s.name);
   const subsysList=groups.map(g=>`  - ${g}`).join('\n');
-  return `Do not make any changes to any files during this session.
+  return `Do not make any changes to any files during this session, other than the
+optional SEAM COUNTER reset at the end.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 
-This is a Seams & Invariants Audit. It runs every 3–4 subsystem cycles and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
+This is a Seams & Invariants Audit. It runs on the project's Seams Audit Cadence (Cycle Workflow Config; default every 4 subsystem cycles) and has NO implementation phase. Your scope is explicitly the seams between subsystems and the invariants that must hold across them — the things no single vertical subsystem audit can own.
 
 Project subsystems for reference:
 ${subsysList}
@@ -3854,7 +3986,13 @@ Test Coverage: [observations]
 
 RECOMMENDED FOCUS FOR NEXT SUBSYSTEM CYCLE:
 [Which subsystem should be audited next based on seam risk, and what seam-related findings should be added to its audit scope]
----END SEAMS & INVARIANTS AUDIT BLOCK---`;
+---END SEAMS & INVARIANTS AUDIT BLOCK---
+
+SEAM COUNTER (optional — only if .cycle/ exists): reset "Subsystem cycles
+since last Seams audit" in .cycle/STATE.md to 0. This audit is what that
+counter measures — /audit and /cycle-status read it to report the next one
+DUE — so leaving it unreset reports DUE forever. This is the only file
+write this session may make. Skip if no .cycle/.`;
 }
 
 function renderSeams(){
@@ -4077,7 +4215,17 @@ function setNavOpen(open,restoreFocus){
   n.classList.toggle('open',!!open);
   const t=document.getElementById('navToggle');
   if(t&&t.setAttribute)t.setAttribute('aria-expanded',open?'true':'false');
-  if(open){ const first=n.querySelector&&n.querySelector('a[href^="#"]'); if(first&&first.focus)first.focus(); }
+  // F26: focus once the slide-in has FINISHED. The drawer is visibility:hidden
+  // while closed, and Chromium refused focus to its links until the transform
+  // transition ended (measured: synchronous, one rAF, two rAFs and setTimeout 0
+  // all failed; 250ms and transitionend worked). The timeout is the fallback for
+  // when no transition runs. Neither fires if focus is already in the drawer, so
+  // a fast Tab is never pulled back.
+  if(open){ const first=n.querySelector&&n.querySelector('a[href^="#"]'); if(first&&first.focus){
+    const go=()=>{ if(n.classList.contains('open')&&!(n.contains&&n.contains(document.activeElement))) first.focus(); };
+    if(typeof n.addEventListener==='function'){ const once=e=>{ if(e&&e.target!==n)return; n.removeEventListener('transitionend',once); go(); }; n.addEventListener('transitionend',once); }
+    if(typeof setTimeout==='function') setTimeout(go,300); else go();
+  } }
   // Only hand focus back if the drawer WAS open: Escape is a document-wide
   // listener, so on desktop (where the toggle is display:none) an unguarded
   // restore would fire on every Escape press.
@@ -4087,10 +4235,21 @@ function toggleNav(){ const n=document.getElementById('sidebar'); setNavOpen(!(n
 // Called on every nav-link click too, where focus is already on the link — only
 // an explicit dismissal (Escape, backdrop) hands focus back to the toggle.
 function closeNav(restoreFocus){ setNavOpen(false,restoreFocus); }
-try{ document.addEventListener('keydown',function(e){ if(e&&e.key==='Escape')closeNav(true); }); }catch(e){}
+// F26 (Cycle 7): while the mobile drawer is open, Tab and Shift+Tab wrap inside
+// it. Focus used to walk out of the open drawer onto controls it was covering.
+function trapNavFocus(e){
+  const n=document.getElementById('sidebar');
+  if(!n||!n.classList||!n.classList.contains('open')||!n.querySelectorAll)return;
+  const f=[...n.querySelectorAll('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent!==null);
+  if(!f.length)return;
+  const first=f[0], last=f[f.length-1], at=document.activeElement;
+  if(e.shiftKey&&(at===first||!n.contains(at))){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey&&(at===last||!n.contains(at))){ e.preventDefault(); first.focus(); }
+}
+try{ document.addEventListener('keydown',function(e){ if(!e)return; if(e.key==='Escape')closeNav(true); else if(e.key==='Tab')trapNavFocus(e); }); }catch(e){}
 
 // ─── DASHBOARD (live project status: GitHub primary, cache + self-reported fallback) ──
-function dashLoad(key){ try{return JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}} }
+function dashLoad(key){ let v; try{v=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){return {}} return isPlainObj(v)?v:{}; }
 function dashSave(key,obj){ try{localStorage.setItem(key,JSON.stringify(obj))}catch(e){storageWarn(e)} }
 function dashRepos(){ return dashLoad('ccg:dashRepos'); }
 function dashCache(){ return dashLoad('ccg:dashCache'); }
@@ -4112,19 +4271,35 @@ function parseRepoSpec(spec){ if(!spec)return null; const at=String(spec).split(
 function parseHealth(md){ const g=re=>{const m=md.match(re);return m?m[1].trim():'';}; return { overall:g(/Overall[^:\n]*:\s*([\d.]+)\s*\/\s*10/i), lastSynthesis:g(/Last synthesis:\s*([^\n]+)/i), summary:g(/One-line summary:\s*([^\n]+)/i), topVertical:g(/Top vertical priority:\s*([^\n]+)/i), topHorizontal:g(/Top horizontal priority:\s*([^\n]+)/i) }; }
 function parseState(md){ const g=re=>{const m=md.match(re);return m?m[1].trim():'';}; return { phase:g(/^Phase:\s*([^\n]+)/im), updated:g(/^Updated:\s*([^\n]+)/im), cycle:g(/^Cycle:\s*([^\n]+)/im) }; }
 
+const DASH_FETCH_TIMEOUT_MS=15000;
 async function ghFetchFile(spec,path){
-  const r=parseRepoSpec(spec); if(!r||typeof fetch!=='function')return null;
+  if(typeof fetch!=='function')return null;
+  // F14 (Cycle 7): a malformed spec returned null, which fetchProjectStatus
+  // turned into an empty status and refreshDashboard recorded as ok:true — a
+  // typo like "myrepo" rendered "🟢 Live · just now" with nothing fetched.
+  const r=parseRepoSpec(spec); if(!r) throw new Error('"'+spec+'" is not a repo — use owner/repo or owner/repo@branch');
   const tok=dashToken(); let url, opts={headers:{}};
   if(tok){ url='https://api.github.com/repos/'+r.owner+'/'+r.repo+'/contents/'+path+'?ref='+encodeURIComponent(r.branch); opts.headers['Accept']='application/vnd.github.raw'; opts.headers['Authorization']='Bearer '+tok; }
   else { url='https://raw.githubusercontent.com/'+r.owner+'/'+r.repo+'/'+r.branch+'/'+path; }
-  const resp=await fetch(url,opts);
+  // F14: no timeout meant a hung request left dashRefreshing set, and Refresh
+  // did nothing for the rest of the session.
+  const ctl=typeof AbortController==='function'?new AbortController():null;
+  const timer=ctl?setTimeout(()=>ctl.abort(),DASH_FETCH_TIMEOUT_MS):null;
+  if(ctl) opts.signal=ctl.signal;
+  let resp;
+  try{ resp=await fetch(url,opts); }
+  catch(e){ if(e&&e.name==='AbortError') throw new Error(path+' → timed out after '+(DASH_FETCH_TIMEOUT_MS/1000)+'s'); throw e; }
+  finally{ if(timer) clearTimeout(timer); }
   if(!resp.ok) throw new Error(path+' → HTTP '+resp.status);
   return await resp.text();
 }
 async function fetchProjectStatus(spec){
   const health=await ghFetchFile(spec,'PROJECT_HEALTH.md');
   const status=parseHealth(health||'');
-  try{ const st=await ghFetchFile(spec,'.cycle/STATE.md'); if(st) Object.assign(status,parseState(st)); }catch(e){}
+  // A 404 here is normal (a project without .cycle/); any other failure keeps
+  // its reason so the card can say why the phase is missing (F14).
+  try{ const st=await ghFetchFile(spec,'.cycle/STATE.md'); if(st) Object.assign(status,parseState(st)); }
+  catch(e){ const msg=String((e&&e.message)||e); if(!/HTTP 404/.test(msg)) status.stateError=msg; }
   return status;
 }
 let dashRefreshing=false;
@@ -4135,6 +4310,7 @@ async function refreshDashboard(){
   const ids=Object.keys(repos).filter(id=>repos[id]);
   const st=document.getElementById('dashStatus'); if(st) st.textContent=ids.length?'Refreshing…':'No repos configured — add one per card below (⚙ source)';
   let okN=0, failN=0;
+  try{
   for(const id of ids){
     try{ const status=await fetchProjectStatus(repos[id]); cache[id]={status,fetchedAt:new Date().toISOString(),ok:true}; okN++; }
     // F06 (Cycle 6): the error was recorded ONLY when there was no prior cache
@@ -4143,7 +4319,9 @@ async function refreshDashboard(){
     // unexplained stale "Cached" chip. Always record the reason.
     catch(e){ const msg=String((e&&e.message)||e); if(cache[id]){ cache[id].ok=false; cache[id].error=msg; } else { cache[id]={status:null,fetchedAt:null,ok:false,error:msg}; } failN++; }
   }
-  dashSave('ccg:dashCache',cache); dashRefreshing=false; renderDashboard();
+  dashSave('ccg:dashCache',cache);
+  } finally { dashRefreshing=false; }
+  renderDashboard();
   if(st&&ids.length) st.textContent='Updated '+okN+' live'+(failN?(', '+failN+' failed — reason on the card'):'');
 }
 function dashboardCard(p){
@@ -4151,14 +4329,18 @@ function dashboardCard(p){
   const spec=repos[p.id]||'', c=cache[p.id], man=manual[p.id]||{};
   let status=null, src='', icon='○';
   const err=(c&&c.ok===false&&c.error)?dashErrHint(c.error):'';
+  const stErr=(c&&c.ok&&c.status&&c.status.stateError)?dashErrHint(c.status.stateError):'';
   if(c&&c.ok&&c.status){ status=c.status; src='Live · '+relTime(c.fetchedAt); icon='🟢'; }
   else if(c&&c.status){ status=c.status; src='Cached · '+relTime(c.fetchedAt); icon='🟡'; }
   else if(man.overall||man.phase||man.note){ status={overall:man.overall,phase:man.phase,summary:man.note}; src='Self-reported'; icon='✎'; }
   else if(err){ src='Fetch failed'; icon='🔴'; }
   else { src=spec?'No data yet':'No source — add a repo'; }
-  const overall=(status&&status.overall)||'—';
-  const phase=(status&&status.phase)||'';
-  const summary=(status&&status.summary)||'';
+  // F16: cached fields are coerced — a non-string phase threw in .split() and,
+  // renderDashboard being an early init call, blanked almost the whole console.
+  const str=v=>(v==null?'':String(v));
+  const overall=str(status&&status.overall)||'—';
+  const phase=str(status&&status.phase);
+  const summary=str(status&&status.summary);
   const r=parseRepoSpec(spec), ghUrl=r?('https://github.com/'+r.owner+'/'+r.repo):'';
   const active=(p.id===activeProjectId)?' active':'';
   // Attribute-context JS arg (INV-20). esc() ALONE is not enough here: it turns
@@ -4170,12 +4352,14 @@ function dashboardCard(p){
     +'<div class="dcard-score" style="color:'+scoreColor(overall)+'">'+esc(String(overall))+(overall!=='—'?'<span class="note-mut">/10</span>':'')+'</div></div>'
     +'<div class="dcard-row"><span class="dsrc">'+icon+' '+esc(src)+'</span>'+(phase?'<span class="dchip" title="'+esc(phase)+'">'+esc(phase.split('(')[0].trim().slice(0,30))+'</span>':'')+'</div>'
     +(err?'<div class="dcard-err" role="status">⚠ '+esc(err)+'</div>':'')
+    +(stErr?'<div class="dcard-err" role="status">⚠ phase unavailable: '+esc(stErr)+'</div>':'')
     +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
     +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
     +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
     +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+esc(ghUrl)+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit('+argId+')">⚙ source</button></div>'
     +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
     +'<label for="dspec-'+esc(p.id)+'">GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
+    +'<div class="dcard-err" id="dspec-err-'+esc(p.id)+'" role="alert" style="display:none"></div>'
     +'<label for="dman-o-'+esc(p.id)+'">Fallback when no GitHub data (overall / phase / note)</label>'
     +'<input id="dman-o-'+esc(p.id)+'" aria-label="Fallback overall score" value="'+esc(man.overall||'')+'" placeholder="overall e.g. 8.5">'
     +'<input id="dman-p-'+esc(p.id)+'" aria-label="Fallback phase" value="'+esc(man.phase||'')+'" placeholder="phase e.g. idle">'
@@ -4191,6 +4375,10 @@ function toggleDashEdit(id){ const e=document.getElementById('dedit-'+id); if(e)
 function saveDashCard(id){
   const v=i=>{const e=document.getElementById(i);return e&&e.value?e.value.trim():'';};
   const spec=v('dspec-'+id), repos=dashRepos();
+  // F14: refuse a spec that is not owner/repo[@branch] instead of saving it.
+  const specErr=document.getElementById('dspec-err-'+id);
+  if(spec&&!parseRepoSpec(spec)){ if(specErr){ specErr.textContent='"'+spec+'" is not a repo — use owner/repo or owner/repo@branch.'; specErr.style.display='block'; } return; }
+  if(specErr){ specErr.textContent=''; specErr.style.display='none'; }
   if(spec) repos[id]=spec; else delete repos[id]; dashSave('ccg:dashRepos',repos);
   const o=v('dman-o-'+id), ph=v('dman-p-'+id), nt=v('dman-n-'+id), manual=dashManual();
   if(o||ph||nt) manual[id]={overall:o,phase:ph,note:nt}; else delete manual[id]; dashSave('ccg:dashManual',manual);

@@ -5,6 +5,163 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.38.0 — 2026-10-12
+
+Cycle-7 Batch 4: console keyboard and layout. Console-only — **no command-body
+or config-schema change, so no `/sync-commands` re-pull.** Every fix was verified
+in headless Chromium by re-running the scan's own probes, and pinned by a
+check-html case that was proven to fail with its fix reverted.
+
+- **F24 — Enter on a cycle-tracker phase dot recorded the wrong phase.**
+  `kbdActivate` did not stop the event, so the dot's keydown also reached the
+  row's handler: a click marked "audit", Enter marked "implement". It now stops
+  at the control that handled it.
+- **F25 — controls nested inside `role="button"` rows.** The archive's "×" sat
+  inside a role-button header, so Enter toggled the entry and never deleted it;
+  the tracker's phase dots sat inside a role-button row, so screen readers heard
+  one button with its children flattened into its name. Both are now native
+  buttons that are siblings, not descendants: the archive delete button is named
+  "Delete archive entry: <title>", and each phase dot is named and carries
+  `aria-pressed`.
+- **F26 — the mobile drawer.** Closed, it was only moved off-screen, so its 71
+  links stayed in the tab order ahead of the page; it is now `visibility:hidden`
+  (applied after the slide-out). Open, focus now wraps inside it, and opening it
+  moves focus to the first link once the slide-in ends (Chromium refused focus
+  until then — measured).
+- **F22 — invariant tables clipped their Subsystem column.** They reused the
+  subsystem table's nowrap 44% first column, so rule text pushed the Subsystem
+  column out of view on every row at every width, and cut the rule mid-sentence
+  on mobile. They now carry their own column rules.
+- **F23 — sideways page scroll from 769px to ~1136px.** `main` is a flex item and
+  had no `min-width:0`, so unwrappable content widened it past the viewport.
+
+Also: the INV-49 keyboard-reachability guard counted ANY nearby button with an
+onclick as "delegation", because it searched a window that began at the row's
+own tag. Putting real buttons inside the tracker and archive rows exposed it (the
+INV-49 mutation case went false green); it now requires a later button whose own
+onclick calls the row's function. And a Batch-2 (v1.36.0) slip is fixed: a
+project saved with a blank Axis B field was reported as "repaired" on every load.
+
+## 1.37.0 — 2026-10-12
+
+Cycle-7 Batch 3: the scripts consuming projects run. **No command-body or
+config-schema change, so no `/sync-commands` re-pull** — but projects that copy
+scripts should re-copy the ones below, and `verification-pack.mjs` has a new
+calling convention (see F34). Every fix has a regression case, each proven to
+fail with its fix reverted.
+
+- **F33 — scripts run through a symlinked `scripts/` did nothing and exited 0.**
+  Node resolves symlinks for `import.meta.url` but not `process.argv[1]`, so the
+  main-module check in `invariant-check`, `verification-pack`,
+  `check-output-blocks` and `gen-html-prompts` was false — a guard that passed
+  silently. All four now compare real paths.
+- **F34 — `verification-pack.mjs` could not run in a consuming project.** It read
+  the §4v body from the project's own CLAUDE.md (only this repo has it), resolved
+  paths relative to the script rather than the project, and hardcoded the project
+  name. The project is now the working directory (or `--root`); the body comes
+  from `--template PATH`, the project's CLAUDE.md, or the CLAUDE.md beside the
+  script; `--project` names it (default: the directory name). **Behaviour change:**
+  running the script from a directory other than the project now packs THAT
+  directory — pass `--root` to point elsewhere.
+- **F32 — net totals counted synthesis rows.** `render-metrics` and
+  `portfolio-status` summed `net_score` across every phase, so an older
+  `metrics.csv` whose synthesis rows carry values (the pre-v1.12.1 console wrote
+  them — Cycle-4 F1) double-counted. Those columns are now read from
+  non-synthesis rows only, and the table shows a synthesis row's as "—". The
+  render-metrics test had been **asserting the double count**; it now asserts the
+  correct total.
+- **F35 — three invariant readers, three counts, on a CRLF file.**
+  `invariant-check` found none (`.` does not match `\r`), the SessionStart hook
+  skipped indented rules, the §4v pack counted them all. All three now agree with
+  the INV-68 floor's ground truth. The INV-68 mutation case depended on the old
+  disagreement and went false green; it now makes each reader drop rules instead.
+- **F36 — `portfolio-status` read the template's default Seams cadence.** It took
+  the first "every N subsystem" near the heading, and `/setup-cycle` OUTPUT 1's
+  heading itself says "default: every 4". It now reads the first such line under
+  the heading.
+- **F39 — line-split CSV readers.** `cycleTotals` and `netTrend` split on newlines
+  before parsing, so a quoted note containing one dropped its row's defensive
+  count and CORRECTION warning. Both use the shared parser now; `--cycle 09`
+  matches rows stamped 9.
+- **F40 — portfolio field parsing.** An empty field captured the next line, a
+  pipe in a value opened an extra table column, and `portfolio-status` hardcoded
+  the section name instead of importing `HEALTH_SECTION`.
+- **F41 — `invariant-check` output handling.** A passing command with >1MB of
+  output was a FAIL (the default `maxBuffer`), a hung command hung the probe (now
+  `--timeout`, default 1800s), and a loud failure echoed its whole last line —
+  after which `process.exit()` cut off the remaining results and the summary.
+
+## 1.36.0 — 2026-10-12
+
+Cycle-7 Batch 2: console data correctness. Console-only — **no command-body or
+config-schema change, so no `/sync-commands` re-pull.** Each fix has a
+check-html case that drives the real function path, and each case was proven to
+fail with its own fix reverted.
+
+- **F12 — editing the active project left every prompt stale.** `saveProjectForm`
+  re-rendered only the Projects tab and the selector, so §6a, §T1, §4v, §1s, the
+  cycle tracker and the invariant tables kept the old subsystems until a switch
+  or reload — and Copy pasted the stale text. It now re-renders through
+  `switchProject` when the edited project is the active one.
+- **F13 — the §6a fill form copied one pasted block under every subsystem.** The
+  three block placeholders were identical per subsystem and the form dedupes by
+  token. Each now names its subsystem (brackets in a name become parentheses so
+  the token stays whole), giving every subsystem its own fields. Values saved
+  under the old shared placeholders no longer attach.
+- **F14 — a mistyped Dashboard repo showed "🟢 Live".** A malformed spec now
+  fails with a reason instead of being recorded as a successful empty fetch, and
+  the card refuses to save one. Fetches time out after 15s (a hung request used
+  to disable Refresh for the session), and a STATE.md failure other than 404
+  keeps its reason on the card instead of being swallowed.
+- **F15 — a stale active-project id wrote data where no project could reach it.**
+  It is now resolved at load (it already was after an import).
+- **F16 — malformed stored values in six keys bricked init, and import let them
+  in.** The tracker, invariants, archive and dashboard loaders tolerate a value
+  of the wrong shape, Axis B entries are repaired like the rest of a project,
+  and an import or repo load carrying any of those keys in the wrong shape is
+  refused whole, naming the key. A render failure after a successful write no
+  longer reports "failed while writing".
+- **F17 — fill forms built and closed under one project reopened with its data
+  after a switch.** Closed forms are now discarded on switch.
+
+## 1.35.0 — 2026-10-12
+
+Cycle-7 Batch 1: every `.cycle/` state write now has an owner, and no prompt
+forbids the write it asks for. **Command-body change** — consuming projects
+should re-pull with `/sync-commands` (`/broad-scan`, `/audit`,
+`/targeted-audit`, `/broad-implement`, `/targeted-implement`, `/implement`,
+`/cycle-resume`, `/reflect`, `/cycle-init`).
+
+- **F01 — nothing incremented `Cycle:`.** The rule said it "increments by 1
+  when a NEW audit cycle begins", but every audit is read-only and no command
+  mentioned the field, so it moved only by hand (Cycle 6's bump happened inside
+  an implement commit). `/broad-scan`, `/audit` and `/targeted-audit` now carry
+  a **CYCLE OPEN** step — their one permitted write — that increments Cycle and
+  sets `Phase: audit`, unless Phase is already `audit` (a parallel or re-run
+  audit of an open cycle). Implement CHECKPOINTs and `/cycle-resume` set
+  `Phase: implement` and never touch Cycle; `/reflect` sets `Phase: reflect`;
+  `/cycle-init` starts the field at 0 instead of copying the template
+  placeholder, so the first audit makes it 1. The rule no longer requires a
+  prior `/reflect` — Tier-1 cycles never run one. `check-template-sync`'s
+  `.cycle/`-write gating check (INV-12) now covers the new step name.
+- **F02 — the Seams counter reset never reached the agent.** It sat in prose
+  outside the §1s prompt body, whose first line forbade any write. The body now
+  ends with a gated SEAM COUNTER step and permits exactly that write; its
+  hardcoded "every 3–4 subsystem cycles" now points at the configured cadence.
+- **F03 — §6a's step 8 metrics append contradicted its own opener.** The opener
+  now permits it.
+- **F04 — `/reflect`'s write exemption omitted its BLOCKS step**, and the block
+  filename's `<letter>` was never defined. Both fixed.
+- **F06 — `/broad-implement` sent the agent to Common Gotchas for the invariant
+  library**; it now names the Invariant Library section.
+
+Mirrored into the console (the dynamic builders by hand, the static prompts by
+`gen-html-prompts --write`); `.claude/commands/` regenerated. The INV-72 mutation
+case was cycle-bound (a fake 1.30.2 release only fell inside the floor while the
+cycle was 6) and went FALSE GREEN the moment Cycle 7 opened; it now pins STATE.md
+back to Cycle 6 instead, which stays violating in every later cycle. A second
+INV-12 case proves the gating check covers CYCLE OPEN. 83 mutations, 73/73 proven.
+
 ## 1.34.0 — 2026-10-12
 
 Two `/broad-scan` changes bundled into one release, plus a small

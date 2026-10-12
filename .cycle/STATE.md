@@ -1,83 +1,55 @@
 # Cycle State
 
 ## Current
-Cycle: 6
-Phase: idle — CYCLE 6 IS CLOSED (§6a ran 2026-09-04). Two post-synthesis releases landed after it: v1.33.0 (policy trigger RELATIVE) and v1.34.0 (/broad-scan G/ST IDs + EXPANSION PLAN, and R21's dead-artifact lens). Cycle 7 begins with a fresh /broad-scan, which increments Cycle to 7 (P3).
-Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
+Cycle: 7
+Phase: implement
+Scope: broad (Cycle-7 /broad-scan, 2026-10-12 — 50 findings F01–F50, 8 fix batches, expansion plan E1–E4)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
-Subsystem cycles since last Seams audit: 0 (cadence 3 — reset by the Seams & Invariants audit of 2026-09-04; its block is .cycle/blocks/06-c-seams.md)
+Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it, a Seams audit resets it)
 Updated: 2026-10-12
 
 ## In progress (facts to carry forward — NOT judgments)
-- Nothing partially done. v1.34.0 is complete; the next step is the Cycle-7 /broad-scan.
+- Batches 1–4 are complete (v1.35.0–v1.38.0). Batches 5–8 and the expansion plan are not started.
+- The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
+  scan writes no file. Batch definitions below are the record of what each batch contains.
+- Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
+  From v1.35.0 on, the opening audit writes it.
 
 ## Completed this cycle
-- v1.26.0 | CLAUDE.md, console §T1 | /broad-scan gained the closing IMPLEMENTATION BATCH PLAN section.
-- v1.27.0 | Batches 1+2 | F01 fill-form XSS sink, F09 derived hostile-sink set, F17 mobile layout,
-  F04 malformed-project recovery, F02 cycle-scoped verification pack, F03 one CSV parser, F10
-  /cycle-init PROJECT_HEALTH skeleton, F07 PROJECT_HEALTH standing corrected, F08 config.md drift.
-- v1.28.0 | Batches 3+4 | F05 invariant-id stability, F06 dashboard failure reason, F13 theme-safe
-  colour tokens + computed contrast guard, F12 form labels + drawer keyboard dismissal.
-- v1.29.0 | Batches 5+6 | F11 fill-field classification, F14 seeded §4v probes, F15 this file,
-  F16 every static console prompt locked (nine, not the eight the scan counted).
-- v1.30.0 | post-reflect | the two duplicate-id collisions /regression found: <section id="t1"> shadowed
-  <pre id="t1"> and renderTier1() destroyed the whole Tier 1 panel on every load; doCopy('setup') copied
-  the section. Pre ids renamed t1→t1a, setup→psetup (sections untouched — nav depends on them). INV-67
-  added: every markup id is unique.
-- v1.30.1 | 26 dead CSS rules (17 classes) removed — the residue of an older archive rendering, the
-  superseded cycle-tracker checkbox, and .prose. Verified SAFE from real class attributes, not raw text
-  (a raw search called fl/fr/fs/ft/lt "used" — they appear inside "flex", "from", "restoring", &lt;).
-  ROADMAP R21 queues the /broad-scan dead-artifact lens for Cycle 7 with its exact replacement text.
-- v1.31.0 | Cycle-6 remediation Batches 1+2 | A1 INV-68 the invariant-library PARSE FLOOR (two parsers
-  disagreed; a rule with one leading space left the proven set silently while both tools reported
-  "67/67 … fails closed ✓" against a 68-rule file). A2 library text repairs: INV-50 rescoped to what it
-  proves, INV-66's self-contradiction fixed, INV-29 RETIRED as subsumed by INV-66 with its drift
-  mutation moved there. B1 INV-69: a covering :focus-visible rule must APPLY, not merely exist —
-  scoping the file's one rule to .nav-item left 19 controls uncovered and the old check called them
-  covered. B2 INV-70: the §4v pack's disclosed seed now reproduces its own printed probes; buildPack
-  derives them from the seed it prints and takes no override.
-- v1.32.0 | Cycle-6 remediation Batches 3-5 | C1 INV-71 the PROJECT_HEALTH "Current Standing" label
-  contract gets ONE definition (scripts/health-fields.mjs, keyed not positional); doc copies checked
-  inside the span that writes them, the console checked by BEHAVIOUR because parseHealth matches a loose
-  pattern rather than spelling the labels. C2 INV-74 CI runs every Test Command stage in order.
-  D1 three blocks backfilled: 06-1.30.1 (marked a reconstruction, claims re-verified), 06-b-verification
-  and 06-c-seams. D2 INV-72 every release of the current cycle has a block. E2 seams counter reset.
-- Invariant library 58 → 72 (one retired, six added), all runnable and mutation-proven (81 mutations).
-- v1.33.0 | post-synthesis | §6a policy trigger made RELATIVE (decline / sharp drop / persistent
-  laggard / absolute floor); INV-75.
-- v1.34.0 | post-synthesis | X1 /broad-scan numbers completeness gaps G1–G5 and strategic suggestions
-  ST1–ST5 (suggestions now carry effort) and closes with a separate EXPANSION PLAN (E-batches, rows
-  tagged GAP:/STRATEGIC:, every G/ST placed once or under Not batched); /broad-implement accepts G/ST
-  IDs and REFLECT counts them as capabilities. X2 ROADMAP R21 applied verbatim (Stage 1
-  dead/superseded-artifact lens with SAFE/PROPOSE, plus the DO-NOT addendum).
+- v1.35.0 | Batch 1 | F01 CYCLE OPEN step in /broad-scan, /audit, /targeted-audit owns the Cycle increment;
+  implement CHECKPOINTs + /cycle-resume set Phase: implement, /reflect sets Phase: reflect, /cycle-init starts
+  Cycle at 0; INV-12 gating check covers the new step. F02 §1s body ends with a gated SEAM COUNTER reset and
+  reads the configured cadence. F03 §6a opener permits its step-8 metrics append. F04 /reflect exemption covers
+  BLOCKS; <letter> defined. F06 /broad-implement points at the Invariant Library.
+- v1.36.0 | Batch 2 | F12 editing the active project re-renders every prompt; F13 §6a block placeholders are
+  per subsystem; F14 malformed repo spec is a visible failure, fetch timeout, STATE.md reason kept, bad spec
+  refused at save; F15 stale active id resolved at load; F16 loaders tolerate wrong-shape values, Axis B repaired,
+  import refuses wrong-shape keys whole; F17 closed fill forms discarded on switch. Six check-html cases, each
+  proven to fail with its fix reverted.
+- v1.37.0 | Batch 3 | F33 symlinked scripts run (real-path main check, 4 scripts); F34 verification-pack works in
+  a consumer (cwd root, --template/--project); F32 synthesis net excluded from totals (test had asserted the bug);
+  F35 CRLF/indent-tolerant invariant parsing in all three readers; F36 cadence read from its line; F39 shared CSV
+  parser + numeric cycle match; F40 line-bounded fields, escaped pipes, HEALTH_SECTION; F41 maxBuffer, --timeout,
+  capped reason, exitCode. INV-68 mutation case re-targeted (went false green once both parsers agreed).
+- v1.38.0 | Batch 4 | F24 kbdActivate stops propagation; F25 tracker dots and archive delete are native sibling
+  buttons (named, aria-pressed); F26 closed drawer visibility:hidden, open drawer traps focus and focuses its first
+  link after the slide-in; F22 invariant tables' own column rules; F23 main min-width:0. Browser-verified with the
+  scan's probes. Also: INV-49 delegation guard tightened (false green exposed by this batch); v1.36.0's false
+  "repaired" warning for a blank Axis B fixed.
 
 ## Pending / not yet done
-CYCLE 6 IS COMPLETE — §6a ran on 2026-09-04 (overall 9.0 → 9.2; PROJECT_HEALTH.md and one
-phase=synthesis metrics row written). Nothing remains in this cycle.
-NEXT: /broad-scan opens Cycle 7 and increments the Cycle field to 7.
-- Cycle 7's queued first item: R22 (R21 shipped in v1.34.0 ahead of the scan, so the Cycle-7 scan is
-  the first to run with it). R22 is (scripts/synthesis-pack.mjs, the §6a assembler; recorded 2026-09-04 after
-  §6a had to be hand-fed a reconciliation that had already rotted in four places).
-- OPEN, pending a DECISION rather than work — INV-73: §1s must ask about the project's CONFIGURED Axis B
-  categories. buildSeamsText hardcodes the five defaults, and THIS project's five are all custom, so the
-  Seams audit of 2026-09-04 was asked about categories it does not use. It is the single finding that
-  pulled TWO Axis A dimensions down at synthesis (Prompt Quality, Adaptability) and holds Silent Prompt
-  Degradation at 8.5. Closing it means editing an --assert-locked canonical body AND the SEAMS block's
-  registered field names; making those dynamic weakens the shape check that guards them.
-- OPEN, pending a DECISION: §4v independence vs the SessionStart hook. The hook injects STATE.md —
-  implementer prose and self-assessment — into every new session, including a §4v one, which contradicts
-  §4v's own opening instruction. Either suppress the judgment-bearing sections when Phase is `verify`,
-  or require §4v to run hook-free.
-- CLOSED in v1.33.0: the policy trigger is now RELATIVE (decline / sharp drop / persistent laggard /
-  absolute floor), validated by replaying six cycles of real Axis B history — Cycle 5 fires, Cycle 6
-  correctly does not. The Cycle-6 PROJECT_HEALTH entry still QUOTES the old reasoning ("lowest 8.0 vs
-  threshold 4/10"); the verdict is unchanged, so correct the wording at the next synthesis rather than
-  editing a historical entry.
-- INV-72 is a RATCHET, not a proof of completeness: its floor is derived from the versions this cycle
-  already has blocks for, so a cycle whose FIRST release ships blockless sets its own floor above it.
-- R21 left one decision open: /audit focus area 2 still carries the terse code-only dead-code bullet and
-  /targeted-audit has no dead-code lens at all. Decide that asymmetry deliberately, not by reflex.
-- ROADMAP R20 (real-DOM console test stage) is recorded but not built, and is now trebly earned.
+- Batch 5 — focus, feedback, theme: F30, F27, F29, F28.
+- Batch 6 — guard false greens I: F31 (CI YAML read as text), F45 (hostile fixture never seeds remote Dashboard
+  data), F18 (199-char placeholder cap), F48, F49, F20. Lands AFTER Batches 2–3.
+- Batch 7 — guard false greens II: F47 (order-blind canonicalCoverage), F46, F50 (block copies disagree now),
+  F37, F38, F44.
+- Batch 8 — docs/agnosticism: F10 (HIPAA-only "generic" security add-on), F42 (invariant-check runs arbitrary
+  shell; header says otherwise), F07, F08, F05 (v1.33.0 missing from the re-pull list), F09, F11, F19, F21.
+- Deferred: F43 (hook framing/size cap) — tied to the §4v-vs-SessionStart-hook decision.
+- Expansion (optional): E1 ST4+G5, E2 ST1+G1, E3 G2, E4 ST3+G4. Not batched: ST2 (packaging decision), G3.
+- OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
+  independence vs the SessionStart hook; R21's /audit vs /targeted-audit dead-code asymmetry.
+- Phase "verify" is still written by nothing — §4v is read-only. The §4v-vs-hook decision depends on it.
 
 ## Open follow-on items
 - deleteProject() leaves ccg:<pid>:invariants / :archive / :cycle behind; a new project deriving the
@@ -111,13 +83,6 @@ NEXT: /broad-scan opens Cycle 7 and increments the Cycle field to 7.
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-CYCLE 6 CLOSED (§6a 2026-09-04: overall 9.0 → 9.2). Two post-synthesis releases since: v1.33.0 (relative
-policy trigger) and v1.34.0 (/broad-scan G/ST IDs + separate EXPANSION PLAN; R21 dead-artifact lens;
-/broad-implement accepts G/ST). Both changed command bodies — consuming projects re-pull with /sync-commands.
-
-Next action: /broad-scan opens Cycle 7 (and increments Cycle to 7). It is the first scan to carry both
-v1.34.0 changes, so check its output actually numbers G/ST items and places each one exactly once. R22 is
-the queued first item; three decisions wait on the operator (INV-73, §4v-vs-hook, R21's /audit asymmetry).
-
-Worth carrying: the question that found four Cycle-6 guard defects — WHAT UNSTATED PROPERTY MAKES THIS
-CHECK'S CONCLUSION TRUE? — and R22, which is the same argument R19 won.
+Cycle 7 open; Batches 1–4 shipped (v1.35.0–v1.38.0), all on branch claude/tender-clarke-x722xl, not yet merged.
+Next: /broad-implement Batch 5 (focus, feedback, theme — F27 builds on Batch 4's handlers). Batches 6–7 tighten
+guards and can follow. Console rendering of Batches 2 and 4 still wants a person at a browser after merge.

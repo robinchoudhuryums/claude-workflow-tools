@@ -71,7 +71,8 @@ Tally: [production fixes] − [new failure modes] = [net score]
 
 4. INVARIANT CHECK
 Check whether any changes could have violated invariants from the project's
-invariant library (listed in CLAUDE.md Common Gotchas). Flag any at risk.
+invariant library (the Invariant Library section of CLAUDE.md's Cycle
+Workflow Config). Flag any at risk.
 
 5. SUMMARY
 Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
@@ -112,8 +113,11 @@ If a .cycle/ directory exists at the project root, create or update
 .cycle/STATE.md to reflect this session: completed findings, any
 selected findings not finished, open follow-on items, decisions made,
 and a "Where I left off" line. This lets /cycle-resume continue cleanly
-in a fresh session if context runs out. If .cycle/ does not exist, skip
-this step — the summary block above is the record, as usual.
+in a fresh session if context runs out. Set Phase: implement; leave Cycle
+exactly as the audit's CYCLE OPEN step set it — implement sessions never
+increment it, so every batch from one audit names its block with the
+same number. If .cycle/ does not exist, skip this step — the summary
+block above is the record, as usual.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-broad-implement.md (create the

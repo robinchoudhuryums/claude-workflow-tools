@@ -11,6 +11,48 @@ workflow itself (gotchas, design decisions, invariants) lives in
 
 Entries are newest-first.
 
+## Cycle 6 — full release list v1.26.0 → v1.34.0 — ✅ CLOSED (§6a 2026-09-04: 9.0 → 9.2)
+Rolled out of STATE.md's "Completed this cycle" when Cycle 7 opened (2026-10-12). v1.33.0 and v1.34.0
+landed after §6a and before the Cycle-7 scan, so they are filed under Cycle 6 (blocks 06-1.33.0, 06-1.34.0).
+- v1.26.0 | CLAUDE.md, console §T1 | /broad-scan gained the closing IMPLEMENTATION BATCH PLAN section.
+- v1.27.0 | Batches 1+2 | F01 fill-form XSS sink, F09 derived hostile-sink set, F17 mobile layout,
+  F04 malformed-project recovery, F02 cycle-scoped verification pack, F03 one CSV parser, F10
+  /cycle-init PROJECT_HEALTH skeleton, F07 PROJECT_HEALTH standing corrected, F08 config.md drift.
+- v1.28.0 | Batches 3+4 | F05 invariant-id stability, F06 dashboard failure reason, F13 theme-safe
+  colour tokens + computed contrast guard, F12 form labels + drawer keyboard dismissal.
+- v1.29.0 | Batches 5+6 | F11 fill-field classification, F14 seeded §4v probes, F15 this file,
+  F16 every static console prompt locked (nine, not the eight the scan counted).
+- v1.30.0 | post-reflect | the two duplicate-id collisions /regression found: <section id="t1"> shadowed
+  <pre id="t1"> and renderTier1() destroyed the whole Tier 1 panel on every load; doCopy('setup') copied
+  the section. Pre ids renamed t1→t1a, setup→psetup (sections untouched — nav depends on them). INV-67
+  added: every markup id is unique.
+- v1.30.1 | 26 dead CSS rules (17 classes) removed — the residue of an older archive rendering, the
+  superseded cycle-tracker checkbox, and .prose. Verified SAFE from real class attributes, not raw text
+  (a raw search called fl/fr/fs/ft/lt "used" — they appear inside "flex", "from", "restoring", &lt;).
+  ROADMAP R21 queues the /broad-scan dead-artifact lens for Cycle 7 with its exact replacement text.
+- v1.31.0 | Cycle-6 remediation Batches 1+2 | A1 INV-68 the invariant-library PARSE FLOOR (two parsers
+  disagreed; a rule with one leading space left the proven set silently while both tools reported
+  "67/67 … fails closed ✓" against a 68-rule file). A2 library text repairs: INV-50 rescoped to what it
+  proves, INV-66's self-contradiction fixed, INV-29 RETIRED as subsumed by INV-66 with its drift
+  mutation moved there. B1 INV-69: a covering :focus-visible rule must APPLY, not merely exist —
+  scoping the file's one rule to .nav-item left 19 controls uncovered and the old check called them
+  covered. B2 INV-70: the §4v pack's disclosed seed now reproduces its own printed probes; buildPack
+  derives them from the seed it prints and takes no override.
+- v1.32.0 | Cycle-6 remediation Batches 3-5 | C1 INV-71 the PROJECT_HEALTH "Current Standing" label
+  contract gets ONE definition (scripts/health-fields.mjs, keyed not positional); doc copies checked
+  inside the span that writes them, the console checked by BEHAVIOUR because parseHealth matches a loose
+  pattern rather than spelling the labels. C2 INV-74 CI runs every Test Command stage in order.
+  D1 three blocks backfilled: 06-1.30.1 (marked a reconstruction, claims re-verified), 06-b-verification
+  and 06-c-seams. D2 INV-72 every release of the current cycle has a block. E2 seams counter reset.
+- Invariant library 58 → 72 (one retired, six added), all runnable and mutation-proven (81 mutations).
+- v1.33.0 | post-synthesis | §6a policy trigger made RELATIVE (decline / sharp drop / persistent
+  laggard / absolute floor); INV-75.
+- v1.34.0 | post-synthesis | X1 /broad-scan numbers completeness gaps G1–G5 and strategic suggestions
+  ST1–ST5 (suggestions now carry effort) and closes with a separate EXPANSION PLAN (E-batches, rows
+  tagged GAP:/STRATEGIC:, every G/ST placed once or under Not batched); /broad-implement accepts G/ST
+  IDs and REFLECT counts them as capabilities. X2 ROADMAP R21 applied verbatim (Stage 1
+  dead/superseded-artifact lens with SAFE/PROPOSE, plus the DO-NOT addendum).
+
 ## Cycle 6 — broad-scan → /broad-implement Batches 1 + 2 — ✅ COMPLETE (v1.27.0)
 Scan (v1.26.0 added the IMPLEMENTATION BATCH PLAN closing section to /broad-scan; first output to carry it):
 17 findings; Overall 8.0 (from 9.0 — fresh eyes, not a regression: one High security sink + one High
