@@ -5,6 +5,51 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.34.0 — 2026-10-12
+
+Two `/broad-scan` changes bundled into one release, plus a small
+`/broad-implement` follow-through. **Command-body change** — consuming
+projects should re-pull with `/sync-commands`. Landed before the Cycle-7
+scan so that no cycle's findings are verified against a different version
+of the command that produced them.
+
+### Completeness gaps and strategic suggestions now reach a plan
+The v1.26.0 IMPLEMENTATION BATCH PLAN placed "every finding from Stages 1–3"
+— and Stage 3 says in so many words that completeness gaps are "not bugs".
+Gaps and suggestions were therefore correctly left out of every batch, had no
+IDs a batch row could cite, and suggestions carried no effort estimate to size
+one with. Nothing recorded excluding them; it was an oversight of scope.
+
+- Gaps are numbered **G1–G5**, suggestions **ST1–ST5** (not `S` — `S1…` is the
+  Regression Scenario numbering that Operator Visual Checks also emit), and
+  suggestions now carry S/M/L + hours.
+- A new **EXPANSION PLAN** follows the batch plan: Expansion batches `E1, E2, …`,
+  rows tagged `GAP:` / `STRATEGIC:`, dependencies on fix batches stated, and the
+  same placement rule — every G/ST item exactly once, in a batch or under
+  *Not batched* with a reason (a product decision, or too large → `/roadmap`).
+  It is deliberately separate: no G/ST item enters a numbered Batch or its
+  hour total, and the fix batches come first unless the operator says otherwise.
+- `/broad-implement` accepts G/ST IDs or an E-batch, and REFLECT records them as
+  new capabilities, never production fixes — the Cycle-5 inflation this repo's
+  Common Gotchas already warns about.
+
+### R21 — dead/superseded-artifact lens (Stage 1)
+Applied verbatim from ROADMAP R21. The Stage 1 bullet named only code
+("dead code, unused exports, stale TODOs"), so 17 dead CSS classes survived six
+audits, superseded implementations outlived the fixes that replaced them, and a
+vestigial `locked:false` exemption hid drift for four releases. The bullet now
+covers code, exports, styles/classes, markup, config, feature flags and
+exemptions — only where the artifact actively misleads — and every item must be
+marked SAFE (mechanically verified unreferenced) or PROPOSE (a question for the
+operator, never a removal). The DO-NOT-simplify rule gains a line: removing
+something needs the same evidence a fix needs. This widens the noun, not the
+mandate. `/audit` focus area 2 and `/targeted-audit` are unchanged — R21 asks for
+that asymmetry to be decided deliberately, and it has not been yet.
+
+Mirrored into the console's `buildTier1Text` and `buildTier1ImplText` (both
+still `--assert`-locked at 100% canonical coverage); `.claude/commands/`
+regenerated.
+
 ## 1.33.0 — 2026-09-04
 
 Makes the §6a policy trigger RELATIVE. Post-synthesis change to a finding the
