@@ -39,7 +39,7 @@ Item IDs (R#) are stable references for planning sessions.
   priority", and the Score History entry. INV-71 guarded those *labels* in
   v1.32.0; nothing checks the *values* match.
 
-- **R21 — Dead/superseded-artifact lens in `/broad-scan` (queued for Cycle 7).** `effort: S (~30 min)`
+- **R21 — Dead/superseded-artifact lens in `/broad-scan`.** `effort: S (~30 min)` — ✅ DONE (v1.34.0, applied verbatim before the Cycle-7 scan). The `/audit` focus-area-2 / `/targeted-audit` asymmetry below is still undecided.
   The Stage 1 flag list reads *"Dead code, unused exports, stale TODOs only if
   they create confusion"* — all **code** nouns. Nothing names styles, classes,
   markup, config or exemptions, so the lens is JS-shaped and slides past the

@@ -1,7 +1,8 @@
 If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
-Usage: /broad-implement <finding IDs or description of fixes to implement>
+Usage: /broad-implement <finding IDs, G/ST expansion IDs, or description of fixes to implement>
 Example: /broad-implement F03, F07, F12
+Example: /broad-implement G2, ST1   (or an expansion batch: E1)
 
 Paste or reference the findings from a prior /broad-scan session.
 
@@ -15,6 +16,9 @@ Read CLAUDE.md (especially Common Gotchas) before starting.
 
 Rules:
 - Implement ONLY the findings specified above — nothing else
+- G (completeness gap) and ST (strategic suggestion) items from the
+  scan's EXPANSION PLAN are in scope only when named above, by ID or by
+  their E-batch. They are new capability, not fixes — see REFLECT
 - Do not fix, refactor, or improve anything outside this scope even if
   you notice other issues — note them at the end
 - If a fix is more complex than expected, stop and describe what you
@@ -61,6 +65,8 @@ For each file you modified:
 For each fix completed:
 a) Would this bug have actually fired in production this month? YES/NO
 b) Did this fix introduce a new failure mode, documented or not? YES/NO
+G/ST items answer NO to (a) — list them as new capabilities, never as
+production fixes — but still answer (b).
 Tally: [production fixes] − [new failure modes] = [net score]
 
 4. INVARIANT CHECK

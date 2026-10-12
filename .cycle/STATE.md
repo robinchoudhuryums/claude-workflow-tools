@@ -2,25 +2,14 @@
 
 ## Current
 Cycle: 6
-Phase: idle — CYCLE 6 IS CLOSED (§6a ran 2026-09-04). One post-synthesis change landed after it: v1.33.0 made the policy trigger RELATIVE, closing the rubric weakness that synthesis flagged. Cycle 7 begins with a fresh /broad-scan, which increments Cycle to 7 (P3).
+Phase: idle — CYCLE 6 IS CLOSED (§6a ran 2026-09-04). Two post-synthesis releases landed after it: v1.33.0 (policy trigger RELATIVE) and v1.34.0 (/broad-scan G/ST IDs + EXPANSION PLAN, and R21's dead-artifact lens). Cycle 7 begins with a fresh /broad-scan, which increments Cycle to 7 (P3).
 Scope: Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 0 (cadence 3 — reset by the Seams & Invariants audit of 2026-09-04; its block is .cycle/blocks/06-c-seams.md)
-Updated: 2026-09-04
+Updated: 2026-10-12
 
 ## In progress (facts to carry forward — NOT judgments)
-- Nothing partially done. All five remediation batches are complete and pushed (v1.31.0, v1.32.0).
-- The ONLY step left in Cycle 6 is §6a HEALTH SYNTHESIS. Its inputs are the eight .cycle/blocks/06-*.md
-  files, which now include the §4v VERIFICATION BLOCK (06-b-verification.md) and the SEAMS & INVARIANTS
-  AUDIT BLOCK (06-c-seams.md) — both were persisted in the v1.32.0 batch, having existed only in a chat
-  transcript until then.
-- TELL §6a the bookkeeping it cannot derive: the cycle-6 metrics row reads 13 − 0 because /reflect ran
-  BEFORE the v1.30.0 duplicate-id fixes. Cycle total is 15 − 0 with 5 defensive, PLUS v1.31.0 (1 − 0,
-  3 defensive) and v1.32.0 (0 − 0, 6 defensive). No metrics row was added for v1.30.0, v1.30.1, v1.31.0
-  or v1.32.0 — /reflect is the sole writer of those columns (P1/INV-33).
-- §4v reported ONE failure, INV-52's reproducibility clause. v1.31.0's INV-70 closes it. §6a should
-  score the post-remediation state, not that block's verdict alone.
-- S5/S7/S8/S9 have still never been walked by a person in a browser.
+- Nothing partially done. v1.34.0 is complete; the next step is the Cycle-7 /broad-scan.
 
 ## Completed this cycle
 - v1.26.0 | CLAUDE.md, console §T1 | /broad-scan gained the closing IMPLEMENTATION BATCH PLAN section.
@@ -54,13 +43,20 @@ Updated: 2026-09-04
   D1 three blocks backfilled: 06-1.30.1 (marked a reconstruction, claims re-verified), 06-b-verification
   and 06-c-seams. D2 INV-72 every release of the current cycle has a block. E2 seams counter reset.
 - Invariant library 58 → 72 (one retired, six added), all runnable and mutation-proven (81 mutations).
+- v1.33.0 | post-synthesis | §6a policy trigger made RELATIVE (decline / sharp drop / persistent
+  laggard / absolute floor); INV-75.
+- v1.34.0 | post-synthesis | X1 /broad-scan numbers completeness gaps G1–G5 and strategic suggestions
+  ST1–ST5 (suggestions now carry effort) and closes with a separate EXPANSION PLAN (E-batches, rows
+  tagged GAP:/STRATEGIC:, every G/ST placed once or under Not batched); /broad-implement accepts G/ST
+  IDs and REFLECT counts them as capabilities. X2 ROADMAP R21 applied verbatim (Stage 1
+  dead/superseded-artifact lens with SAFE/PROPOSE, plus the DO-NOT addendum).
 
 ## Pending / not yet done
 CYCLE 6 IS COMPLETE — §6a ran on 2026-09-04 (overall 9.0 → 9.2; PROJECT_HEALTH.md and one
 phase=synthesis metrics row written). Nothing remains in this cycle.
 NEXT: /broad-scan opens Cycle 7 and increments the Cycle field to 7.
-- Cycle 7's queued first items: R21 (the /broad-scan dead-artifact lens — changes a command body, so
-  downstream re-pull) and R22 (scripts/synthesis-pack.mjs, the §6a assembler; recorded 2026-09-04 after
+- Cycle 7's queued first item: R22 (R21 shipped in v1.34.0 ahead of the scan, so the Cycle-7 scan is
+  the first to run with it). R22 is (scripts/synthesis-pack.mjs, the §6a assembler; recorded 2026-09-04 after
   §6a had to be hand-fed a reconciliation that had already rotted in four places).
 - OPEN, pending a DECISION rather than work — INV-73: §1s must ask about the project's CONFIGURED Axis B
   categories. buildSeamsText hardcodes the five defaults, and THIS project's five are all custom, so the
@@ -79,6 +75,8 @@ NEXT: /broad-scan opens Cycle 7 and increments the Cycle field to 7.
   editing a historical entry.
 - INV-72 is a RATCHET, not a proof of completeness: its floor is derived from the versions this cycle
   already has blocks for, so a cycle whose FIRST release ships blockless sets its own floor above it.
+- R21 left one decision open: /audit focus area 2 still carries the terse code-only dead-code bullet and
+  /targeted-audit has no dead-code lens at all. Decide that asymmetry deliberately, not by reflex.
 - ROADMAP R20 (real-DOM console test stage) is recorded but not built, and is now trebly earned.
 
 ## Open follow-on items
@@ -106,25 +104,20 @@ NEXT: /broad-scan opens Cycle 7 and increments the Cycle field to 7.
   :focus-visible rule EXISTED; coverage actually rested on that rule being UNIVERSAL, which nothing
   asserted. Same shape as INV-68: the proven set rested on both parsers agreeing, and nothing measured
   them against the file. When a check passes, ask what unstated property makes its conclusion true.
+- /broad-scan keeps fixes and new capability in SEPARATE plans: findings go in numbered Batches, G/ST
+  items only in Expansion batches (E1…), never in a Batch or its hour total. G/ST work is a capability,
+  never a production fix (net_score stays strict). ST, not S, because S1… is the Regression Scenario id.
 - buildPack DERIVES its probes from the seed it prints and takes no `probes` override. The override is
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-CYCLE 6 CLOSED. §6a ran 2026-09-04: overall 9.0 → 9.2, Category D 20% → 16%, no policy triggers.
-PROJECT_HEALTH.md Current Standing + a Cycle 6 Score History entry written; one phase=synthesis metrics
-row appended (category_d_ratio + axis_b_lowest only — net_score columns left blank per P1/INV-33).
-Full Test Command green (16 stages, 304 ✓); 72/72 invariants runnable, PASS, mutation-proven across 81
-mutations. Seams counter 0/3.
+CYCLE 6 CLOSED (§6a 2026-09-04: overall 9.0 → 9.2). Two post-synthesis releases since: v1.33.0 (relative
+policy trigger) and v1.34.0 (/broad-scan G/ST IDs + separate EXPANSION PLAN; R21 dead-artifact lens;
+/broad-implement accepts G/ST). Both changed command bodies — consuming projects re-pull with /sync-commands.
 
-Next action: /broad-scan opens Cycle 7 (and increments Cycle to 7). R21 and R22 are its queued first
-items; two decisions (INV-73, §4v-vs-hook) are waiting on the operator, not on work.
+Next action: /broad-scan opens Cycle 7 (and increments Cycle to 7). It is the first scan to carry both
+v1.34.0 changes, so check its output actually numbers G/ST items and places each one exactly once. R22 is
+the queued first item; three decisions wait on the operator (INV-73, §4v-vs-hook, R21's /audit asymmetry).
 
-Worth carrying: the cycle's whole shape was "the finding machinery is working better than the guards it
-inspects." Four guards proved less than their rule text claimed, and EVERY instance was caught by this
-project's own processes — §4v caught INV-52, the Seams audit caught INV-56, the mutation audit and
-guard.test.mjs each caught one of my own new guards mid-write. The question that found all four is worth
-asking of every guard: WHAT UNSTATED PROPERTY MAKES THIS CHECK'S CONCLUSION TRUE? INV-56's rested on its
-one :focus-visible rule being universal; "N/N invariants proven" rested on two parsers agreeing; §4v's
-anti-steering rested on the printed seed being the seed used; the health board rested on four hard-coded
-label lists matching. None was asserted. Also worth carrying: §6a itself had to be hand-fed a
-reconciliation that had already rotted in four places — that is R22, and it is the same argument R19 won.
+Worth carrying: the question that found four Cycle-6 guard defects — WHAT UNSTATED PROPERTY MAKES THIS
+CHECK'S CONCLUSION TRUE? — and R22, which is the same argument R19 won.
