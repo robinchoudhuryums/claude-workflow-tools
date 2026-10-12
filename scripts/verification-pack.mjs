@@ -22,19 +22,27 @@
 //
 // Usage:
 //   node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]
+//       [--root DIR] [--project NAME] [--template PATH]
 //   (cycle defaults to .cycle/STATE.md's Cycle field — the single source of
-//    truth per P3; seed defaults to the current git HEAD sha.)
+//    truth per P3; seed defaults to the current git HEAD sha; root defaults to
+//    the current directory; project defaults to the root's directory name.)
+//
+// F34 (Cycle 7): the §4v body lives ONLY in the template repo's CLAUDE.md, so a
+// consuming project's own CLAUDE.md never has it. The body is looked up in
+// --template PATH, then the project's CLAUDE.md, then the CLAUDE.md beside this
+// script (a template checkout) — never embedded here, which would be a fourth
+// copy. Requires gen-html-prompts.mjs and csv.mjs beside it.
 //
 // Importable: exports selectProbes / readInvariants / readBlocks / blockCycle /
 // cycleTotals / buildPack for the regression test. No CLI side effects on import (INV-28).
 
-import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { join, resolve, basename } from 'node:path';
 import { createHash } from 'node:crypto';
 import { sectionBody } from './gen-html-prompts.mjs';
-import { parseRow } from './csv.mjs';
+import { parseCSV } from './csv.mjs';
 
 // ── pure, testable helpers ──────────────────────────────────
 
@@ -76,15 +84,23 @@ export function readBlocks(dir, opts = {}) {
 // Cycle totals from the phase=reflect rows, plus the correction signal. A
 // summary that /reflect had to correct is exactly what the verifier should not
 // take on trust, so surface it automatically instead of relying on memory.
+// F39 (Cycle 7): rows come from the ONE whole-text parser. Splitting on '\n'
+// first and then parsing each line broke a quoted notes field containing a
+// newline, silently dropping that row's defensive count and its CORRECTION
+// warning — the one signal this pack exists to surface. Cycle numbers are
+// compared numerically, so `--cycle 09` matches rows stamped 9.
+export function sameCycle(a, b) {
+  const x = String(a).trim(), y = String(b).trim();
+  return /^\d+$/.test(x) && /^\d+$/.test(y) ? Number(x) === Number(y) : x === y;
+}
 export function cycleTotals(metricsCsv, cycle) {
-  const rows = metricsCsv.split('\n').slice(1).filter(Boolean);
+  const rows = parseCSV(metricsCsv || '').slice(1);
   let net = 0, fixes = 0, nfm = 0, defensive = 0, n = 0;
   const corrections = [];
   for (const raw of rows) {
-    // F03: a quote-aware split. The old bare split assumed only `notes` could
-    // hold a comma and silently skipped every row whose SUBSYSTEM had one.
-    const c = parseRow(raw).map(x => x.trim());
-    if (c[1] !== String(cycle) || c[3] !== 'reflect') continue;
+    // F03: a quote-aware parse — a comma-bearing SUBSYSTEM no longer shifts columns.
+    const c = raw.map(x => x.trim());
+    if (!sameCycle(c[1] || '', cycle) || c[3] !== 'reflect') continue;
     n++;
     net += parseFloat(c[4]) || 0; fixes += parseFloat(c[5]) || 0; nfm += parseFloat(c[6]) || 0;
     defensive += parseFloat(c[10]) || 0;
@@ -159,12 +175,26 @@ export function buildPack({ body, invariants, blocks, totals, cycle, seed, proje
 
 // ── CLI ─────────────────────────────────────────────────────
 function main(argv) {
-  const root = new URL('..', import.meta.url);
-  const at = f => fileURLToPath(new URL(f, root));
   const arg = name => { const i = argv.indexOf('--' + name); return i !== -1 ? argv[i + 1] : null; };
+  // F34: the PROJECT is the working directory (or --root), not the directory the
+  // script happens to live in — run from a template checkout against a project,
+  // the old script-relative root read the template's own .cycle/.
+  const rootDir = resolve(arg('root') || process.cwd());
+  const at = f => join(rootDir, f);
 
-  const body = sectionBody(readFileSync(at('CLAUDE.md'), 'utf8'), 'Verification Pass');
-  if (!body) { console.error('Could not find the "Verification Pass" section in CLAUDE.md.'); return 1; }
+  const tried = [];
+  let body = null;
+  for (const cand of [arg('template'), at('CLAUDE.md'), fileURLToPath(new URL('../CLAUDE.md', import.meta.url))].filter(Boolean)) {
+    if (tried.includes(cand)) continue;
+    tried.push(cand);
+    try { body = sectionBody(readFileSync(cand, 'utf8'), 'Verification Pass'); } catch {}
+    if (body) break;
+  }
+  if (!body) {
+    console.error('Could not find the "Verification Pass" section. Looked in:\n' + tried.map(t => '  ' + t).join('\n')
+      + '\nIt lives in the claude-workflow-tools CLAUDE.md — pass --template <path to that CLAUDE.md>.');
+    return 1;
+  }
 
   const cfgPath = existsSync(at('.cycle/config.md')) ? at('.cycle/config.md') : at('CLAUDE.md');
   const invariants = readInvariants(readFileSync(cfgPath, 'utf8'));
@@ -182,7 +212,7 @@ function main(argv) {
   // seed and the used seed different strings.
   let seed = arg('seed');
   if (!seed) {
-    try { seed = execSync('git rev-parse --short=12 HEAD', { cwd: at('.'), stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); }
+    try { seed = execSync('git rev-parse --short=12 HEAD', { cwd: rootDir, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); }
     catch { seed = 'no-git-' + cycle; }
   }
 
@@ -193,7 +223,7 @@ function main(argv) {
     body, invariants,
     blocks: readBlocks(at('.cycle/blocks'), { cycle }),
     totals: cycleTotals(metrics, cycle),
-    cycle, seed, project: 'claude-workflow-tools',
+    cycle, seed, project: arg('project') || basename(rootDir),
   });
 
   const out = arg('out');
@@ -202,6 +232,11 @@ function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// F33 (Cycle 7): compare REAL paths. Node resolves symlinks for import.meta.url
+// but leaves process.argv[1] as typed, so run through a symlinked scripts/
+// directory the check was false and the script did NOTHING and exited 0 —
+// a guard that passes silently.
+const isMain = (() => { try { return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } })();
+if (isMain) {
   process.exit(main(process.argv.slice(2)));
 }

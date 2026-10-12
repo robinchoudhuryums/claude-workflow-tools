@@ -5,6 +5,55 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.37.0 — 2026-10-12
+
+Cycle-7 Batch 3: the scripts consuming projects run. **No command-body or
+config-schema change, so no `/sync-commands` re-pull** — but projects that copy
+scripts should re-copy the ones below, and `verification-pack.mjs` has a new
+calling convention (see F34). Every fix has a regression case, each proven to
+fail with its fix reverted.
+
+- **F33 — scripts run through a symlinked `scripts/` did nothing and exited 0.**
+  Node resolves symlinks for `import.meta.url` but not `process.argv[1]`, so the
+  main-module check in `invariant-check`, `verification-pack`,
+  `check-output-blocks` and `gen-html-prompts` was false — a guard that passed
+  silently. All four now compare real paths.
+- **F34 — `verification-pack.mjs` could not run in a consuming project.** It read
+  the §4v body from the project's own CLAUDE.md (only this repo has it), resolved
+  paths relative to the script rather than the project, and hardcoded the project
+  name. The project is now the working directory (or `--root`); the body comes
+  from `--template PATH`, the project's CLAUDE.md, or the CLAUDE.md beside the
+  script; `--project` names it (default: the directory name). **Behaviour change:**
+  running the script from a directory other than the project now packs THAT
+  directory — pass `--root` to point elsewhere.
+- **F32 — net totals counted synthesis rows.** `render-metrics` and
+  `portfolio-status` summed `net_score` across every phase, so an older
+  `metrics.csv` whose synthesis rows carry values (the pre-v1.12.1 console wrote
+  them — Cycle-4 F1) double-counted. Those columns are now read from
+  non-synthesis rows only, and the table shows a synthesis row's as "—". The
+  render-metrics test had been **asserting the double count**; it now asserts the
+  correct total.
+- **F35 — three invariant readers, three counts, on a CRLF file.**
+  `invariant-check` found none (`.` does not match `\r`), the SessionStart hook
+  skipped indented rules, the §4v pack counted them all. All three now agree with
+  the INV-68 floor's ground truth. The INV-68 mutation case depended on the old
+  disagreement and went false green; it now makes each reader drop rules instead.
+- **F36 — `portfolio-status` read the template's default Seams cadence.** It took
+  the first "every N subsystem" near the heading, and `/setup-cycle` OUTPUT 1's
+  heading itself says "default: every 4". It now reads the first such line under
+  the heading.
+- **F39 — line-split CSV readers.** `cycleTotals` and `netTrend` split on newlines
+  before parsing, so a quoted note containing one dropped its row's defensive
+  count and CORRECTION warning. Both use the shared parser now; `--cycle 09`
+  matches rows stamped 9.
+- **F40 — portfolio field parsing.** An empty field captured the next line, a
+  pipe in a value opened an extra table column, and `portfolio-status` hardcoded
+  the section name instead of importing `HEALTH_SECTION`.
+- **F41 — `invariant-check` output handling.** A passing command with >1MB of
+  output was a FAIL (the default `maxBuffer`), a hung command hung the probe (now
+  `--timeout`, default 1800s), and a loud failure echoed its whole last line —
+  after which `process.exit()` cut off the remaining results and the summary.
+
 ## 1.36.0 — 2026-10-12
 
 Cycle-7 Batch 2: console data correctness. Console-only — **no command-body or

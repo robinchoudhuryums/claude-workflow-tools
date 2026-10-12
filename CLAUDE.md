@@ -210,7 +210,8 @@ And two helpers operate on the invariant library:
   reports PASS/FAIL; prose/test-name `Verify:` fields are reported
   MANUAL. This is the automated half of the §4v invariant probe — write
   `Verify:` as a runnable command and the invariant becomes a test.
-  `--list` shows the classification without running.
+  `--list` shows the classification without running; `--timeout SECONDS`
+  (default 1800) kills a hung Verify command and reports it as a timeout.
 - `tests/mutation-audit.mjs` — the **other half of that proof**. A
   `Verify:` command passing on a clean tree is not evidence it would FAIL
   if the rule were violated; a command that cannot see its own invariant
@@ -239,7 +240,11 @@ And one assembles the independent-verification input:
   command the pack printed returned a different five. It also reads
   `metrics.csv` and warns the verifier automatically when `/reflect` recorded a
   correction to a self-reported count.
-  `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]`
+  `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE] [--root DIR] [--project NAME] [--template PATH]`
+  The project is the working directory (or `--root`). The §4v body exists only
+  in this repo's CLAUDE.md, so from a consuming project either run this repo's
+  copy of the script from inside the project, or pass `--template <path to this
+  repo's CLAUDE.md>`; it needs `gen-html-prompts.mjs` and `csv.mjs` beside it.
 
 And two operate across projects:
 - `scripts/portfolio.mjs` — aggregates several projects' `PROJECT_HEALTH.md`

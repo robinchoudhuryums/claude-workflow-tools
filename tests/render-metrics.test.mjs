@@ -29,9 +29,14 @@ const out = run(csv);
 
 if (/\| date \| cycle \| phase \|/.test(out)) ok('renders the per-row table'); else bad('table header missing');
 if (/net score\s+[▁-█]/.test(out)) ok('renders a net-score sparkline'); else bad('sparkline missing');
-// Cumulative net = 3 + 3 + (-1) = 5; prod = 3+3+1 = 7; nfm = 0+0+2 = 2
-if (/Cumulative net score: \*\*5\*\*/.test(out)) ok('cumulative net score correct (5)'); else bad('cumulative net score wrong');
-if (/7 production fixes − 2 new failure modes/.test(out)) ok('fix/failure totals correct'); else bad('fix/failure totals wrong');
+// F32 (Cycle 7): the synthesis row above is a LEGACY one carrying net values
+// (the pre-v1.12.1 console §6a wrote them — Cycle-4 F1). Those columns are owned
+// only by reflect rows, so it must not count. This test used to REQUIRE the
+// double count (net 5, prod 7) — it asserted the bug INV-51 forbids.
+// Cumulative net = 3 + (-1) = 2; prod = 3 + 1 = 4; nfm = 0 + 2 = 2.
+if (/Cumulative net score: \*\*2\*\*/.test(out)) ok('cumulative net score excludes the legacy synthesis row (2) — F32'); else bad('cumulative net score wrong (a synthesis row was counted?)');
+if (/4 production fixes − 2 new failure modes/.test(out)) ok('fix/failure totals exclude the synthesis row (4 − 2)'); else bad('fix/failure totals wrong');
+if (/\| 2026-01-02 \| 1 \| synthesis \| — \| — \| — \|/.test(out)) ok("the table shows a synthesis row's net/prod/nfm as — (INV-51)"); else bad("the table still prints a synthesis row's net columns");
 if (/Latest synthesis \(cycle 1\): Category D 40%/.test(out)) ok('surfaces the latest synthesis'); else bad('latest synthesis line missing/wrong');
 if (/fix, with comma/.test(out)) ok('quoted CSV fields with commas parse correctly'); else bad('quoted-field parsing broke');
 // P11: defensive_count column + secondary cumulative (4 + 0 + 7 = 11) when the column is present.

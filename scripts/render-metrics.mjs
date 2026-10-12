@@ -38,6 +38,14 @@ const idx = name => header.indexOf(name);
 const data = rows.slice(1).map(r => Object.fromEntries(header.map((h, i) => [h, (r[i] ?? '').trim()])));
 
 const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
+// F32 (Cycle 7): net_score / prod_fixes / new_failure_modes are owned ONLY by
+// phase=reflect rows (P1/INV-33). A synthesis row is blank by rule — but older
+// files (the pre-v1.12.1 console §6a wrote them, Cycle-4 F1) carry values, and
+// summing every row double-counted them. Those columns are read from non-
+// synthesis rows only, and a synthesis row's are shown as "—".
+const OWNED = ['net_score', 'prod_fixes', 'new_failure_modes'];
+const owns = d => d.phase !== 'synthesis';
+const cellOf = (d, k) => (OWNED.includes(k) && !owns(d) ? '—' : d[k]);
 const hasDef = idx('defensive_count') !== -1; // backward-compat: older files lack this column
 const out = [];
 out.push('# Cycle Metrics Report', '', `Source: \`${input}\` · ${data.length} rows · generated ${new Date().toISOString().slice(0, 10)}`, '');
@@ -48,19 +56,19 @@ out.push(`|---|---|---|---|---|---|${hasDef ? '---|' : ''}---|---|---|`);
 for (const d of data) {
   const note = (d.notes || '').replace(/\|/g, '\\|').slice(0, 70);
   const def = hasDef ? ` ${d.defensive_count || '—'} |` : '';
-  out.push(`| ${d.date} | ${d.cycle} | ${d.phase} | ${d.net_score} | ${d.prod_fixes} | ${d.new_failure_modes} |${def} ${d.category_d_ratio || '—'} | ${(d.axis_b_lowest || '—').slice(0, 28)} | ${note} |`);
+  out.push(`| ${d.date} | ${d.cycle} | ${d.phase} | ${cellOf(d, 'net_score')} | ${cellOf(d, 'prod_fixes')} | ${cellOf(d, 'new_failure_modes')} |${def} ${d.category_d_ratio || '—'} | ${(d.axis_b_lowest || '—').slice(0, 28)} | ${note} |`);
 }
 out.push('');
 
 // Sparklines
-const nets = data.map(d => num(d.net_score));
+const nets = data.map(d => (owns(d) ? num(d.net_score) : NaN));
 out.push('## Trend', '', '```', `net score    ${sparkline(nets)}  (${nets.map(n => Number.isFinite(n) ? n : '·').join(' ')})`);
 const catD = data.filter(d => d.category_d_ratio).map(d => num(d.category_d_ratio));
 if (catD.length) out.push(`category D %  ${sparkline(catD)}  (${catD.map(n => Number.isFinite(n) ? n + '%' : '·').join(' ')})  ← lower is better`);
 out.push('```', '');
 
 // Summary
-const sum = key => data.reduce((a, d) => a + (num(d[key]) || 0), 0);
+const sum = key => data.filter(d => !OWNED.includes(key) || owns(d)).reduce((a, d) => a + (num(d[key]) || 0), 0);
 const totalProd = sum('prod_fixes'), totalNFM = sum('new_failure_modes'), cumNet = sum('net_score');
 const lastSynth = [...data].reverse().find(d => d.phase === 'synthesis');
 // F12: a synthesis row's net_score is ALWAYS blank by rule (P1/INV-33 — those

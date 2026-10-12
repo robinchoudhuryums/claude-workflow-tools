@@ -149,7 +149,13 @@ const CASES = {
   // INV-68 — the proven vector: ONE leading space made a rule invisible to
   // invariant-check and to this audit's own derived set, while the §4v pack
   // still listed it.
-  'INV-68': [['.cycle/config.md', 'INV-40 | credentials never leave', '  INV-40 | credentials never leave', /parse floor/i]],
+  // INV-68 — make ONE reader drop rules the file contains. The first version of
+  // this case indented a library line, which only violated the floor while the
+  // two parsers disagreed about leading whitespace; F35 (Cycle 7) made both
+  // tolerant, the indent stopped being a violation, and the case went FALSE GREEN.
+  // A reader that silently narrows is what the floor exists to catch.
+  'INV-68': [['scripts/verification-pack.mjs', "filter(l => /^INV-\\d+\\s*\\|/.test(l.trim()))", "filter(l => /^INV-[0-6]\\d\\s*\\|/.test(l.trim()))", /parse floor/i],
+             ['scripts/invariant-check.mjs', "const m = line.match(/^(INV-\\d+)\\s*\\|(.+)$/);", "const m = line.match(/^(INV-[0-6]\\d)\\s*\\|(.+)$/);", /parse floor/i]],
   'INV-69': [[HTML, ':focus-visible{outline:2px', '.nav-item:focus-visible{outline:2px', /must apply, not merely exist/i]],
   // INV-71 — drift the ONE definition; every doc copy must stop matching it.
   'INV-71': [['scripts/health-fields.mjs', "topVertical:    'Top vertical priority:'", "topVertical:    'Top vertical priorities:'", /health-field contract/i]],

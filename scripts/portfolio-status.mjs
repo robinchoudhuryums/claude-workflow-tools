@@ -19,8 +19,8 @@
 
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { dirname, basename, resolve, join } from 'node:path';
-import { parseRow } from './csv.mjs';
-import { HEALTH_FIELDS } from './health-fields.mjs';   // INV-71
+import { parseCSV } from './csv.mjs';
+import { HEALTH_FIELDS, HEALTH_SECTION } from './health-fields.mjs';   // INV-71
 
 const args = process.argv.slice(2);
 const outIdx = args.indexOf('--out');
@@ -36,14 +36,27 @@ function section(md, heading) {
   for (let j = i + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) break; body.push(lines[j]); }
   return body.join('\n');
 }
-const field = (txt, label) => { const m = txt.match(new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(.+)')); return m ? m[1].trim() : ''; };
+// F40 (Cycle 7): the value ends at the END OF ITS LINE. `\s*(.+)` let \s cross
+// the newline, so an empty "Last synthesis:" captured the next line's label.
+const field = (txt, label) => { const m = txt.match(new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[ \\t]*([^\\r\\n]*)')); return m ? m[1].trim() : ''; };
+// A pipe inside a value would open an extra table column.
+const cell = v => String(v).replace(/\|/g, '\\|');
 
 // Seams cadence N (default 4) from config.md / CLAUDE.md ("every N subsystem cycles").
+// F36 (Cycle 7): read the first "every N subsystem" LINE under the heading. The
+// old regex matched anywhere within 120 chars of "seams audit cadence", and the
+// /setup-cycle OUTPUT 1 heading itself reads "← optional; default: every 4
+// subsystem cycles" — so a project that pasted it verbatim always got 4.
 function seamsCadence(cycleDir, root) {
   for (const f of [join(cycleDir, 'config.md'), join(root, 'CLAUDE.md')]) {
     if (!existsSync(f)) continue;
-    const m = readFileSync(f, 'utf8').match(/seams audit cadence[\s\S]{0,120}?every\s+(\d+)\s+subsystem/i);
-    if (m) return parseInt(m[1], 10);
+    const lines = readFileSync(f, 'utf8').split(/\r?\n/);
+    const h = lines.findIndex(l => /^#+\s*Seams Audit Cadence\b/i.test(l));
+    if (h === -1) continue;
+    for (let i = h + 1; i < lines.length && !/^#/.test(lines[i]); i++) {
+      const m = lines[i].match(/^\s*every\s+(\d+)\s+subsystem/i);
+      if (m) return parseInt(m[1], 10);
+    }
   }
   return 4;
 }
@@ -53,16 +66,20 @@ function seamsCadence(cycleDir, root) {
 // bare split assumed only `notes` could hold a comma, and a subsystem such as
 // "Auth, Security & HIPAA" shifted net_score under the phase column, so every
 // such row was silently skipped and the trend read "—".
+// F39 (Cycle 7): parsed as a whole text by the one parser, so a quoted notes
+// field containing a newline no longer splits its row. F32: synthesis rows are
+// skipped — net_score is owned by reflect rows, and an older synthesis row that
+// carries one would count the cycle twice.
 function netTrend(metricsFile) {
   if (!existsSync(metricsFile)) return '—';
-  const lines = readFileSync(metricsFile, 'utf8').split('\n').filter(l => l.trim());
-  if (lines.length < 2) return '—';
-  const header = parseRow(lines[0]).map(h => h.trim());
-  const ci = header.indexOf('cycle'), ni = header.indexOf('net_score');
+  const rows = parseCSV(readFileSync(metricsFile, 'utf8'));
+  if (rows.length < 2) return '—';
+  const header = rows[0].map(h => h.trim());
+  const ci = header.indexOf('cycle'), ni = header.indexOf('net_score'), pi = header.indexOf('phase');
   if (ci === -1 || ni === -1) return '—';
   const perCycle = new Map();
-  for (const line of lines.slice(1)) {
-    const cells = parseRow(line);
+  for (const cells of rows.slice(1)) {
+    if (pi !== -1 && (cells[pi] || '').trim() === 'synthesis') continue;
     const cyc = (cells[ci] || '').trim();
     const net = parseFloat(cells[ni]);
     if (!cyc || !Number.isFinite(net)) continue;
@@ -80,7 +97,7 @@ for (const p of paths) {
   let md;
   try { md = readFileSync(p, 'utf8'); }
   catch { console.error(`! skipped ${p} (cannot read)`); continue; }
-  const standing = section(md, 'Current Standing');
+  const standing = section(md, HEALTH_SECTION);
   const overall = parseFloat(field(standing, HEALTH_FIELDS.overall));
   const root = dirname(resolve(p));
   const cycleDir = join(root, '.cycle');
@@ -120,7 +137,7 @@ const out = [];
 out.push('# Portfolio Status', '', `${projects.length} project(s) · generated ${new Date().toISOString().slice(0, 10)}`, '');
 out.push('| Project | Overall | Phase | In-progress | Net Δ | Seams | Updated |');
 out.push('|---|---|---|---|---|---|---|');
-for (const p of ranked) out.push(`| ${p.label} | ${p.overallStr} | ${p.phase} | ${p.inProgress} | ${p.trend} | ${p.seamsCell} | ${p.updated} |`);
+for (const p of ranked) out.push(`| ${cell(p.label)} | ${cell(p.overallStr)} | ${cell(p.phase)} | ${p.inProgress} | ${p.trend} | ${p.seamsCell} | ${cell(p.updated)} |`);
 out.push('');
 
 out.push('## Read');

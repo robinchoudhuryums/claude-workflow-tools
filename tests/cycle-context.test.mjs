@@ -28,6 +28,15 @@ if (/Cycle: 7/.test(outA) && /Mid-wave on subsystem X/.test(outA)) ok('includes 
 if (/2 invariants/.test(outA)) ok('reports the invariant count from .cycle/config.md'); else bad('invariant count missing');
 rmSync(a, { recursive: true, force: true });
 
+// Case A2 (F35, Cycle 7): a CRLF library with an indented rule counts every
+// rule — the same ground truth as the INV-68 floor and invariant-check.
+const a2 = mkdtempSync(join(tmpdir(), 'cwt-ctx-a2-'));
+mkdirSync(join(a2, '.cycle'));
+writeFileSync(join(a2, '.cycle', 'STATE.md'), '# Cycle State\r\n\r\n## Current\r\nCycle: 1\r\n');
+writeFileSync(join(a2, '.cycle', 'config.md'), ['INV-01 | a | Subsystem: X', ' INV-02 | indented | Subsystem: Y', 'INV-03 | c | Subsystem: Z', ''].join('\r\n'));
+if (/3 invariants/.test(run(a2))) ok('counts every rule in a CRLF library, indented ones included (F35)'); else bad('CRLF/indented invariant count wrong');
+rmSync(a2, { recursive: true, force: true });
+
 // Case B: a project WITHOUT .cycle/ stays silent and exits 0.
 const b = mkdtempSync(join(tmpdir(), 'cwt-ctx-b-'));
 const outB = run(b);

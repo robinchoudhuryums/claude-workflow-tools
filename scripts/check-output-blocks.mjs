@@ -29,7 +29,7 @@
 // Exit 0 = all blocks shape-valid, exit 1 = drift detected.
 // Importable: exports BLOCKS, findSpans, validate (for the regression test).
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 // One entry per output block the workflow defines.
@@ -225,6 +225,11 @@ function main() {
   return 1;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// F33 (Cycle 7): compare REAL paths. Node resolves symlinks for import.meta.url
+// but leaves process.argv[1] as typed, so run through a symlinked scripts/
+// directory the check was false and the script did NOTHING and exited 0 —
+// a guard that passes silently.
+const isMain = (() => { try { return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } })();
+if (isMain) {
   process.exit(main());
 }

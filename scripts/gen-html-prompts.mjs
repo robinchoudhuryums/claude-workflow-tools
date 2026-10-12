@@ -14,7 +14,7 @@
 // be fully verified in a browser, so it is never run by CI. The default
 // (drift report) is safe and is what the report/guard uses.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
@@ -261,6 +261,11 @@ function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// F33 (Cycle 7): compare REAL paths. Node resolves symlinks for import.meta.url
+// but leaves process.argv[1] as typed, so run through a symlinked scripts/
+// directory the check was false and the script did NOTHING and exited 0 —
+// a guard that passes silently.
+const isMain = (() => { try { return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } })();
+if (isMain) {
   process.exit(main(process.argv.slice(2)));
 }

@@ -49,6 +49,20 @@ const beta = project('beta',
 // gamma: scored but NO .cycle/ — status columns must degrade to "—".
 const gamma = project('gamma', 'Last synthesis: 2026-06-03\nOverall (weighted avg): 7.0/10\nOne-line summary: no cycle dir');
 
+// delta (Cycle 7): F36 — config pasted verbatim from /setup-cycle OUTPUT 1, whose
+// heading itself says "default: every 4"; the configured cadence is 2, so 3/2 DUE.
+// F32 — a LEGACY synthesis row carrying net must not count toward the trend
+// (reflect nets 3 → 1 is ↓; counting the synthesis row's 5 would read ↑).
+// F39 — a quoted note with a newline must not split its row. F40 — an empty
+// Updated: falls back cleanly and a pipe in the phase stays inside its cell.
+const delta = project('delta',
+  'Last synthesis: 2026-07-01\nOverall (weighted avg): 6.0/10\nOne-line summary: verbatim config',
+  {
+    state: '# Cycle State\n## Current\nCycle: 2\nPhase: implement | batch 2\nSubsystem cycles since last Seams audit: 3\nUpdated:\n',
+    metrics: `${H}\n2026-07-01,1,X,reflect,3,3,0,,,"first",0\n2026-07-02,2,X,reflect,1,1,0,,,"a note\nwith a newline",0\n2026-07-03,2,all,synthesis,5,5,0,10%,Drift (6),"legacy synthesis row with net",\n`,
+    config: '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery 2 subsystem cycles\n',
+  });
+
 let failures = 0;
 const log = [];
 const ok = m => log.push('  ✓ ' + m);
@@ -83,6 +97,16 @@ const gammaRow = row(out, 'gamma');
 if (/\|\s*—\s*\|\s*—\s*\|\s*—\s*\|\s*—\s*\|/.test(gammaRow)) ok('gamma (no .cycle/) → status columns degrade to —'); else bad('gamma degradation wrong');
 
 if (/average overall: \*\*6\.8\/10\*\* across 3 scored/.test(out)) ok('averages all 3 scored projects (6.8)'); else bad('average wrong');
+
+{
+  let dOut = '';
+  try { dOut = execFileSync('node', [script, delta], { encoding: 'utf8' }); } catch (e) { bad('renderer threw on the Cycle-7 fixture: ' + (e.message || e)); }
+  const dRow = row(dOut, 'delta');
+  if (/3\/2 DUE/.test(dRow)) ok('reads the configured cadence (2), not the "default: every 4" in the OUTPUT 1 heading (F36)'); else bad(`F36: seams cell wrong: ${dRow}`);
+  if (dRow.includes('↓')) ok('a legacy synthesis row carrying net is excluded from the trend, and a multi-line note keeps its row (F32/F39)'); else bad(`F32/F39: trend wrong: ${dRow}`);
+  if (/\| implement \\\| batch 2 \|/.test(dRow) && dRow.split(/(?<!\\)\|/).length === 9) ok('a pipe in a field cannot open an extra column (F40)'); else bad(`F40: pipe not contained: ${dRow}`);
+  if (!/Seams audit cadence|Overall/.test(dRow)) ok('an empty Updated: does not capture the next line (F40)'); else bad(`F40: empty field captured another line: ${dRow}`);
+}
 
 rmSync(root, { recursive: true, force: true });
 

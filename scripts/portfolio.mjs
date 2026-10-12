@@ -29,7 +29,11 @@ function section(md, heading) {
   for (let j = i + 1; j < lines.length; j++) { if (/^##\s+/.test(lines[j])) break; body.push(lines[j]); }
   return body.join('\n');
 }
-const field = (txt, label) => { const m = txt.match(new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(.+)')); return m ? m[1].trim() : ''; };
+// F40 (Cycle 7): the value ends at the END OF ITS LINE. `\s*(.+)` let \s cross
+// the newline, so an empty "Last synthesis:" captured the next line's label.
+const field = (txt, label) => { const m = txt.match(new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[ \\t]*([^\\r\\n]*)')); return m ? m[1].trim() : ''; };
+// A pipe inside a value would open an extra table column.
+const cell = v => String(v).replace(/\|/g, '\\|');
 
 const projects = [];
 for (const p of paths) {
@@ -59,7 +63,7 @@ const out = [];
 out.push('# Portfolio Health', '', `${projects.length} project(s) · generated ${new Date().toISOString().slice(0, 10)}`, '');
 out.push('| Project | Overall | Last synthesis | Top vertical priority | Top horizontal priority |');
 out.push('|---|---|---|---|---|');
-for (const p of ranked) out.push(`| ${p.label} | ${p.overallStr} | ${p.lastSynthesis} | ${p.topV.slice(0, 40)} | ${p.topH.slice(0, 40)} |`);
+for (const p of ranked) out.push(`| ${cell(p.label)} | ${cell(p.overallStr)} | ${cell(p.lastSynthesis)} | ${cell(p.topV.slice(0, 40))} | ${cell(p.topH.slice(0, 40))} |`);
 out.push('');
 const scored = ranked.filter(p => p.overall !== null);
 if (scored.length) {
