@@ -77,10 +77,15 @@ export function transform(body, m) {
   for (const [a, b] of (m.replace || [])) t = t.split(a).join(b);
   return t;
 }
+// F46 (Cycle 7): only a line that is ONE bracket token is a render-time
+// placeholder ("[the project subsystem list is injected here per project]").
+// The old /^\[.*\]$/ also dropped every line made of several tokens — 34
+// canonical row schemas such as "[ID] | [File: function/line] | …" — so a
+// builder could delete an output-block row and still pass the lock. Lines are
+// no longer lowercased either: a changed case is a changed prompt (F47).
 export function norm(text) {
   return (text || '').split('\n').map(l => l.trim())
-    .filter(l => l && !/^\[.*\]$/.test(l))
-    .map(l => l.toLowerCase());
+    .filter(l => l && !/^\[[^\][]*\]$/.test(l));
 }
 
 // console <pre id> ← canonical body (+ console framing rules).
@@ -155,13 +160,37 @@ export const DYNAMIC_MANIFEST = [
 export const dynBody = (md, d) => (d.section ? sectionBody(md, d.section) : commandBody(md, d.command));
 export const dynLabel = d => d.label || (d.section ? d.section : '/' + d.command);
 
-// Coverage of a canonical command body by a rendered builder's output: every
-// canonical line must be present (set membership after norm()).
+// Coverage of a canonical command body by a rendered builder's output: the
+// canonical lines must appear IN ORDER, once per occurrence — a subsequence of
+// the rendered lines, which may carry extra (injected) lines between them.
+// F47 (Cycle 7): this was set membership, so §4v's "must NOT have participated"
+// guard moved from the top of the prompt to the very end passed, as did
+// dropping one copy of a line that appears twice. A line present only out of
+// order is reported in `outOfOrder`; one absent everywhere in `missing`. The
+// in-order set is a longest common subsequence, so a moved line is blamed —
+// not the lines it jumped over (an earliest-match scan blames those instead).
 export function canonicalCoverage(body, rendered, m) {
-  const want = norm(transform(body, m));
-  const have = new Set(norm(rendered));
-  const missing = want.filter(l => !have.has(l));
-  return { total: want.length, present: want.length - missing.length, missing };
+  const want = norm(transform(body, m)), have = norm(rendered);
+  const W = want.length, H = have.length;
+  const L = Array.from({ length: W + 1 }, () => new Uint16Array(H + 1));
+  for (let i = W - 1; i >= 0; i--)
+    for (let k = H - 1; k >= 0; k--)
+      L[i][k] = want[i] === have[k] ? L[i + 1][k + 1] + 1 : Math.max(L[i + 1][k], L[i][k + 1]);
+  const inOrder = new Array(W).fill(false), used = new Array(H).fill(false);
+  for (let i = 0, k = 0; i < W && k < H;) {
+    if (want[i] === have[k]) { inOrder[i] = used[k] = true; i++; k++; }
+    else if (L[i + 1][k] >= L[i][k + 1]) i++; else k++;
+  }
+  // What the subsequence did not use is still available to explain a line as
+  // moved rather than absent — once per remaining occurrence.
+  const spare = new Map();
+  have.forEach((l, k) => { if (!used[k]) spare.set(l, (spare.get(l) || 0) + 1); });
+  const missing = [], outOfOrder = [];
+  want.forEach((l, i) => {
+    if (inOrder[i]) return;
+    if ((spare.get(l) || 0) > 0) { outOfOrder.push(l); spare.set(l, spare.get(l) - 1); } else missing.push(l);
+  });
+  return { total: want.length, present: want.length - missing.length - outOfOrder.length, missing, outOfOrder };
 }
 
 // Execute the console's inline <script> under a stubbed DOM and return a
@@ -229,7 +258,7 @@ function main(argv) {
     const unlocked = staticPres.filter(id => !covered.has(id));
     if (!staticPres.length) { console.error('  ! no static <pre> prompts found — the lock-coverage check would be vacuous'); drift++; }
     else if (unlocked.length) { console.error(`  ✗ ${unlocked.length} static console prompt(s) outside the lock manifest: ${unlocked.join(', ')}`); drift++; }
-    // Locked dynamic builders (R16): require 100% canonical-line coverage.
+    // Locked dynamic builders (R16): every canonical line present, in order (F47).
     const locked = DYNAMIC_MANIFEST.filter(d => d.locked);
     for (const d of locked) {
       const body = dynBody(claudeMd, d);
@@ -237,6 +266,7 @@ function main(argv) {
       if (body == null || rendered == null) { console.error(`  ! ${d.id} ← ${dynLabel(d)}: ${body == null ? 'canonical body' : 'render'} not found`); drift++; continue; }
       const cov = canonicalCoverage(body, rendered, d);
       if (cov.missing.length) { console.error(`  ✗ ${d.id} is missing ${cov.missing.length}/${cov.total} canonical lines from ${dynLabel(d)} (locked):\n      - ${cov.missing.slice(0, 3).join('\n      - ')}`); drift++; }
+      if (cov.outOfOrder.length) { console.error(`  ✗ ${d.id} has ${cov.outOfOrder.length}/${cov.total} canonical line(s) OUT OF ORDER vs ${dynLabel(d)} (locked) — present, but not where the canonical body puts them (F47):\n      - ${cov.outOfOrder.slice(0, 3).join('\n      - ')}`); drift++; }
     }
     if (drift) { console.error(`\n${drift} console prompt(s) drifted from CLAUDE.md — run: node scripts/gen-html-prompts.mjs --write (static) or reconcile the builder (dynamic)`); return 1; }
     console.log(`All ${MANIFEST.length} console §-prompts match CLAUDE.md — every static <pre> is locked. ✓`);
@@ -268,7 +298,7 @@ function main(argv) {
     if (body == null || rendered == null) { console.log(`  ? ${d.id} ← ${dynLabel(d)}: not found`); continue; }
     const cov = canonicalCoverage(body, rendered, d);
     const pct = cov.total ? Math.round(100 * cov.present / cov.total) : 100;
-    console.log(`  ${d.locked ? '🔒' : '  '} ${d.id} ← ${dynLabel(d)}: ${pct}% of ${cov.total} canonical lines present | ${cov.missing.length} missing${d.locked ? ' [LOCKED]' : ' (report-only BY DESIGN — canonical delegates to a sibling; console stays standalone, R16-S-marker-guarded — ROADMAP R16)'}`);
+    console.log(`  ${d.locked ? '🔒' : '  '} ${d.id} ← ${dynLabel(d)}: ${pct}% of ${cov.total} canonical lines present | ${cov.missing.length} missing | ${cov.outOfOrder.length} out of order${d.locked ? ' [LOCKED]' : ' (report-only BY DESIGN — canonical delegates to a sibling; console stays standalone, R16-S-marker-guarded — ROADMAP R16)'}`);
   }
   return 0;
 }

@@ -5,6 +5,52 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.41.0 — 2026-10-13
+
+Cycle-7 Batch 7: guard false greens II. Guards, the console and CLAUDE.md's
+Handoff Block Formats reference — **no command-body or config-schema change, so
+no `/sync-commands` re-pull** (`gen-commands --check`: all 20 command files
+unchanged). As in Batch 6, each guard was first shown to pass the defect it
+should catch, and each fix is pinned by a test that fails with it reverted.
+
+- **F47 — the dynamic-builder lock ignored order, multiplicity and case.**
+  `canonicalCoverage` was set membership after lowercasing, so §4v's "You must
+  NOT have participated" guard moved from the top of the prompt to the very end
+  passed, as did dropping one copy of a repeated line or lowercasing NOT. The
+  canonical lines must now appear IN ORDER, once per occurrence, with case
+  intact. Extra (injected) lines between them are still allowed. The check
+  matches a longest common subsequence, so it blames the line that moved, not
+  the lines it jumped over, and `--assert` reports `missing` and
+  `out of order` separately. It found one real reorder: the console's Tier 1
+  prompt opened with "Read CLAUDE.md…" ahead of the "Do not make any changes"
+  line that /broad-scan puts first. Realigned.
+- **F46 — row schemas exempt from the lock.** `norm()` dropped every line made
+  only of bracket tokens, which exempted 34 canonical row schemas, among them
+  the PR REVIEW `FINDINGS` row. Deleting one from a builder passed. Only a line
+  holding a single `[token]` (a render-time placeholder) is exempt now.
+- **F50 — block copies checked against a hand-listed subset.**
+  check-output-blocks said copies of a block "agree on their field set" but
+  compared only the registry's `fields`, as substrings. Two live drifts got
+  through. The Handoff Block Formats copy of the VERIFICATION BLOCK lacked
+  `Cycle being verified:` and `Category D candidates`. The TIER 2 copies
+  disagreed on `Production bugs (would fire this month):` vs
+  `Production bugs:` (and on the OPERATOR ACTIONS label). Both Formats copies
+  now match their canonical copies. Every copy of every block (command,
+  Formats, console) must carry the same full set of field labels. A label
+  rendered by a builder (`${…}`) is not compared.
+- **F37 — the SessionStart hook's Current Standing and Pending output were
+  untested.** The fixture had no PROJECT_HEALTH.md and no Pending section, so
+  deleting either output passed. Both are asserted now, along with the
+  sections that must NOT be carried (score history, completed list).
+- **F38 — invariant-check's de-duplication was untested.** The summary counts
+  per invariant, so it read the same with or without the dedupe. The test now
+  counts actual executions: three rules sharing a command, one annotated, run
+  it once.
+- **F44 — the permissions block running to end of file.** Bounded in 1.40.0
+  (F31). This release pins the other direction: a later step whose name
+  contains "write" must not read as a write-scope request. That case false-reds
+  under the 1.39.0 guard.
+
 ## 1.40.0 — 2026-10-13
 
 Cycle-7 Batch 6: guard false greens I. Guards and the console only — **no

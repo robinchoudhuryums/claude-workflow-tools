@@ -2579,45 +2579,53 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
 ```
 ---TIER 2 HANDOFF BLOCK---
 Scope: [subsystem]
-Findings: [count] — [severity breakdown]
-Production bugs: [count]
+Findings: [count] total — [critical/high/medium/low breakdown]
+Production bugs (would fire this month): [count]
 
 ACTIONS (implement in this order):
 [ID] | [File: area] | [Effort] | [Risk] | [Description]
 
 CROSS-MODULE RISKS:
-- [risks or "None"]
+- [what could break outside this scope and where to verify]
+(or "None identified")
 
-OPERATOR ACTIONS SURFACED (manual / out-of-PR steps; mark deploy blockers):
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps — env vars, IaC, console/dashboard, migrations):
 - [action] | BLOCKS DEPLOY: Y/N
 (or "None")
 
 DO NOT TOUCH:
-- [high-risk items or "None"]
+- [high-risk files/functions — explain why]
 ---END TIER 2 HANDOFF BLOCK---
 ```
 
 ### VERIFICATION BLOCK
 ```
 ---VERIFICATION BLOCK---
-Verified scope: [subsystem]
+Verified scope: [subsystem group name]
 Verification date: [date]
+Cycle being verified: [subsystem + cycle identifier from implementation summary]
 
 INVARIANT PROBE RESULTS:
-INV-XX | [description] | PASS/FAIL/UNVERIFIED | [evidence]
+INV-XX | [invariant description] | PASS / FAIL / UNVERIFIED | [evidence summary]
+(repeat for each probed invariant)
 Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
 
 REGRESSION COUNT:
 Regressions found: [N]
-Net score: [fixed] − [regressions] = [net]
+R1 | [description] | [severity] | Documented by cycle: Y/N | [code location]
+(repeat for each regression, or "None found")
+Net score: [findings fixed] − [regressions] = [net]
 
 CYCLE EXECUTION QUALITY:
-Tests run to completion: YES/NO
-Common Gotchas cross-checked: YES/NO
-New Common Gotchas added: YES/NO
+Tests run to completion: YES/NO — [evidence]
+Common Gotchas cross-checked: YES/NO — [evidence]
+New Common Gotchas added: YES/NO — [what was added, or N/A]
 
 COVERAGE GAP REPORT:
 Fixes with regression tests: [N of M]
+Category D candidates (fixes without regression tests):
+[action ID] | [fix description] | [what test is needed]
+(repeat for each, or "None — all fixes have regression tests")
 Category D ratio: [X%]
 ---END VERIFICATION BLOCK---
 ```

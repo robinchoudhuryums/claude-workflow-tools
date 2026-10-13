@@ -4,7 +4,7 @@
 // runs command Verify fields (incl. annotated ones), fails on a failing
 // command, classifies prose Verify as MANUAL, and dedupes identical commands.
 
-import { mkdtempSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -40,6 +40,22 @@ if (/Passed 2 \| Failed 1 \| Manual 1/.test(r.out)) ok('summary counts correct (
 
 const l = run(['--list']);
 if (l.code === 0 && /\[run\]/.test(l.out) && /\[manual\]/.test(l.out)) ok('--list enumerates runnable + manual and exits 0'); else bad('--list output wrong');
+
+// F38 (Cycle 7): identical commands run ONCE. The summary above counts per
+// invariant, so it reads 2/1/1 whether or not the command was deduplicated —
+// a mutation removing the dedupe passed. Count actual executions instead: the
+// shared command appends one line to a tally file each time it runs.
+{
+  const tally = join(dir, 'tally.txt');
+  const cmd = `node -e "require('fs').appendFileSync(process.argv[1], 'x\\n')" ${JSON.stringify(tally)}`;
+  const dsrc = join(dir, 'dedupe.md');
+  writeFileSync(dsrc, [`INV-10 | shared a | Subsystem: X | Verify: ${cmd}`, `INV-11 | shared b | Subsystem: X | Verify: ${cmd}`, `INV-12 | shared c | Subsystem: X | Verify: ${cmd} (annotated)`, ''].join('\n'));
+  let out = '', code = 0;
+  try { out = execFileSync('node', [script, '--source', dsrc], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
+  let runs = 0; try { runs = readFileSync(tally, 'utf8').split('\n').filter(Boolean).length; } catch {}
+  if (code === 0 && /Passed 3 \| Failed 0/.test(out) && runs === 1) ok('three invariants sharing one command (one annotated) run it ONCE and all PASS (F38)');
+  else bad(`dedupe: command ran ${runs} time(s) for 3 invariants (exit ${code}) — identical commands must run once (F38)`);
+}
 
 // F35 (Cycle 7): a CRLF library (Windows / core.autocrlf) and an indented rule
 // must parse — `.` does not match \r, so every CRLF line used to be dropped.

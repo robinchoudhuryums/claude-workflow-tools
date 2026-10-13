@@ -9,7 +9,7 @@ Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it
 Updated: 2026-10-13
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1–6 are complete (v1.35.0–v1.40.0; 1–4 merged in PR #26). Batches 7–8 and the expansion plan are not started.
+- Batches 1–7 are complete (v1.35.0–v1.41.0; 1–4 merged in PR #26). Batch 8 and the expansion plan are not started.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -45,10 +45,12 @@ Updated: 2026-10-13
   lists, concat sinks scanned, reach floor; F18 placeholder cap lifted in console + check (§6a SEAMS field offered);
   F48 one attribute-order-agnostic <pre> scanner; F49 every CSV header exact + per-file floor; F20 builders render the
   passed project's invariants and seed. Each guard proven a false green before the fix.
+- v1.41.0 | Batch 7 | F47 canonicalCoverage ordered (LCS), multiset, case-sensitive — one real reorder in Tier 1
+  realigned; F46 norm exempts only single-token lines; F50 every block copy carries the same full field-label set,
+  Formats VERIFICATION/TIER 2 copies aligned (live drift); F37 hook Standing + Pending asserted; F38 dedupe counted by
+  executions; F44 no false red on a later "write" (bound shipped in v1.40.0).
 
 ## Pending / not yet done
-- Batch 7 — guard false greens II: F47 (order-blind canonicalCoverage), F46, F50 (block copies disagree now),
-  F37, F38, F44.
 - Batch 8 — docs/agnosticism: F10 (HIPAA-only "generic" security add-on), F42 (invariant-check runs arbitrary
   shell; header says otherwise), F07, F08, F05 (v1.33.0 missing from the re-pull list), F09, F11, F19, F21.
 - Deferred: F43 (hook framing/size cap) — tied to the §4v-vs-SessionStart-hook decision.
@@ -89,6 +91,6 @@ Updated: 2026-10-13
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; Batches 1–6 shipped (v1.35.0–v1.40.0). 1–4 are merged (PR #26); 5 and 6 are on branch
-claude/tender-clarke-x722xl. Next: /broad-implement Batch 7 (guard false greens II — F47 order-blind
-canonicalCoverage first). The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).
+Cycle 7 open; Batches 1–7 shipped (v1.35.0–v1.41.0). 1–4 are merged (PR #26); 5–7 are on branch
+claude/tender-clarke-x722xl. Next: /broad-implement Batch 8 (docs/agnosticism — F10 HIPAA-only security add-on
+first), then /reflect and §4v for the cycle. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).

@@ -3242,11 +3242,11 @@ function deleteArchiveEntry(id){
 // ─── TIER 1 & TIER 2 PROMPTS — dynamic per project ─────────
 function buildTier1Text(project){
   const dimList=project.healthDimensions.split(',').map(d=>`- ${d.trim()}`).join('\n');
-  return `Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
-README, and the roadmap carefully before doing anything else.
-
-Do not make any changes to any files during the audit phase, other than
+  return `Do not make any changes to any files during the audit phase, other than
 the optional CYCLE OPEN step below.
+
+Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
+README, and the roadmap carefully before doing anything else.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
 a new cycle, and this is the ONLY file write the session may make. Unless

@@ -156,7 +156,9 @@ const CASES = {
   'INV-22': [['scripts/check-template-sync.mjs', 'const cmdMissing = tableCmds.filter', 'const cmdMissing = [] || tableCmds.filter', /README command lacking/i]],
   'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i]],
   'INV-43': [['scripts/check-template-sync.mjs', 'const WORKFLOW_BLOCKS = BLOCKS.map(b => b.name.toLowerCase());', "const WORKFLOW_BLOCKS = ['session handoff block'];", /registry block with no console representation/i]],
-  'INV-57': [['.github/workflows/sync-check.yml', 'permissions:\n  contents: read\n', '', /least-privilege permissions|baseline/i]],
+  'INV-57': [['.github/workflows/sync-check.yml', 'permissions:\n  contents: read\n', '', /least-privilege permissions|baseline/i],
+             // Cycle-7 Batch 7 (F44): the permissions block unbounded again — it reads to end of file.
+             ['scripts/check-template-sync.mjs', "const perms = stripYamlComments(wf).split('\\n').filter(l => l.trim()).join('\\n').concat('\\n').match(/^permissions:[ \\t]*\\n((?:[ \\t]+\\S.*\\n)+)/m);", "const perms = wf.match(/^permissions:\\s*\\n((?:\\s+\\S.*\\n)+)/m);", /read past its block \(F44\)|comment/]],
   // INV-58 verifies THIS harness, so its case runs the meta-test (which runs
   // the audit with --only) rather than the audit itself — an invariant whose
   // Verify command is the audit would recurse into its own coverage set.
@@ -188,17 +190,31 @@ const CASES = {
   'INV-72': [['.cycle/STATE.md', '\nCycle: ', '\nCycle: 6\nPinned-by-mutation: ', /release with no block/i]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────
-  'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i]],
+  'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i],
+             // Cycle-7 Batch 7 (F47): order and case are part of the lock — §4v's independence guard
+             // swapped below the line it must precede, and the same guard with its NOT lowercased.
+             [HTML, 'return `Do not make any changes to any files during this session.\n\nIMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.\n',
+                    'return `IMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.\n\nDo not make any changes to any files during this session.\n', /OUT OF ORDER/],
+             [HTML, 'You must NOT have participated in the implementation cycle being verified. If you have any context', 'You must not have participated in the implementation cycle being verified. If you have any context', /buildVerificationText is missing/],
+             // Cycle-7 Batch 7 (F46): a multi-token row schema is a canonical line, not a placeholder.
+             [HTML, 'FINDINGS:\n[ID] | [File: function/line] | [Severity] | [Confidence] | [Fires this month: Y/N] | [Effort] | [Description]\n(or "None — no production-impacting', 'FINDINGS:\n(or "None — no production-impacting', /buildPrReviewText is missing/]],
 
   // ── node scripts/check-output-blocks.mjs ────────────────────────────────────
-  'INV-31': [[CFG, 'Audit confidence: [High / Medium / Low]\n', '', /audit confidence|missing field/i]],
+  'INV-31': [[CFG, 'Audit confidence: [High / Medium / Low]\n', '', /audit confidence|missing field/i],
+             // Cycle-7 Batch 7 (F50): a field outside the registry's hand-listed subset, renamed in one copy.
+             [HTML, 'Production bugs (would fire this month): [count]', 'Production bugs: [count]', /lacks field\(s\) other copies carry/]],
   'INV-38': [[CFG, 'SEAM INVENTORY:', 'SEAM-LIST:', /seam inventory|missing field/i]],
   'INV-55': [[HTML, '---PR REVIEW BLOCK---\nPR:', '---PR REVIEW BLOCK---\nPR-NUMBER:', /pr review block|missing field/i]],
 
   // ── the remaining test-backed scripts ───────────────────────────────────────
-  'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i]],
+  'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i],
+             // Cycle-7 Batch 7 (F37): the Current Standing and Pending outputs had no fixture.
+             ['scripts/cycle-context.mjs', "  if (standing) out.push(", "  if (false) out.push(", /Current Standing missing/],
+             ['scripts/cycle-context.mjs', "for (const h of ['Current', 'Where I left off', 'Pending / not yet done'])", "for (const h of ['Current', 'Where I left off'])", /Pending section missing/]],
   'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
-  'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/]],
+  'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/],
+             // Cycle-7 Batch 7 (F38): dedupe removed — each invariant gets its own key, so a shared command runs per rule.
+             ['scripts/invariant-check.mjs', 'if (cmd) { if (!byCmd.has(cmd)) byCmd.set(cmd, []); byCmd.get(cmd).push(inv); }', "if (cmd) { byCmd.set(cmd + ' #' + inv.id, [inv]); }", /identical commands must run once/]],
   'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],
   'INV-32': [['scripts/check-output-blocks.mjs', 'export function validate', 'export function validate_renamed', /✗|error/i]],

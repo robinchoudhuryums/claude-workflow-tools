@@ -6,7 +6,7 @@
 // emitting, unregistered new block).
 
 import { readFileSync } from 'node:fs';
-import { BLOCKS, findSpans, validate } from '../scripts/check-output-blocks.mjs';
+import { BLOCKS, findSpans, validate, fieldLabels, validateCopies } from '../scripts/check-output-blocks.mjs';
 
 const root = new URL('..', import.meta.url);
 const claudeMd = readFileSync(new URL('CLAUDE.md', root), 'utf8');
@@ -62,6 +62,23 @@ if (sessSpans.length >= 2 && sessSpans[0].body.includes('RECOMMENDED PLANNING ST
 {
   const orphan = BLOCKS.filter(b => b.producer === null && !b.inFormats);
   if (orphan.length === 0) ok('every command-produced block has a producer (section blocks are inFormats)'); else bad('a block has neither producer nor Formats home');
+}
+
+// 8. F50 (Cycle 7): every copy of a block carries the same FULL field set —
+// not just the registry's hand-listed subset. Both live drifts the scan found
+// are reproduced here, and the real files must agree.
+{
+  if (JSON.stringify(fieldLabels('Scope: [x]\nFINDINGS:\n[ID] | [a: b]\nValidated (${n} existing):\n- note: y')) === JSON.stringify(['Scope', 'FINDINGS']))
+    ok('fieldLabels reads line labels, skipping rows, list items and builder-rendered ${…} labels (F50)');
+  else bad('fieldLabels wrong: ' + JSON.stringify(fieldLabels('Scope: [x]\nFINDINGS:\n[ID] | [a: b]\nValidated (${n} existing):\n- note: y')));
+  const claude = readFileSync(new URL('CLAUDE.md', root), 'utf8'), html = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
+  const live = validateCopies(claude, html);
+  if (!live.length) ok('every block copy in CLAUDE.md and the console agrees on its field labels (F50)'); else bad('live block copies disagree: ' + live.slice(0, 2).join(' | '));
+  const fmt = claude.indexOf('## Handoff Block Formats');
+  const dropCycle = claude.slice(0, fmt) + claude.slice(fmt).replace('Cycle being verified: [subsystem + cycle identifier from implementation summary]\n', '');
+  if (validateCopies(dropCycle, html).some(f => /VERIFICATION BLOCK .*Cycle being verified/.test(f))) ok('detects the Formats VERIFICATION BLOCK dropping "Cycle being verified:" (F50)'); else bad('missed a dropped field in the Formats copy (F50)');
+  const renamed = claude.slice(0, fmt) + claude.slice(fmt).replace('Production bugs (would fire this month): [count]', 'Production bugs: [count]');
+  if (validateCopies(renamed, html).some(f => /TIER 2 HANDOFF BLOCK .*Production bugs/.test(f))) ok('detects a TIER 2 copy renaming "Production bugs (would fire this month):" (F50)'); else bad('missed a renamed field across copies (F50)');
 }
 
 console.log('R13 output-block harness regression test (scripts/check-output-blocks.mjs):\n');

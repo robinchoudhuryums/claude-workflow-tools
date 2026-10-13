@@ -189,6 +189,20 @@ expectFail('detects a metrics header missing a middle column (F49)',
 expectFail('detects a file whose metrics headers all disappeared (F49 count floor)',
   d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count', '(see CLAUDE.md)')); },
   /only 0 metrics/);
+// 18) F44 (Cycle 7): the permissions block ends where the block ends. Its
+// pattern used to match newlines, so the "block" ran to end of file and a
+// step NAMED with "write" anywhere below read as a write-scope request — a
+// false red (and, the other way round, a comment's `contents: read` a false
+// green — case 16). Nothing in the permissions block changed here.
+{
+  const d = setup();
+  try {
+    ciEdit(d, '      - name: Guard regression test (fails closed on injected drift)', '      - name: Guard regression test — write-path drift (fails closed on injected drift)', false);
+    const r = runGuard(d);
+    if (r.code === 0) ok('a later step mentioning "write" does not read as a write permission (F44)');
+    else bad('permissions check read past its block (F44): ' + r.out.split('\n').filter(l => l.includes('✗')).join(' | '));
+  } catch (e) { bad('F44 case — ' + e.message); } finally { rmSync(d, { recursive: true, force: true }); }
+}
 // …and a block-scalar run: with the bare command is still a stage, not a problem.
 {
   const d = setup();

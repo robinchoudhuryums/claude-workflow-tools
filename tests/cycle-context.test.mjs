@@ -37,6 +37,20 @@ writeFileSync(join(a2, '.cycle', 'config.md'), ['INV-01 | a | Subsystem: X', ' I
 if (/3 invariants/.test(run(a2))) ok('counts every rule in a CRLF library, indented ones included (F35)'); else bad('CRLF/indented invariant count wrong');
 rmSync(a2, { recursive: true, force: true });
 
+// Case A3 (F37, Cycle 7): the Pending section and PROJECT_HEALTH.md's Current
+// Standing are half of what the hook carries forward, and neither had a
+// fixture — deleting either output passed the full Test Command. The section
+// after Current Standing (the score history) must NOT leak in.
+const a3 = mkdtempSync(join(tmpdir(), 'cwt-ctx-a3-'));
+mkdirSync(join(a3, '.cycle'));
+writeFileSync(join(a3, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 3\n\n## Completed this cycle\n- A1 | x | done-marker\n\n## Pending / not yet done\n- A9 pending-marker\n\n## Where I left off\nResume at A9.\n');
+writeFileSync(join(a3, 'PROJECT_HEALTH.md'), '# Project Health\n\n## Current Standing\nOverall (weighted avg): 7.5/10\nTop vertical priority: standing-marker\n\n## Score History\n### Cycle 2 — history-marker\n');
+const outA3 = run(a3);
+if (/## Pending \/ not yet done\n- A9 pending-marker/.test(outA3)) ok('includes STATE.md Pending / not yet done (F37)'); else bad('Pending section missing from the hook output (F37)');
+if (/## Current Standing \(PROJECT_HEALTH\.md\)\nOverall \(weighted avg\): 7\.5\/10\nTop vertical priority: standing-marker/.test(outA3)) ok('includes PROJECT_HEALTH.md Current Standing (F37)'); else bad('Current Standing missing from the hook output (F37)');
+if (!/history-marker|done-marker/.test(outA3)) ok('carries only the substrate sections — no score history, no completed list (F37)'); else bad('hook leaked a section it should not carry (score history or Completed)');
+rmSync(a3, { recursive: true, force: true });
+
 // Case B: a project WITHOUT .cycle/ stays silent and exits 0.
 const b = mkdtempSync(join(tmpdir(), 'cwt-ctx-b-'));
 const outB = run(b);

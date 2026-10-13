@@ -47,7 +47,9 @@ if (/Audit \[SUBSYSTEM GROUP NAME\] across/.test(out) && !/\$ARGUMENTS/.test(out
 
 if (esc('a <b> & c') === 'a &lt;b&gt; &amp; c') ok('esc escapes &, <, >'); else bad('esc wrong');
 if (unesc('a &lt;b&gt; &amp; c') === 'a <b> & c') ok('unesc round-trips esc'); else bad('unesc wrong');
-if (JSON.stringify(norm('Line A\n\n[PASTE X]\n  Line B  ')) === JSON.stringify(['line a', 'line b'])) ok('norm drops blanks + placeholder lines and lowercases'); else bad('norm wrong');
+if (JSON.stringify(norm('Line A\n\n[PASTE X]\n  Line B  ')) === JSON.stringify(['Line A', 'Line B'])) ok('norm drops blanks + single-token placeholder lines, keeps case (F47)'); else bad('norm wrong: ' + JSON.stringify(norm('Line A\n\n[PASTE X]\n  Line B  ')));
+// F46: a line of SEVERAL bracket tokens is an output row schema, not a placeholder.
+if (JSON.stringify(norm('[ID] | [Severity] | [one-line fix]\n[injected here]')) === JSON.stringify(['[ID] | [Severity] | [one-line fix]'])) ok('norm keeps multi-token row schemas, drops only a lone [token] line (F46)'); else bad('norm dropped a row schema (F46)');
 
 // transform with drop=false leaves the body intact
 if (transform('keep me\n---\nand me', { drop: false }) === 'keep me\n---\nand me') ok('drop=false leaves body intact'); else bad('drop=false altered body');
@@ -57,8 +59,17 @@ if (transform('keep me\n---\nand me', { drop: false }) === 'keep me\n---\nand me
 // caught (fail-closed), and extra rendered lines (injected config) are ignored.
 const covMiss = canonicalCoverage('alpha\nbeta\ngamma', 'alpha\ngamma', { drop: false });
 if (covMiss.missing.length === 1 && covMiss.missing[0] === 'beta' && covMiss.total === 3 && covMiss.present === 2) ok('canonicalCoverage flags a missing canonical line (fail-closed)'); else bad('canonicalCoverage did not flag the missing line');
-const covExtra = canonicalCoverage('alpha\nbeta', 'extra\nALPHA\nbeta\nmore', { drop: false });
-if (covExtra.missing.length === 0) ok('canonicalCoverage ignores extra rendered lines (injected config)'); else bad('canonicalCoverage wrongly flagged extra lines');
+const covExtra = canonicalCoverage('alpha\nbeta', 'extra\nalpha\ninjected\nbeta\nmore', { drop: false });
+if (covExtra.missing.length === 0 && covExtra.outOfOrder.length === 0) ok('canonicalCoverage ignores extra rendered lines, even between canonical ones (injected config)'); else bad('canonicalCoverage wrongly flagged extra lines');
+// F47: order, multiplicity and case are part of the lock.
+const covOrder = canonicalCoverage('IMPORTANT: guard\nbody\nend', 'body\nend\nIMPORTANT: guard', { drop: false });
+if (covOrder.outOfOrder.length === 1 && covOrder.outOfOrder[0] === 'IMPORTANT: guard' && !covOrder.missing.length) ok('canonicalCoverage flags a line moved out of order (F47)'); else bad('canonicalCoverage missed a reordered line: ' + JSON.stringify(covOrder));
+const covTwice = canonicalCoverage('---\nA\n---', '---\nA', { drop: false });
+if (covTwice.missing.length === 1 && covTwice.missing[0] === '---') ok('canonicalCoverage counts a repeated line once per occurrence (F47)'); else bad('canonicalCoverage accepted a dropped duplicate: ' + JSON.stringify(covTwice));
+const covCase = canonicalCoverage('Do NOT skip', 'Do not skip', { drop: false });
+if (covCase.missing.length === 1) ok('canonicalCoverage is case-sensitive (F47)'); else bad('canonicalCoverage ignored a case change');
+const covRow = canonicalCoverage('FINDINGS:\n[ID] | [File] | [Severity]\nend', 'FINDINGS:\nend', { drop: false });
+if (covRow.missing.length === 1) ok('canonicalCoverage flags a deleted row schema (F46)'); else bad('canonicalCoverage let a row schema be deleted');
 const covDrop = canonicalCoverage('usage\n---\nreal body', 'real body', { drop: true });
 if (covDrop.missing.length === 0) ok('canonicalCoverage applies the usage-guard drop before comparing'); else bad('canonicalCoverage did not honor drop');
 
