@@ -2,10 +2,10 @@
 
 ## Current
 Cycle: 7
-Phase: implement
+Phase: reflect
 Scope: broad (Cycle-7 /broad-scan, 2026-10-12 — 50 findings F01–F50, 8 fix batches, expansion plan E1–E4)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
-Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it, a Seams audit resets it)
+Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it, a Seams audit resets it)
 Updated: 2026-10-13
 
 ## In progress (facts to carry forward — NOT judgments)
@@ -61,7 +61,7 @@ Updated: 2026-10-13
   report; legacyCopy success test; cycle-qualified F20 labels; two gotchas + README lock text restated.
 
 ## Pending / not yet done
-- /reflect for Cycle 7, then §4v (fresh session; verification-pack.mjs), then §6a synthesis.
+- §4v for Cycle 7 in a FRESH session (node scripts/verification-pack.mjs --out pack.md), then §6a synthesis.
 - Deferred: F43 (hook framing/size cap) — tied to the §4v-vs-SessionStart-hook decision.
 - Expansion (optional): E1 ST4+G5, E2 ST1+G1, E3 G2, E4 ST3+G4. Not batched: ST2 (packaging decision), G3.
 - OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
@@ -100,4 +100,5 @@ Updated: 2026-10-13
 
 ## Where I left off
 Cycle 7 open; all 8 fix batches and the follow-ons shipped (v1.35.0–v1.43.0). 1–4 are merged (PR #26); 5–8 and the
-follow-ons are on branch claude/tender-clarke-x722xl. Next: /reflect for Cycle 7, then §4v in a fresh session, then §6a. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).
+follow-ons are on branch claude/tender-clarke-x722xl. Cycle 7 reflected (07-a-reflect.md: 21 − 0, corrected from the self-reported 25). Next: §4v in a fresh session,
+then §6a. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).
