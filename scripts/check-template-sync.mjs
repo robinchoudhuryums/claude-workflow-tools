@@ -662,6 +662,29 @@ try {
   } else console.log('  ✓ the §6a policy trigger is relative and parameterised — four clauses, both config fields read by name, no hardcoded floor (INV-75)');
 }
 
+// ── Structural check 17 (Cycle-7 F11): every command file STANDS ALONE. A
+// consuming project copies .claude/commands/ and nothing else, so a body that
+// says "See /broad-implement Step 1" only works if the agent opens a second
+// command, and one that names scripts/… names a file the project may not have.
+// No cross-command step delegation; every scripts/ mention is conditional.
+{
+  const problems = [];
+  let files = [];
+  try { files = readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md')); } catch (e) {}
+  for (const f of files) {
+    const body = readFileSync(new URL('.claude/commands/' + f, root), 'utf8');
+    const deleg = body.match(/\bsee\s+`?\/[a-z][\w-]*`?\s+step\b/i);
+    if (deleg) problems.push(`${f} delegates to another command (${JSON.stringify(deleg[0])})`);
+    for (const m of body.matchAll(/\bscripts\/[\w.-]+/g)) {
+      const before = body.slice(Math.max(0, m.index - 160), m.index).replace(/\s+/g, ' ');
+      if (!/if the project has|where the project uses/i.test(before)) problems.push(`${f} names ${m[0]} unconditionally — a project that copied only .claude/commands/ may not have it`);
+    }
+  }
+  if (!files.length) { failures++; console.log('  ✗ standalone commands (F11): no .claude/commands/*.md found — the check would be vacuous'); }
+  else if (problems.length) { failures++; console.log(`  ✗ standalone commands (F11): ${problems.join('; ')}`); }
+  else console.log(`  ✓ every command file stands alone — no cross-command step delegation, every scripts/ mention conditional (${files.length} files, F11)`);
+}
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

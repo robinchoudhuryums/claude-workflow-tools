@@ -203,6 +203,14 @@ expectFail('detects a file whose metrics headers all disappeared (F49 count floo
     else bad('permissions check read past its block (F44): ' + r.out.split('\n').filter(l => l.includes('✗')).join(' | '));
   } catch (e) { bad('F44 case — ' + e.message); } finally { rmSync(d, { recursive: true, force: true }); }
 }
+// 19) F11 (Cycle 7): command files stand alone — a consuming project copies
+// .claude/commands/ and nothing else.
+expectFail('detects a command delegating to another command\'s step (F11)',
+  d => { const f = join(d, '.claude', 'commands', 'targeted-implement.md'); writeFileSync(f, readFileSync(f, 'utf8').replace('1. RUN TESTS —', '1. RUN TESTS — See `/broad-implement` Step 1. Then:')); },
+  /delegates to another command/);
+expectFail('detects a command naming a helper script unconditionally (F11)',
+  d => { const f = join(d, '.claude', 'commands', 'regression.md'); writeFileSync(f, readFileSync(f, 'utf8') + '\nRun scripts/invariant-check.mjs first.\n'); },
+  /names scripts\/invariant-check\.mjs unconditionally/);
 // …and a block-scalar run: with the bare command is still a stage, not a problem.
 {
   const d = setup();

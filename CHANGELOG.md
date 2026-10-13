@@ -5,6 +5,65 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.42.0 — 2026-10-13
+
+Cycle-7 Batch 8: docs and agnosticism, the last fix batch of the cycle.
+**Command bodies changed — run `/sync-commands`:** `/broad-scan`,
+`/broad-implement`, `/reflect`, `/pr-review` and `/targeted-implement`.
+**Also re-pull for v1.33.0 if you haven't:** it changed `/setup-cycle` and
+said nothing (F05).
+
+- **F10 — the "generic" security add-on was HIPAA-only.** Every bullet asked
+  about PHI and HIPAA safeguards, so any non-healthcare project got the wrong
+  audit. It now asks about whatever the project's sensitive data and
+  compliance regime are (HIPAA, PCI DSS, SOC 2 and GDPR as examples, or none),
+  and maps each finding to that regime's control. The console labels lose
+  "HIPAA". §6a's example of an unassessed dimension no longer names one
+  built-in project's dimensions.
+- **F07 — gaps in v1.34.0's own change.** `/broad-scan` defined G and ST IDs
+  but no scheme for findings, and its INTERFACE FINDINGS rows had no ID slot,
+  while the batch plan keys on `[ID]`. Findings are now F1, F2, … in one
+  sequence across all three stages, and interface rows carry their ID.
+  `/broad-implement` accepts a batch name (`/broad-implement Batch 2`) and is
+  told to read the batch from the scan, not guess. Its summary gains a
+  `New capabilities (G/ST):` field (registry-required), which `/reflect` counts
+  from instead of inferring from ID prefixes.
+- **F11 — commands that did not stand alone.** `/targeted-implement` said "See
+  /broad-implement Step 1"; the branching is now inline. `/pr-review` and
+  `/reflect` named `scripts/…` helpers a project that copied only
+  `.claude/commands/` does not have; both are now conditional, with the
+  fallback stated. §6a asked for a per-subsystem Session Handoff Block that a
+  Tier 1 cycle never produces; it now says what to paste instead. A new
+  check-template-sync check fails any command that delegates to another
+  command's step or names a script unconditionally.
+- **F42 — invariant-check overstated its safety.** The header said only "known
+  runner" commands execute. In fact the runner prefix only classifies the
+  field, and the whole text then runs through a shell: `node -e 0; <anything>`
+  runs both and reports PASS. The header, CLAUDE.md and the README now say so
+  plainly: the invariant library is code. Commands also ran in the caller's
+  directory. They now run in the `--source` project's root.
+- **F19 — dead files plumbing; the bank missing where it mattered.** The
+  `LIST RELEVANT FILES AND DIRECTORIES` field exists in no prompt, but four
+  handlers still saved it and the form still had a branch for it. All removed.
+  The systems-map Save/Load bank matched only the exact `…SUMMARY HERE` text,
+  so §1 and both §4 prompts never offered it. It now matches every
+  systems-map field (9 prompts).
+- **F21 — three small ones.** A 32+ character Axis B name ran into its score
+  in the §6a grid. Rows now pad to the longest name. The README's
+  "gitignored as a second layer" now tells consuming projects to add that line
+  themselves. The console's §4v prompt claimed its seed was reproducible, but
+  no tool could reproduce it (it uses FNV-1a, the pack uses sha256).
+  `verification-pack.mjs --selector console --seed "<project>:<day>"` now
+  reproduces it, and a test runs the console's own code to prove the picks
+  match. The prompt prints that command.
+- **F08 / F09 / F05 — docs drift.** README: 73 invariants (not 66), the
+  relative policy trigger, "Seven optional helpers" (not two), the full
+  consumer list for the summary blocks, and the console described as locked
+  rather than "deliberately not byte-identical". CLAUDE.md: the §7
+  PROJECT_HEALTH note no longer calls the console copy illustrative. Operator
+  checklist: v1.33.0 added to the re-pull list (checked against git history:
+  the only release missing).
+
 ## 1.41.0 — 2026-10-13
 
 Cycle-7 Batch 7: guard false greens II. Guards, the console and CLAUDE.md's

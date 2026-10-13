@@ -922,18 +922,24 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
       <button class="abar-btn" onclick="collapseAllVariants('s1-variants')">Collapse all ↑</button>
     </div>
     <div id="s1-variants">
-      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-sec" onclick="toggleVariant(\'v-sec\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; HIPAA Compliance Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-sec" onclick="toggleVariant(\'v-sec\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; Compliance Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-sec">
         <div class="pb" id="block-p1sec">
-          <div class="pb-header"><div class="pb-label">Security / HIPAA Audit Add-on</div><div class="pb-meta"><span class="ptag">Replace or add to flag list</span><button class="copy-btn" id="copy-p1sec" onclick="doCopy('p1sec')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
-          <pre id="p1sec">This is a security and HIPAA compliance audit only. Focus exclusively on:
-- PHI handling (storage, transmission, logging, access control)
+          <div class="pb-header"><div class="pb-label">Security &amp; Compliance Audit Add-on</div><div class="pb-meta"><span class="ptag">Replace or add to flag list</span><button class="copy-btn" id="copy-p1sec" onclick="doCopy('p1sec')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
+          <pre id="p1sec">This is a security and compliance audit only. Focus exclusively on:
+- Sensitive-data handling (storage, transmission, logging, access control) —
+  whatever this project's regulated or confidential data is: health records,
+  payment data, personal data, credentials, customer content
 - Authentication and authorization enforcement
 - Data validation and sanitization
 - Encryption at rest and in transit
 - Audit logging completeness
-- Any surface area that would fail a HIPAA technical safeguards review
-For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.</pre>
+- Any surface area that would fail the compliance regime this project is
+  subject to (e.g. HIPAA technical safeguards, PCI DSS, SOC 2, GDPR) — name
+  the regime, or state that none applies
+For each finding, name the control or safeguard it maps to under that regime
+(e.g. a HIPAA Required vs. Addressable safeguard, a PCI DSS requirement
+number), or "general hardening" if no regime applies.</pre>
         </div>
       </div>
       <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-perf" onclick="toggleVariant(\'v-perf\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
@@ -1280,7 +1286,8 @@ For each action completed this cycle, answer two binary questions:
 
 Tally (three-way classification):
 - Production fixes (YES to Q1): [count] — severity breakdown
-- New capabilities / features: [count]
+- New capabilities / features: [count — from the summary's "New capabilities
+  (G/ST)" field where there is one; never folded into production fixes]
 - Defensive/structural (NO to Q1, not a feature): [count]
 - New failure modes (YES to Q2): [count] — severity breakdown
 - Net score: [production fixes] − [new failure modes] = [net]
@@ -1344,10 +1351,11 @@ next unused lowercase letter among this cycle's non-release blocks (a for the
 first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
-summary reported, say so in the metrics `notes` field — the pack assembler
-(scripts/verification-pack.mjs) surfaces that to the verifier automatically,
-so the "don't trust the self-report" signal is generated rather than
-remembered. Skip if no .cycle/.
+summary reported, say so in the metrics `notes` field — where the project
+uses the pack assembler (scripts/verification-pack.mjs) it surfaces that to
+the verifier automatically, so the "don't trust the self-report" signal is
+generated rather than remembered; without it, the §4v operator reads it
+from metrics.csv. Skip if no .cycle/.
 
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
@@ -2236,9 +2244,15 @@ function buildFillForm(pid){
   const phs=getPlaceholders(pre.textContent);
   if(!phs.length){form.innerHTML='<div style="padding:10px;font-size:12px;color:var(--text-muted)">No fillable placeholders in this prompt.</div>';return;}
   const project=getProject();
-  const isSysMap=n=>n==='PASTE SYSTEMS MAP SUMMARY HERE';
+  // F19 (Cycle 7): every variant of the systems-map field gets the bank
+  // buttons. The exact-match test missed §1's "[PASTE SYSTEMS MAP SUMMARY HERE —
+  // 3–5 bullets]" and the §4 "…INCLUDING THE INTER-MODULE DEPENDENCY MAP" forms,
+  // so the bank was offered only on the prompts that needed it least. The files
+  // field (LIST RELEVANT FILES AND DIRECTORIES) is gone from every prompt — the
+  // subsystem's files come from the Cycle Workflow Config — so its branch and
+  // the values saved for it were dead and are removed.
+  const isSysMap=n=>n.startsWith('PASTE SYSTEMS MAP SUMMARY HERE');
   const isSubsys=n=>n==='SUBSYSTEM GROUP NAME';
-  const isFiles=n=>n==='LIST RELEVANT FILES AND DIRECTORIES';
 
   let html='<div class="fill-form-title">Fill in placeholders <span>— values auto-saved per project · copied version will include your text</span></div>';
   phs.forEach(ph=>{
@@ -2276,8 +2290,6 @@ function buildFillForm(pid){
       if(val&&!project.subsystems.find(s=>s.name===val)){
         html+=`<input class="fill-input" id="${safeId}_custom" aria-label="Custom subsystem name" style="margin-top:4px" type="text" value="${esc(val)}" placeholder="Custom subsystem name" oninput="saveVal(${argPid},${argName},this.value)">`;
       }
-    } else if(isFiles(ph.name)){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="2" placeholder="Files for this subsystem..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else if(large){
       html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else {
@@ -2292,9 +2304,6 @@ function buildFillForm(pid){
 function handleSubSelect(pid,val){
   if(val==='__custom__')return;
   saveVal(pid,'SUBSYSTEM GROUP NAME',val);
-  const project=getProject();
-  const match=project.subsystems.find(s=>s.name===val);
-  if(match) saveVal(pid,'LIST RELEVANT FILES AND DIRECTORIES',match.files);
   buildFillForm(pid); // refresh to show selected state
 }
 
@@ -2404,16 +2413,14 @@ function renderSubsysTable(){
     // The old hand-rolled quote escaping only handled ' — a name containing "
     // broke out of the onclick attribute entirely.
     const argName=jsArg((s.name));
-    const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillSubsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillSubsystem(${argName},${argFiles})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillSubsystem(${argName})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillSubsystem(${argName})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 
-function fillSubsystem(name,files){
+function fillSubsystem(name){
   saveVal('p1','SUBSYSTEM GROUP NAME',name);
-  saveVal('p1','LIST RELEVANT FILES AND DIRECTORIES',files);
   const form=document.getElementById('fill-p1');
   if(form&&form.classList.contains('open'))buildFillForm('p1');
   if(form&&!form.classList.contains('open')){
@@ -2529,13 +2536,18 @@ function buildP6aText(project){
   const consecCycles=project.policyConsecutiveCycles||2;
   const axisB=getAxisB(project);
   const axisBList=axisB.map((c,i)=>`${i+1}. ${c.name} (score 1–10)\n   Measured by: ${c.measures||'trend in findings of this shape this cycle vs. prior, and whether a durable guard exists against the pattern.'}`).join('\n\n');
-  const axisBGrid=axisB.map(c=>`${c.name.padEnd(32)}X/10      Improving/Stable/Degrading`).join('\n');
+  // F21 (Cycle 7): a category name of 32+ characters ran straight into its
+  // score ("…Regression PostureX/10"). Pad every row to the longest name + 2,
+  // never less than the header's 32, so the rows stay aligned with each other.
+  const gridW=Math.max(32,...axisB.map(c=>c.name.length+2));
+  const axisBGrid=axisB.map(c=>`${c.name.padEnd(gridW)}X/10      Improving/Stable/Degrading`).join('\n');
   const axisBPlaybooks=axisB.map(c=>`${c.name} triggered → ${c.playbook||'Identify the systemic root cause and add a concrete, durable guard (test, lint rule, startup check, or consolidation) so the pattern cannot silently recur. One guard per cycle until the category score recovers.'}`).join('\n\n');
   return `Do not make any changes to any files during this session, other than the
 optional metrics.csv append in step 8.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
 (Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
+For a Tier 1 cycle (/broad-scan), there is no per-subsystem Session Handoff Block: paste the scan's FINAL REPORT and batch plan once in its place, and one Cycle Summary Block and Verification Block for the cycle.
 
 ${subsystemLines}
 
@@ -2555,7 +2567,7 @@ AXIS A — VERTICAL (Subsystem Health)
 
 For each dimension below, provide:
 - A score out of 10, OR "Not assessed this cycle" if no direct signal exists from the cycle inputs
-  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. RAG, Business Viability, or any domain-specific dimension without direct signal this cycle).
+  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. a domain-specific or product dimension that no subsystem cycle touched and no Verification Block probed).
 - Coverage confidence: High (full cycle with verification block) / Medium (cycle summary only, no verification) / Low (inferred from adjacent signals)
 - 2–3 sentences of reasoning grounded in specific findings from the cycle inputs, not general impressions
 - The single most important finding or unresolved item driving the score
@@ -3265,6 +3277,9 @@ STAGE 1 — BROAD PASS
 ═══════════════════════════════════════════
 
 Audit the codebase thoroughly. For each finding:
+- ID: F1, F2, … — one sequence across all three stages (Stage 2 and
+  interface findings continue it; a retracted ID is never reused). These
+  are session-local labels for the batch plan, not invariant IDs
 - State the issue, cite the file and function/line area
 - Severity: Critical / High / Medium / Low
 - Confidence: High / Medium / Low (flag if you only skimmed this area)
@@ -3413,7 +3428,7 @@ FEATURE EFFECTIVENESS (for each major feature area):
   [1-2 sentences on how effectively it serves users, not code quality]
 
 INTERFACE FINDINGS (structural only — omit if no user-facing surface):
-- [Finding] — [file/component] — [Severity] — [what a user hits] —
+- [ID] — [Finding] — [file/component] — [Severity] — [what a user hits] —
   [effort: S/M/L + rough time estimate]
 (or "None — no structural interface findings")
 
@@ -3592,10 +3607,15 @@ Rules:
 
 After all actions complete:
 
-1. RUN TESTS — read Test Command from CLAUDE.md. If \`manual\`, walk
-   Regression Scenarios for the touched subsystem(s) instead. Classify
-   failures (this session / pre-existing / real bug). See
-   \`/broad-implement\` Step 1 for the full branching detail.
+1. RUN TESTS — read the Test Command from CLAUDE.md's Cycle Workflow Config.
+   - If it is \`manual\`: walk every Regression Scenario whose Subsystem
+     overlaps a file you modified, and record PASS / FAIL / NOT APPLICABLE
+     (with the reason for NOT APPLICABLE). A FAIL counts as a test failure.
+   - Otherwise: run the suite (the Test Command, or \`npm test\` if none is
+     set), then walk any configured Regression Scenarios.
+   Classify each failure: caused by this session (fix now) / pre-existing
+   (note, don't fix) / a real production bug exposed by a correct test or
+   scenario (flag as a follow-on, don't fix here).
 2. REGRESSION CHECK — review each modified file for breakage risk,
    cross-reference CROSS-MODULE RISKS from handoff block
 3. REFLECT — for each action: production bug? (YES/NO) New failure
@@ -3676,6 +3696,9 @@ Read CLAUDE.md (especially Common Gotchas) before starting.
 
 Rules:
 - Implement ONLY the findings specified above — nothing else
+- A batch name ("Batch 2", "E1") means every item the scan's plan lists
+  under it. Read the list from the scan report; if the report is not in
+  this session, ask for it rather than guessing what the batch held
 - G (completeness gap) and ST (strategic suggestion) items from the
   scan's EXPANSION PLAN are in scope only when named above, by ID or by
   their E-batch. They are new capability, not fixes — see REFLECT
@@ -3739,6 +3762,7 @@ Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
 
 ---BROAD SCAN IMPLEMENTATION SUMMARY---
 Findings implemented: [list finding IDs and one-line descriptions]
+New capabilities (G/ST): [list G/ST IDs and one-line descriptions, or "None"]
 Files modified: [list all files touched]
 
 CHANGES:
@@ -3839,7 +3863,8 @@ Review across these lenses, scoped to the diff:
    test (Category D).
 8. Invariant cross-check: does the diff touch any rule in the Invariant
    Library? Flag every invariant at risk, and run its Verify test if one
-   is defined (command-style Verify runs via scripts/invariant-check.mjs).
+   is defined (if the project has scripts/invariant-check.mjs it runs
+   command-style Verify fields; otherwise run the Verify command directly).
 9. Docs drift: does the PR change behavior the docs/README/CLAUDE.md
    describe without updating them?
 
@@ -3935,16 +3960,14 @@ function renderT2SubsysTable(){
   if(title)title.textContent=`${project.name} — Subsystem Groups`;
   tbody.innerHTML=project.subsystems.map(s=>{
     const argName=jsArg((s.name));
-    const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillT2Subsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillT2Subsystem(${argName},${argFiles})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillT2Subsystem(${argName})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillT2Subsystem(${argName})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 
-function fillT2Subsystem(name,files){
+function fillT2Subsystem(name){
   saveVal('t2a','SUBSYSTEM GROUP NAME',name);
-  saveVal('t2a','LIST RELEVANT FILES AND DIRECTORIES',files);
   const form=document.getElementById('fill-t2a');
   if(form&&form.classList.contains('open'))buildFillForm('t2a');
   if(form&&!form.classList.contains('open')){
@@ -4114,7 +4137,9 @@ MANDATORY ROTATION PROBES:
 ${invs.length>=5?selectSeededInvariants(invs,5,probeSeed(project)).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
 (Probe seed: ${probeSeed(project)} — the selection is a pure function of the seed and
 the invariant ids, so a verifier can reproduce it and the implementer cannot
-re-roll it. It rotates once per UTC day.)
+re-roll it. It rotates once per UTC day. Reproduce it against the project's
+own library with:
+  node scripts/verification-pack.mjs --selector console --seed "${probeSeed(project)}")
 
 For each invariant probed:
 - Read the relevant code directly (do not rely on the cycle's description of what changed)

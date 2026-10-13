@@ -2,6 +2,7 @@ If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
 Usage: /broad-implement <finding IDs, G/ST expansion IDs, or description of fixes to implement>
 Example: /broad-implement F03, F07, F12
+Example: /broad-implement Batch 2   (every finding in that batch of the scan's plan)
 Example: /broad-implement G2, ST1   (or an expansion batch: E1)
 
 Paste or reference the findings from a prior /broad-scan session.
@@ -16,6 +17,9 @@ Read CLAUDE.md (especially Common Gotchas) before starting.
 
 Rules:
 - Implement ONLY the findings specified above — nothing else
+- A batch name ("Batch 2", "E1") means every item the scan's plan lists
+  under it. Read the list from the scan report; if the report is not in
+  this session, ask for it rather than guessing what the batch held
 - G (completeness gap) and ST (strategic suggestion) items from the
   scan's EXPANSION PLAN are in scope only when named above, by ID or by
   their E-batch. They are new capability, not fixes — see REFLECT
@@ -79,6 +83,7 @@ Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
 
 ---BROAD SCAN IMPLEMENTATION SUMMARY---
 Findings implemented: [list finding IDs and one-line descriptions]
+New capabilities (G/ST): [list G/ST IDs and one-line descriptions, or "None"]
 Files modified: [list all files touched]
 
 CHANGES:

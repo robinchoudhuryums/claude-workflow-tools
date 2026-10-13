@@ -112,7 +112,9 @@ const CASES = {
   'INV-67': [[HTML, '<pre id="t1a"></pre>', '<pre id="t1"></pre>', /duplicate id/i]],
   'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/],
              // Cycle-7 Batch 6 (F18): the length cap back — §6a's 224-char field drops out of its form.
-             [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", /F11/]],
+             [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", /F11/],
+             // Cycle-7 Batch 8 (F19): the exact-match systems-map test back — §1 and §4 lose the bank.
+             [HTML, "const isSysMap=n=>n.startsWith('PASTE SYSTEMS MAP SUMMARY HERE');", "const isSysMap=n=>n==='PASTE SYSTEMS MAP SUMMARY HERE';", /F19/]],
   'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
   'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
   'INV-66': [
@@ -214,7 +216,9 @@ const CASES = {
   'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
   'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/],
              // Cycle-7 Batch 7 (F38): dedupe removed — each invariant gets its own key, so a shared command runs per rule.
-             ['scripts/invariant-check.mjs', 'if (cmd) { if (!byCmd.has(cmd)) byCmd.set(cmd, []); byCmd.get(cmd).push(inv); }', "if (cmd) { byCmd.set(cmd + ' #' + inv.id, [inv]); }", /identical commands must run once/]],
+             ['scripts/invariant-check.mjs', 'if (cmd) { if (!byCmd.has(cmd)) byCmd.set(cmd, []); byCmd.get(cmd).push(inv); }', "if (cmd) { byCmd.set(cmd + ' #' + inv.id, [inv]); }", /identical commands must run once/],
+             // Cycle-7 Batch 8 (F42): Verify commands back in the caller's directory.
+             ['scripts/invariant-check.mjs', 'execSync(cmd, { cwd, stdio:', 'execSync(cmd, { stdio:', /did not run in the project root/]],
   'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],
   'INV-32': [['scripts/check-output-blocks.mjs', 'export function validate', 'export function validate_renamed', /✗|error/i]],
@@ -223,7 +227,8 @@ const CASES = {
   'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i]],
   // INV-70 — reintroduce the disclosure/use split: select with a truncated
   // seed while the header still prints the full one.
-  'INV-70': [['scripts/verification-pack.mjs', 'const probes = selectProbes(invariants, seed);', 'const probes = selectProbes(invariants, String(seed).slice(0, 4));', /does NOT reproduce/i]],
+  // Re-targeted in Cycle-7 Batch 8: buildPack now dispatches through SELECTORS (F21).
+  'INV-70': [['scripts/verification-pack.mjs', 'const probes = SELECTORS[selector](invariants, seed);', 'const probes = SELECTORS[selector](invariants, String(seed).slice(0, 4));', /does NOT reproduce/i]],
 };
 
 // ── Coverage, derived from the live library ───────────────────────────────────

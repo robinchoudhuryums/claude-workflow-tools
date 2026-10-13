@@ -64,7 +64,7 @@ export const BLOCKS = [
       'OPERATOR ACTIONS SURFACED', 'DO NOT TOUCH:'] },
   { name: 'BROAD SCAN IMPLEMENTATION SUMMARY', open: '---BROAD SCAN IMPLEMENTATION SUMMARY---', close: '---END BROAD SCAN IMPLEMENTATION SUMMARY---',
     producer: 'broad-implement', inFormats: false,
-    fields: ['Findings implemented:', 'Files modified:', 'CHANGES:', 'TEST RESULTS:',
+    fields: ['Findings implemented:', 'New capabilities (G/ST):', 'Files modified:', 'CHANGES:', 'TEST RESULTS:',
       'REGRESSION RISKS:', 'INVARIANTS AT RISK:', 'NET SCORE:', 'OPERATOR ACTIONS / DEPLOY:',
       'FOLLOW-ON ITEMS:', 'DOCUMENTATION UPDATES NEEDED:'] },
   { name: 'TARGETED IMPLEMENTATION SUMMARY', open: '---TARGETED IMPLEMENTATION SUMMARY---', close: '---END TARGETED IMPLEMENTATION SUMMARY---',

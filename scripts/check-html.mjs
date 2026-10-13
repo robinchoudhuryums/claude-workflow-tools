@@ -1212,6 +1212,44 @@ if (loaded && typeof ctx.getPlaceholders === 'function') {
   else bad('F11: ' + problems.slice(0, 5).join('; '));
 }
 
+// F21 (Cycle 7) — a long Axis B category name must not run into its score in
+// the §6a grid. padEnd(32) did nothing for a 32+ character name.
+if (loaded && typeof ctx.buildP6aText === 'function' && typeof ctx.getProject === 'function') {
+  const long = 'Visual / Interaction Regression Posture';
+  const proj = Object.assign({}, ctx.getProject('obs'), { axisB: [{ name: long, measures: 'm', pulse: 'p', playbook: 'b' }, { name: 'Short', measures: 'm', pulse: 'p', playbook: 'b' }] });
+  const rows = ctx.buildP6aText(proj).split('\n').filter(l => /X\/10 {6}Improving\/Stable\/Degrading$/.test(l));
+  const col = rows.map(l => l.indexOf('X/10'));
+  if (rows.length !== 2) bad(`F21: expected 2 Axis B grid rows, found ${rows.length}`);
+  else if (!rows[0].startsWith(long + '  ')) bad(`F21: a ${long.length}-char category name runs into its score: ${JSON.stringify(rows[0].slice(0, 50))}`);
+  else if (col[0] !== col[1]) bad(`F21: Axis B grid rows are misaligned (score at columns ${col.join(', ')})`);
+  else ok(`a ${long.length}-character Axis B name keeps a gap before its score, and the grid rows stay aligned (F21)`);
+}
+
+// F19 (Cycle 7) — the systems-map bank must be offered on EVERY systems-map
+// field. An exact-match test (=== '…SUMMARY HERE') skipped §1's "— 3–5 bullets"
+// form and the §4 dependency-map forms. Derived: every fill-form field whose
+// name starts with the systems-map directive must render the Save/Load bank
+// buttons, and no handler may still save the retired files field.
+if (loaded && typeof ctx.buildFillForm === 'function' && typeof ctx.getPlaceholders === 'function') {
+  const fills = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  const sysMapPrompts = [], missingBank = [];
+  for (const pid of fills) {
+    const text = (preBody(html, pid) || (elStore[pid] && elStore[pid].textContent) || '');
+    const fields = ctx.getPlaceholders(text).filter(p => p.name.startsWith('PASTE SYSTEMS MAP SUMMARY'));
+    if (!fields.length) continue;
+    sysMapPrompts.push(pid);
+    getEl(pid).textContent = text;            // earlier checks leave fixture text on the stub element
+    ctx.buildFillForm(pid);
+    const out = elStore['fill-' + pid] ? elStore['fill-' + pid].innerHTML : '';
+    if ((out.match(/saveBank\(/g) || []).length < fields.length) missingBank.push(`${pid} (${fields.map(f => f.full.slice(0, 40)).join(', ')})`);
+  }
+  const stale = /saveVal\([^)]*'LIST RELEVANT FILES AND DIRECTORIES'/.test(src);
+  if (sysMapPrompts.length < 5) bad(`F19: only ${sysMapPrompts.length} prompt(s) with a systems-map field found — the bank check would be vacuous`);
+  else if (missingBank.length) bad(`F19: systems-map field(s) rendered without the bank buttons: ${missingBank.join('; ')}`);
+  else if (stale) bad('F19: a handler still saves the retired LIST RELEVANT FILES AND DIRECTORIES field — no prompt has it');
+  else ok(`every systems-map field offers the bank (${sysMapPrompts.length} prompts) and nothing saves the retired files field (F19)`);
+}
+
 // F14 — §4v rotation probes must be REPRODUCIBLE, not a coin flip the
 // implementer can re-roll. They were Math.random() AND re-rolled on every Copy,
 // so the copied prompt differed from the displayed one and "do NOT substitute

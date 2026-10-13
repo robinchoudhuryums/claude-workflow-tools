@@ -22,10 +22,15 @@ Rules:
 
 After all actions complete:
 
-1. RUN TESTS — read Test Command from CLAUDE.md. If `manual`, walk
-   Regression Scenarios for the touched subsystem(s) instead. Classify
-   failures (this session / pre-existing / real bug). See
-   `/broad-implement` Step 1 for the full branching detail.
+1. RUN TESTS — read the Test Command from CLAUDE.md's Cycle Workflow Config.
+   - If it is `manual`: walk every Regression Scenario whose Subsystem
+     overlaps a file you modified, and record PASS / FAIL / NOT APPLICABLE
+     (with the reason for NOT APPLICABLE). A FAIL counts as a test failure.
+   - Otherwise: run the suite (the Test Command, or `npm test` if none is
+     set), then walk any configured Regression Scenarios.
+   Classify each failure: caused by this session (fix now) / pre-existing
+   (note, don't fix) / a real production bug exposed by a correct test or
+   scenario (flag as a follow-on, don't fix here).
 2. REGRESSION CHECK — review each modified file for breakage risk,
    cross-reference CROSS-MODULE RISKS from handoff block
 3. REFLECT — for each action: production bug? (YES/NO) New failure

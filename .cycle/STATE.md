@@ -9,7 +9,8 @@ Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it
 Updated: 2026-10-13
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1–7 are complete (v1.35.0–v1.41.0; 1–4 merged in PR #26). Batch 8 and the expansion plan are not started.
+- All 8 fix batches are complete (v1.35.0–v1.42.0; 1–4 merged in PR #26). The expansion plan is not started.
+- Correction carried forward: the v1.41.0 block says INV-26's rule text was widened; it was not until v1.42.0.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -49,10 +50,13 @@ Updated: 2026-10-13
   realigned; F46 norm exempts only single-token lines; F50 every block copy carries the same full field-label set,
   Formats VERIFICATION/TIER 2 copies aligned (live drift); F37 hook Standing + Pending asserted; F38 dedupe counted by
   executions; F44 no false red on a later "write" (bound shipped in v1.40.0).
+- v1.42.0 | Batch 8 | F10 security add-on regime-agnostic; F07 finding IDs + interface ID slot, Batch-name scope,
+  New capabilities (G/ST) field; F11 commands stand alone (+ check 17); F42 invariant-check shell model documented,
+  runs in the project root; F19 dead files plumbing removed, bank on every systems-map field; F21 grid width,
+  gitignore note, --selector console; F08/F09/F05 docs. Re-pull: 5 commands (and v1.33.0's /setup-cycle).
 
 ## Pending / not yet done
-- Batch 8 — docs/agnosticism: F10 (HIPAA-only "generic" security add-on), F42 (invariant-check runs arbitrary
-  shell; header says otherwise), F07, F08, F05 (v1.33.0 missing from the re-pull list), F09, F11, F19, F21.
+- /reflect for Cycle 7, then §4v (fresh session; verification-pack.mjs), then §6a synthesis.
 - Deferred: F43 (hook framing/size cap) — tied to the §4v-vs-SessionStart-hook decision.
 - Expansion (optional): E1 ST4+G5, E2 ST1+G1, E3 G2, E4 ST3+G4. Not batched: ST2 (packaging decision), G3.
 - OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
@@ -91,6 +95,5 @@ Updated: 2026-10-13
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; Batches 1–7 shipped (v1.35.0–v1.41.0). 1–4 are merged (PR #26); 5–7 are on branch
-claude/tender-clarke-x722xl. Next: /broad-implement Batch 8 (docs/agnosticism — F10 HIPAA-only security add-on
-first), then /reflect and §4v for the cycle. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).
+Cycle 7 open; all 8 fix batches shipped (v1.35.0–v1.42.0). 1–4 are merged (PR #26); 5–8 are on branch
+claude/tender-clarke-x722xl. Next: /reflect for Cycle 7, then §4v in a fresh session, then §6a. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).

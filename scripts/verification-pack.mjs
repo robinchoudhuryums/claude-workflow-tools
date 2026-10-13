@@ -22,7 +22,7 @@
 //
 // Usage:
 //   node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]
-//       [--root DIR] [--project NAME] [--template PATH]
+//       [--root DIR] [--project NAME] [--template PATH] [--selector sha|console]
 //   (cycle defaults to .cycle/STATE.md's Cycle field — the single source of
 //    truth per P3; seed defaults to the current git HEAD sha; root defaults to
 //    the current directory; project defaults to the root's directory name.)
@@ -63,6 +63,28 @@ export function selectProbes(invariantLines, seed, count = 5) {
     .slice(0, count)
     .map(x => x.line);
 }
+
+// F21 (Cycle 7): the CONSOLE's selection, ported so its seed is reproducible.
+// The console has no commit sha and no synchronous sha256, so it seeds from
+// "<project>:<UTC day>" and orders by FNV-1a(seed + '|' + id) — a different
+// function from selectProbes above, and its prompt claimed "a verifier can
+// reproduce it" while no tool could. `--selector console --seed "<seed>"` runs
+// this; tests/verification-pack.test.mjs executes the console's own code on the
+// same input and requires the same five.
+export function hash32(str) {
+  let h = 2166136261 >>> 0; const s = String(str);
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+export function selectProbesConsole(invariantLines, seed, count = 5) {
+  return invariantLines
+    .map(line => ({ line, id: line.split('|')[0].trim() }))
+    .map(x => ({ ...x, h: hash32(seed + '|' + x.id) }))
+    .sort((a, b) => a.h - b.h || a.id.localeCompare(b.id))
+    .slice(0, count)
+    .map(x => x.line);
+}
+export const SELECTORS = { sha: selectProbes, console: selectProbesConsole };
 
 // Blocks persisted by the implement commands / /reflect at CHECKPOINT.
 // F02 (Cycle 6): .cycle/blocks/ ACCUMULATES across cycles, and the first pack
@@ -117,8 +139,9 @@ export function cycleTotals(metricsCsv, cycle) {
 // reproduce command returned a different five, and §4v's "do NOT substitute your
 // own picks" was unauditable. A `probes` override is deliberately NOT accepted:
 // an override reopens exactly that divergence.
-export function buildPack({ body, invariants, blocks, totals, cycle, seed, project }) {
-  const probes = selectProbes(invariants, seed);
+export function buildPack({ body, invariants, blocks, totals, cycle, seed, project, selector = 'sha' }) {
+  if (!SELECTORS[selector]) throw new Error(`unknown selector "${selector}" — use sha or console`);
+  const probes = SELECTORS[selector](invariants, seed);
   const header = [
     `CYCLE UNDER VERIFICATION: ${project} — Cycle ${cycle}`,
     '',
@@ -127,7 +150,7 @@ export function buildPack({ body, invariants, blocks, totals, cycle, seed, proje
     '',
     `Rotation probes were seeded from ${seed} — they were NOT chosen by the`,
     'implementer. Reproduce the selection with:',
-    `  node scripts/verification-pack.mjs --cycle ${cycle} --seed ${seed}`,
+    `  node scripts/verification-pack.mjs --cycle ${cycle} --seed ${seed}${selector === 'console' ? ' --selector console' : ''}`,
     '',
   ];
   if (totals.rows) {
@@ -216,6 +239,11 @@ function main(argv) {
     catch { seed = 'no-git-' + cycle; }
   }
 
+  // F21: `--selector console` reproduces the console's §4v picks from the seed
+  // its prompt states ("<project>:<UTC day>"); the default is the sha selection.
+  const selector = arg('selector') || 'sha';
+  if (!SELECTORS[selector]) { console.error(`Unknown --selector "${selector}" — use sha (default) or console.`); return 1; }
+
   let metrics = '';
   try { metrics = readFileSync(at('.cycle/metrics.csv'), 'utf8'); } catch {}
 
@@ -223,7 +251,7 @@ function main(argv) {
     body, invariants,
     blocks: readBlocks(at('.cycle/blocks'), { cycle }),
     totals: cycleTotals(metrics, cycle),
-    cycle, seed, project: arg('project') || basename(rootDir),
+    cycle, seed, project: arg('project') || basename(rootDir), selector,
   });
 
   const out = arg('out');
