@@ -54,9 +54,22 @@ export function sectionBody(md, headingPrefix) {
 }
 export const unesc = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 export const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// F48 (Cycle 7): <pre> detection is attribute-order-agnostic. Every scan used
+// the literal `<pre id="X">`, so a prompt written `<pre class="p" id="X">` (or
+// with no id at all) was invisible to the lock-coverage check — a static prompt
+// outside every lock, reported as "every static <pre> is locked". <pre> markup
+// inside <script> (the archive renderer's template) is not a console prompt.
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const preRe = id => new RegExp(`(<pre\\b[^>]*?\\sid\\s*=\\s*["']${reEsc(id)}["'][^>]*>)([\\s\\S]*?)(</pre>)`, 'i');
+export function scanPres(html) {
+  const out = [];
+  for (const m of html.replace(/<script\b[\s\S]*?<\/script>/gi, '').matchAll(/<pre\b([^>]*)>([\s\S]*?)<\/pre>/gi))
+    out.push({ id: (m[1].match(/(?:^|\s)id\s*=\s*["']([^"']+)["']/i) || [])[1] || null, body: m[2] });
+  return out;
+}
 export function preBody(html, id) {
-  const m = html.match(new RegExp(`<pre id="${id}">([\\s\\S]*?)</pre>`));
-  return m ? unesc(m[1]) : null;
+  const m = html.match(preRe(id));
+  return m ? unesc(m[2]) : null;
 }
 export function transform(body, m) {
   let t = body;
@@ -188,7 +201,7 @@ function main(argv) {
     for (const m of MANIFEST) {
       const body = dynBody(claudeMd, m);
       if (body == null) { console.error(`! no canonical body for ${dynLabel(m)}`); continue; }
-      const re = new RegExp(`(<pre id="${m.id}">)([\\s\\S]*?)(</pre>)`);
+      const re = preRe(m.id);
       if (!re.test(updated)) { console.error(`! no <pre id="${m.id}"> in HTML`); continue; }
       const gen = esc(transform(body, m));
       updated = updated.replace(re, (_match, open, _cur, close) => open + gen + close); n++;
@@ -211,8 +224,7 @@ function main(argv) {
     // covered by the dynamic lock below. Without this, a new static prompt is
     // simply unlocked and nothing says so — which is how nine of them
     // accumulated, and how the audit that found them still under-counted by one.
-    const staticPres = [...html.matchAll(/<pre id="([^"]+)">([\s\S]*?)<\/pre>/g)]
-      .filter(m => m[2].trim().length).map(m => m[1]);
+    const staticPres = scanPres(html).filter(p => p.body.trim().length).map(p => p.id || '(a <pre> with no id — it cannot be locked)');
     const covered = new Set(MANIFEST.map(m => m.id));
     const unlocked = staticPres.filter(id => !covered.has(id));
     if (!staticPres.length) { console.error('  ! no static <pre> prompts found — the lock-coverage check would be vacuous'); drift++; }

@@ -2063,22 +2063,25 @@ function switchProject(id){
 }
 
 // ─── INVARIANT STORAGE (per project) ─────────────────────────
-function invariantKey(){ return `ccg:${activeProjectId}:invariants`; }
+// F20 (Cycle 7): keyed by an explicit project id when a caller has one. The
+// builders take a project argument but read the ACTIVE project's invariants,
+// so §4v/§1s/PR-review rendered for project B carried project A's library.
+function invariantKey(pid){ return `ccg:${pid||activeProjectId}:invariants`; }
 // F16 (Cycle 7): every loader below trusted the stored SHAPE, so one malformed
 // value — "{}", "null", a number where a string belongs — threw at init and
 // blanked everything rendered after it. Parse failures were caught; wrong
 // shapes were not.
 function isPlainObj(v){ return !!v&&typeof v==='object'&&!Array.isArray(v); }
-function loadCustomInvariants(){
-  let v; try{v=JSON.parse(localStorage.getItem(invariantKey())||'[]')}catch(e){return []}
+function loadCustomInvariants(pid){
+  let v; try{v=JSON.parse(localStorage.getItem(invariantKey(pid))||'[]')}catch(e){return []}
   if(!Array.isArray(v)) return [];
   return v.filter(isPlainObj).map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
 }
 function saveCustomInvariants(arr){ try{localStorage.setItem(invariantKey(),JSON.stringify(arr))}catch(e){storageWarn(e)} }
-function getProjectInvariants(){
-  const project=getProject();
+function getProjectInvariants(proj){
+  const project=proj||getProject();
   const builtIn=project.invariants||[];
-  const custom=loadCustomInvariants();
+  const custom=loadCustomInvariants(project.id);
   return [...builtIn,...custom];
 }
 function getNextInvariantId(){
@@ -2172,7 +2175,12 @@ function saveVal(pid,name,val){ try{localStorage.setItem(lsKey(pid,name),val)}ca
 // apart STRUCTURALLY rather than by a keyword list: a token inside an
 // ---OUTPUT BLOCK--- span, or sharing its opening line with another token (a
 // template row), is a format token.
-const PH_RE = /\[([A-Z][^\]]{0,199})\]/g;
+// F18 (Cycle 7): no length cap. {0,199} silently dropped any longer field —
+// §6a's 224-char "[OPTIONAL: PASTE SEAMS & INVARIANTS AUDIT BLOCK — …]" never
+// reached its fill form, and the check shared the cap so it could not see the
+// loss. A token stops at the next "[" instead, so a stray bracket cannot
+// swallow the real tokens after it.
+const PH_RE = /\[([A-Z][^\][]*)\]/g;
 const LARGE_KEYS=['PASTE','LIST','DESCRIBE','NOTE'];
 const OPT_KEYS=['OPTIONAL','IF APPLICABLE'];
 // The prompts' own vocabulary for "the operator supplies this". A token is a
@@ -2183,7 +2191,7 @@ const OPT_KEYS=['OPTIONAL','IF APPLICABLE'];
 // to WRITE, not a field to fill).
 const DIRECTIVE_KEYS=['PASTE','LIST','DESCRIBE','NOTE','OPTIONAL','IF '];
 const ALLCAPS_PH=/^[A-Z][A-Z0-9\s\/\-&',:.()]*$/;
-const ANY_TOKEN=/\[[^\]]{0,199}\]/g;
+const ANY_TOKEN=/\[[^\][]*\]/g;
 function isFillField(name){ return ALLCAPS_PH.test(name)||DIRECTIVE_KEYS.some(k=>name.startsWith(k)); }
 function isLarge(name){return LARGE_KEYS.some(k=>name.startsWith(k))}
 function isOpt(name){return OPT_KEYS.some(k=>name.startsWith(k))}
@@ -3785,7 +3793,7 @@ and /sync-docs if any documentation updates are needed.`;
 // Mirrors canonical /pr-review; the project's invariant library is injected so
 // the console prompt is standalone. Locked by gen-html-prompts --assert.
 function buildPrReviewText(project){
-  const invs=getProjectInvariants();
+  const invs=getProjectInvariants(project);
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet for this project)';
@@ -3950,7 +3958,7 @@ function fillT2Subsystem(name,files){
 
 // ─── SEAMS & INVARIANTS AUDIT (§1s) — dynamic per project ───
 function buildSeamsText(project){
-  const invs=getProjectInvariants();
+  const invs=getProjectInvariants(project);
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet — this audit will create the initial library)';
@@ -4077,7 +4085,7 @@ function renderSeamsInvariantTable(){
 
 // ─── VERIFICATION PASS (§4v) — dynamic per project ──────────
 function buildVerificationText(project){
-  const invs=getProjectInvariants();
+  const invs=getProjectInvariants(project);
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet — add via Project Manager or grow organically via /reflect)';
@@ -4103,8 +4111,8 @@ PART 1 — INVARIANT PROBE RESULTS
 Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected deterministically from a stated seed, not chosen by the implementer — do NOT substitute your own picks):
 
 MANDATORY ROTATION PROBES:
-${invs.length>=5?selectSeededInvariants(invs,5,probeSeed()).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
-(Probe seed: ${probeSeed()} — the selection is a pure function of the seed and
+${invs.length>=5?selectSeededInvariants(invs,5,probeSeed(project)).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
+(Probe seed: ${probeSeed(project)} — the selection is a pure function of the seed and
 the invariant ids, so a verifier can reproduce it and the implementer cannot
 re-roll it. It rotates once per UTC day.)
 
@@ -4183,7 +4191,7 @@ Finally, answer: "What invariants should be added to the library based on what t
 // scripts/verification-pack.mjs by seeding from the commit sha; this is the same
 // property in the browser, where there is no sha: seed from the project + UTC
 // day, state the seed in the prompt, and never re-roll on copy.
-function probeSeed(){ return `${activeProjectId}:${new Date().toISOString().slice(0,10)}`; }
+function probeSeed(project){ return `${(project&&project.id)||activeProjectId}:${new Date().toISOString().slice(0,10)}`; }
 function hash32(str){ let h=2166136261>>>0; const s=String(str); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
 function selectSeededInvariants(invs,count,seed){
   return [...invs]

@@ -6,10 +6,10 @@ Phase: implement
 Scope: broad (Cycle-7 /broad-scan, 2026-10-12 — 50 findings F01–F50, 8 fix batches, expansion plan E1–E4)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it, a Seams audit resets it)
-Updated: 2026-10-12
+Updated: 2026-10-13
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1–5 are complete (v1.35.0–v1.39.0; 1–4 merged in PR #26). Batches 6–8 and the expansion plan are not started.
+- Batches 1–6 are complete (v1.35.0–v1.40.0; 1–4 merged in PR #26). Batches 7–8 and the expansion plan are not started.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -40,10 +40,13 @@ Updated: 2026-10-12
   --surface2, contrast guard extended; F27 tracker restores focus, forms focus in and back, deletes focus a neighbour;
   F29 live regions, copy announced, errors role=alert + aria-invalid/describedby, aria-expanded on every disclosure;
   F28 empty required fields explained and focused. Also: INV-45 regex false red on aria-controls fixed.
+- v1.40.0 | Batch 6 | F31 CI workflow parsed (comments stripped, bare run: stages only, if:/continue-on-error and
+  trigger filters fail; permissions block bounded); F45 hostile fixture seeds dashCache/dashManual from derived field
+  lists, concat sinks scanned, reach floor; F18 placeholder cap lifted in console + check (§6a SEAMS field offered);
+  F48 one attribute-order-agnostic <pre> scanner; F49 every CSV header exact + per-file floor; F20 builders render the
+  passed project's invariants and seed. Each guard proven a false green before the fix.
 
 ## Pending / not yet done
-- Batch 6 — guard false greens I: F31 (CI YAML read as text), F45 (hostile fixture never seeds remote Dashboard
-  data), F18 (199-char placeholder cap), F48, F49, F20. Lands AFTER Batches 2–3.
 - Batch 7 — guard false greens II: F47 (order-blind canonicalCoverage), F46, F50 (block copies disagree now),
   F37, F38, F44.
 - Batch 8 — docs/agnosticism: F10 (HIPAA-only "generic" security add-on), F42 (invariant-check runs arbitrary
@@ -86,6 +89,6 @@ Updated: 2026-10-12
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; Batches 1–5 shipped (v1.35.0–v1.39.0). 1–4 are merged (PR #26); 5 is on branch
-claude/tender-clarke-x722xl. Next: /broad-implement Batch 6 (guard false greens I — every defect it would expose is
-now fixed). The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).
+Cycle 7 open; Batches 1–6 shipped (v1.35.0–v1.40.0). 1–4 are merged (PR #26); 5 and 6 are on branch
+claude/tender-clarke-x722xl. Next: /broad-implement Batch 7 (guard false greens II — F47 order-blind
+canonicalCoverage first). The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).

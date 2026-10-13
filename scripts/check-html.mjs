@@ -16,6 +16,7 @@
 import { readFileSync } from 'node:fs';
 import { HEALTH_FIELDS } from './health-fields.mjs';   // INV-71: the canonical Current Standing labels
 import vm from 'node:vm';
+import { scanPres, preBody } from './gen-html-prompts.mjs';   // F48: one attribute-order-agnostic <pre> scanner
 
 const root = new URL('..', import.meta.url);
 const html = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
@@ -162,7 +163,7 @@ if (loaded) {
 // 3) Builder cleanliness for every built-in project
 if (loaded && typeof ctx.getAllProjects === 'function') {
   const projects = ctx.getAllProjects();
-  const withArg = ['buildTier1Text', 'buildTier2AuditText', 'buildSeamsText', 'buildVerificationText', 'buildP6aText', 'buildP6bText'];
+  const withArg = ['buildTier1Text', 'buildTier2AuditText', 'buildSeamsText', 'buildVerificationText', 'buildPrReviewText', 'buildP6aText', 'buildP6bText'];
   let clean = true;
   for (const p of projects) {
     for (const name of withArg) {
@@ -175,6 +176,27 @@ if (loaded && typeof ctx.getAllProjects === 'function') {
   const impl = typeof ctx.buildTier2ImplText === 'function' ? ctx.buildTier2ImplText() : '';
   if (impl.includes('${') || /\bundefined\b/.test(impl)) { bad('buildTier2ImplText() has unresolved template or undefined'); clean = false; }
   if (clean) ok(`prompt builders clean for ${projects.length} built-in project(s) (no unresolved \${} / undefined)`);
+  // F20 (Cycle 7): a builder renders the library of the project it is GIVEN.
+  // They read the active project's invariants, so INV-05 above rendered obs's
+  // library seven times and never once rendered (or checked) the others'. With
+  // the console's active project held on the FIRST project, render every other
+  // project and require its own first invariant — and its own probe seed.
+  const invBuilders = ['buildSeamsText', 'buildVerificationText', 'buildPrReviewText'];
+  const others = projects.slice(1).filter(p => (p.invariants || []).length);
+  const crossed = [];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject(projects[0].id);
+  for (const p of others) {
+    const own = p.invariants[0].text;
+    for (const name of invBuilders) {
+      const out = typeof ctx[name] === 'function' ? ctx[name](p) : '';
+      if (!out.includes(own)) crossed.push(`${name}(${p.id}) lacks its own ${p.invariants[0].id}`);
+    }
+    const v = typeof ctx.buildVerificationText === 'function' ? ctx.buildVerificationText(p) : '';
+    if (!v.includes(`(Probe seed: ${p.id}:`)) crossed.push(`buildVerificationText(${p.id}) states another project's probe seed`);
+  }
+  if (!others.length) bad('F20: no second built-in project with invariants — the cross-project builder check would be vacuous');
+  else if (crossed.length) bad(`F20: builders render the ACTIVE project's invariants, not the one passed: ${crossed.slice(0, 4).join('; ')}`);
+  else ok(`invariant builders render the passed project's own library and probe seed — ${others.length} non-active project(s) × ${invBuilders.length} builders (F20)`);
 } else if (loaded) {
   bad('getAllProjects not defined after load — cannot check builders');
 }
@@ -486,10 +508,15 @@ if (loaded && typeof ctx.switchProject === 'function') {
   // STRING-rendered field found. Fields used structurally (.length/.map/.split)
   // are excluded and REPORTED, so the check never silently narrows itself.
   const interp = new Map();                       // alias -> Set(field)
-  for (const m of src.matchAll(/\$\{[^}]*?\b([a-z]+)\.([a-zA-Z]+)/g)) {
-    const [, alias, field] = m;
-    if (!interp.has(alias)) interp.set(alias, new Set());
-    interp.get(alias).add(field);
+  // F45 (Cycle 7): string CONCATENATION is a sink too — `'…'+esc(obj.field)+'…'`.
+  // Only template-literal interpolations were scanned, so the whole Dashboard
+  // card (built by concatenation) contributed no fields to the payload set.
+  for (const re of [/\$\{[^}]*?\b([a-z]+)\.([a-zA-Z]+)/g, /['"]\s*\+\s*(?:esc\(\s*)?(?:String\(\s*)?\(?([a-z]+)\.([a-zA-Z]+)/g]) {
+    for (const m of src.matchAll(re)) {
+      const [, alias, field] = m;
+      if (!interp.has(alias)) interp.set(alias, new Set());
+      interp.get(alias).add(field);
+    }
   }
   // Alias-SCOPED. An unqualified `.field` test excludes a string field whenever
   // any unrelated object anywhere calls `.field()` — `inv.text` was dropped
@@ -528,13 +555,39 @@ if (loaded && typeof ctx.switchProject === 'function') {
   store[`ccg:${hostileProject.id}:invariants`] = JSON.stringify([hostile('inv')]);
   store[`ccg:${hostileProject.id}:archive`] = JSON.stringify([Object.assign(hostile('e'), { id: 1 })]);
   store['ccg:dashRepos'] = JSON.stringify({ [hostileProject.id]: 'own"er/re"po' });
+  // F45 (Cycle 7): the Dashboard's REMOTE data — a fetched PROJECT_HEALTH.md /
+  // STATE.md, cached in ccg:dashCache, and the self-reported ccg:dashManual —
+  // is the least trusted input the console renders, and the fixture never
+  // seeded it: every card rendered "No data yet". The status fields are DERIVED
+  // from what the parsers return (parseHealth/parseState keys + every
+  // `status.X=` assignment) and the fallback fields from the object
+  // saveDashCard stores, so a field added to either is poisoned automatically.
+  // Three projects cover the three card branches: Live (+ stateError),
+  // Fetch-failed-with-cache (error + cached status), and Self-reported.
+  const fnBody = name => (src.match(new RegExp(`function ${name}\\([^)]*\\)\\{[^\\n]*`)) || [''])[0];
+  const statusFields = [...new Set([
+    ...[...fnBody('parseHealth').matchAll(/(\w+):g\(/g), ...fnBody('parseState').matchAll(/(\w+):g\(/g)].map(m => m[1]),
+    ...[...src.matchAll(/\bstatus\.(\w+)=(?!=)/g)].map(m => m[1]),
+  ])];
+  const manFields = ((src.match(/manual\[id\]=\{([^}]*)\}/) || [])[1] || '').split(',').map(kv => kv.split(':')[0].trim()).filter(Boolean);
+  const dashObj = (fields, tag) => Object.fromEntries(fields.map((f, i) => [f, PAYLOADS[i % PAYLOADS.length] + ` [${tag}.${f}]`]));
+  log.push(`  · F45 Dashboard payload set DERIVED: status{${statusFields}} manual{${manFields}}`);
+  if (!statusFields.includes('summary') || !statusFields.includes('stateError') || !manFields.includes('note'))
+    bad(`F45: Dashboard field derivation narrowed itself (status{${statusFields}} manual{${manFields}})`);
+  const builtins = typeof ctx.getAllProjects === 'function' ? ctx.getAllProjects().map(p => p.id).filter(id => id !== hostileProject.id) : [];
+  const dashTargets = { live: hostileProject.id, failed: builtins[0], manual: builtins[1] };
+  store['ccg:dashCache'] = JSON.stringify({
+    [dashTargets.live]: { ok: true, fetchedAt: new Date().toISOString(), status: dashObj(statusFields, 'status') },
+    [dashTargets.failed]: { ok: false, fetchedAt: new Date().toISOString(), error: PAYLOADS[0] + ' [cache.error]', status: dashObj(statusFields.filter(f => f !== 'stateError'), 'cached') },
+  });
+  store['ccg:dashManual'] = JSON.stringify({ [dashTargets.manual]: dashObj(manFields, 'manual') });
   // F09 — the fill forms render only on interaction, so an init-only pass never
   // reached them and F01 (a subsystem name executing from an imported backup)
   // lived there for six releases. Give every static <pre> its real markup text
   // (the stub DOM has none), seed a hostile SAVED VALUE for every placeholder
   // the console would offer, then drive each fill form and the project editor.
   const unescPre = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-  for (const m of html.matchAll(/<pre id="([^"]+)">([\s\S]*?)<\/pre>/g)) if (m[2].trim()) getEl(m[1]).textContent = unescPre(m[2]);
+  for (const p of scanPres(html)) if (p.id && p.body.trim()) getEl(p.id).textContent = unescPre(p.body);
   const FILL_IDS = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
   let seededValues = 0;
   if (typeof ctx.getPlaceholders === 'function') {
@@ -573,6 +626,17 @@ if (loaded && typeof ctx.switchProject === 'function') {
       const h = elStore[id] ? elStore[id].innerHTML : '';
       for (const p of PAYLOADS) if (h.includes(p)) dirty.push(`${id} ← ${JSON.stringify(p)}`);
     }
+    // F45 reach floor: every seeded Dashboard field must actually reach the
+    // cards, or the payloads above prove nothing about the remote-data sinks.
+    const cards = elStore.dashCards ? elStore.dashCards.innerHTML : '';
+    const dashTags = [...statusFields.map(f => `[status.${f}]`), ...statusFields.filter(f => f !== 'stateError').map(f => `[cached.${f}]`), '[cache.error]', ...manFields.map(f => `[manual.${f}]`)];
+    const unreached = dashTags.filter(t => !cards.includes(t));
+    // lastSynthesis/updated/cycle are parsed but deliberately not shown on a card.
+    const HIDDEN = /\.(lastSynthesis|updated|cycle)\]$/;
+    const missed = unreached.filter(t => !HIDDEN.test(t));
+    if (!dashTargets.failed || !dashTargets.manual) bad('F45: fewer than two built-in projects — the Dashboard branches cannot all be seeded');
+    else if (missed.length) bad(`F45: seeded Dashboard field(s) never reached a card — the remote-data scan is narrower than it claims: ${missed.join(', ')}`);
+    else ok(`hostile remote Dashboard data (cache Live/failed + self-reported) reaches the cards and stays escaped — ${dashTags.length - unreached.length} field(s) rendered (F45)`);
     if (!dirty.length) ok('every render sink escapes stored content — hostile fixture leaks nothing (INV-20/F04)');
     else bad('unescaped stored content reached innerHTML: ' + dirty.join(' | '));
 
@@ -1093,15 +1157,13 @@ if (loaded) {
 // one rewrote the template. Checked against all 16 prompts, with the two rules
 // re-derived here independently of the implementation.
 if (loaded && typeof ctx.getPlaceholders === 'function') {
-  const unescPre2 = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
   const FILL = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
   const DIRECTIVE = ['PASTE', 'LIST', 'DESCRIBE', 'NOTE', 'OPTIONAL', 'IF '];
   const NEVER = ['[ID]', '[INV-XX]', '[INV-NEW-XX]', '[INV-N]', '[X/10]', '[N]', '[Severity]', '[Gap]', '[Suggestion]'];
   const problems = [];
   let offeredTotal = 0, promptsWithFields = 0, requiredSeen = 0;
   for (const pid of FILL) {
-    const m = html.match(new RegExp('<pre id="' + pid + '">([\\s\\S]*?)</pre>'));
-    let text = m ? unescPre2(m[1]) : '';
+    let text = preBody(html, pid) || '';
     if (!text.trim() && elStore[pid]) text = elStore[pid].textContent || '';
     if (!text.trim()) { problems.push(`${pid}: no prompt text to classify`); continue; }
     const lines = text.split('\n');
@@ -1123,12 +1185,14 @@ if (loaded && typeof ctx.getPlaceholders === 'function') {
     //     block MUST be offered — these are the operator's actual inputs.
     lines.forEach((line, i) => {
       if (inBlock[i]) return;
-      const toks = [...line.matchAll(/\[[^\]]{0,199}\]?/g)].filter(t => t[0].endsWith(']'));
+      const toks = [...line.matchAll(/\[[^\][]*\]?/g)].filter(t => t[0].endsWith(']'));
       const opens = (line.match(/\[/g) || []).length;
       if (opens !== 1) return;
       const start = line.indexOf('[');
       const whole = text.slice(text.split('\n').slice(0, i).join('\n').length + (i ? 1 : 0) + start);
-      const closed = whole.match(/^\[([^\]]{0,199})\]/);
+      // F18: uncapped — the old {0,199} matched the console's cap, so a longer
+      // operator field was invisible to both sides.
+      const closed = whole.match(/^\[([^\][]*)\]/);
       if (!closed) return;
       if (!DIRECTIVE.some(k => closed[1].startsWith(k))) return;
       requiredSeen++;

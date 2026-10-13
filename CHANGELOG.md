@@ -5,6 +5,57 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.40.0 — 2026-10-13
+
+Cycle-7 Batch 6: guard false greens I. Guards and the console only — **no
+command-body or config-schema change, so no `/sync-commands` re-pull.**
+`scripts/gen-html-prompts.mjs` gained two exports (`scanPres`, and an
+attribute-order-agnostic `preBody`); a project running
+`scripts/verification-pack.mjs` from a copy can re-copy it, but nothing it does
+today changes. Each guard below was proven a false green first (the defect
+passed the old check) and is pinned by a test that fails with the fix reverted.
+
+- **F31 — the CI workflow was read as text.** The CI parity guards regexed the
+  raw YAML, so `run: echo skipped  # node tests/x.mjs` still "ran" its stage, `run:
+  node tests/mutation-audit.mjs || true` counted as a stage that could fail, and
+  `branches: [never-a-real-branch]` under `pull_request` counted as a trigger.
+  The workflow is now parsed: comments stripped, each step's keys read, a stage
+  counts only when its `run:` is the bare command, any `if:` or
+  `continue-on-error:` fails, and a filtered `push`/`pull_request` trigger fails.
+  The permissions check had the same weakness — its block ran to end of file, so
+  `contents: read` surviving as a comment passed — and is now bounded.
+- **F45 — the hostile fixture never seeded the Dashboard's remote data.** Every
+  card rendered "No data yet", so dropping `esc()` from a fetched summary,
+  priority, error or self-reported note passed. The fixture now seeds
+  `ccg:dashCache` (a Live card, and a failed fetch with a cached status) and
+  `ccg:dashManual`, with the field lists DERIVED from what `parseHealth`/
+  `parseState` return and what `saveDashCard` stores, and requires every
+  seeded field to reach a card. String concatenation is now scanned as a sink
+  alongside template interpolation.
+- **F18 — a 199-character cap on placeholders.** §6a's 224-character
+  "[OPTIONAL: PASTE SEAMS & INVARIANTS AUDIT BLOCK — …]" never reached its fill
+  form, and the check shared the cap, so neither side could see the loss. The
+  cap is gone in both; a token ends at the next `[`, so a stray bracket cannot
+  swallow the tokens after it. §6a's form now offers the field (65 fields
+  across 16 prompts, was 64).
+- **F48 — `<pre>` detection depended on attribute order.** Every scan matched
+  the literal `<pre id="X">`, so a new prompt written `<pre class="p" id="X">`,
+  or with no id, was outside the lock while `--assert` reported "every static
+  `<pre>` is locked". One shared scanner now finds every `<pre>` outside
+  `<script>`, and an id-less static prompt is reported as unlockable.
+- **F49 — metrics headers checked by prefix only.** A header that dropped or
+  renamed a middle column matched no prefix and went unchecked, and deleting
+  every header passed. Every `date,cycle,…` run in CLAUDE.md, the console and
+  the live `.cycle/` CSVs must now be exactly the metrics or the estimates
+  header (the failure names the missing, extra or reordered columns), and
+  each file must keep its header count.
+- **F20 — builders rendered the active project's invariants.** §4v, §1s and the
+  PR review take a project but read the active project's library and probe
+  seed, so INV-05 rendered one project's library for every project and never
+  checked the others'. They now render the project they are given; check-html
+  holds the active project on the first and requires every other project's own
+  first invariant and seed. `buildPrReviewText` joined INV-05's builder list.
+
 ## 1.39.0 — 2026-10-12
 
 Cycle-7 Batch 5: console focus, feedback and theme. Console-only — **no

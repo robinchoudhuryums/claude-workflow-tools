@@ -58,7 +58,11 @@ const CFG = 'CLAUDE.md';
 const CASES = {
   // ── node scripts/check-html.mjs ─────────────────────────────────────────────
   'INV-04': [[HTML, 'function esc(s){', 'function esc(s){ ((( ', /syntax error/i]],
-  'INV-05': [[HTML, 'const dims=project.healthDimensions;', 'const dims=project.healthDimensions_TYPO;', /unresolved|leaked "undefined"/i]],
+  'INV-05': [[HTML, 'const dims=project.healthDimensions;', 'const dims=project.healthDimensions_TYPO;', /unresolved|leaked "undefined"/i],
+             // Cycle-7 Batch 6 (F20): a defect only in the SECOND project's library. The builders
+             // rendered the active project's invariants, so this was never rendered or checked.
+             [HTML, "{id:'INV-01',text:'updateCall must throw", "{id:'INV-01',txt:'updateCall must throw", /leaked "undefined"|F20/],
+             [HTML, 'function buildVerificationText(project){\n  const invs=getProjectInvariants(project);', 'function buildVerificationText(project){\n  const invs=getProjectInvariants();', /F20/]],
   'INV-06': [[HTML, '? project.axisB : DEFAULT_AXIS_B;', '? project.axisB : DEFAULT_AXIS_B.slice(0,3);', /5 default categories/i]],
   'INV-07': [[HTML, "id:'obs', name:'Observatory QA',", "id:'obs', name:'Observatory QA', axisB:[{name:'Sneaky',measures:'m',pulse:'p'}],", /INV-07/]],
   'INV-08': [[HTML, 'inv.verify?` | Verify: ${inv.verify}`:\'\'', '` | Verify: ${inv.verify}`', /INV-08/]],
@@ -70,6 +74,9 @@ const CASES = {
     // Cycle-7 Batch 4 (F25): the tracker label became a native <button>.
     [HTML, 'text-align:left;cursor:pointer">${esc(g)}</button>', 'text-align:left;cursor:pointer">${g}</button>', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.text)}', '${inv.text}', /unescaped stored content|injected data executed/i],
+    // Cycle-7 Batch 6 (F45): remote Dashboard data (dashCache / dashManual) is seeded hostile now.
+    [HTML, "'<div class=\"dcard-summary\">'+esc(summary)+'</div>'", "'<div class=\"dcard-summary\">'+summary+'</div>'", /unescaped stored content|injected data executed/i],
+    [HTML, "value=\"'+esc(man.note||'')+'\"", "value=\"'+(man.note||'')+'\"", /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.subsystem)}', '${inv.subsystem}', /unescaped stored content|injected data executed/i],
     // F01/F09 — the fill form renders only on interaction; these prove the
     // hostile fixture now reaches it, one sink at a time.
@@ -103,11 +110,15 @@ const CASES = {
   // Reinstating the real collision: <pre id="t1a"> back to id="t1", which the
   // enclosing <section id="t1"> then shadows.
   'INV-67': [[HTML, '<pre id="t1a"></pre>', '<pre id="t1"></pre>', /duplicate id/i]],
-  'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/]],
+  'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/],
+             // Cycle-7 Batch 6 (F18): the length cap back — §6a's 224-char field drops out of its form.
+             [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", /F11/]],
   'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
   'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
   'INV-66': [
     ['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i],
+    // Cycle-7 Batch 6 (F48): a new static prompt whose id is not the FIRST attribute.
+    [HTML, '</body>', '<pre class="prompt" id="zz-unlocked">A brand-new static prompt</pre></body>', /outside the lock manifest: zz-unlocked/],
     // inherited from the retired INV-29: the DRIFT half. Retiring a rule must
     // not retire its proof — INV-66's own case only covered the unlocked-new-
     // prompt half, so without this the drift mutation would have been lost.
@@ -125,11 +136,14 @@ const CASES = {
              // v1.35.0: the audits' CYCLE OPEN write must be inside the gating check's step set.
              ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing/i]],
   'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i]],
-  'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/]],
+  'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/],
+             ['.github/workflows/sync-check.yml', '  pull_request:\n', '  pull_request:\n    branches: [never-a-real-branch]\n', /filters its pull_request trigger/]],
   'INV-16': [[HTML, '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery [N] subsystem cycles\n\n', '', /INV-16/]],
   'INV-18': [['.claude/commands/implement.md', '3. CHECKPOINT (optional — only if .cycle/ exists): create/update', '3. CHECKPOINT: create/update', /not gated on the directory existing/i]],
   'INV-19': [[HTML, '---CYCLE SUMMARY BLOCK---', '---GONE-SUMMARY---', /workflow blocks missing|cycle summary block/i]],
-  'INV-33': [[HTML, 'Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score', /double-count|net_score/i]],
+  'INV-33': [[HTML, 'Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score', /double-count|net_score/i],
+             // Cycle-7 Batch 6 (F49): a header missing a MIDDLE column matched no prefix and went unchecked.
+             ['CLAUDE.md', 'axis_b_lowest,notes,defensive_count', 'axis_b_lowest,defensive_count', /canonical column list/]],
   'INV-34': [[HTML, 'TWO-AXIS GRID', 'TWO-PLANE GRID', /contract marker/i]],
   'INV-39': [[HTML, 'OPERATOR VISUAL CHECKS', 'VISUAL-GONE', /operator visual checks/i]],
 
@@ -161,7 +175,8 @@ const CASES = {
   // INV-71 — drift the ONE definition; every doc copy must stop matching it.
   'INV-71': [['scripts/health-fields.mjs', "topVertical:    'Top vertical priority:'", "topVertical:    'Top vertical priorities:'", /health-field contract/i]],
   // INV-74 — drop a stage from CI that the Test Command still documents.
-  'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i]],
+  'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i],
+             ['.github/workflows/sync-check.yml', 'run: node tests/mutation-audit.mjs', 'run: node tests/mutation-audit.mjs || true', /not a bare stage/]],
   // INV-72 — ship a release into the current cycle with no block for it.
   // INV-75 — drop one of the three clause labels from the canonical rule.
   'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger/i]],
