@@ -216,6 +216,24 @@ else bad('readBlocks threw on a missing directory');
   else bad('F34: ' + problems.join('; '));
 }
 
+// Follow-on (Cycle 7): cycleTotals finds columns by header. Positional reads
+// took net_score from whatever sat in column 5 — a reordered or extra column
+// silently corrupted the totals the verifier is warned about.
+{
+  const reordered = [
+    'cycle,phase,extra,notes,date,subsystem,defensive_count,new_failure_modes,prod_fixes,net_score,category_d_ratio,axis_b_lowest',
+    '7,reflect,zz,"CORRECTION: fixes was 3",2026-10-13,"Auth, Security",4,1,2,1,,',
+    '7,synthesis,zz,,2026-10-13,broad,,,,,12%,X',
+    '6,reflect,zz,,2026-09-01,broad,9,0,9,9,,'].join('\n');
+  const t = cycleTotals(reordered, 7);
+  if (t.rows === 1 && t.net === 1 && t.fixes === 2 && t.nfm === 1 && t.defensive === 4 && t.corrections.length === 1) ok('cycleTotals reads columns by header name — a reordered file with an extra column totals correctly (Cycle-7 follow-on)');
+  else bad('cycleTotals misread a reordered metrics file: ' + JSON.stringify(t));
+  const noHeader = '2026-10-13,7,broad,reflect,3,3,0,,,,2';
+  const t2 = cycleTotals(noHeader, 7);
+  if (t2.rows === 1 && t2.net === 3 && t2.defensive === 2) ok('cycleTotals falls back to the canonical column order for a file with no header');
+  else bad('cycleTotals headerless fallback wrong: ' + JSON.stringify(t2));
+}
+
 // F21 (Cycle 7): the console's §4v seed is reproducible by a tool. Execute the
 // CONSOLE's own hash32 + selectSeededInvariants (lifted from the HTML, not
 // re-typed) and require --selector console to pick the same five, for several

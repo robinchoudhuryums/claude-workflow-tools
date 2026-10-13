@@ -2817,7 +2817,12 @@ function openEditProject(id){
   document.getElementById('pf-dims').value=p.healthDimensions;
   document.getElementById('pf-axisb').value=axisBToText(getAxisB(p));
   // F05: emit the id so it survives the round-trip. A line without one is new.
-  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.id?inv.id+' | ':''}${inv.text} | ${inv.subsystem}${inv.verify?` | ${inv.verify}`:''}`).join('\n');
+  // A literal pipe inside a field is written `\|` so it survives the split
+  // below — the same escape the Cycle Workflow Config's invariant readers use.
+  // Unescaped, "a | b" in rule text (this repo's own INV-08 and INV-46) became
+  // two fields and pushed the subsystem into the rule.
+  const escPipe=v=>String(v==null?'':v).replace(/\|/g,'\\|');
+  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.id?inv.id+' | ':''}${escPipe(inv.text)} | ${escPipe(inv.subsystem)}${inv.verify?` | ${escPipe(inv.verify)}`:''}`).join('\n');
   document.getElementById('pf-thresh').value=p.policyThreshold||4;
   document.getElementById('pf-consec').value=p.policyConsecutiveCycles||2;
   document.getElementById('pf-name-preview').textContent=`ID: ${p.id} (locked)`;
@@ -2881,7 +2886,8 @@ function parseInvariantFormLines(raw,pid){
     if(Array.isArray(custom))custom.forEach(inv=>{ if(inv&&inv.id)taken.add(String(inv.id).toUpperCase()); });
   }catch(e){}
   const out=raw.split('\n').filter(l=>l.trim()).map(l=>{
-    const parts=l.split('|').map(x=>x.trim());
+    // Split on UNESCAPED pipes only; `\|` is a literal pipe inside a field.
+    const parts=l.split(/(?<!\\)\|/).map(x=>x.trim().replace(/\\\|/g,'|'));
     let id=null;
     if(/^INV-\d+$/i.test(parts[0]||''))id=parts.shift().toUpperCase();
     const inv={id,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
@@ -2961,10 +2967,36 @@ function focusEl(id){ const e=document.getElementById(id); if(e&&typeof e.focus=
 // F29: one polite live region for transient results (copy succeeded/failed).
 function announce(msg){ const r=document.getElementById('srAnnounce'); if(!r)return; r.textContent=''; r.textContent=msg; }
 
+// Deleting a project used to remove only its entry from ccg:customProjects:
+// its invariants, archive, cycle tracker, saved fill values, systems-map bank
+// and Dashboard source stayed behind, and a NEW project that derived the same
+// id (re-create "My App") silently inherited the dead project's invariant
+// library. Every per-project key is `ccg:<id>:…`; remove them all, and the id's
+// entries in the three Dashboard maps. Two exclusions: ccg:secret:* is never
+// touched (a project named "Secret" derives the id `secret`), and a key that
+// belongs to a surviving project whose id extends this one (`a:b` vs `a`) is
+// that project's, not this one's.
+function purgeProjectData(id){
+  const prefix=`ccg:${id}:`;
+  const longer=getAllProjects().map(p=>p.id).filter(o=>o!==id&&String(o).indexOf(id+':')===0);
+  try{
+    const doomed=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.indexOf(prefix)===0&&!isSecretKey(k)&&!longer.some(o=>k.indexOf(`ccg:${o}:`)===0)) doomed.push(k);
+    }
+    doomed.forEach(k=>localStorage.removeItem(k));
+  }catch(e){ storageWarn(e); }
+  ['ccg:dashRepos','ccg:dashCache','ccg:dashManual'].forEach(key=>{
+    const m=dashLoad(key);
+    if(Object.prototype.hasOwnProperty.call(m,id)){ delete m[id]; dashSave(key,m); }
+  });
+}
 function deleteProject(id){
   if(!confirm(`Delete project? This cannot be undone.`))return;
   const updated=loadCustomProjects().filter(p=>p.id!==id);
   saveCustomProjects(updated);
+  purgeProjectData(id);
   if(activeProjectId===id)switchProject(PROJECTS[0].id);
   renderProjectsTab();
   renderProjectSelector();
@@ -4364,7 +4396,10 @@ function dashToken(){ try{return localStorage.getItem('ccg:ghToken')||''}catch(e
 // message is kept — it names the file and status — but 404/403 get the fix.
 function dashErrHint(msg){
   const m=String(msg||'');
-  if(/HTTP 404/.test(m)) return m+' — repo or file not found. Private repo? Add a GitHub token above.';
+  // A 404 with a token already saved is not fixed by adding one — say what is.
+  if(/HTTP 404/.test(m)) return m+(dashToken()
+    ? ' — repo or file not found. Check the owner/repo spelling and branch, and that your saved token can read this repo.'
+    : ' — repo or file not found. Private repo? Add a GitHub token above.');
   if(/HTTP 401|HTTP 403/.test(m)) return m+' — unauthorized or rate-limited. Add a token above, or wait for the limit to reset.';
   if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return m+' — network unreachable, or the page is opened from file:// (fetch is blocked there).';
   return m;
@@ -4407,12 +4442,18 @@ async function fetchProjectStatus(spec){
   return status;
 }
 let dashRefreshing=false;
-async function refreshDashboard(){
-  if(typeof fetch!=='function'||dashRefreshing)return;
+// `manual` is true only from the Refresh button. It used to be ignored, so a
+// click while a refresh was already running, or on file:// where fetch does not
+// exist, did nothing at all. A background refresh still returns quietly; a
+// click always says why nothing happened.
+async function refreshDashboard(manual){
+  const st=document.getElementById('dashStatus');
+  if(typeof fetch!=='function'){ if(manual&&st) st.textContent='Live refresh needs fetch — open the console over http(s) or localhost, not file://. Cached and self-reported values still show.'; return; }
+  if(dashRefreshing){ if(manual&&st) st.textContent='A refresh is already running — results will appear when it finishes.'; return; }
   dashRefreshing=true;
   const repos=dashRepos(), cache=dashCache();
   const ids=Object.keys(repos).filter(id=>repos[id]);
-  const st=document.getElementById('dashStatus'); if(st) st.textContent=ids.length?'Refreshing…':'No repos configured — add one per card below (⚙ source)';
+  if(st) st.textContent=ids.length?'Refreshing…':'No repos configured — add one per card below (⚙ source)';
   let okN=0, failN=0;
   try{
   for(const id of ids){

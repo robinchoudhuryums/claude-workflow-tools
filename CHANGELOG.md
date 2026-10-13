@@ -5,6 +5,52 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.43.0 — 2026-10-13
+
+Cycle-7 follow-on items: the actionable follow-ons that Batches 1–8 recorded
+in STATE.md and their summary blocks. Console, guards and docs only. **No
+command-body or config-schema change, so no `/sync-commands` re-pull.** Each
+fix is pinned by a test that fails against the v1.42.0 code.
+
+- **Deleting a project left its data behind.** Only the
+  `ccg:customProjects` entry went, so a re-created project with the same derived
+  id inherited the dead one's invariants, archive, tracker, fill values and
+  Dashboard source. Every `ccg:<id>:*` key and the id's Dashboard entries are
+  now purged. Two exceptions: `ccg:secret:*` is never touched (a project named
+  "Secret" derives the id `secret`), and a longer id's keys (`a:b` versus `a`)
+  are left alone.
+- **A literal `|` in an invariant broke the project form.** The textarea was
+  split on every pipe, so "a | b" in a rule or Verify command became two
+  fields, and this repo's own INV-08/INV-46 would mis-parse. Fields are now
+  written with `\|`, the escape the config readers already use, and split on
+  unescaped pipes only.
+- **The Refresh button's argument was ignored.** A click while a refresh was
+  running, or on `file://`, did nothing visible. A manual Refresh now says why
+  nothing happened; a background refresh stays quiet. The 404 hint no longer
+  tells someone who has already saved a token to add one.
+- **INV-12's gating check used a hand-listed step set** and covered only
+  command files. It now derives the writing steps from the text across every
+  command and the §1s/§6a bodies, which picks up the SEAM COUNTER reset and
+  the METRICS append (12 steps, was 10). The old names are kept as a floor, so
+  a rewording cannot silently drop a step. `/cycle-init` and `/cycle-resume`
+  are printed as exempt by design.
+- **The re-pull list is now guarded.** A new check requires every release
+  since v1.19.0 to appear in the Operator State Checklist exactly once, as
+  changed or changed-none, and requires the newest to match its CHANGELOG
+  entry. That is the class that let v1.33.0 sit unlisted (F05).
+- **verification-pack's `cycleTotals` read columns by position.** A reordered
+  or extra metrics column silently corrupted the totals the verifier is warned
+  about. Columns are now found by header, with the canonical order as a
+  fallback for a headerless file.
+- **The drift report used set membership** for static prompts, so a reordered
+  prompt read as 100%. It now uses the same ordered comparison as `--assert`.
+- **Tests and docs.** `legacyCopy`'s success path is now tested: exact text,
+  one textarea added and removed, success reported. Two check-html checks
+  that were both labelled "(F20)" now say which cycle each belongs to. Two
+  Common Gotchas and the README's lock description are restated: the lock is
+  an ordered match, not 100% set membership, and one hand-maintained list
+  remains deliberately as a floor.
+
 ## 1.42.0 — 2026-10-13
 
 Cycle-7 Batch 8: docs and agnosticism, the last fix batch of the cycle.

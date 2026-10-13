@@ -108,6 +108,29 @@ if (renderDynamicPrompt(fakeHtml, 'missingFn', 'obs') === null) ok('renderDynami
   }
 }
 
+// Cycle-7 follow-on: the drift REPORT (no flag) uses the ordered comparison
+// too. Swap two lines of a static prompt — every line still present — and the
+// report must count them out of order rather than say 100%.
+{
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  const d = mkdtempSync(join(tmpdir(), 'cwt-ghp-rep-'));
+  try {
+    mkdirSync(join(d, 'scripts'));
+    copyFileSync(join(repo, 'scripts', 'gen-html-prompts.mjs'), join(d, 'scripts', 'gen-html-prompts.mjs'));
+    copyFileSync(join(repo, 'CLAUDE.md'), join(d, 'CLAUDE.md'));
+    const html = rfs(join(repo, 'claude-code-guide-v2.html'), 'utf8');
+    const a = '- Encryption at rest and in transit\n', b = '- Audit logging completeness\n';
+    if (!html.includes(a + b)) bad('report fixture rotted: the security add-on lines moved');
+    else {
+      wfs(join(d, 'claude-code-guide-v2.html'), html.replace(a + b, b + a));
+      const out = execFileSync('node', [join(d, 'scripts', 'gen-html-prompts.mjs')], { encoding: 'utf8' });
+      const line = out.split('\n').find(l => l.includes('p1sec ←')) || '';
+      if (/[1-9]\d* out of order/.test(line) && !/100% of canonical/.test(line)) ok('the drift report counts reordered static-prompt lines (Cycle-7 follow-on)');
+      else bad('drift report missed a reordered static prompt: ' + line.trim());
+    }
+  } finally { rmSync(d, { recursive: true, force: true }); }
+}
+
 console.log('R14 transform engine regression test (scripts/gen-html-prompts.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} gen-html-prompts test(s) failed.`); process.exit(1); }

@@ -115,18 +115,26 @@ export function sameCycle(a, b) {
   const x = String(a).trim(), y = String(b).trim();
   return /^\d+$/.test(x) && /^\d+$/.test(y) ? Number(x) === Number(y) : x === y;
 }
+// Columns are found by HEADER name (Cycle-7 follow-on), as netTrend and
+// render-metrics already do: indexing by position read the wrong column from a
+// file with a reordered or extra column. A file with no header falls back to
+// the canonical order.
+const METRICS_COLUMNS = ['date', 'cycle', 'subsystem', 'phase', 'net_score', 'prod_fixes', 'new_failure_modes', 'category_d_ratio', 'axis_b_lowest', 'notes', 'defensive_count'];
 export function cycleTotals(metricsCsv, cycle) {
-  const rows = parseCSV(metricsCsv || '').slice(1);
+  const all = parseCSV(metricsCsv || '');
+  const head = (all[0] || []).map(h => h.trim());
+  const hasHeader = head.includes('cycle') && head.includes('phase');
+  const idx = name => (hasHeader ? head : METRICS_COLUMNS).indexOf(name);
+  const at = (c, name) => { const i = idx(name); return i === -1 ? '' : String(c[i] == null ? '' : c[i]).trim(); };
   let net = 0, fixes = 0, nfm = 0, defensive = 0, n = 0;
   const corrections = [];
-  for (const raw of rows) {
+  for (const c of (hasHeader ? all.slice(1) : all)) {
     // F03: a quote-aware parse — a comma-bearing SUBSYSTEM no longer shifts columns.
-    const c = raw.map(x => x.trim());
-    if (!sameCycle(c[1] || '', cycle) || c[3] !== 'reflect') continue;
+    if (!sameCycle(at(c, 'cycle'), cycle) || at(c, 'phase') !== 'reflect') continue;
     n++;
-    net += parseFloat(c[4]) || 0; fixes += parseFloat(c[5]) || 0; nfm += parseFloat(c[6]) || 0;
-    defensive += parseFloat(c[10]) || 0;
-    const notes = c[9] || '';
+    net += parseFloat(at(c, 'net_score')) || 0; fixes += parseFloat(at(c, 'prod_fixes')) || 0; nfm += parseFloat(at(c, 'new_failure_modes')) || 0;
+    defensive += parseFloat(at(c, 'defensive_count')) || 0;
+    const notes = at(c, 'notes');
     if (/CORRECTION/i.test(notes)) corrections.push(notes.slice(0, 240));
   }
   return { rows: n, net, fixes, nfm, defensive, corrections };

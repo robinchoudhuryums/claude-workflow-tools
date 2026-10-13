@@ -61,8 +61,8 @@ const CASES = {
   'INV-05': [[HTML, 'const dims=project.healthDimensions;', 'const dims=project.healthDimensions_TYPO;', /unresolved|leaked "undefined"/i],
              // Cycle-7 Batch 6 (F20): a defect only in the SECOND project's library. The builders
              // rendered the active project's invariants, so this was never rendered or checked.
-             [HTML, "{id:'INV-01',text:'updateCall must throw", "{id:'INV-01',txt:'updateCall must throw", /leaked "undefined"|F20/],
-             [HTML, 'function buildVerificationText(project){\n  const invs=getProjectInvariants(project);', 'function buildVerificationText(project){\n  const invs=getProjectInvariants();', /F20/]],
+             [HTML, "{id:'INV-01',text:'updateCall must throw", "{id:'INV-01',txt:'updateCall must throw", /leaked "undefined"|Cycle-7 F20/],
+             [HTML, 'function buildVerificationText(project){\n  const invs=getProjectInvariants(project);', 'function buildVerificationText(project){\n  const invs=getProjectInvariants();', /Cycle-7 F20/]],
   'INV-06': [[HTML, '? project.axisB : DEFAULT_AXIS_B;', '? project.axisB : DEFAULT_AXIS_B.slice(0,3);', /5 default categories/i]],
   'INV-07': [[HTML, "id:'obs', name:'Observatory QA',", "id:'obs', name:'Observatory QA', axisB:[{name:'Sneaky',measures:'m',pulse:'p'}],", /INV-07/]],
   'INV-08': [[HTML, 'inv.verify?` | Verify: ${inv.verify}`:\'\'', '` | Verify: ${inv.verify}`', /INV-08/]],
@@ -136,7 +136,9 @@ const CASES = {
   'INV-03': [['README.md', 'Dynamic Workflows', 'DWF-renamed', /marker "dynamic workflows"/i]],
   'INV-12': [['.claude/commands/reflect.md', 'METRICS (optional — only if .cycle/ exists)', 'METRICS', /not gated on the directory existing/i],
              // v1.35.0: the audits' CYCLE OPEN write must be inside the gating check's step set.
-             ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing/i]],
+             ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing|no longer read as writing/i],
+             // Cycle-7 follow-on: the §1s body's own write is inside the derived step set now.
+             [CFG, 'SEAM COUNTER (optional — only if .cycle/ exists): reset', 'SEAM COUNTER: reset', /not gated on the directory existing/i]],
   'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i]],
   'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/],
              ['.github/workflows/sync-check.yml', '  pull_request:\n', '  pull_request:\n    branches: [never-a-real-branch]\n', /filters its pull_request trigger/]],

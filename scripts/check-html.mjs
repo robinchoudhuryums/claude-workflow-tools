@@ -194,9 +194,9 @@ if (loaded && typeof ctx.getAllProjects === 'function') {
     const v = typeof ctx.buildVerificationText === 'function' ? ctx.buildVerificationText(p) : '';
     if (!v.includes(`(Probe seed: ${p.id}:`)) crossed.push(`buildVerificationText(${p.id}) states another project's probe seed`);
   }
-  if (!others.length) bad('F20: no second built-in project with invariants — the cross-project builder check would be vacuous');
-  else if (crossed.length) bad(`F20: builders render the ACTIVE project's invariants, not the one passed: ${crossed.slice(0, 4).join('; ')}`);
-  else ok(`invariant builders render the passed project's own library and probe seed — ${others.length} non-active project(s) × ${invBuilders.length} builders (F20)`);
+  if (!others.length) bad('Cycle-7 F20: no second built-in project with invariants — the cross-project builder check would be vacuous');
+  else if (crossed.length) bad(`Cycle-7 F20: builders render the ACTIVE project's invariants, not the one passed: ${crossed.slice(0, 4).join('; ')}`);
+  else ok(`invariant builders render the passed project's own library and probe seed — ${others.length} non-active project(s) × ${invBuilders.length} builders (Cycle-7 F20)`);
 } else if (loaded) {
   bad('getAllProjects not defined after load — cannot check builders');
 }
@@ -689,6 +689,32 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   else bad(`copy failed silently (rejected=${rejectedVisibly} absent=${absentVisibly})`);
 }
 
+// Follow-on (Cycle 7): legacyCopy's SUCCESS path. The stub's execCommand always
+// returned false, so the fallback was proven to fail visibly but never proven
+// to copy: a regression that broke the textarea hand-off (wrong value, never
+// selected, command not 'copy') would still pass. No navigator.clipboard, an
+// execCommand that succeeds only for 'copy' on a selected textarea holding the
+// exact text → the button must report success, with the textarea cleaned up.
+if (loaded && typeof ctx.copyToClipboard === 'function') {
+  const btn = { _cls: new Set(), innerHTML: '' }; btn.classList = makeClassList(btn._cls);
+  const realCb = ctx.navigator.clipboard, realCreate = ctx.document.createElement, realExec = ctx.document.execCommand, realBody = ctx.document.body;
+  let ta = null, appended = 0, removed = 0, cmds = [];
+  ctx.navigator.clipboard = undefined;
+  ctx.document.createElement = tag => (ta = { tag, value: '', selected: false, style: {}, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, select() { this.selected = true; } });
+  ctx.document.body = { appendChild: () => { appended++; }, removeChild: () => { removed++; } };
+  ctx.document.execCommand = cmd => { cmds.push(cmd); return cmd === 'copy' && !!ta && ta.selected && ta.value === 'copy me exactly'; };
+  try { ctx.copyToClipboard('copy me exactly', btn); } finally {
+    ctx.navigator.clipboard = realCb; ctx.document.createElement = realCreate; ctx.document.execCommand = realExec; ctx.document.body = realBody;
+  }
+  const problems = [];
+  if (!ta || ta.tag !== 'textarea' || ta.value !== 'copy me exactly') problems.push(`textarea hand-off wrong (${ta ? ta.tag + ':' + JSON.stringify(ta.value) : 'none created'})`);
+  if (JSON.stringify(cmds) !== '["copy"]') problems.push(`execCommand calls ${JSON.stringify(cmds)}`);
+  if (appended !== 1 || removed !== 1) problems.push(`textarea appended ${appended}× / removed ${removed}×`);
+  if (!btn._cls.has('ok') || btn._cls.has('fail') || !/Copied/.test(btn.innerHTML)) problems.push(`button did not report success (classes ${[...btn._cls]}, ${JSON.stringify(btn.innerHTML.replace(/<svg[\s\S]*?<\/svg>/, '').trim())})`);
+  if (problems.length) bad('legacyCopy success path: ' + problems.join('; '));
+  else ok('the execCommand fallback copies the exact text, cleans up its textarea, and reports success (Cycle-7 follow-on)');
+}
+
 // F11/jsArg — STATIC guard for the attribute-context footgun. The hostile-fixture
 // check above proves escaping only at sinks the fixture actually reaches; this
 // covers every inline handler in the file. Rule: an `on*=` attribute must never
@@ -881,15 +907,15 @@ if (loaded && typeof ctx.getFilledText === 'function' && typeof ctx.saveVal === 
   else bad('F16: $-pattern in a filled value was mangled → ' + JSON.stringify(out));
 }
 
-// F20 — the backup envelope must be validated, not just its `data` key.
+// Cycle-6 F20 — the backup envelope must be validated, not just its `data` key.
 if (loaded && typeof ctx.stateBackupKeys === 'function') {
   const foreign = ctx.stateBackupKeys({ app: 'some-other-tool', data: { 'ccg:x': '1' } });
   const newer = ctx.stateBackupKeys({ app: 'claude-workflow-tools', version: 2, data: { 'ccg:x': '1' } });
   const okOld = ctx.stateBackupKeys({ data: { 'ccg:x': '1' } });                       // pre-envelope backup
   const okCur = ctx.stateBackupKeys({ app: 'claude-workflow-tools', version: 1, data: { 'ccg:x': '1' } });
   if (foreign.reason === 'foreign-app' && newer.reason === 'newer-version' && !okOld.reason && !okCur.reason)
-    ok('backup envelope validated — foreign app and newer format rejected, older/current accepted (F20)');
-  else bad(`F20 envelope validation wrong: foreign=${foreign.reason} newer=${newer.reason} old=${okOld.reason} cur=${okCur.reason}`);
+    ok('backup envelope validated — foreign app and newer format rejected, older/current accepted (Cycle-6 F20)');
+  else bad(`Cycle-6 F20 envelope validation wrong: foreign=${foreign.reason} newer=${newer.reason} old=${okOld.reason} cur=${okCur.reason}`);
 }
 
 // F08 — the tabbed panel navigation had zero headless coverage: the old stub
@@ -1025,6 +1051,38 @@ if (loaded && typeof ctx.saveProjectForm === 'function' && typeof ctx.openEditPr
   if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
 } else if (loaded) bad('saveProjectForm/openEditProject not defined — F05 unguarded');
 
+// Follow-on (Cycle 7): a literal pipe in an invariant's rule text or Verify
+// command survives the project form. The textarea was split on every `|`, so
+// "a | b" became two fields and shifted the subsystem into the rule.
+if (loaded && typeof ctx.saveProjectForm === 'function' && typeof ctx.openEditProject === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  const set = (id, v) => { getEl(id).value = v; };
+  ctx.openProjectForm && ctx.openProjectForm();
+  set('pf-name', 'Pipe Proj'); set('pf-dims', 'A, B'); set('pf-axisb', ''); set('pf-thresh', '4'); set('pf-consec', '2');
+  if (typeof ctx.addSubRow === 'function') { ctx.addSubRow(); }
+  vm.runInContext("pfSubRows=[{name:'Core',files:'a.js'}]", ctx);
+  set('pf-invs', 'INV-01 | the serializer emits name|measures|pulse | Core | node a.mjs | grep ok');
+  ctx.saveProjectForm();
+  const created = ctx.loadCustomProjects()[0] || {};
+  const problems = [];
+  // Typed into the form unescaped, the rule is still split — the escape is what
+  // the form WRITES on re-open, so test the round trip from a stored value.
+  vm.runInContext(`(function(){ const c=loadCustomProjects(); c[0].invariants=[{id:'INV-01',text:'emits name|measures|pulse',subsystem:'Core',verify:'node a.mjs | grep ok'}]; saveCustomProjects(c); })()`, ctx);
+  ctx.openEditProject(created.id);
+  const line = getEl('pf-invs').value;
+  if (!/^INV-01 \| emits name\\\|measures\\\|pulse \| Core \| node a\.mjs \\\| grep ok$/.test(line)) problems.push(`textarea does not escape the literal pipes: ${JSON.stringify(line)}`);
+  ctx.saveProjectForm();
+  const back = ((ctx.loadCustomProjects()[0] || {}).invariants || [])[0] || {};
+  if (back.text !== 'emits name|measures|pulse') problems.push(`rule text after round trip: ${JSON.stringify(back.text)}`);
+  if (back.subsystem !== 'Core') problems.push(`subsystem after round trip: ${JSON.stringify(back.subsystem)}`);
+  if (back.verify !== 'node a.mjs | grep ok') problems.push(`verify after round trip: ${JSON.stringify(back.verify)}`);
+  if (problems.length) bad('invariant pipe round trip: ' + problems.join('; '));
+  else ok('a literal | in an invariant\'s rule or Verify survives the project form (escaped as \\| in the textarea) (Cycle-7 follow-on)');
+  for (const k of Object.keys(store)) delete store[k];
+  try { ctx.cancelProjectForm(); } catch (e) {}
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+}
+
 // F06 — a failed dashboard fetch must SAY why. The reason was captured into
 // cache[id].error and never rendered (and, when a cache entry already existed,
 // not even recorded), so a 404 on a private repo looked identical to "no data".
@@ -1045,6 +1103,37 @@ if (loaded && typeof ctx.renderDashboard === 'function' && typeof ctx.dashErrHin
   for (const k of Object.keys(store)) delete store[k];
   if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
 } else if (loaded) bad('renderDashboard/dashErrHint not defined — F06 unguarded');
+
+// Follow-on (Cycle 7): the Refresh button's `true` means "the user asked". It
+// was ignored, so a click mid-refresh or on file:// did nothing visible; and the
+// 404 hint told someone who had ALREADY saved a token to add one.
+if (loaded && typeof ctx.refreshDashboard === 'function' && typeof ctx.dashErrHint === 'function') {
+  const problems = [];
+  const status = () => (getEl('dashStatus').textContent || '');
+  const realFetch = ctx.fetch;
+  try {
+    ctx.fetch = async () => ({ ok: true, status: 200, text: async () => '' });
+    getEl('dashStatus').textContent = 'before';
+    vm.runInContext('dashRefreshing=true', ctx);
+    await ctx.refreshDashboard();
+    if (status() !== 'before') problems.push('a background refresh during a running one changed the status line');
+    await ctx.refreshDashboard(true);
+    if (!/already running/i.test(status())) problems.push(`a manual click mid-refresh said nothing (${JSON.stringify(status())})`);
+    vm.runInContext('dashRefreshing=false', ctx);
+    ctx.fetch = undefined;
+    getEl('dashStatus').textContent = 'before';
+    await ctx.refreshDashboard(true);
+    if (!/file:\/\//.test(status())) problems.push(`a manual click without fetch said nothing (${JSON.stringify(status())})`);
+  } finally { ctx.fetch = realFetch; vm.runInContext('dashRefreshing=false', ctx); }
+  store['ccg:ghToken'] = 'tok';
+  const withTok = ctx.dashErrHint('PROJECT_HEALTH.md → HTTP 404');
+  delete store['ccg:ghToken'];
+  const noTok = ctx.dashErrHint('PROJECT_HEALTH.md → HTTP 404');
+  if (/Add a GitHub token/i.test(withTok) || !/saved token/i.test(withTok)) problems.push(`404 hint with a saved token: ${JSON.stringify(withTok)}`);
+  if (!/Add a GitHub token/i.test(noTok)) problems.push(`404 hint without a token lost its advice: ${JSON.stringify(noTok)}`);
+  if (problems.length) bad('dashboard refresh feedback: ' + problems.join('; '));
+  else ok('a manual Refresh always says why nothing happened (running / no fetch); the 404 hint fits whether a token is saved (Cycle-7 follow-on)');
+}
 
 // F13 — theme-safe text colour. Two halves, both derived:
 //   (a) no literal hex TEXT colour may exist outside the token blocks. A literal
@@ -1210,6 +1299,38 @@ if (loaded && typeof ctx.getPlaceholders === 'function') {
   if (!FILL.length || promptsWithFields < 8 || requiredSeen < 10) problems.push(`derived too little to check (prompts ${FILL.length}, with fields ${promptsWithFields}, required ${requiredSeen}) — the assertion would be vacuous`);
   if (!problems.length) ok(`the fill form offers every operator placeholder and no output-format token across ${FILL.length} prompts (${offeredTotal} fields) — F11`);
   else bad('F11: ' + problems.slice(0, 5).join('; '));
+}
+
+// Follow-on (Cycle 7): deleting a project purges its per-project keys, so a
+// re-created project with the same derived id starts clean. Exclusions: a
+// surviving project whose id extends this one keeps its keys, and ccg:secret:*
+// is never touched (a project named "Secret" derives the id `secret`).
+if (loaded && typeof ctx.deleteProject === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  store['ccg:customProjects'] = JSON.stringify([
+    { id: 'myapp', name: 'My App', subsystems: [], invariants: [], seeds: [], healthDimensions: 'A' },
+    { id: 'myapp:two', name: 'Two', subsystems: [], invariants: [], seeds: [], healthDimensions: 'A' },
+    { id: 'secret', name: 'Secret', subsystems: [], invariants: [], seeds: [], healthDimensions: 'A' }]);
+  const doomed = ['ccg:myapp:invariants', 'ccg:myapp:archive', 'ccg:myapp:cycle', 'ccg:myapp:p1:SUBSYSTEM GROUP NAME', 'ccg:myapp:bank:sysMap'];
+  const kept = ['ccg:myapp:two:invariants', 'ccg:myapp2:invariants', 'ccg:secret:token', 'ccg:ghToken', 'ccg:obs:invariants'];
+  for (const k of [...doomed, ...kept]) store[k] = '["x"]';
+  for (const k of ['ccg:dashRepos', 'ccg:dashCache', 'ccg:dashManual']) store[k] = JSON.stringify({ myapp: { v: 1 }, obs: { v: 2 } });
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+  ctx.deleteProject('myapp');
+  ctx.deleteProject('secret');
+  const problems = [];
+  for (const k of doomed) if (k in store) problems.push(`${k} survived the delete`);
+  for (const k of kept) if (!(k in store)) problems.push(`${k} was wrongly removed`);
+  for (const k of ['ccg:dashRepos', 'ccg:dashCache', 'ccg:dashManual']) {
+    const m = JSON.parse(store[k] || '{}');
+    if ('myapp' in m) problems.push(`${k} still names the deleted project`);
+    if (!('obs' in m)) problems.push(`${k} lost another project's entry`);
+  }
+  if (JSON.parse(store['ccg:customProjects']).map(p => p.id).join() !== 'myapp:two') problems.push('ccg:customProjects not updated');
+  if (problems.length) bad('project delete: ' + problems.join('; '));
+  else ok('deleting a project purges its ccg:<id>:* keys and Dashboard entries, sparing longer ids and ccg:secret:* (Cycle-7 follow-on)');
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
 }
 
 // F21 (Cycle 7) — a long Axis B category name must not run into its score in

@@ -409,26 +409,53 @@ try {
 // workflow with no loss. Both invariants' Verify fields read "code read of
 // command text", i.e. nothing was checking it; an ungated CHECKPOINT would
 // silently make .cycle/ mandatory for every consumer.
+//
+// Cycle-7 follow-on: the step set is DERIVED, not listed. A step heading
+// (an ALL-CAPS label such as "6. CHECKPOINT (" or "SEAM COUNTER (") whose body
+// writes to .cycle/ is a writing step, wherever it lives — every command file,
+// AND the §1s and §6a section bodies, which carry writes of their own (the
+// SEAM COUNTER reset and the step-8 METRICS append) and sat outside the old
+// hand-listed scan. The old names stay as a FLOOR: a heading with one of them
+// must still be recognised as writing, so the derivation cannot quietly drop
+// a step whose wording changed.
 {
-  const STEP = /^(?:\d+\.\s*)?(CHECKPOINT|METRICS|ESTIMATE CALIBRATION|BLOCKS|SEAM COUNTER|CYCLE OPEN)\b(.*)$/;
+  const HEAD = /^\s*(?:\d+\.\s*)?([A-Z][A-Z0-9 &/-]{2,}[A-Z])(?=\s*(?:\(|:|—|$))/;
+  const WRITE = /\b(creat\w*|updat\w*|append\w*|writ\w*|increment\w*|reset\w*|set)\b[^.]{0,160}?\.cycle\/|\.cycle\/[\s\S]{0,240}?\b(file write|increment|reset|append)\b/i;
   const GATE = /optional\s*—\s*only if|if a \.cycle\/ directory exists|skip if no \.cycle\//i;
-  const ungated = [];
+  const KNOWN = ['CHECKPOINT', 'METRICS', 'ESTIMATE CALIBRATION', 'BLOCKS', 'SEAM COUNTER', 'CYCLE OPEN'];
+  // Commands whose whole premise is the directory: /cycle-init creates it, and
+  // /cycle-resume stops at its first step when .cycle/STATE.md is absent.
+  const EXEMPT = { 'cycle-init': 'creates .cycle/ — its whole job', 'cycle-resume': 'stops first if .cycle/STATE.md is absent' };
+  const fencedSection = h => { const i = claudeRaw.indexOf('### ' + h + '\n'); if (i === -1) return null; const a = claudeRaw.indexOf('```\n', i); return a === -1 ? null : claudeRaw.slice(a + 4, claudeRaw.indexOf('\n```', a + 4)); };
+  const sources = [];
+  try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) sources.push([f, readFileSync(new URL('.claude/commands/' + f, root), 'utf8'), f.replace(/\.md$/, '')]); } catch (e) {}
+  for (const [label, h] of [['§1s Seams audit', 'Seams & Invariants Audit (Section 1s in HTML tool)'], ['§6a Health Synthesis', 'Health Synthesis (Section 6a in HTML tool)']]) sources.push([label, fencedSection(h), null]);
+  const ungated = [], unrecognised = [], missingSections = [];
+  const kinds = new Set();
   let stepCount = 0;
-  for (const name of tableCmds) {
-    const txt = (() => { try { return readFileSync(new URL(`.claude/commands/${name}.md`, root), 'utf8'); } catch { return null; } })();
-    if (!txt) continue;
-    const lines = txt.split('\n');
-    lines.forEach((line, i) => {
-      const m = line.match(STEP);
-      if (!m) return;
-      stepCount++;
-      // The gate may sit on the heading line or the sentence immediately under it.
-      if (!GATE.test(lines.slice(i, i + 3).join(' '))) ungated.push(`${name}.md: "${m[1]}"`);
+  for (const [label, txt, cmd] of sources) {
+    if (txt == null) { missingSections.push(label); continue; }
+    if (cmd && EXEMPT[cmd]) continue;
+    const L = txt.split('\n'), heads = [];
+    L.forEach((l, i) => { if (HEAD.test(l)) heads.push(i); });
+    heads.forEach((h, k) => {
+      const name = L[h].match(HEAD)[1];
+      const body = L.slice(h, k + 1 < heads.length ? heads[k + 1] : L.length).join(' ').replace(/\s+/g, ' ');
+      const writes = WRITE.test(body);
+      const known = KNOWN.find(n => name === n);
+      if (known && !writes) unrecognised.push(`${label}: "${name}"`);
+      if (!writes && !known) return;
+      stepCount++; kinds.add(name);
+      if (!GATE.test(L.slice(h, h + 3).join(' '))) ungated.push(`${label}: "${name}"`);
     });
   }
-  if (!stepCount) { failures++; console.log('  ✗ no .cycle/-writing steps found in any command — the gating check is vacuous (INV-12)'); }
-  else if (ungated.length) { failures++; console.log(`  ✗ .cycle/-writing step(s) not gated on the directory existing: ${ungated.join(', ')} (INV-12/INV-18)`); }
-  else console.log(`  ✓ all ${stepCount} .cycle/-writing command steps are gated on .cycle/ existing (INV-12/INV-18)`);
+  const problems = [];
+  if (missingSections.length) problems.push(`could not locate ${missingSections.join(', ')} — part of the scan would be vacuous`);
+  if (!stepCount) problems.push('no .cycle/-writing steps found anywhere — the gating check is vacuous');
+  if (ungated.length) problems.push(`.cycle/-writing step(s) not gated on the directory existing: ${ungated.join(', ')}`);
+  if (unrecognised.length) problems.push(`known .cycle/-writing step(s) no longer read as writing — the derivation lost them: ${unrecognised.join(', ')}`);
+  if (problems.length) { failures++; console.log(`  ✗ ${problems.join('; ')} (INV-12/INV-18)`); }
+  else console.log(`  ✓ all ${stepCount} .cycle/-writing steps — derived across the commands and the §1s/§6a bodies (${[...kinds].join(', ')}) — are gated on .cycle/ existing; exempt by design: ${Object.keys(EXEMPT).join(', ')} (INV-12/INV-18)`);
 }
 
 // ── Structural check 11 (F15): .cycle/STATE.md must keep the SHAPE its own
@@ -683,6 +710,53 @@ try {
   if (!files.length) { failures++; console.log('  ✗ standalone commands (F11): no .claude/commands/*.md found — the check would be vacuous'); }
   else if (problems.length) { failures++; console.log(`  ✗ standalone commands (F11): ${problems.join('; ')}`); }
   else console.log(`  ✓ every command file stands alone — no cross-command step delegation, every scripts/ mention conditional (${files.length} files, F11)`);
+}
+
+// ── Structural check 18 (Cycle-7 follow-on to F05): the Operator State
+// Checklist's re-pull paragraph classifies EVERY release since v1.19.0 — either
+// "vX changed /cmd" or inside the "… changed none" list (ranges expanded
+// against the CHANGELOG). v1.33.0 changed /setup-cycle and sat in neither list
+// for nine releases; this repo's maintainer missed it while editing that very
+// line. CI checks out a shallow clone, so the CHANGELOG is the ground truth,
+// not git history. The NEWEST release must also match what its own entry says.
+{
+  let cfg = null;
+  try { cfg = readFileSync(new URL('.cycle/config.md', root), 'utf8'); } catch (e) {}
+  let changelog = '';
+  try { changelog = readFileSync(new URL('CHANGELOG.md', root), 'utf8'); } catch (e) {}
+  const start = cfg ? cfg.indexOf('**Run `/sync-commands` in consuming projects**') : -1;
+  if (!cfg) console.log('  · no .cycle/config.md — re-pull list check skipped (this repo only)');
+  else if (start === -1) { failures++; console.log('  ✗ re-pull list: the Operator State Checklist has no "Run `/sync-commands` in consuming projects" paragraph'); }
+  else {
+    const end = cfg.indexOf('\n- **', start + 10);
+    const para = cfg.slice(start, end === -1 ? undefined : end).replace(/\s+/g, ' ');
+    const cmp = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };
+    const entries = [...changelog.matchAll(/^## (\d+\.\d+\.\d+) — [^\n]*\n([\s\S]*?)(?=^## \d|(?![\s\S]))/gm)].map(m => ({ v: m[1], body: m[2] }));
+    const versions = entries.map(e => e.v).filter(v => cmp(v, '1.19.0') >= 0).sort(cmp);
+    const changed = new Set([...para.matchAll(/\bv(\d+\.\d+\.\d+) changed\b(?! none)/g)].map(m => m[1]));
+    const noneM = para.match(/((?:v\d+\.\d+\.\d+(?:–v\d+\.\d+\.\d+)?(?:,| and|,? and)?\s*)+)changed none/);
+    const none = new Set();
+    if (noneM) for (const t of noneM[1].matchAll(/v(\d+\.\d+\.\d+)(?:–v(\d+\.\d+\.\d+))?/g)) {
+      if (!t[2]) none.add(t[1]);
+      else versions.filter(v => cmp(v, t[1]) >= 0 && cmp(v, t[2]) <= 0).forEach(v => none.add(v));
+    }
+    const problems = [];
+    if (!versions.length) problems.push('no CHANGELOG releases since v1.19.0 found — the check would be vacuous');
+    if (!noneM) problems.push('no "… changed none." list found in the paragraph');
+    const missing = versions.filter(v => !changed.has(v) && !none.has(v));
+    const both = versions.filter(v => changed.has(v) && none.has(v));
+    if (missing.length) problems.push(`release(s) in neither list: ${missing.map(v => 'v' + v).join(', ')} — say whether they changed a command body`);
+    if (both.length) problems.push(`release(s) listed as both changed and changed-none: ${both.map(v => 'v' + v).join(', ')}`);
+    const newest = entries[0];
+    if (newest) {
+      const saysNo = /no (?:command-body|`?\/sync-commands`? re-pull)/i.test(newest.body);
+      const saysYes = /run `\/sync-commands`|command bodies changed/i.test(newest.body);
+      if (saysNo && changed.has(newest.v)) problems.push(`v${newest.v}'s CHANGELOG says no re-pull, but the checklist lists it as changed`);
+      if (saysYes && !saysNo && none.has(newest.v)) problems.push(`v${newest.v}'s CHANGELOG asks for a re-pull, but the checklist lists it as changed none`);
+    }
+    if (problems.length) { failures++; console.log(`  ✗ re-pull list (Operator State Checklist): ${problems.join('; ')}`); }
+    else console.log(`  ✓ the re-pull list classifies every release since v1.19.0 exactly once — ${changed.size} changed, ${none.size} changed none — and the newest matches its CHANGELOG entry`);
+  }
 }
 
 if (failures) {

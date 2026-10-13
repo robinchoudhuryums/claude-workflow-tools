@@ -280,14 +280,16 @@ function main(argv) {
     const body = dynBody(claudeMd, m);
     const cur = preBody(html, m.id);
     if (body == null || cur == null) { console.log(`  ? ${m.id} ← ${dynLabel(m)}: ${body == null ? 'canonical body' : '<pre>'} not found`); continue; }
-    const want = new Set(norm(transform(body, m)));
-    const have = new Set(norm(cur));
-    const present = [...want].filter(l => have.has(l)).length;
-    const missing = want.size - present;
-    totalDrift += missing;
-    console.log(`  ${m.id} ← ${dynLabel(m)}: ${want.size ? Math.round(100 * present / want.size) : 100}% of canonical lines present | ${missing} missing | ${[...have].filter(l => !want.has(l)).length} console-only`);
+    // Cycle-7 follow-on: the same ordered, per-occurrence comparison --assert's
+    // builder lock uses (canonicalCoverage). Set membership here reported a
+    // reordered or de-duplicated static prompt as 100% present.
+    const cov = canonicalCoverage(body, cur, m);
+    const wantSet = new Set(norm(transform(body, m)));
+    const consoleOnly = norm(cur).filter(l => !wantSet.has(l)).length;
+    totalDrift += cov.missing.length + cov.outOfOrder.length;
+    console.log(`  ${m.id} ← ${dynLabel(m)}: ${cov.total ? Math.round(100 * cov.present / cov.total) : 100}% of canonical lines present in order | ${cov.missing.length} missing | ${cov.outOfOrder.length} out of order | ${consoleOnly} console-only`);
   }
-  console.log(`\nTotal canonical lines missing from the console: ${totalDrift}`);
+  console.log(`\nTotal canonical lines missing or out of order in the console: ${totalDrift}`);
   console.log('Run with --write to regenerate the console <pre> blocks from CLAUDE.md (then verify rendering in a browser).');
 
   // Dynamic builders (R16): render headlessly + report canonical-line coverage.

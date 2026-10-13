@@ -11,6 +11,8 @@ Updated: 2026-10-13
 ## In progress (facts to carry forward — NOT judgments)
 - All 8 fix batches are complete (v1.35.0–v1.42.0; 1–4 merged in PR #26). The expansion plan is not started.
 - Correction carried forward: the v1.41.0 block says INV-26's rule text was widened; it was not until v1.42.0.
+- The actionable follow-on items from Batches 1–8 shipped as v1.43.0; what remains under Open follow-on items is
+  deliberate, perceptual, strategic or conditional.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -54,6 +56,9 @@ Updated: 2026-10-13
   New capabilities (G/ST) field; F11 commands stand alone (+ check 17); F42 invariant-check shell model documented,
   runs in the project root; F19 dead files plumbing removed, bank on every systems-map field; F21 grid width,
   gitignore note, --selector console; F08/F09/F05 docs. Re-pull: 5 commands (and v1.33.0's /setup-cycle).
+- v1.43.0 | follow-ons | project delete purges its keys; invariant pipes escaped; manual Refresh feedback + 404
+  hint; INV-12 step set derived (+§1s/§6a); re-pull list guard (check 18); cycleTotals by header; ordered drift
+  report; legacyCopy success test; cycle-qualified F20 labels; two gotchas + README lock text restated.
 
 ## Pending / not yet done
 - /reflect for Cycle 7, then §4v (fresh session; verification-pack.mjs), then §6a synthesis.
@@ -64,14 +69,13 @@ Updated: 2026-10-13
 - Phase "verify" is still written by nothing — §4v is read-only. The §4v-vs-hook decision depends on it.
 
 ## Open follow-on items
-- deleteProject() leaves ccg:<pid>:invariants / :archive / :cycle behind; a new project deriving the
-  same id inherits a dead project's invariants.
-- The project form splits invariant lines on `|`, so rule text containing a pipe mis-parses (this
-  repo's own INV-08/INV-46 would).
 - --accent is 3.4:1 on the light surface; left alone deliberately as the identity colour.
 - The `#fff` phase-dot label on a semantic fill is 2.3:1 — perceptual, for S8.
-- legacyCopy()'s SUCCESS path is still unexercised (the stub execCommand returns false).
-- Strategic: CSP (needs event delegation, L), no LICENSE file.
+- Strategic: CSP (needs event delegation, L), no LICENSE file (the licence is the owner's choice).
+- The Axis B project-form field splits on `|` like the invariant field used to; measures/playbook text with a
+  literal pipe would mis-parse (not seen yet — the invariant fix in v1.43.0 is the pattern to copy).
+- Conditional consolidations, not work yet: a 4th hand-rolled parser (YAML/CSV/invariant readers exist) or a
+  5th script main-module check would justify a shared module.
 
 ## Decisions made (so the next session doesn't re-litigate)
 - The console's prompts are GENERATED/LOCKED from CLAUDE.md. As of v1.29.0 this covers EVERY static
@@ -95,5 +99,5 @@ Updated: 2026-10-13
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; all 8 fix batches shipped (v1.35.0–v1.42.0). 1–4 are merged (PR #26); 5–8 are on branch
-claude/tender-clarke-x722xl. Next: /reflect for Cycle 7, then §4v in a fresh session, then §6a. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).
+Cycle 7 open; all 8 fix batches and the follow-ons shipped (v1.35.0–v1.43.0). 1–4 are merged (PR #26); 5–8 and the
+follow-ons are on branch claude/tender-clarke-x722xl. Next: /reflect for Cycle 7, then §4v in a fresh session, then §6a. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).

@@ -211,6 +211,11 @@ expectFail('detects a command delegating to another command\'s step (F11)',
 expectFail('detects a command naming a helper script unconditionally (F11)',
   d => { const f = join(d, '.claude', 'commands', 'regression.md'); writeFileSync(f, readFileSync(f, 'utf8') + '\nRun scripts/invariant-check.mjs first.\n'); },
   /names scripts\/invariant-check\.mjs unconditionally/);
+// 20) Cycle-7 follow-on to F05: the re-pull list classifies every release
+// since v1.19.0. v1.33.0 sat in neither list for nine releases.
+expectFail('detects a release missing from the Operator State Checklist re-pull list (F05 class)',
+  d => { mkdirSync(join(d, '.cycle'), { recursive: true }); const t = readFileSync(join(repo, '.cycle', 'config.md'), 'utf8'); if (!t.includes('v1.33.0 changed')) throw new Error('fixture rotted: v1.33.0 changed'); writeFileSync(join(d, '.cycle', 'config.md'), t.replace('v1.33.0 changed', 'v1.33.0 altered')); },
+  /in neither list: v1\.33\.0/);
 // …and a block-scalar run: with the bare command is still a stage, not a problem.
 {
   const d = setup();

@@ -55,7 +55,7 @@ INV-08 | Every interpolation of inv.verify is gated on a value — an entry with
 INV-09 | State export collects exactly the ccg:* localStorage keys EXCEPT secrets (isSecretKey) and no others — the wildcard alone is what let a credential join the export in v1.17 | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-10 | Import rejects non-JSON and missing-"data" payloads with a visible message, writes nothing when the confirm is declined, and installs only non-secret ccg:* keys. Unverified until v1.25.0 (Cycle 5, post-synthesis): the Verify field read "importStateFile logic" and the headless FileReader stub never fired onload, so no clause of this rule had ever executed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-11 | Every command body in CLAUDE.md is fenced and contains no nested triple-backtick line (so gen can extract it) | Subsystem: Canonical Templates & Docs | Verify: node scripts/gen-commands.mjs --check (extraction succeeds for all 20)
-INV-12 | Every command step that writes to .cycle/ (CHECKPOINT, METRICS, ESTIMATE CALIBRATION, BLOCKS, SEAM COUNTER) is gated on the directory existing — never assumed | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 10)
+INV-12 | Every step that writes to .cycle/ — derived from the text (any step whose body writes there), in every command AND in the §1s/§6a section bodies; CHECKPOINT, METRICS, ESTIMATE CALIBRATION, BLOCKS, SEAM COUNTER and CYCLE OPEN are a floor — is gated on the directory existing, never assumed (/cycle-init and /cycle-resume are exempt by design) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 10)
 INV-13 | Every installable command has its full text in CLAUDE.md, because /sync-commands reads only CLAUDE.md as template source | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 1)
 INV-14 | CI triggers on both push and pull_request and runs check-template-sync.mjs (which transitively runs gen --check) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 8)
 INV-15 | §6a/§6b ask about the project’s CONFIGURED Axis B categories — rendering a project with a custom axisB emits the custom names, not DEFAULT_AXIS_B. Does NOT yet extend to §1s: buildSeamsText PART 4 and the SEAMS & INVARIANTS AUDIT BLOCK still enumerate the five default categories by name, so a project with custom categories gets a Seams audit asking about ones it does not use (open finding — fixing it means editing an --assert-locked canonical body AND the block’s registered field names) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
@@ -229,8 +229,12 @@ Cycle Workflow Config.
   a mistyped element passes CI and renders an empty box. A fourth, found by
   the Cycle-6 scan: the hostile fixture's SINK list was hand-listed, and the
   one sink it omitted (the fill form) was the one with the live XSS (F01).
-  **Derive fixtures from the artifact under test.** Since v1.27.0 no
-  hand-listed guard set remains.
+  **Derive fixtures from the artifact under test.** Since v1.27.0 no guard's
+  COVERAGE is hand-listed. One hand-maintained list remains deliberately: the
+  check-output-blocks registry's REQUIRED `fields` per block (what a block must
+  carry). It is a floor, not the coverage — since v1.41.0 every copy of a block
+  is also compared on its FULL derived field-label set (F50), so a field off
+  that list can no longer drift between copies unseen.
 - **A derivation can narrow itself the moment it is introduced.** The first
   version of the derived sink set (F09) placed its marker AFTER
   `switchProject()`, so the init-time sinks silently left the scan and three
@@ -285,7 +289,10 @@ Cycle Workflow Config.
 - **Editing a command body is never a one-file change.** Run
   `gen-commands.mjs` *and* `gen-html-prompts.mjs --write`, and mirror the
   edit into the corresponding console builder — all nine are `--assert`
-  locked at 100% canonical line coverage.
+  locked: every canonical line present, IN ORDER, once per occurrence, with
+  case intact (v1.41.0, F46/F47 — before that "100%" meant set membership,
+  blind to a moved, dropped-duplicate or re-cased line). Edit builders in
+  canonical order; a harmless-looking reorder now fails.
 - **`canonicalCoverage` ignores EXTRA rendered lines.** A console builder
   can carry expanded console-only detail *and* still be locked. The
   "standalone vs locked" tradeoff that justified §T2b's exemption was never
@@ -378,8 +385,8 @@ so treat these as settled unless the reasoning below is what changed.
 - **The console's prompts are GENERATED/LOCKED from CLAUDE.md**, never
   hand-maintained. Static §-prompts via `gen-html-prompts --write` — ALL 16 of
   them since v1.29.0, including the nine that had no slash command and so sat
-  outside every lock; all nine dynamic builders via `--assert` at 100% canonical
-  coverage. `--assert` also fails if a NEW static `<pre>` appears with no
+  outside every lock; all nine dynamic builders via `--assert`, which requires
+  every canonical line in order and with case (an ordered subsequence, v1.41.0). `--assert` also fails if a NEW static `<pre>` appears with no
   manifest entry, which is the derived half: the Cycle-6 audit itself
   under-counted the unlocked set by one.
 - **A console prompt with no slash-command counterpart is a canonical SECTION
@@ -442,7 +449,7 @@ machine or after a release.
   **`/reflect`, `/pr-review` and `/targeted-implement`** (standalone — no
   cross-command delegation, scripts named conditionally). v1.19.1,
   v1.20.0–v1.22.0, v1.24.0, v1.25.0, v1.28.0, v1.30.0–v1.30.1,
-  v1.31.0–v1.32.0 and v1.36.0–v1.41.0 changed none.
+  v1.31.0–v1.32.0, v1.36.0–v1.41.0 and v1.43.0 changed none.
 - **One-time, projects configured from the CONSOLE's Setup prompt before
   v1.29.0:** that prompt was a pre-R18 copy — it never asked about user-facing
   surfaces and never proposed an interface Health Dimension. Re-check whether
