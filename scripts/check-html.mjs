@@ -16,6 +16,7 @@
 import { readFileSync } from 'node:fs';
 import { HEALTH_FIELDS } from './health-fields.mjs';   // INV-71: the canonical Current Standing labels
 import vm from 'node:vm';
+import { scanPres, preBody } from './gen-html-prompts.mjs';   // F48: one attribute-order-agnostic <pre> scanner
 
 const root = new URL('..', import.meta.url);
 const html = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
@@ -162,7 +163,7 @@ if (loaded) {
 // 3) Builder cleanliness for every built-in project
 if (loaded && typeof ctx.getAllProjects === 'function') {
   const projects = ctx.getAllProjects();
-  const withArg = ['buildTier1Text', 'buildTier2AuditText', 'buildSeamsText', 'buildVerificationText', 'buildP6aText', 'buildP6bText'];
+  const withArg = ['buildTier1Text', 'buildTier2AuditText', 'buildSeamsText', 'buildVerificationText', 'buildPrReviewText', 'buildP6aText', 'buildP6bText'];
   let clean = true;
   for (const p of projects) {
     for (const name of withArg) {
@@ -175,6 +176,27 @@ if (loaded && typeof ctx.getAllProjects === 'function') {
   const impl = typeof ctx.buildTier2ImplText === 'function' ? ctx.buildTier2ImplText() : '';
   if (impl.includes('${') || /\bundefined\b/.test(impl)) { bad('buildTier2ImplText() has unresolved template or undefined'); clean = false; }
   if (clean) ok(`prompt builders clean for ${projects.length} built-in project(s) (no unresolved \${} / undefined)`);
+  // F20 (Cycle 7): a builder renders the library of the project it is GIVEN.
+  // They read the active project's invariants, so INV-05 above rendered obs's
+  // library seven times and never once rendered (or checked) the others'. With
+  // the console's active project held on the FIRST project, render every other
+  // project and require its own first invariant — and its own probe seed.
+  const invBuilders = ['buildSeamsText', 'buildVerificationText', 'buildPrReviewText'];
+  const others = projects.slice(1).filter(p => (p.invariants || []).length);
+  const crossed = [];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject(projects[0].id);
+  for (const p of others) {
+    const own = p.invariants[0].text;
+    for (const name of invBuilders) {
+      const out = typeof ctx[name] === 'function' ? ctx[name](p) : '';
+      if (!out.includes(own)) crossed.push(`${name}(${p.id}) lacks its own ${p.invariants[0].id}`);
+    }
+    const v = typeof ctx.buildVerificationText === 'function' ? ctx.buildVerificationText(p) : '';
+    if (!v.includes(`(Probe seed: ${p.id}:`)) crossed.push(`buildVerificationText(${p.id}) states another project's probe seed`);
+  }
+  if (!others.length) bad('Cycle-7 F20: no second built-in project with invariants — the cross-project builder check would be vacuous');
+  else if (crossed.length) bad(`Cycle-7 F20: builders render the ACTIVE project's invariants, not the one passed: ${crossed.slice(0, 4).join('; ')}`);
+  else ok(`invariant builders render the passed project's own library and probe seed — ${others.length} non-active project(s) × ${invBuilders.length} builders (Cycle-7 F20)`);
 } else if (loaded) {
   bad('getAllProjects not defined after load — cannot check builders');
 }
@@ -486,10 +508,15 @@ if (loaded && typeof ctx.switchProject === 'function') {
   // STRING-rendered field found. Fields used structurally (.length/.map/.split)
   // are excluded and REPORTED, so the check never silently narrows itself.
   const interp = new Map();                       // alias -> Set(field)
-  for (const m of src.matchAll(/\$\{[^}]*?\b([a-z]+)\.([a-zA-Z]+)/g)) {
-    const [, alias, field] = m;
-    if (!interp.has(alias)) interp.set(alias, new Set());
-    interp.get(alias).add(field);
+  // F45 (Cycle 7): string CONCATENATION is a sink too — `'…'+esc(obj.field)+'…'`.
+  // Only template-literal interpolations were scanned, so the whole Dashboard
+  // card (built by concatenation) contributed no fields to the payload set.
+  for (const re of [/\$\{[^}]*?\b([a-z]+)\.([a-zA-Z]+)/g, /['"]\s*\+\s*(?:esc\(\s*)?(?:String\(\s*)?\(?([a-z]+)\.([a-zA-Z]+)/g]) {
+    for (const m of src.matchAll(re)) {
+      const [, alias, field] = m;
+      if (!interp.has(alias)) interp.set(alias, new Set());
+      interp.get(alias).add(field);
+    }
   }
   // Alias-SCOPED. An unqualified `.field` test excludes a string field whenever
   // any unrelated object anywhere calls `.field()` — `inv.text` was dropped
@@ -528,13 +555,39 @@ if (loaded && typeof ctx.switchProject === 'function') {
   store[`ccg:${hostileProject.id}:invariants`] = JSON.stringify([hostile('inv')]);
   store[`ccg:${hostileProject.id}:archive`] = JSON.stringify([Object.assign(hostile('e'), { id: 1 })]);
   store['ccg:dashRepos'] = JSON.stringify({ [hostileProject.id]: 'own"er/re"po' });
+  // F45 (Cycle 7): the Dashboard's REMOTE data — a fetched PROJECT_HEALTH.md /
+  // STATE.md, cached in ccg:dashCache, and the self-reported ccg:dashManual —
+  // is the least trusted input the console renders, and the fixture never
+  // seeded it: every card rendered "No data yet". The status fields are DERIVED
+  // from what the parsers return (parseHealth/parseState keys + every
+  // `status.X=` assignment) and the fallback fields from the object
+  // saveDashCard stores, so a field added to either is poisoned automatically.
+  // Three projects cover the three card branches: Live (+ stateError),
+  // Fetch-failed-with-cache (error + cached status), and Self-reported.
+  const fnBody = name => (src.match(new RegExp(`function ${name}\\([^)]*\\)\\{[^\\n]*`)) || [''])[0];
+  const statusFields = [...new Set([
+    ...[...fnBody('parseHealth').matchAll(/(\w+):g\(/g), ...fnBody('parseState').matchAll(/(\w+):g\(/g)].map(m => m[1]),
+    ...[...src.matchAll(/\bstatus\.(\w+)=(?!=)/g)].map(m => m[1]),
+  ])];
+  const manFields = ((src.match(/manual\[id\]=\{([^}]*)\}/) || [])[1] || '').split(',').map(kv => kv.split(':')[0].trim()).filter(Boolean);
+  const dashObj = (fields, tag) => Object.fromEntries(fields.map((f, i) => [f, PAYLOADS[i % PAYLOADS.length] + ` [${tag}.${f}]`]));
+  log.push(`  · F45 Dashboard payload set DERIVED: status{${statusFields}} manual{${manFields}}`);
+  if (!statusFields.includes('summary') || !statusFields.includes('stateError') || !manFields.includes('note'))
+    bad(`F45: Dashboard field derivation narrowed itself (status{${statusFields}} manual{${manFields}})`);
+  const builtins = typeof ctx.getAllProjects === 'function' ? ctx.getAllProjects().map(p => p.id).filter(id => id !== hostileProject.id) : [];
+  const dashTargets = { live: hostileProject.id, failed: builtins[0], manual: builtins[1] };
+  store['ccg:dashCache'] = JSON.stringify({
+    [dashTargets.live]: { ok: true, fetchedAt: new Date().toISOString(), status: dashObj(statusFields, 'status') },
+    [dashTargets.failed]: { ok: false, fetchedAt: new Date().toISOString(), error: PAYLOADS[0] + ' [cache.error]', status: dashObj(statusFields.filter(f => f !== 'stateError'), 'cached') },
+  });
+  store['ccg:dashManual'] = JSON.stringify({ [dashTargets.manual]: dashObj(manFields, 'manual') });
   // F09 — the fill forms render only on interaction, so an init-only pass never
   // reached them and F01 (a subsystem name executing from an imported backup)
   // lived there for six releases. Give every static <pre> its real markup text
   // (the stub DOM has none), seed a hostile SAVED VALUE for every placeholder
   // the console would offer, then drive each fill form and the project editor.
   const unescPre = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-  for (const m of html.matchAll(/<pre id="([^"]+)">([\s\S]*?)<\/pre>/g)) if (m[2].trim()) getEl(m[1]).textContent = unescPre(m[2]);
+  for (const p of scanPres(html)) if (p.id && p.body.trim()) getEl(p.id).textContent = unescPre(p.body);
   const FILL_IDS = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
   let seededValues = 0;
   if (typeof ctx.getPlaceholders === 'function') {
@@ -573,6 +626,17 @@ if (loaded && typeof ctx.switchProject === 'function') {
       const h = elStore[id] ? elStore[id].innerHTML : '';
       for (const p of PAYLOADS) if (h.includes(p)) dirty.push(`${id} ← ${JSON.stringify(p)}`);
     }
+    // F45 reach floor: every seeded Dashboard field must actually reach the
+    // cards, or the payloads above prove nothing about the remote-data sinks.
+    const cards = elStore.dashCards ? elStore.dashCards.innerHTML : '';
+    const dashTags = [...statusFields.map(f => `[status.${f}]`), ...statusFields.filter(f => f !== 'stateError').map(f => `[cached.${f}]`), '[cache.error]', ...manFields.map(f => `[manual.${f}]`)];
+    const unreached = dashTags.filter(t => !cards.includes(t));
+    // lastSynthesis/updated/cycle are parsed but deliberately not shown on a card.
+    const HIDDEN = /\.(lastSynthesis|updated|cycle)\]$/;
+    const missed = unreached.filter(t => !HIDDEN.test(t));
+    if (!dashTargets.failed || !dashTargets.manual) bad('F45: fewer than two built-in projects — the Dashboard branches cannot all be seeded');
+    else if (missed.length) bad(`F45: seeded Dashboard field(s) never reached a card — the remote-data scan is narrower than it claims: ${missed.join(', ')}`);
+    else ok(`hostile remote Dashboard data (cache Live/failed + self-reported) reaches the cards and stays escaped — ${dashTags.length - unreached.length} field(s) rendered (F45)`);
     if (!dirty.length) ok('every render sink escapes stored content — hostile fixture leaks nothing (INV-20/F04)');
     else bad('unescaped stored content reached innerHTML: ' + dirty.join(' | '));
 
@@ -625,6 +689,32 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
   else bad(`copy failed silently (rejected=${rejectedVisibly} absent=${absentVisibly})`);
 }
 
+// Follow-on (Cycle 7): legacyCopy's SUCCESS path. The stub's execCommand always
+// returned false, so the fallback was proven to fail visibly but never proven
+// to copy: a regression that broke the textarea hand-off (wrong value, never
+// selected, command not 'copy') would still pass. No navigator.clipboard, an
+// execCommand that succeeds only for 'copy' on a selected textarea holding the
+// exact text → the button must report success, with the textarea cleaned up.
+if (loaded && typeof ctx.copyToClipboard === 'function') {
+  const btn = { _cls: new Set(), innerHTML: '' }; btn.classList = makeClassList(btn._cls);
+  const realCb = ctx.navigator.clipboard, realCreate = ctx.document.createElement, realExec = ctx.document.execCommand, realBody = ctx.document.body;
+  let ta = null, appended = 0, removed = 0, cmds = [];
+  ctx.navigator.clipboard = undefined;
+  ctx.document.createElement = tag => (ta = { tag, value: '', selected: false, style: {}, attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, select() { this.selected = true; } });
+  ctx.document.body = { appendChild: () => { appended++; }, removeChild: () => { removed++; } };
+  ctx.document.execCommand = cmd => { cmds.push(cmd); return cmd === 'copy' && !!ta && ta.selected && ta.value === 'copy me exactly'; };
+  try { ctx.copyToClipboard('copy me exactly', btn); } finally {
+    ctx.navigator.clipboard = realCb; ctx.document.createElement = realCreate; ctx.document.execCommand = realExec; ctx.document.body = realBody;
+  }
+  const problems = [];
+  if (!ta || ta.tag !== 'textarea' || ta.value !== 'copy me exactly') problems.push(`textarea hand-off wrong (${ta ? ta.tag + ':' + JSON.stringify(ta.value) : 'none created'})`);
+  if (JSON.stringify(cmds) !== '["copy"]') problems.push(`execCommand calls ${JSON.stringify(cmds)}`);
+  if (appended !== 1 || removed !== 1) problems.push(`textarea appended ${appended}× / removed ${removed}×`);
+  if (!btn._cls.has('ok') || btn._cls.has('fail') || !/Copied/.test(btn.innerHTML)) problems.push(`button did not report success (classes ${[...btn._cls]}, ${JSON.stringify(btn.innerHTML.replace(/<svg[\s\S]*?<\/svg>/, '').trim())})`);
+  if (problems.length) bad('legacyCopy success path: ' + problems.join('; '));
+  else ok('the execCommand fallback copies the exact text, cleans up its textarea, and reports success (Cycle-7 follow-on)');
+}
+
 // F11/jsArg — STATIC guard for the attribute-context footgun. The hostile-fixture
 // check above proves escaping only at sinks the fixture actually reaches; this
 // covers every inline handler in the file. Rule: an `on*=` attribute must never
@@ -634,7 +724,10 @@ if (loaded && typeof ctx.copyToClipboard === 'function') {
 // attribute text is correct and stays allowed.
 {
   const noComments = src.replace(/^\s*\/\/.*$/gm, '');   // skip prose that names the anti-pattern
-  const offenders = [...noComments.matchAll(/on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
+  // (?<![\w-]) — the attribute NAME must start with "on". Without it "aria-controls"
+  // matched as a handler ("ontrols=") the first time an aria-controls value went
+  // through esc() (Cycle-7 Batch 4/5) — a false red, the mirror of the \b gotcha.
+  const offenders = [...noComments.matchAll(/(?<![\w-])on[a-z]+="[^"]*esc\([^"]*"/gi)].map(m => m[0].slice(0, 80));
   if (!offenders.length) ok('no inline handler builds a JS argument with esc() — jsArg() only (F04/F11)');
   else bad(`inline handler(s) using esc() as a JS argument (use jsArg): ${offenders.join(' | ')}`);
 
@@ -814,15 +907,15 @@ if (loaded && typeof ctx.getFilledText === 'function' && typeof ctx.saveVal === 
   else bad('F16: $-pattern in a filled value was mangled → ' + JSON.stringify(out));
 }
 
-// F20 — the backup envelope must be validated, not just its `data` key.
+// Cycle-6 F20 — the backup envelope must be validated, not just its `data` key.
 if (loaded && typeof ctx.stateBackupKeys === 'function') {
   const foreign = ctx.stateBackupKeys({ app: 'some-other-tool', data: { 'ccg:x': '1' } });
   const newer = ctx.stateBackupKeys({ app: 'claude-workflow-tools', version: 2, data: { 'ccg:x': '1' } });
   const okOld = ctx.stateBackupKeys({ data: { 'ccg:x': '1' } });                       // pre-envelope backup
   const okCur = ctx.stateBackupKeys({ app: 'claude-workflow-tools', version: 1, data: { 'ccg:x': '1' } });
   if (foreign.reason === 'foreign-app' && newer.reason === 'newer-version' && !okOld.reason && !okCur.reason)
-    ok('backup envelope validated — foreign app and newer format rejected, older/current accepted (F20)');
-  else bad(`F20 envelope validation wrong: foreign=${foreign.reason} newer=${newer.reason} old=${okOld.reason} cur=${okCur.reason}`);
+    ok('backup envelope validated — foreign app and newer format rejected, older/current accepted (Cycle-6 F20)');
+  else bad(`Cycle-6 F20 envelope validation wrong: foreign=${foreign.reason} newer=${newer.reason} old=${okOld.reason} cur=${okCur.reason}`);
 }
 
 // F08 — the tabbed panel navigation had zero headless coverage: the old stub
@@ -958,6 +1051,38 @@ if (loaded && typeof ctx.saveProjectForm === 'function' && typeof ctx.openEditPr
   if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
 } else if (loaded) bad('saveProjectForm/openEditProject not defined — F05 unguarded');
 
+// Follow-on (Cycle 7): a literal pipe in an invariant's rule text or Verify
+// command survives the project form. The textarea was split on every `|`, so
+// "a | b" became two fields and shifted the subsystem into the rule.
+if (loaded && typeof ctx.saveProjectForm === 'function' && typeof ctx.openEditProject === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  const set = (id, v) => { getEl(id).value = v; };
+  ctx.openProjectForm && ctx.openProjectForm();
+  set('pf-name', 'Pipe Proj'); set('pf-dims', 'A, B'); set('pf-axisb', ''); set('pf-thresh', '4'); set('pf-consec', '2');
+  if (typeof ctx.addSubRow === 'function') { ctx.addSubRow(); }
+  vm.runInContext("pfSubRows=[{name:'Core',files:'a.js'}]", ctx);
+  set('pf-invs', 'INV-01 | the serializer emits name|measures|pulse | Core | node a.mjs | grep ok');
+  ctx.saveProjectForm();
+  const created = ctx.loadCustomProjects()[0] || {};
+  const problems = [];
+  // Typed into the form unescaped, the rule is still split — the escape is what
+  // the form WRITES on re-open, so test the round trip from a stored value.
+  vm.runInContext(`(function(){ const c=loadCustomProjects(); c[0].invariants=[{id:'INV-01',text:'emits name|measures|pulse',subsystem:'Core',verify:'node a.mjs | grep ok'}]; saveCustomProjects(c); })()`, ctx);
+  ctx.openEditProject(created.id);
+  const line = getEl('pf-invs').value;
+  if (!/^INV-01 \| emits name\\\|measures\\\|pulse \| Core \| node a\.mjs \\\| grep ok$/.test(line)) problems.push(`textarea does not escape the literal pipes: ${JSON.stringify(line)}`);
+  ctx.saveProjectForm();
+  const back = ((ctx.loadCustomProjects()[0] || {}).invariants || [])[0] || {};
+  if (back.text !== 'emits name|measures|pulse') problems.push(`rule text after round trip: ${JSON.stringify(back.text)}`);
+  if (back.subsystem !== 'Core') problems.push(`subsystem after round trip: ${JSON.stringify(back.subsystem)}`);
+  if (back.verify !== 'node a.mjs | grep ok') problems.push(`verify after round trip: ${JSON.stringify(back.verify)}`);
+  if (problems.length) bad('invariant pipe round trip: ' + problems.join('; '));
+  else ok('a literal | in an invariant\'s rule or Verify survives the project form (escaped as \\| in the textarea) (Cycle-7 follow-on)');
+  for (const k of Object.keys(store)) delete store[k];
+  try { ctx.cancelProjectForm(); } catch (e) {}
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+}
+
 // F06 — a failed dashboard fetch must SAY why. The reason was captured into
 // cache[id].error and never rendered (and, when a cache entry already existed,
 // not even recorded), so a 404 on a private repo looked identical to "no data".
@@ -978,6 +1103,37 @@ if (loaded && typeof ctx.renderDashboard === 'function' && typeof ctx.dashErrHin
   for (const k of Object.keys(store)) delete store[k];
   if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
 } else if (loaded) bad('renderDashboard/dashErrHint not defined — F06 unguarded');
+
+// Follow-on (Cycle 7): the Refresh button's `true` means "the user asked". It
+// was ignored, so a click mid-refresh or on file:// did nothing visible; and the
+// 404 hint told someone who had ALREADY saved a token to add one.
+if (loaded && typeof ctx.refreshDashboard === 'function' && typeof ctx.dashErrHint === 'function') {
+  const problems = [];
+  const status = () => (getEl('dashStatus').textContent || '');
+  const realFetch = ctx.fetch;
+  try {
+    ctx.fetch = async () => ({ ok: true, status: 200, text: async () => '' });
+    getEl('dashStatus').textContent = 'before';
+    vm.runInContext('dashRefreshing=true', ctx);
+    await ctx.refreshDashboard();
+    if (status() !== 'before') problems.push('a background refresh during a running one changed the status line');
+    await ctx.refreshDashboard(true);
+    if (!/already running/i.test(status())) problems.push(`a manual click mid-refresh said nothing (${JSON.stringify(status())})`);
+    vm.runInContext('dashRefreshing=false', ctx);
+    ctx.fetch = undefined;
+    getEl('dashStatus').textContent = 'before';
+    await ctx.refreshDashboard(true);
+    if (!/file:\/\//.test(status())) problems.push(`a manual click without fetch said nothing (${JSON.stringify(status())})`);
+  } finally { ctx.fetch = realFetch; vm.runInContext('dashRefreshing=false', ctx); }
+  store['ccg:ghToken'] = 'tok';
+  const withTok = ctx.dashErrHint('PROJECT_HEALTH.md → HTTP 404');
+  delete store['ccg:ghToken'];
+  const noTok = ctx.dashErrHint('PROJECT_HEALTH.md → HTTP 404');
+  if (/Add a GitHub token/i.test(withTok) || !/saved token/i.test(withTok)) problems.push(`404 hint with a saved token: ${JSON.stringify(withTok)}`);
+  if (!/Add a GitHub token/i.test(noTok)) problems.push(`404 hint without a token lost its advice: ${JSON.stringify(noTok)}`);
+  if (problems.length) bad('dashboard refresh feedback: ' + problems.join('; '));
+  else ok('a manual Refresh always says why nothing happened (running / no fetch); the 404 hint fits whether a token is saved (Cycle-7 follow-on)');
+}
 
 // F13 — theme-safe text colour. Two halves, both derived:
 //   (a) no literal hex TEXT colour may exist outside the token blocks. A literal
@@ -1025,6 +1181,26 @@ if (loaded && typeof ctx.renderDashboard === 'function' && typeof ctx.dashErrHin
   }
   if (!failures.length) ok(`every --on-* text token clears 4.5:1 on every surface of its theme (${checked} pairs computed) — F13`);
   else bad('F13 contrast: ' + failures.join(' | '));
+
+  // F30 (Cycle 7) — two more halves, the ones F13 did not reach.
+  //   (c) a FILL token (--amber/--teal/--purple/--green/--red/--orange) is never
+  //       used as a text colour: fills do not flip, so as text they fell to
+  //       1.7–2.4:1 on the light surfaces (37 uses). Text uses --on-*.
+  //   (d) the neutral text tokens --text-sec and --text-muted clear 4.5:1 on the
+  //       surfaces text actually sits on (--bg, --surface, --surface2; --surface3
+  //       is only a hover background). --text-muted was 2.4–3.0:1 in BOTH themes.
+  const fillText = [...scanned.matchAll(/(?<![-\w])color:\s*var\(--(amber|teal|purple|green|red|orange)\)/g)].map(m => m[1]);
+  const TEXT_SURFACES = ['--bg', '--surface', '--surface2'];
+  const neutral = [];
+  for (const [theme, map] of [['dark', dark], ['light', light]])
+    for (const t of ['--text-sec', '--text-muted'])
+      for (const surf of TEXT_SURFACES) {
+        if (!map[t] || !map[surf]) { neutral.push(`${theme}: ${t} or ${surf} is not a hex token`); continue; }
+        const r = ratio(map[t], map[surf]);
+        if (r < 4.5) neutral.push(`${theme} ${t} (${map[t]}) on ${surf} (${map[surf]}) = ${r.toFixed(2)}:1`);
+      }
+  if (!fillText.length && !neutral.length) ok('no fill token is used as text, and --text-sec/--text-muted clear 4.5:1 on every text surface in both themes (F30)');
+  else bad(`F30: ${fillText.length ? fillText.length + ' fill-token text colour(s) that cannot flip (' + [...new Set(fillText)].join(', ') + ')' : ''}${fillText.length && neutral.length ? '; ' : ''}${neutral.join(' | ')}`);
 }
 
 // F12 — every form control must be programmatically labelled. Derived from the
@@ -1070,15 +1246,13 @@ if (loaded) {
 // one rewrote the template. Checked against all 16 prompts, with the two rules
 // re-derived here independently of the implementation.
 if (loaded && typeof ctx.getPlaceholders === 'function') {
-  const unescPre2 = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
   const FILL = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
   const DIRECTIVE = ['PASTE', 'LIST', 'DESCRIBE', 'NOTE', 'OPTIONAL', 'IF '];
   const NEVER = ['[ID]', '[INV-XX]', '[INV-NEW-XX]', '[INV-N]', '[X/10]', '[N]', '[Severity]', '[Gap]', '[Suggestion]'];
   const problems = [];
   let offeredTotal = 0, promptsWithFields = 0, requiredSeen = 0;
   for (const pid of FILL) {
-    const m = html.match(new RegExp('<pre id="' + pid + '">([\\s\\S]*?)</pre>'));
-    let text = m ? unescPre2(m[1]) : '';
+    let text = preBody(html, pid) || '';
     if (!text.trim() && elStore[pid]) text = elStore[pid].textContent || '';
     if (!text.trim()) { problems.push(`${pid}: no prompt text to classify`); continue; }
     const lines = text.split('\n');
@@ -1100,12 +1274,14 @@ if (loaded && typeof ctx.getPlaceholders === 'function') {
     //     block MUST be offered — these are the operator's actual inputs.
     lines.forEach((line, i) => {
       if (inBlock[i]) return;
-      const toks = [...line.matchAll(/\[[^\]]{0,199}\]?/g)].filter(t => t[0].endsWith(']'));
+      const toks = [...line.matchAll(/\[[^\][]*\]?/g)].filter(t => t[0].endsWith(']'));
       const opens = (line.match(/\[/g) || []).length;
       if (opens !== 1) return;
       const start = line.indexOf('[');
       const whole = text.slice(text.split('\n').slice(0, i).join('\n').length + (i ? 1 : 0) + start);
-      const closed = whole.match(/^\[([^\]]{0,199})\]/);
+      // F18: uncapped — the old {0,199} matched the console's cap, so a longer
+      // operator field was invisible to both sides.
+      const closed = whole.match(/^\[([^\][]*)\]/);
       if (!closed) return;
       if (!DIRECTIVE.some(k => closed[1].startsWith(k))) return;
       requiredSeen++;
@@ -1123,6 +1299,76 @@ if (loaded && typeof ctx.getPlaceholders === 'function') {
   if (!FILL.length || promptsWithFields < 8 || requiredSeen < 10) problems.push(`derived too little to check (prompts ${FILL.length}, with fields ${promptsWithFields}, required ${requiredSeen}) — the assertion would be vacuous`);
   if (!problems.length) ok(`the fill form offers every operator placeholder and no output-format token across ${FILL.length} prompts (${offeredTotal} fields) — F11`);
   else bad('F11: ' + problems.slice(0, 5).join('; '));
+}
+
+// Follow-on (Cycle 7): deleting a project purges its per-project keys, so a
+// re-created project with the same derived id starts clean. Exclusions: a
+// surviving project whose id extends this one keeps its keys, and ccg:secret:*
+// is never touched (a project named "Secret" derives the id `secret`).
+if (loaded && typeof ctx.deleteProject === 'function') {
+  for (const k of Object.keys(store)) delete store[k];
+  store['ccg:customProjects'] = JSON.stringify([
+    { id: 'myapp', name: 'My App', subsystems: [], invariants: [], seeds: [], healthDimensions: 'A' },
+    { id: 'myapp:two', name: 'Two', subsystems: [], invariants: [], seeds: [], healthDimensions: 'A' },
+    { id: 'secret', name: 'Secret', subsystems: [], invariants: [], seeds: [], healthDimensions: 'A' }]);
+  const doomed = ['ccg:myapp:invariants', 'ccg:myapp:archive', 'ccg:myapp:cycle', 'ccg:myapp:p1:SUBSYSTEM GROUP NAME', 'ccg:myapp:bank:sysMap'];
+  const kept = ['ccg:myapp:two:invariants', 'ccg:myapp2:invariants', 'ccg:secret:token', 'ccg:ghToken', 'ccg:obs:invariants'];
+  for (const k of [...doomed, ...kept]) store[k] = '["x"]';
+  for (const k of ['ccg:dashRepos', 'ccg:dashCache', 'ccg:dashManual']) store[k] = JSON.stringify({ myapp: { v: 1 }, obs: { v: 2 } });
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+  ctx.deleteProject('myapp');
+  ctx.deleteProject('secret');
+  const problems = [];
+  for (const k of doomed) if (k in store) problems.push(`${k} survived the delete`);
+  for (const k of kept) if (!(k in store)) problems.push(`${k} was wrongly removed`);
+  for (const k of ['ccg:dashRepos', 'ccg:dashCache', 'ccg:dashManual']) {
+    const m = JSON.parse(store[k] || '{}');
+    if ('myapp' in m) problems.push(`${k} still names the deleted project`);
+    if (!('obs' in m)) problems.push(`${k} lost another project's entry`);
+  }
+  if (JSON.parse(store['ccg:customProjects']).map(p => p.id).join() !== 'myapp:two') problems.push('ccg:customProjects not updated');
+  if (problems.length) bad('project delete: ' + problems.join('; '));
+  else ok('deleting a project purges its ccg:<id>:* keys and Dashboard entries, sparing longer ids and ccg:secret:* (Cycle-7 follow-on)');
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+}
+
+// F21 (Cycle 7) — a long Axis B category name must not run into its score in
+// the §6a grid. padEnd(32) did nothing for a 32+ character name.
+if (loaded && typeof ctx.buildP6aText === 'function' && typeof ctx.getProject === 'function') {
+  const long = 'Visual / Interaction Regression Posture';
+  const proj = Object.assign({}, ctx.getProject('obs'), { axisB: [{ name: long, measures: 'm', pulse: 'p', playbook: 'b' }, { name: 'Short', measures: 'm', pulse: 'p', playbook: 'b' }] });
+  const rows = ctx.buildP6aText(proj).split('\n').filter(l => /X\/10 {6}Improving\/Stable\/Degrading$/.test(l));
+  const col = rows.map(l => l.indexOf('X/10'));
+  if (rows.length !== 2) bad(`F21: expected 2 Axis B grid rows, found ${rows.length}`);
+  else if (!rows[0].startsWith(long + '  ')) bad(`F21: a ${long.length}-char category name runs into its score: ${JSON.stringify(rows[0].slice(0, 50))}`);
+  else if (col[0] !== col[1]) bad(`F21: Axis B grid rows are misaligned (score at columns ${col.join(', ')})`);
+  else ok(`a ${long.length}-character Axis B name keeps a gap before its score, and the grid rows stay aligned (F21)`);
+}
+
+// F19 (Cycle 7) — the systems-map bank must be offered on EVERY systems-map
+// field. An exact-match test (=== '…SUMMARY HERE') skipped §1's "— 3–5 bullets"
+// form and the §4 dependency-map forms. Derived: every fill-form field whose
+// name starts with the systems-map directive must render the Save/Load bank
+// buttons, and no handler may still save the retired files field.
+if (loaded && typeof ctx.buildFillForm === 'function' && typeof ctx.getPlaceholders === 'function') {
+  const fills = [...html.matchAll(/\bid="fill-([^"]+)"/g)].map(m => m[1]);
+  const sysMapPrompts = [], missingBank = [];
+  for (const pid of fills) {
+    const text = (preBody(html, pid) || (elStore[pid] && elStore[pid].textContent) || '');
+    const fields = ctx.getPlaceholders(text).filter(p => p.name.startsWith('PASTE SYSTEMS MAP SUMMARY'));
+    if (!fields.length) continue;
+    sysMapPrompts.push(pid);
+    getEl(pid).textContent = text;            // earlier checks leave fixture text on the stub element
+    ctx.buildFillForm(pid);
+    const out = elStore['fill-' + pid] ? elStore['fill-' + pid].innerHTML : '';
+    if ((out.match(/saveBank\(/g) || []).length < fields.length) missingBank.push(`${pid} (${fields.map(f => f.full.slice(0, 40)).join(', ')})`);
+  }
+  const stale = /saveVal\([^)]*'LIST RELEVANT FILES AND DIRECTORIES'/.test(src);
+  if (sysMapPrompts.length < 5) bad(`F19: only ${sysMapPrompts.length} prompt(s) with a systems-map field found — the bank check would be vacuous`);
+  else if (missingBank.length) bad(`F19: systems-map field(s) rendered without the bank buttons: ${missingBank.join('; ')}`);
+  else if (stale) bad('F19: a handler still saves the retired LIST RELEVANT FILES AND DIRECTORIES field — no prompt has it');
+  else ok(`every systems-map field offers the bank (${sysMapPrompts.length} prompts) and nothing saves the retired files field (F19)`);
 }
 
 // F14 — §4v rotation probes must be REPRODUCIBLE, not a coin flip the
@@ -1339,6 +1585,59 @@ if (loaded) {
   // F23 — main can shrink below its content's min-content width.
   if (!/\nmain\{[^}]*min-width:0/.test(html)) problems.push('main has no min-width:0 — unwrappable content widens it past the viewport between 769px and ~1136px (F23)');
   if (!problems.length) ok('keyboard & layout: activation stops at its control, no nested controls in tracker/archive, the closed drawer leaves the tab order and the open one wraps focus, invariant tables wrap, main can shrink (F22–F26)');
+  else bad(problems.join('; '));
+}
+
+// Cycle-7 Batch 5 — focus, feedback, announcements. Driven through the real
+// functions; the visual/timing half was walked in Chromium.
+if (loaded) {
+  const problems = [];
+  const resetFocus = () => { focused = null; };
+  // F28 — an empty required field says so, and is linked to its message (F29).
+  getEl('inv-text').value = ''; getEl('inv-sub').value = '';
+  for (const k of Object.keys(store)) if (/:invariants$/.test(k)) delete store[k];
+  const before = ctx.loadCustomInvariants().length;
+  resetFocus(); ctx.saveInvariant();
+  if (ctx.loadCustomInvariants().length !== before) problems.push('saveInvariant saved an empty rule');
+  if (!/required|Write the rule/i.test(getEl('inv-text-err').textContent)) problems.push('an empty invariant rule fails silently (F28)');
+  if (getEl('inv-text').getAttribute('aria-invalid') !== 'true' || getEl('inv-text').getAttribute('aria-describedby') !== 'inv-text-err') problems.push('the invariant error is not linked to its field (aria-invalid/aria-describedby) — F29');
+  if (focused !== 'inv-text') problems.push('focus does not move to the empty invariant field (F28)');
+  getEl('af-title').value = ''; getEl('af-content').value = 'x';
+  resetFocus(); ctx.saveArchiveEntry();
+  if (!getEl('af-title-err').textContent || getEl('af-content-err').textContent) problems.push('an empty archive title fails silently, or the filled field is flagged too (F28)');
+  if (focused !== 'af-title') problems.push('focus does not move to the empty archive field (F28)');
+  // F27 — focus moves into a form that hides its opener, and back on close.
+  getEl('invariantForm').style.display = 'none';
+  resetFocus(); ctx.toggleInvariantForm(); if (focused !== 'inv-text') problems.push(`opening the invariant form leaves focus on the hidden button (focused ${focused}) — F27`);
+  resetFocus(); ctx.toggleInvariantForm(); if (focused !== 'addInvariantBtn') problems.push('closing the invariant form does not return focus to its button (F27)');
+  resetFocus(); ctx.openArchiveForm(); if (focused !== 'af-title') problems.push('opening the archive form does not focus its first field (F27)');
+  resetFocus(); ctx.cancelArchiveForm(); if (focused !== 'addArchiveBtn') problems.push('cancelling the archive form does not return focus (F27)');
+  resetFocus(); ctx.openProjectForm(); if (focused !== 'pf-name') problems.push('opening the project form leaves focus on the hidden "Add project" button (F27)');
+  resetFocus(); ctx.cancelProjectForm(); if (focused !== 'addProjectBtn') problems.push('cancelling the project form does not return focus (F27)');
+  // F27 — the tracker gives focus back to the control that had it.
+  ctx.renderCycle();
+  if (!/data-fk="g0-l"/.test(getEl('ctItems').innerHTML) || !/data-fk="g0-d0"/.test(getEl('ctItems').innerHTML)) problems.push('tracker controls carry no stable focus key (F27)');
+  if (!/const had=document\.activeElement/.test(src.slice(src.indexOf('function renderCycle'), src.indexOf('function renderCycle') + 2500))) problems.push('renderCycle does not capture the focused control before re-rendering (F27)');
+  // F29 — status regions are live; toggles report expanded state; copy is announced.
+  const tagOf = id => (html.match(new RegExp('<[a-z]+\\b[^>]*\\bid="' + id + '"[^>]*>')) || [''])[0];
+  for (const id of ['dashStatus', 'stateIoMsg', 'srAnnounce']) if (!/aria-live="polite"/.test(tagOf(id))) problems.push(`#${id} is not a live region (F29)`);
+  for (const id of ['pf-name-err', 'pf-dims-err', 'pf-subs-err', 'inv-text-err', 'af-title-err', 'af-content-err']) if (!/role="alert"/.test(tagOf(id))) problems.push(`#${id} is not role="alert" (F29)`);
+  const fillBtns = [...html.matchAll(/<button class="fill-btn"[^>]*>/g)].map(m => m[0]);
+  const vts = [...html.matchAll(/<div class="vt"[^>]*>/g)].map(m => m[0]);
+  if (!fillBtns.length || fillBtns.some(b => !/aria-expanded="false"/.test(b) || !/aria-controls="fill-/.test(b))) problems.push('a Fill fields button carries no aria-expanded/aria-controls (F29)');
+  if (!vts.length || vts.some(v => !/aria-expanded="false"/.test(v))) problems.push('a variant toggle carries no aria-expanded (F29)');
+  const vt0 = { querySelector: () => ({ classList: makeClassList(new Set()) }), _a: {}, setAttribute(n, v) { this._a[n] = v; } };
+  const realGet = ctx.document.getElementById;
+  const body = { classList: makeClassList(new Set()) };
+  ctx.document.getElementById = id => (id === 'v-test' ? body : realGet(id));
+  try { ctx.toggleVariant('v-test', vt0); } finally { ctx.document.getElementById = realGet; }
+  if (vt0._a['aria-expanded'] !== 'true') problems.push('toggleVariant does not set aria-expanded (F29)');
+  ctx.renderArchive();
+  if (!/aria-expanded="false" aria-controls="arlog-/.test(getEl('archiveEntries').innerHTML)) problems.push('archive toggles carry no aria-expanded (F29)');
+  getEl('srAnnounce')._text = '';
+  ctx.copyFeedback(getEl('copy-test'), false);
+  if (!/Copy failed/.test(getEl('srAnnounce').textContent)) problems.push('a copy failure is not announced (F29)');
+  if (!problems.length) ok('empty required fields explain themselves and take focus, forms move focus in and back, the tracker restores focus, status regions are live and toggles report state (F27–F29)');
   else bad(problems.join('; '));
 }
 

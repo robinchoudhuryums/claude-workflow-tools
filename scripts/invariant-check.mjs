@@ -13,9 +13,20 @@
 //   Default source: .cycle/config.md, else CLAUDE.md.
 // Exit 0 if no runnable invariant FAILED; 1 if any FAILED.
 //
-// Safety: only commands beginning with a known runner (node/npm/npx/…/./)
-// are executed; this is meant to run inside the project's own trusted repo,
-// exactly as a test command would.
+// Safety — read this before pointing it at a library you did not write.
+// A Verify field is classified as runnable when it BEGINS with a known runner
+// (node/npm/npx/…/./), and then the whole command text is handed to a SHELL.
+// The runner prefix is a classifier, not a sandbox: `node -e 0; rm -rf x`
+// begins with `node`, runs both commands and reports PASS. So the invariant
+// library is CODE — editing it is code execution wherever this runs, exactly as
+// editing a test script or the Test Command is. Run it only on a library you
+// would run the test suite of, and review library edits like script edits
+// (Cycle-7 F42: the old header described the runner prefix as a whitelist of
+// what may execute — a guarantee it never was).
+//
+// Commands run with the --source project's root as their working directory
+// (the directory holding .cycle/, or the source file's own directory), so a
+// relative Verify path means the same thing however the runner is invoked.
 //
 // The parse is EXPORTED because tests/mutation-audit.mjs derives its coverage
 // set from the same library. A second copy of the parse would be a parallel
@@ -23,6 +34,7 @@
 // decides whether these Verify commands actually work.
 
 import { readFileSync, existsSync, realpathSync } from 'node:fs';
+import { resolve, dirname, basename } from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -55,6 +67,13 @@ export function toCommand(verify) {
   // The command is the text up to the first annotation separator: " (", " + ", " then ".
   const cmd = verify.split(/\s+\(|\s+\+\s+|\s+then\s+/i)[0].trim();
   return RUNNER.test(cmd) ? cmd : null;
+}
+
+/** The project root a library belongs to: the parent of `.cycle/` when the
+ *  library lives there, else the library file's own directory (F42). */
+export function projectRoot(source) {
+  const dir = dirname(resolve(source));
+  return basename(dir) === '.cycle' ? dirname(dir) : dir;
 }
 
 /** Default library location for a project: .cycle/config.md, else CLAUDE.md. */
@@ -105,6 +124,10 @@ function main() {
     process.exit(0);
   }
 
+  // F42: run where the library's project lives, not wherever the runner was
+  // started — `--source ../other/.cycle/config.md` used to run other's Verify
+  // commands against THIS directory.
+  const cwd = projectRoot(source);
   let passed = 0, failed = 0;
   const results = [];
   for (const [cmd, list] of byCmd) {
@@ -113,7 +136,7 @@ function main() {
     // output into a FAIL (ENOBUFS), and with no timeout a hung command hung the
     // whole probe. Output is only kept for the failure line, so the buffer is
     // large rather than exact.
-    try { execSync(cmd, { stdio: 'pipe', maxBuffer: 256 * 1024 * 1024, timeout: timeoutSec * 1000 }); }
+    try { execSync(cmd, { cwd, stdio: 'pipe', maxBuffer: 256 * 1024 * 1024, timeout: timeoutSec * 1000 }); }
     catch (e) {
       okRun = false;
       err = (e.signal === 'SIGTERM' && e.code !== 'ENOBUFS' && e.status == null)
@@ -126,7 +149,7 @@ function main() {
     for (const inv of list) { results.push({ inv, ok: okRun, cmd, err }); okRun ? passed++ : failed++; }
   }
 
-  console.log(`Invariant probe — source: ${source}\n`);
+  console.log(`Invariant probe — source: ${source} (commands run in ${cwd})\n`);
   for (const r of results) console.log(`  ${r.ok ? '✓' : '✗'} ${r.inv.id} ${r.ok ? 'PASS' : 'FAIL'} via \`${r.cmd}\`${r.ok ? '' : '  — ' + r.err}`);
   for (const inv of manual) console.log(`  • ${inv.id} MANUAL (Verify: ${inv.verify || '—'})`);
   console.log(`\nProbed ${passed + failed} runnable | Passed ${passed} | Failed ${failed} | Manual ${manual.length}`);

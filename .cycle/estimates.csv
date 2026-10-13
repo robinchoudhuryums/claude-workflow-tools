@@ -8,3 +8,11 @@ date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note
 2026-09-03,6,Batch 1+2 (F01 F09 F17 F04 F02 F03 F10 F07 F08),M,11.5,7,"Batch plan over-estimated ~40%. F09 (deriving the hostile sink set) was the long pole and the first attempt was wrong - the marker sat after switchProject and three existing INV-20 cases went green."
 2026-09-03,6,Batch 3+4 (F05 F06 F13 F12),M,9,6,"Over-estimated ~33%. F13 was faster than feared once the contrast check was computed rather than eyeballed; F12 slower - 69 controls needed labels, not the 22 the scan counted."
 2026-09-03,6,Batch 5+6 (F11 F14 F15 F16),M,8,7,"Roughly accurate in total, but F16 alone OVERRAN its 4h estimate: the scan said eight unlocked prompts, there were nine, and the ninth (setup) needed a canonical merge plus an engine change to support section bodies."
+2026-10-13,7,Batch 1 (F01 F02 F03 F04 F06),M,4.4,0.37,Agent wall-clock from request to release commit; estimate is human+Claude scale.
+2026-10-13,7,Batch 2 (F12-F17),M,9,0.37,F16 shape validation was the long item; one regression (blank Axis B warning) slipped to Batch 4.
+2026-10-13,7,Batch 3 (F32-F36 F39-F41),M,9,0.41,"Consumer-layout copies (CRLF, symlink, cwd) were quick once reproduced in a scratch tree."
+2026-10-13,7,Batch 4 (F22-F26),M,5.5,0.62,Drawer focus needed a transitionend + fallback; the INV-49 guard false green surfaced mid-batch.
+2026-10-13,7,Batch 5 (F27-F30),M,8.5,0.42,"37 colour sites by script; contrast computed, not eyeballed."
+2026-10-13,7,Batch 6 (F31 F45 F18 F48 F49 F20),M,7,0.77,Longest batch: YAML step parser plus a derived Dashboard fixture; every guard proven a false green first.
+2026-10-13,7,Batch 7 (F47 F46 F50 F37 F38 F44),M,6.5,0.39,LCS rewrite of canonicalCoverage; one real console reorder and two live block drifts found.
+2026-10-13,7,Batch 8 (F10 F42 F07 F08 F05 F09 F11 F19 F21),M,6.4,0.73,Command-body edits in lockstep with builders; F21 grew a --selector console (scope creep - see reflect).

@@ -9,7 +9,9 @@
 //
 // Usage: node tests/verification-pack.test.mjs
 
-import { selectProbes, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack } from '../scripts/verification-pack.mjs';
+import { selectProbes, selectProbesConsole, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack } from '../scripts/verification-pack.mjs';
+import vm from 'node:vm';
+import { readFileSync } from 'node:fs';
 
 let failures = 0;
 const log = [];
@@ -212,6 +214,47 @@ else bad('readBlocks threw on a missing directory');
   rmSync(join(proj, '..'), { recursive: true, force: true });
   if (!problems.length) ok('the pack works for a consuming project: cwd is the project, body from --template or the script\'s repo, named after the project (F34)');
   else bad('F34: ' + problems.join('; '));
+}
+
+// Follow-on (Cycle 7): cycleTotals finds columns by header. Positional reads
+// took net_score from whatever sat in column 5 — a reordered or extra column
+// silently corrupted the totals the verifier is warned about.
+{
+  const reordered = [
+    'cycle,phase,extra,notes,date,subsystem,defensive_count,new_failure_modes,prod_fixes,net_score,category_d_ratio,axis_b_lowest',
+    '7,reflect,zz,"CORRECTION: fixes was 3",2026-10-13,"Auth, Security",4,1,2,1,,',
+    '7,synthesis,zz,,2026-10-13,broad,,,,,12%,X',
+    '6,reflect,zz,,2026-09-01,broad,9,0,9,9,,'].join('\n');
+  const t = cycleTotals(reordered, 7);
+  if (t.rows === 1 && t.net === 1 && t.fixes === 2 && t.nfm === 1 && t.defensive === 4 && t.corrections.length === 1) ok('cycleTotals reads columns by header name — a reordered file with an extra column totals correctly (Cycle-7 follow-on)');
+  else bad('cycleTotals misread a reordered metrics file: ' + JSON.stringify(t));
+  const noHeader = '2026-10-13,7,broad,reflect,3,3,0,,,,2';
+  const t2 = cycleTotals(noHeader, 7);
+  if (t2.rows === 1 && t2.net === 3 && t2.defensive === 2) ok('cycleTotals falls back to the canonical column order for a file with no header');
+  else bad('cycleTotals headerless fallback wrong: ' + JSON.stringify(t2));
+}
+
+// F21 (Cycle 7): the console's §4v seed is reproducible by a tool. Execute the
+// CONSOLE's own hash32 + selectSeededInvariants (lifted from the HTML, not
+// re-typed) and require --selector console to pick the same five, for several
+// seeds — including the console's "<project>:<UTC day>" shape.
+{
+  const htmlSrc = readFileSync(new URL('../claude-code-guide-v2.html', import.meta.url), 'utf8');
+  const fnSrc = name => { const m = htmlSrc.match(new RegExp(`function ${name}\\([^)]*\\)\\{[\\s\\S]*?\\n\\}|function ${name}\\([^)]*\\)\\{[^\\n]*\\}`)); return m ? m[0] : null; };
+  const srcs = ['hash32', 'selectSeededInvariants'].map(fnSrc);
+  if (srcs.some(x => !x)) bad('F21: could not lift hash32/selectSeededInvariants from the console — parity unchecked');
+  else {
+    const box = {}; vm.createContext(box); vm.runInContext(srcs.join('\n'), box);
+    const lib = Array.from({ length: 23 }, (_, i) => `INV-${String(i + 1).padStart(2, '0')} | rule ${i} | Subsystem: X`);
+    const objs = lib.map(l => ({ id: l.split('|')[0].trim(), text: l }));
+    const seeds = ['obs:2026-10-13', 'cla:2026-01-01', 'my-project:2031-12-31', 'x'];
+    const diverged = seeds.filter(seed => JSON.stringify(box.selectSeededInvariants(objs, 5, seed).map(o => o.text)) !== JSON.stringify(selectProbesConsole(lib, seed)));
+    if (diverged.length) bad(`F21: --selector console picks differ from the console's own for seed(s): ${diverged.join(', ')}`);
+    else ok(`--selector console reproduces the console's §4v probes exactly (${seeds.length} seeds, its own code executed) (F21)`);
+    const pack = buildPack({ body: '[5 mandatory rotation probes — pre-selected from the library at render time]', invariants: lib, blocks: [], totals: { rows: 0, corrections: [] }, cycle: 7, seed: 'obs:2026-10-13', project: 'p', selector: 'console' });
+    if (pack.includes('--selector console') && selectProbesConsole(lib, 'obs:2026-10-13').every(l => pack.includes(l))) ok('a console-selector pack prints a reproduce command that names the selector (F21)');
+    else bad('console-selector pack omits the selector from its reproduce command, or its probes');
+  }
 }
 
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');

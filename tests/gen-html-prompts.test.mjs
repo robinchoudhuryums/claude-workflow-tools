@@ -3,7 +3,12 @@
 // Unit-tests the pure helpers (commandBody extraction, usage-guard drop,
 // placeholder replacement, HTML escaping) on fixtures.
 
-import { commandBody, sectionBody, transform, esc, unesc, norm, canonicalCoverage, renderDynamicPrompt } from '../scripts/gen-html-prompts.mjs';
+import { commandBody, sectionBody, transform, esc, unesc, norm, canonicalCoverage, renderDynamicPrompt, scanPres, preBody } from '../scripts/gen-html-prompts.mjs';
+import { mkdtempSync, mkdirSync, copyFileSync, readFileSync as rfs, writeFileSync as wfs, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 let failures = 0;
 const log = [];
@@ -42,7 +47,9 @@ if (/Audit \[SUBSYSTEM GROUP NAME\] across/.test(out) && !/\$ARGUMENTS/.test(out
 
 if (esc('a <b> & c') === 'a &lt;b&gt; &amp; c') ok('esc escapes &, <, >'); else bad('esc wrong');
 if (unesc('a &lt;b&gt; &amp; c') === 'a <b> & c') ok('unesc round-trips esc'); else bad('unesc wrong');
-if (JSON.stringify(norm('Line A\n\n[PASTE X]\n  Line B  ')) === JSON.stringify(['line a', 'line b'])) ok('norm drops blanks + placeholder lines and lowercases'); else bad('norm wrong');
+if (JSON.stringify(norm('Line A\n\n[PASTE X]\n  Line B  ')) === JSON.stringify(['Line A', 'Line B'])) ok('norm drops blanks + single-token placeholder lines, keeps case (F47)'); else bad('norm wrong: ' + JSON.stringify(norm('Line A\n\n[PASTE X]\n  Line B  ')));
+// F46: a line of SEVERAL bracket tokens is an output row schema, not a placeholder.
+if (JSON.stringify(norm('[ID] | [Severity] | [one-line fix]\n[injected here]')) === JSON.stringify(['[ID] | [Severity] | [one-line fix]'])) ok('norm keeps multi-token row schemas, drops only a lone [token] line (F46)'); else bad('norm dropped a row schema (F46)');
 
 // transform with drop=false leaves the body intact
 if (transform('keep me\n---\nand me', { drop: false }) === 'keep me\n---\nand me') ok('drop=false leaves body intact'); else bad('drop=false altered body');
@@ -52,8 +59,17 @@ if (transform('keep me\n---\nand me', { drop: false }) === 'keep me\n---\nand me
 // caught (fail-closed), and extra rendered lines (injected config) are ignored.
 const covMiss = canonicalCoverage('alpha\nbeta\ngamma', 'alpha\ngamma', { drop: false });
 if (covMiss.missing.length === 1 && covMiss.missing[0] === 'beta' && covMiss.total === 3 && covMiss.present === 2) ok('canonicalCoverage flags a missing canonical line (fail-closed)'); else bad('canonicalCoverage did not flag the missing line');
-const covExtra = canonicalCoverage('alpha\nbeta', 'extra\nALPHA\nbeta\nmore', { drop: false });
-if (covExtra.missing.length === 0) ok('canonicalCoverage ignores extra rendered lines (injected config)'); else bad('canonicalCoverage wrongly flagged extra lines');
+const covExtra = canonicalCoverage('alpha\nbeta', 'extra\nalpha\ninjected\nbeta\nmore', { drop: false });
+if (covExtra.missing.length === 0 && covExtra.outOfOrder.length === 0) ok('canonicalCoverage ignores extra rendered lines, even between canonical ones (injected config)'); else bad('canonicalCoverage wrongly flagged extra lines');
+// F47: order, multiplicity and case are part of the lock.
+const covOrder = canonicalCoverage('IMPORTANT: guard\nbody\nend', 'body\nend\nIMPORTANT: guard', { drop: false });
+if (covOrder.outOfOrder.length === 1 && covOrder.outOfOrder[0] === 'IMPORTANT: guard' && !covOrder.missing.length) ok('canonicalCoverage flags a line moved out of order (F47)'); else bad('canonicalCoverage missed a reordered line: ' + JSON.stringify(covOrder));
+const covTwice = canonicalCoverage('---\nA\n---', '---\nA', { drop: false });
+if (covTwice.missing.length === 1 && covTwice.missing[0] === '---') ok('canonicalCoverage counts a repeated line once per occurrence (F47)'); else bad('canonicalCoverage accepted a dropped duplicate: ' + JSON.stringify(covTwice));
+const covCase = canonicalCoverage('Do NOT skip', 'Do not skip', { drop: false });
+if (covCase.missing.length === 1) ok('canonicalCoverage is case-sensitive (F47)'); else bad('canonicalCoverage ignored a case change');
+const covRow = canonicalCoverage('FINDINGS:\n[ID] | [File] | [Severity]\nend', 'FINDINGS:\nend', { drop: false });
+if (covRow.missing.length === 1) ok('canonicalCoverage flags a deleted row schema (F46)'); else bad('canonicalCoverage let a row schema be deleted');
 const covDrop = canonicalCoverage('usage\n---\nreal body', 'real body', { drop: true });
 if (covDrop.missing.length === 0) ok('canonicalCoverage applies the usage-guard drop before comparing'); else bad('canonicalCoverage did not honor drop');
 
@@ -63,6 +79,57 @@ const fakeHtml = '<html><body><script>function getProject(id){return {id:id,heal
 if (renderDynamicPrompt(fakeHtml, 'buildX', 'obs') === 'rate obs\n- A, B') ok('renderDynamicPrompt renders a project-arg builder'); else bad('renderDynamicPrompt project-arg path wrong');
 if (renderDynamicPrompt(fakeHtml, 'buildY', null) === 'static body') ok('renderDynamicPrompt renders a no-arg builder'); else bad('renderDynamicPrompt no-arg path wrong');
 if (renderDynamicPrompt(fakeHtml, 'missingFn', 'obs') === null) ok('renderDynamicPrompt returns null for a missing builder'); else bad('renderDynamicPrompt did not null-guard a missing builder');
+
+// F48 (Cycle 7): <pre> detection is attribute-order-agnostic, ignores <pre>
+// markup inside <script>, and reports an id-less static prompt rather than
+// skipping it.
+{
+  const h = '<pre id="a">A</pre><pre class="p" id="b">B &amp; c</pre><pre data-id="x" id=\'c\' >C</pre><pre style="x">loose</pre><script>const t=`<pre id="js">no</pre>`;</script>';
+  const ids = scanPres(h).map(p => p.id);
+  if (JSON.stringify(ids) === JSON.stringify(['a', 'b', 'c', null])) ok('scanPres finds every <pre> whatever the attribute order, skips <script>, keeps an id-less one'); else bad('scanPres ids wrong: ' + JSON.stringify(ids));
+  if (preBody(h, 'b') === 'B & c' && preBody(h, 'c') === 'C' && preBody(h, 'x') === null) ok('preBody matches by id attribute, not by attribute order (and not data-id)'); else bad('preBody did not match reordered attributes');
+  // End to end: a new static prompt with its id SECOND must fail --assert.
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  for (const [label, markup, signal] of [
+    ['reordered attributes', '<pre class="prompt" id="zz-new">Brand new static prompt</pre>', /outside the lock manifest: zz-new/],
+    ['no id at all', '<pre class="prompt">Brand new static prompt</pre>', /outside the lock manifest: \(a <pre> with no id/],
+  ]) {
+    const d = mkdtempSync(join(tmpdir(), 'cwt-ghp-'));
+    try {
+      mkdirSync(join(d, 'scripts'));
+      copyFileSync(join(repo, 'scripts', 'gen-html-prompts.mjs'), join(d, 'scripts', 'gen-html-prompts.mjs'));
+      copyFileSync(join(repo, 'CLAUDE.md'), join(d, 'CLAUDE.md'));
+      wfs(join(d, 'claude-code-guide-v2.html'), rfs(join(repo, 'claude-code-guide-v2.html'), 'utf8').replace('</body>', markup + '</body>'));
+      let out = '', code = 0;
+      try { out = execFileSync('node', [join(d, 'scripts', 'gen-html-prompts.mjs'), '--assert'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
+      catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
+      if (code !== 0 && signal.test(out)) ok(`--assert flags a new static prompt with ${label} (F48)`); else bad(`--assert missed a static prompt with ${label} (code ${code})`);
+    } finally { rmSync(d, { recursive: true, force: true }); }
+  }
+}
+
+// Cycle-7 follow-on: the drift REPORT (no flag) uses the ordered comparison
+// too. Swap two lines of a static prompt — every line still present — and the
+// report must count them out of order rather than say 100%.
+{
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  const d = mkdtempSync(join(tmpdir(), 'cwt-ghp-rep-'));
+  try {
+    mkdirSync(join(d, 'scripts'));
+    copyFileSync(join(repo, 'scripts', 'gen-html-prompts.mjs'), join(d, 'scripts', 'gen-html-prompts.mjs'));
+    copyFileSync(join(repo, 'CLAUDE.md'), join(d, 'CLAUDE.md'));
+    const html = rfs(join(repo, 'claude-code-guide-v2.html'), 'utf8');
+    const a = '- Encryption at rest and in transit\n', b = '- Audit logging completeness\n';
+    if (!html.includes(a + b)) bad('report fixture rotted: the security add-on lines moved');
+    else {
+      wfs(join(d, 'claude-code-guide-v2.html'), html.replace(a + b, b + a));
+      const out = execFileSync('node', [join(d, 'scripts', 'gen-html-prompts.mjs')], { encoding: 'utf8' });
+      const line = out.split('\n').find(l => l.includes('p1sec ←')) || '';
+      if (/[1-9]\d* out of order/.test(line) && !/100% of canonical/.test(line)) ok('the drift report counts reordered static-prompt lines (Cycle-7 follow-on)');
+      else bad('drift report missed a reordered static prompt: ' + line.trim());
+    }
+  } finally { rmSync(d, { recursive: true, force: true }); }
+}
 
 console.log('R14 transform engine regression test (scripts/gen-html-prompts.mjs):\n');
 console.log(log.join('\n'));

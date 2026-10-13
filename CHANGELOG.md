@@ -5,6 +5,243 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.43.0 — 2026-10-13
+
+Cycle-7 follow-on items: the actionable follow-ons that Batches 1–8 recorded
+in STATE.md and their summary blocks. Console, guards and docs only. **No
+command-body or config-schema change, so no `/sync-commands` re-pull.** Each
+fix is pinned by a test that fails against the v1.42.0 code.
+
+- **Deleting a project left its data behind.** Only the
+  `ccg:customProjects` entry went, so a re-created project with the same derived
+  id inherited the dead one's invariants, archive, tracker, fill values and
+  Dashboard source. Every `ccg:<id>:*` key and the id's Dashboard entries are
+  now purged. Two exceptions: `ccg:secret:*` is never touched (a project named
+  "Secret" derives the id `secret`), and a longer id's keys (`a:b` versus `a`)
+  are left alone.
+- **A literal `|` in an invariant broke the project form.** The textarea was
+  split on every pipe, so "a | b" in a rule or Verify command became two
+  fields, and this repo's own INV-08/INV-46 would mis-parse. Fields are now
+  written with `\|`, the escape the config readers already use, and split on
+  unescaped pipes only.
+- **The Refresh button's argument was ignored.** A click while a refresh was
+  running, or on `file://`, did nothing visible. A manual Refresh now says why
+  nothing happened; a background refresh stays quiet. The 404 hint no longer
+  tells someone who has already saved a token to add one.
+- **INV-12's gating check used a hand-listed step set** and covered only
+  command files. It now derives the writing steps from the text across every
+  command and the §1s/§6a bodies, which picks up the SEAM COUNTER reset and
+  the METRICS append (12 steps, was 10). The old names are kept as a floor, so
+  a rewording cannot silently drop a step. `/cycle-init` and `/cycle-resume`
+  are printed as exempt by design.
+- **The re-pull list is now guarded.** A new check requires every release
+  since v1.19.0 to appear in the Operator State Checklist exactly once, as
+  changed or changed-none, and requires the newest to match its CHANGELOG
+  entry. That is the class that let v1.33.0 sit unlisted (F05).
+- **verification-pack's `cycleTotals` read columns by position.** A reordered
+  or extra metrics column silently corrupted the totals the verifier is warned
+  about. Columns are now found by header, with the canonical order as a
+  fallback for a headerless file.
+- **The drift report used set membership** for static prompts, so a reordered
+  prompt read as 100%. It now uses the same ordered comparison as `--assert`.
+- **Tests and docs.** `legacyCopy`'s success path is now tested: exact text,
+  one textarea added and removed, success reported. Two check-html checks
+  that were both labelled "(F20)" now say which cycle each belongs to. Two
+  Common Gotchas and the README's lock description are restated: the lock is
+  an ordered match, not 100% set membership, and one hand-maintained list
+  remains deliberately as a floor.
+
+## 1.42.0 — 2026-10-13
+
+Cycle-7 Batch 8: docs and agnosticism, the last fix batch of the cycle.
+**Command bodies changed — run `/sync-commands`:** `/broad-scan`,
+`/broad-implement`, `/reflect`, `/pr-review` and `/targeted-implement`.
+**Also re-pull for v1.33.0 if you haven't:** it changed `/setup-cycle` and
+said nothing (F05).
+
+- **F10 — the "generic" security add-on was HIPAA-only.** Every bullet asked
+  about PHI and HIPAA safeguards, so any non-healthcare project got the wrong
+  audit. It now asks about whatever the project's sensitive data and
+  compliance regime are (HIPAA, PCI DSS, SOC 2 and GDPR as examples, or none),
+  and maps each finding to that regime's control. The console labels lose
+  "HIPAA". §6a's example of an unassessed dimension no longer names one
+  built-in project's dimensions.
+- **F07 — gaps in v1.34.0's own change.** `/broad-scan` defined G and ST IDs
+  but no scheme for findings, and its INTERFACE FINDINGS rows had no ID slot,
+  while the batch plan keys on `[ID]`. Findings are now F1, F2, … in one
+  sequence across all three stages, and interface rows carry their ID.
+  `/broad-implement` accepts a batch name (`/broad-implement Batch 2`) and is
+  told to read the batch from the scan, not guess. Its summary gains a
+  `New capabilities (G/ST):` field (registry-required), which `/reflect` counts
+  from instead of inferring from ID prefixes.
+- **F11 — commands that did not stand alone.** `/targeted-implement` said "See
+  /broad-implement Step 1"; the branching is now inline. `/pr-review` and
+  `/reflect` named `scripts/…` helpers a project that copied only
+  `.claude/commands/` does not have; both are now conditional, with the
+  fallback stated. §6a asked for a per-subsystem Session Handoff Block that a
+  Tier 1 cycle never produces; it now says what to paste instead. A new
+  check-template-sync check fails any command that delegates to another
+  command's step or names a script unconditionally.
+- **F42 — invariant-check overstated its safety.** The header said only "known
+  runner" commands execute. In fact the runner prefix only classifies the
+  field, and the whole text then runs through a shell: `node -e 0; <anything>`
+  runs both and reports PASS. The header, CLAUDE.md and the README now say so
+  plainly: the invariant library is code. Commands also ran in the caller's
+  directory. They now run in the `--source` project's root.
+- **F19 — dead files plumbing; the bank missing where it mattered.** The
+  `LIST RELEVANT FILES AND DIRECTORIES` field exists in no prompt, but four
+  handlers still saved it and the form still had a branch for it. All removed.
+  The systems-map Save/Load bank matched only the exact `…SUMMARY HERE` text,
+  so §1 and both §4 prompts never offered it. It now matches every
+  systems-map field (9 prompts).
+- **F21 — three small ones.** A 32+ character Axis B name ran into its score
+  in the §6a grid. Rows now pad to the longest name. The README's
+  "gitignored as a second layer" now tells consuming projects to add that line
+  themselves. The console's §4v prompt claimed its seed was reproducible, but
+  no tool could reproduce it (it uses FNV-1a, the pack uses sha256).
+  `verification-pack.mjs --selector console --seed "<project>:<day>"` now
+  reproduces it, and a test runs the console's own code to prove the picks
+  match. The prompt prints that command.
+- **F08 / F09 / F05 — docs drift.** README: 73 invariants (not 66), the
+  relative policy trigger, "Seven optional helpers" (not two), the full
+  consumer list for the summary blocks, and the console described as locked
+  rather than "deliberately not byte-identical". CLAUDE.md: the §7
+  PROJECT_HEALTH note no longer calls the console copy illustrative. Operator
+  checklist: v1.33.0 added to the re-pull list (checked against git history:
+  the only release missing).
+
+## 1.41.0 — 2026-10-13
+
+Cycle-7 Batch 7: guard false greens II. Guards, the console and CLAUDE.md's
+Handoff Block Formats reference — **no command-body or config-schema change, so
+no `/sync-commands` re-pull** (`gen-commands --check`: all 20 command files
+unchanged). As in Batch 6, each guard was first shown to pass the defect it
+should catch, and each fix is pinned by a test that fails with it reverted.
+
+- **F47 — the dynamic-builder lock ignored order, multiplicity and case.**
+  `canonicalCoverage` was set membership after lowercasing, so §4v's "You must
+  NOT have participated" guard moved from the top of the prompt to the very end
+  passed, as did dropping one copy of a repeated line or lowercasing NOT. The
+  canonical lines must now appear IN ORDER, once per occurrence, with case
+  intact. Extra (injected) lines between them are still allowed. The check
+  matches a longest common subsequence, so it blames the line that moved, not
+  the lines it jumped over, and `--assert` reports `missing` and
+  `out of order` separately. It found one real reorder: the console's Tier 1
+  prompt opened with "Read CLAUDE.md…" ahead of the "Do not make any changes"
+  line that /broad-scan puts first. Realigned.
+- **F46 — row schemas exempt from the lock.** `norm()` dropped every line made
+  only of bracket tokens, which exempted 34 canonical row schemas, among them
+  the PR REVIEW `FINDINGS` row. Deleting one from a builder passed. Only a line
+  holding a single `[token]` (a render-time placeholder) is exempt now.
+- **F50 — block copies checked against a hand-listed subset.**
+  check-output-blocks said copies of a block "agree on their field set" but
+  compared only the registry's `fields`, as substrings. Two live drifts got
+  through. The Handoff Block Formats copy of the VERIFICATION BLOCK lacked
+  `Cycle being verified:` and `Category D candidates`. The TIER 2 copies
+  disagreed on `Production bugs (would fire this month):` vs
+  `Production bugs:` (and on the OPERATOR ACTIONS label). Both Formats copies
+  now match their canonical copies. Every copy of every block (command,
+  Formats, console) must carry the same full set of field labels. A label
+  rendered by a builder (`${…}`) is not compared.
+- **F37 — the SessionStart hook's Current Standing and Pending output were
+  untested.** The fixture had no PROJECT_HEALTH.md and no Pending section, so
+  deleting either output passed. Both are asserted now, along with the
+  sections that must NOT be carried (score history, completed list).
+- **F38 — invariant-check's de-duplication was untested.** The summary counts
+  per invariant, so it read the same with or without the dedupe. The test now
+  counts actual executions: three rules sharing a command, one annotated, run
+  it once.
+- **F44 — the permissions block running to end of file.** Bounded in 1.40.0
+  (F31). This release pins the other direction: a later step whose name
+  contains "write" must not read as a write-scope request. That case false-reds
+  under the 1.39.0 guard.
+
+## 1.40.0 — 2026-10-13
+
+Cycle-7 Batch 6: guard false greens I. Guards and the console only — **no
+command-body or config-schema change, so no `/sync-commands` re-pull.**
+`scripts/gen-html-prompts.mjs` gained two exports (`scanPres`, and an
+attribute-order-agnostic `preBody`); a project running
+`scripts/verification-pack.mjs` from a copy can re-copy it, but nothing it does
+today changes. Each guard below was proven a false green first (the defect
+passed the old check) and is pinned by a test that fails with the fix reverted.
+
+- **F31 — the CI workflow was read as text.** The CI parity guards regexed the
+  raw YAML, so `run: echo skipped  # node tests/x.mjs` still "ran" its stage, `run:
+  node tests/mutation-audit.mjs || true` counted as a stage that could fail, and
+  `branches: [never-a-real-branch]` under `pull_request` counted as a trigger.
+  The workflow is now parsed: comments stripped, each step's keys read, a stage
+  counts only when its `run:` is the bare command, any `if:` or
+  `continue-on-error:` fails, and a filtered `push`/`pull_request` trigger fails.
+  The permissions check had the same weakness — its block ran to end of file, so
+  `contents: read` surviving as a comment passed — and is now bounded.
+- **F45 — the hostile fixture never seeded the Dashboard's remote data.** Every
+  card rendered "No data yet", so dropping `esc()` from a fetched summary,
+  priority, error or self-reported note passed. The fixture now seeds
+  `ccg:dashCache` (a Live card, and a failed fetch with a cached status) and
+  `ccg:dashManual`, with the field lists DERIVED from what `parseHealth`/
+  `parseState` return and what `saveDashCard` stores, and requires every
+  seeded field to reach a card. String concatenation is now scanned as a sink
+  alongside template interpolation.
+- **F18 — a 199-character cap on placeholders.** §6a's 224-character
+  "[OPTIONAL: PASTE SEAMS & INVARIANTS AUDIT BLOCK — …]" never reached its fill
+  form, and the check shared the cap, so neither side could see the loss. The
+  cap is gone in both; a token ends at the next `[`, so a stray bracket cannot
+  swallow the tokens after it. §6a's form now offers the field (65 fields
+  across 16 prompts, was 64).
+- **F48 — `<pre>` detection depended on attribute order.** Every scan matched
+  the literal `<pre id="X">`, so a new prompt written `<pre class="p" id="X">`,
+  or with no id, was outside the lock while `--assert` reported "every static
+  `<pre>` is locked". One shared scanner now finds every `<pre>` outside
+  `<script>`, and an id-less static prompt is reported as unlockable.
+- **F49 — metrics headers checked by prefix only.** A header that dropped or
+  renamed a middle column matched no prefix and went unchecked, and deleting
+  every header passed. Every `date,cycle,…` run in CLAUDE.md, the console and
+  the live `.cycle/` CSVs must now be exactly the metrics or the estimates
+  header (the failure names the missing, extra or reordered columns), and
+  each file must keep its header count.
+- **F20 — builders rendered the active project's invariants.** §4v, §1s and the
+  PR review take a project but read the active project's library and probe
+  seed, so INV-05 rendered one project's library for every project and never
+  checked the others'. They now render the project they are given; check-html
+  holds the active project on the first and requires every other project's own
+  first invariant and seed. `buildPrReviewText` joined INV-05's builder list.
+
+## 1.39.0 — 2026-10-12
+
+Cycle-7 Batch 5: console focus, feedback and theme. Console-only — **no
+command-body or config-schema change, so no `/sync-commands` re-pull.** Verified
+in headless Chromium; each fix pinned by a check-html case proven to fail with
+the fix reverted.
+
+- **F30 — light-mode text that could not flip.** 37 text colours used a FILL
+  token (`--amber`, `--teal`, `--purple`, `--green`, `--red`), which does not
+  change with the theme, so on the light surfaces they read at 1.7–2.4:1. They
+  now use the `--on-*` text tokens. `--text-muted` was 2.4–3.0:1 in BOTH themes
+  and now clears 4.5:1 on every surface text sits on. Custom invariant rows
+  paired the dark `--prompt-bg` with a flipping text colour (2.4:1 in light);
+  they now sit on `--surface2`. The contrast guard gained both halves: no fill
+  token as text, and `--text-sec`/`--text-muted` ≥ 4.5:1 on `--bg`, `--surface`
+  and `--surface2`. The `--accent` blue (2.6–3.0:1 on tinted light surfaces)
+  remains the one deliberate exception, as before.
+- **F27 — focus lost after re-renders and form toggles.** The cycle tracker gives
+  focus back to the control that had it; "+ Add invariant", "Add project" and the
+  archive's add button move focus into the form they open and back when it
+  closes; deleting a custom invariant or a subsystem row focuses its neighbour.
+- **F29 — results nobody announced.** The Dashboard status line and the state
+  message are live regions, copy success/failure is announced through a polite
+  live region, form errors are `role="alert"` and linked to their field with
+  `aria-invalid` + `aria-describedby`, and every disclosure — the 16 Fill fields
+  buttons, 6 variant toggles, archive entries, the GitHub-token and ⚙ source
+  panels — reports `aria-expanded`.
+- **F28 — empty required fields failed silently.** Saving an invariant with no
+  rule, or an archive entry with no title or content, now says which field is
+  missing and moves focus to it.
+
+Also: the INV-45 handler guard matched "aria-c**on**trols=" as an event handler
+the first time an `aria-controls` value went through `esc()` — a false red; the
+attribute name must now START with "on".
+
 ## 1.38.0 — 2026-10-12
 
 Cycle-7 Batch 4: console keyboard and layout. Console-only — **no command-body

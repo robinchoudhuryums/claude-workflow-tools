@@ -4,7 +4,7 @@
 // runs command Verify fields (incl. annotated ones), fails on a failing
 // command, classifies prose Verify as MANUAL, and dedupes identical commands.
 
-import { mkdtempSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -40,6 +40,48 @@ if (/Passed 2 \| Failed 1 \| Manual 1/.test(r.out)) ok('summary counts correct (
 
 const l = run(['--list']);
 if (l.code === 0 && /\[run\]/.test(l.out) && /\[manual\]/.test(l.out)) ok('--list enumerates runnable + manual and exits 0'); else bad('--list output wrong');
+
+// F38 (Cycle 7): identical commands run ONCE. The summary above counts per
+// invariant, so it reads 2/1/1 whether or not the command was deduplicated —
+// a mutation removing the dedupe passed. Count actual executions instead: the
+// shared command appends one line to a tally file each time it runs.
+{
+  const tally = join(dir, 'tally.txt');
+  const cmd = `node -e "require('fs').appendFileSync(process.argv[1], 'x\\n')" ${JSON.stringify(tally)}`;
+  const dsrc = join(dir, 'dedupe.md');
+  writeFileSync(dsrc, [`INV-10 | shared a | Subsystem: X | Verify: ${cmd}`, `INV-11 | shared b | Subsystem: X | Verify: ${cmd}`, `INV-12 | shared c | Subsystem: X | Verify: ${cmd} (annotated)`, ''].join('\n'));
+  let out = '', code = 0;
+  try { out = execFileSync('node', [script, '--source', dsrc], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
+  let runs = 0; try { runs = readFileSync(tally, 'utf8').split('\n').filter(Boolean).length; } catch {}
+  if (code === 0 && /Passed 3 \| Failed 0/.test(out) && runs === 1) ok('three invariants sharing one command (one annotated) run it ONCE and all PASS (F38)');
+  else bad(`dedupe: command ran ${runs} time(s) for 3 invariants (exit ${code}) — identical commands must run once (F38)`);
+}
+
+// F42 (Cycle 7): Verify commands run in the --source PROJECT's root (the
+// parent of .cycle/), not wherever the runner was started — and the runner
+// prefix is a classifier, not a sandbox: the whole text goes to a shell. The
+// second half pins the documented behaviour so the header can never again
+// promise a restriction that does not exist.
+{
+  const proj = mkdtempSync(join(tmpdir(), 'cwt-inv-proj-'));
+  mkdirSync(join(proj, '.cycle'));
+  writeFileSync(join(proj, '.cycle', 'config.md'), [
+    `INV-20 | runs in the project root | Subsystem: X | Verify: node -e "require('fs').writeFileSync('cwd-marker.txt', 'here')"`,
+    `INV-21 | shell, not a sandbox | Subsystem: X | Verify: node -e 0; node -e "require('fs').writeFileSync('chained.txt', 'ran')"`,
+    ''].join('\n'));
+  let out = '';
+  try { out = execFileSync('node', [script, '--source', join(proj, '.cycle', 'config.md')], { cwd: tmpdir(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { out = (e.stdout || '') + (e.stderr || ''); }
+  if (existsSync(join(proj, 'cwd-marker.txt')) && !existsSync(join(proj, '.cycle', 'cwd-marker.txt'))) ok('Verify commands run in the --source project root, not the caller\'s directory (F42)');
+  else bad('Verify command did not run in the project root (F42)');
+  if (existsSync(join(proj, 'chained.txt')) && /INV-21 PASS/.test(out)) ok('a chained command after a runner prefix runs too — documented: the library is code (F42)');
+  else bad('chained-command behaviour changed — update the invariant-check header and CLAUDE.md to match (F42)');
+  rmSync(proj, { recursive: true, force: true });
+}
+{
+  const header = readFileSync(script, 'utf8').split('\nimport ')[0];
+  if (/handed to a SHELL/.test(header) && /library is CODE/.test(header) && !/only commands beginning with a known runner\s*\/\/?\s*\(?[^)]*\)?\s*are executed/.test(header)) ok('the header states the shell/code-execution model, not a runner whitelist (F42)');
+  else bad('invariant-check header no longer states that Verify text runs through a shell (F42)');
+}
 
 // F35 (Cycle 7): a CRLF library (Windows / core.autocrlf) and an indented rule
 // must parse — `.` does not match \r, so every CRLF line used to be dropped.

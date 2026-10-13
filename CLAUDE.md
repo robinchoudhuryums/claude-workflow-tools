@@ -182,8 +182,9 @@ copy-paste, keep a `.cycle/` directory at the project root:
   take ~5 days"); `/plan` and `/audit` can consult it to sharpen future
   effort estimates.
 - `PROJECT_HEALTH.md` stays at the repo root. `/cycle-init` step 5 carries
-  the project-agnostic skeleton (the console's §7 copy is illustrative and
-  names one built-in project's dimensions).
+  the project-agnostic skeleton; the full shape it grows into is the
+  "Console Prompt — PROJECT_HEALTH.md Template" section, which the console's
+  §7 renders verbatim.
 
 Two optional helpers operate on this state (both fail-safe and additive):
 - `scripts/cycle-context.mjs` — a **SessionStart** hook that auto-loads
@@ -212,6 +213,11 @@ And two helpers operate on the invariant library:
   `Verify:` as a runnable command and the invariant becomes a test.
   `--list` shows the classification without running; `--timeout SECONDS`
   (default 1800) kills a hung Verify command and reports it as a timeout.
+  Commands run in the library's project root (the parent of `.cycle/`).
+  **The library is code:** the runner prefix only classifies a field as
+  runnable, then the whole text runs through a shell — `node -e 0; <anything>`
+  runs both. Review edits to the invariant library as you would edits to the
+  Test Command, and never run it on a library you would not run the tests of.
 - `tests/mutation-audit.mjs` — the **other half of that proof**. A
   `Verify:` command passing on a clean tree is not evidence it would FAIL
   if the rule were violated; a command that cannot see its own invariant
@@ -240,7 +246,10 @@ And one assembles the independent-verification input:
   command the pack printed returned a different five. It also reads
   `metrics.csv` and warns the verifier automatically when `/reflect` recorded a
   correction to a self-reported count.
-  `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE] [--root DIR] [--project NAME] [--template PATH]`
+  `node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE] [--root DIR] [--project NAME] [--template PATH] [--selector sha|console]`
+  `--selector console` reproduces the probes the CONSOLE's §4v prompt picked:
+  pass the seed it states (`<project>:<UTC day>`); the console orders by
+  FNV-1a rather than sha256, so the default selector returns a different five.
   The project is the working directory (or `--root`). The §4v body exists only
   in this repo's CLAUDE.md, so from a consuming project either run this repo's
   copy of the script from inside the project, or pass `--template <path to this
@@ -577,6 +586,9 @@ STAGE 1 — BROAD PASS
 ═══════════════════════════════════════════
 
 Audit the codebase thoroughly. For each finding:
+- ID: F1, F2, … — one sequence across all three stages (Stage 2 and
+  interface findings continue it; a retracted ID is never reused). These
+  are session-local labels for the batch plan, not invariant IDs
 - State the issue, cite the file and function/line area
 - Severity: Critical / High / Medium / Low
 - Confidence: High / Medium / Low (flag if you only skimmed this area)
@@ -724,7 +736,7 @@ FEATURE EFFECTIVENESS (for each major feature area):
   [1-2 sentences on how effectively it serves users, not code quality]
 
 INTERFACE FINDINGS (structural only — omit if no user-facing surface):
-- [Finding] — [file/component] — [Severity] — [what a user hits] —
+- [ID] — [Finding] — [file/component] — [Severity] — [what a user hits] —
   [effort: S/M/L + rough time estimate]
 (or "None — no structural interface findings")
 
@@ -795,6 +807,7 @@ If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
 Usage: /broad-implement <finding IDs, G/ST expansion IDs, or description of fixes to implement>
 Example: /broad-implement F03, F07, F12
+Example: /broad-implement Batch 2   (every finding in that batch of the scan's plan)
 Example: /broad-implement G2, ST1   (or an expansion batch: E1)
 
 Paste or reference the findings from a prior /broad-scan session.
@@ -809,6 +822,9 @@ Read CLAUDE.md (especially Common Gotchas) before starting.
 
 Rules:
 - Implement ONLY the findings specified above — nothing else
+- A batch name ("Batch 2", "E1") means every item the scan's plan lists
+  under it. Read the list from the scan report; if the report is not in
+  this session, ask for it rather than guessing what the batch held
 - G (completeness gap) and ST (strategic suggestion) items from the
   scan's EXPANSION PLAN are in scope only when named above, by ID or by
   their E-batch. They are new capability, not fixes — see REFLECT
@@ -872,6 +888,7 @@ Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
 
 ---BROAD SCAN IMPLEMENTATION SUMMARY---
 Findings implemented: [list finding IDs and one-line descriptions]
+New capabilities (G/ST): [list G/ST IDs and one-line descriptions, or "None"]
 Files modified: [list all files touched]
 
 CHANGES:
@@ -1053,10 +1070,15 @@ Rules:
 
 After all actions complete:
 
-1. RUN TESTS — read Test Command from CLAUDE.md. If `manual`, walk
-   Regression Scenarios for the touched subsystem(s) instead. Classify
-   failures (this session / pre-existing / real bug). See
-   `/broad-implement` Step 1 for the full branching detail.
+1. RUN TESTS — read the Test Command from CLAUDE.md's Cycle Workflow Config.
+   - If it is `manual`: walk every Regression Scenario whose Subsystem
+     overlaps a file you modified, and record PASS / FAIL / NOT APPLICABLE
+     (with the reason for NOT APPLICABLE). A FAIL counts as a test failure.
+   - Otherwise: run the suite (the Test Command, or `npm test` if none is
+     set), then walk any configured Regression Scenarios.
+   Classify each failure: caused by this session (fix now) / pre-existing
+   (note, don't fix) / a real production bug exposed by a correct test or
+   scenario (flag as a follow-on, don't fix here).
 2. REGRESSION CHECK — review each modified file for breakage risk,
    cross-reference CROSS-MODULE RISKS from handoff block
 3. REFLECT — for each action: production bug? (YES/NO) New failure
@@ -1431,7 +1453,8 @@ For each action completed this cycle, answer two binary questions:
 
 Tally (three-way classification):
 - Production fixes (YES to Q1): [count] — severity breakdown
-- New capabilities / features: [count]
+- New capabilities / features: [count — from the summary's "New capabilities
+  (G/ST)" field where there is one; never folded into production fixes]
 - Defensive/structural (NO to Q1, not a feature): [count]
 - New failure modes (YES to Q2): [count] — severity breakdown
 - Net score: [production fixes] − [new failure modes] = [net]
@@ -1495,10 +1518,11 @@ next unused lowercase letter among this cycle's non-release blocks (a for the
 first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
-summary reported, say so in the metrics `notes` field — the pack assembler
-(scripts/verification-pack.mjs) surfaces that to the verifier automatically,
-so the "don't trust the self-report" signal is generated rather than
-remembered. Skip if no .cycle/.
+summary reported, say so in the metrics `notes` field — where the project
+uses the pack assembler (scripts/verification-pack.mjs) it surfaces that to
+the verifier automatically, so the "don't trust the self-report" signal is
+generated rather than remembered; without it, the §4v operator reads it
+from metrics.csv. Skip if no .cycle/.
 
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
@@ -1905,6 +1929,7 @@ optional metrics.csv append in step 8.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
 (Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
+For a Tier 1 cycle (/broad-scan), there is no per-subsystem Session Handoff Block: paste the scan's FINAL REPORT and batch plan once in its place, and one Cycle Summary Block and Verification Block for the cycle.
 
 [one entry per project subsystem — three blocks each, injected at render time]
 [OPTIONAL: PASTE PRIOR SYNTHESIS SCORE HERE FOR DELTA COMPARISON]
@@ -1923,7 +1948,7 @@ AXIS A — VERTICAL (Subsystem Health)
 
 For each dimension below, provide:
 - A score out of 10, OR "Not assessed this cycle" if no direct signal exists from the cycle inputs
-  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. RAG, Business Viability, or any domain-specific dimension without direct signal this cycle).
+  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. a domain-specific or product dimension that no subsystem cycle touched and no Verification Block probed).
 - Coverage confidence: High (full cycle with verification block) / Medium (cycle summary only, no verification) / Low (inferred from adjacent signals)
 - 2–3 sentences of reasoning grounded in specific findings from the cycle inputs, not general impressions
 - The single most important finding or unresolved item driving the score
@@ -2099,7 +2124,8 @@ Review across these lenses, scoped to the diff:
    test (Category D).
 8. Invariant cross-check: does the diff touch any rule in the Invariant
    Library? Flag every invariant at risk, and run its Verify test if one
-   is defined (command-style Verify runs via scripts/invariant-check.mjs).
+   is defined (if the project has scripts/invariant-check.mjs it runs
+   command-style Verify fields; otherwise run the Verify command directly).
 9. Docs drift: does the PR change behavior the docs/README/CLAUDE.md
    describe without updating them?
 
@@ -2392,14 +2418,20 @@ command body rather than extend one.
 Pasted alongside the §1 audit prompt to narrow it to a security pass. No slash command owns it; the console renders it as a variant under §1.
 
 ```
-This is a security and HIPAA compliance audit only. Focus exclusively on:
-- PHI handling (storage, transmission, logging, access control)
+This is a security and compliance audit only. Focus exclusively on:
+- Sensitive-data handling (storage, transmission, logging, access control) —
+  whatever this project's regulated or confidential data is: health records,
+  payment data, personal data, credentials, customer content
 - Authentication and authorization enforcement
 - Data validation and sanitization
 - Encryption at rest and in transit
 - Audit logging completeness
-- Any surface area that would fail a HIPAA technical safeguards review
-For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
+- Any surface area that would fail the compliance regime this project is
+  subject to (e.g. HIPAA technical safeguards, PCI DSS, SOC 2, GDPR) — name
+  the regime, or state that none applies
+For each finding, name the control or safeguard it maps to under that regime
+(e.g. a HIPAA Required vs. Addressable safeguard, a PCI DSS requirement
+number), or "general hardening" if no regime applies.
 ```
 
 ### Console Prompt — Performance & Scalability Audit Add-on
@@ -2579,45 +2611,53 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
 ```
 ---TIER 2 HANDOFF BLOCK---
 Scope: [subsystem]
-Findings: [count] — [severity breakdown]
-Production bugs: [count]
+Findings: [count] total — [critical/high/medium/low breakdown]
+Production bugs (would fire this month): [count]
 
 ACTIONS (implement in this order):
 [ID] | [File: area] | [Effort] | [Risk] | [Description]
 
 CROSS-MODULE RISKS:
-- [risks or "None"]
+- [what could break outside this scope and where to verify]
+(or "None identified")
 
-OPERATOR ACTIONS SURFACED (manual / out-of-PR steps; mark deploy blockers):
+OPERATOR ACTIONS SURFACED (manual / out-of-PR steps — env vars, IaC, console/dashboard, migrations):
 - [action] | BLOCKS DEPLOY: Y/N
 (or "None")
 
 DO NOT TOUCH:
-- [high-risk items or "None"]
+- [high-risk files/functions — explain why]
 ---END TIER 2 HANDOFF BLOCK---
 ```
 
 ### VERIFICATION BLOCK
 ```
 ---VERIFICATION BLOCK---
-Verified scope: [subsystem]
+Verified scope: [subsystem group name]
 Verification date: [date]
+Cycle being verified: [subsystem + cycle identifier from implementation summary]
 
 INVARIANT PROBE RESULTS:
-INV-XX | [description] | PASS/FAIL/UNVERIFIED | [evidence]
+INV-XX | [invariant description] | PASS / FAIL / UNVERIFIED | [evidence summary]
+(repeat for each probed invariant)
 Probed: [N] | Passed: [N] | Failed: [N] | Unverified: [N]
 
 REGRESSION COUNT:
 Regressions found: [N]
-Net score: [fixed] − [regressions] = [net]
+R1 | [description] | [severity] | Documented by cycle: Y/N | [code location]
+(repeat for each regression, or "None found")
+Net score: [findings fixed] − [regressions] = [net]
 
 CYCLE EXECUTION QUALITY:
-Tests run to completion: YES/NO
-Common Gotchas cross-checked: YES/NO
-New Common Gotchas added: YES/NO
+Tests run to completion: YES/NO — [evidence]
+Common Gotchas cross-checked: YES/NO — [evidence]
+New Common Gotchas added: YES/NO — [what was added, or N/A]
 
 COVERAGE GAP REPORT:
 Fixes with regression tests: [N of M]
+Category D candidates (fixes without regression tests):
+[action ID] | [fix description] | [what test is needed]
+(repeat for each, or "None — all fixes have regression tests")
 Category D ratio: [X%]
 ---END VERIFICATION BLOCK---
 ```

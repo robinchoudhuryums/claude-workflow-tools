@@ -58,7 +58,11 @@ const CFG = 'CLAUDE.md';
 const CASES = {
   // ── node scripts/check-html.mjs ─────────────────────────────────────────────
   'INV-04': [[HTML, 'function esc(s){', 'function esc(s){ ((( ', /syntax error/i]],
-  'INV-05': [[HTML, 'const dims=project.healthDimensions;', 'const dims=project.healthDimensions_TYPO;', /unresolved|leaked "undefined"/i]],
+  'INV-05': [[HTML, 'const dims=project.healthDimensions;', 'const dims=project.healthDimensions_TYPO;', /unresolved|leaked "undefined"/i],
+             // Cycle-7 Batch 6 (F20): a defect only in the SECOND project's library. The builders
+             // rendered the active project's invariants, so this was never rendered or checked.
+             [HTML, "{id:'INV-01',text:'updateCall must throw", "{id:'INV-01',txt:'updateCall must throw", /leaked "undefined"|Cycle-7 F20/],
+             [HTML, 'function buildVerificationText(project){\n  const invs=getProjectInvariants(project);', 'function buildVerificationText(project){\n  const invs=getProjectInvariants();', /Cycle-7 F20/]],
   'INV-06': [[HTML, '? project.axisB : DEFAULT_AXIS_B;', '? project.axisB : DEFAULT_AXIS_B.slice(0,3);', /5 default categories/i]],
   'INV-07': [[HTML, "id:'obs', name:'Observatory QA',", "id:'obs', name:'Observatory QA', axisB:[{name:'Sneaky',measures:'m',pulse:'p'}],", /INV-07/]],
   'INV-08': [[HTML, 'inv.verify?` | Verify: ${inv.verify}`:\'\'', '` | Verify: ${inv.verify}`', /INV-08/]],
@@ -70,6 +74,9 @@ const CASES = {
     // Cycle-7 Batch 4 (F25): the tracker label became a native <button>.
     [HTML, 'text-align:left;cursor:pointer">${esc(g)}</button>', 'text-align:left;cursor:pointer">${g}</button>', /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.text)}', '${inv.text}', /unescaped stored content|injected data executed/i],
+    // Cycle-7 Batch 6 (F45): remote Dashboard data (dashCache / dashManual) is seeded hostile now.
+    [HTML, "'<div class=\"dcard-summary\">'+esc(summary)+'</div>'", "'<div class=\"dcard-summary\">'+summary+'</div>'", /unescaped stored content|injected data executed/i],
+    [HTML, "value=\"'+esc(man.note||'')+'\"", "value=\"'+(man.note||'')+'\"", /unescaped stored content|injected data executed/i],
     [HTML, '${esc(inv.subsystem)}', '${inv.subsystem}', /unescaped stored content|injected data executed/i],
     // F01/F09 — the fill form renders only on interaction; these prove the
     // hostile fixture now reaches it, one sink at a time.
@@ -103,11 +110,17 @@ const CASES = {
   // Reinstating the real collision: <pre id="t1a"> back to id="t1", which the
   // enclosing <section id="t1"> then shadows.
   'INV-67': [[HTML, '<pre id="t1a"></pre>', '<pre id="t1"></pre>', /duplicate id/i]],
-  'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/]],
+  'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/],
+             // Cycle-7 Batch 6 (F18): the length cap back — §6a's 224-char field drops out of its form.
+             [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", /F11/],
+             // Cycle-7 Batch 8 (F19): the exact-match systems-map test back — §1 and §4 lose the bank.
+             [HTML, "const isSysMap=n=>n.startsWith('PASTE SYSTEMS MAP SUMMARY HERE');", "const isSysMap=n=>n==='PASTE SYSTEMS MAP SUMMARY HERE';", /F19/]],
   'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
   'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
   'INV-66': [
     ['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i],
+    // Cycle-7 Batch 6 (F48): a new static prompt whose id is not the FIRST attribute.
+    [HTML, '</body>', '<pre class="prompt" id="zz-unlocked">A brand-new static prompt</pre></body>', /outside the lock manifest: zz-unlocked/],
     // inherited from the retired INV-29: the DRIFT half. Retiring a rule must
     // not retire its proof — INV-66's own case only covered the unlocked-new-
     // prompt half, so without this the drift mutation would have been lost.
@@ -123,13 +136,18 @@ const CASES = {
   'INV-03': [['README.md', 'Dynamic Workflows', 'DWF-renamed', /marker "dynamic workflows"/i]],
   'INV-12': [['.claude/commands/reflect.md', 'METRICS (optional — only if .cycle/ exists)', 'METRICS', /not gated on the directory existing/i],
              // v1.35.0: the audits' CYCLE OPEN write must be inside the gating check's step set.
-             ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing/i]],
+             ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing|no longer read as writing/i],
+             // Cycle-7 follow-on: the §1s body's own write is inside the derived step set now.
+             [CFG, 'SEAM COUNTER (optional — only if .cycle/ exists): reset', 'SEAM COUNTER: reset', /not gated on the directory existing/i]],
   'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i]],
-  'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/]],
+  'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/],
+             ['.github/workflows/sync-check.yml', '  pull_request:\n', '  pull_request:\n    branches: [never-a-real-branch]\n', /filters its pull_request trigger/]],
   'INV-16': [[HTML, '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery [N] subsystem cycles\n\n', '', /INV-16/]],
   'INV-18': [['.claude/commands/implement.md', '3. CHECKPOINT (optional — only if .cycle/ exists): create/update', '3. CHECKPOINT: create/update', /not gated on the directory existing/i]],
   'INV-19': [[HTML, '---CYCLE SUMMARY BLOCK---', '---GONE-SUMMARY---', /workflow blocks missing|cycle summary block/i]],
-  'INV-33': [[HTML, 'Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score', /double-count|net_score/i]],
+  'INV-33': [[HTML, 'Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score', /double-count|net_score/i],
+             // Cycle-7 Batch 6 (F49): a header missing a MIDDLE column matched no prefix and went unchecked.
+             ['CLAUDE.md', 'axis_b_lowest,notes,defensive_count', 'axis_b_lowest,defensive_count', /canonical column list/]],
   'INV-34': [[HTML, 'TWO-AXIS GRID', 'TWO-PLANE GRID', /contract marker/i]],
   'INV-39': [[HTML, 'OPERATOR VISUAL CHECKS', 'VISUAL-GONE', /operator visual checks/i]],
 
@@ -142,7 +160,9 @@ const CASES = {
   'INV-22': [['scripts/check-template-sync.mjs', 'const cmdMissing = tableCmds.filter', 'const cmdMissing = [] || tableCmds.filter', /README command lacking/i]],
   'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i]],
   'INV-43': [['scripts/check-template-sync.mjs', 'const WORKFLOW_BLOCKS = BLOCKS.map(b => b.name.toLowerCase());', "const WORKFLOW_BLOCKS = ['session handoff block'];", /registry block with no console representation/i]],
-  'INV-57': [['.github/workflows/sync-check.yml', 'permissions:\n  contents: read\n', '', /least-privilege permissions|baseline/i]],
+  'INV-57': [['.github/workflows/sync-check.yml', 'permissions:\n  contents: read\n', '', /least-privilege permissions|baseline/i],
+             // Cycle-7 Batch 7 (F44): the permissions block unbounded again — it reads to end of file.
+             ['scripts/check-template-sync.mjs', "const perms = stripYamlComments(wf).split('\\n').filter(l => l.trim()).join('\\n').concat('\\n').match(/^permissions:[ \\t]*\\n((?:[ \\t]+\\S.*\\n)+)/m);", "const perms = wf.match(/^permissions:\\s*\\n((?:\\s+\\S.*\\n)+)/m);", /read past its block \(F44\)|comment/]],
   // INV-58 verifies THIS harness, so its case runs the meta-test (which runs
   // the audit with --only) rather than the audit itself — an invariant whose
   // Verify command is the audit would recurse into its own coverage set.
@@ -161,7 +181,8 @@ const CASES = {
   // INV-71 — drift the ONE definition; every doc copy must stop matching it.
   'INV-71': [['scripts/health-fields.mjs', "topVertical:    'Top vertical priority:'", "topVertical:    'Top vertical priorities:'", /health-field contract/i]],
   // INV-74 — drop a stage from CI that the Test Command still documents.
-  'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i]],
+  'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i],
+             ['.github/workflows/sync-check.yml', 'run: node tests/mutation-audit.mjs', 'run: node tests/mutation-audit.mjs || true', /not a bare stage/]],
   // INV-72 — ship a release into the current cycle with no block for it.
   // INV-75 — drop one of the three clause labels from the canonical rule.
   'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger/i]],
@@ -173,17 +194,33 @@ const CASES = {
   'INV-72': [['.cycle/STATE.md', '\nCycle: ', '\nCycle: 6\nPinned-by-mutation: ', /release with no block/i]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────
-  'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i]],
+  'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i],
+             // Cycle-7 Batch 7 (F47): order and case are part of the lock — §4v's independence guard
+             // swapped below the line it must precede, and the same guard with its NOT lowercased.
+             [HTML, 'return `Do not make any changes to any files during this session.\n\nIMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.\n',
+                    'return `IMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.\n\nDo not make any changes to any files during this session.\n', /OUT OF ORDER/],
+             [HTML, 'You must NOT have participated in the implementation cycle being verified. If you have any context', 'You must not have participated in the implementation cycle being verified. If you have any context', /buildVerificationText is missing/],
+             // Cycle-7 Batch 7 (F46): a multi-token row schema is a canonical line, not a placeholder.
+             [HTML, 'FINDINGS:\n[ID] | [File: function/line] | [Severity] | [Confidence] | [Fires this month: Y/N] | [Effort] | [Description]\n(or "None — no production-impacting', 'FINDINGS:\n(or "None — no production-impacting', /buildPrReviewText is missing/]],
 
   // ── node scripts/check-output-blocks.mjs ────────────────────────────────────
-  'INV-31': [[CFG, 'Audit confidence: [High / Medium / Low]\n', '', /audit confidence|missing field/i]],
+  'INV-31': [[CFG, 'Audit confidence: [High / Medium / Low]\n', '', /audit confidence|missing field/i],
+             // Cycle-7 Batch 7 (F50): a field outside the registry's hand-listed subset, renamed in one copy.
+             [HTML, 'Production bugs (would fire this month): [count]', 'Production bugs: [count]', /lacks field\(s\) other copies carry/]],
   'INV-38': [[CFG, 'SEAM INVENTORY:', 'SEAM-LIST:', /seam inventory|missing field/i]],
   'INV-55': [[HTML, '---PR REVIEW BLOCK---\nPR:', '---PR REVIEW BLOCK---\nPR-NUMBER:', /pr review block|missing field/i]],
 
   // ── the remaining test-backed scripts ───────────────────────────────────────
-  'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i]],
+  'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i],
+             // Cycle-7 Batch 7 (F37): the Current Standing and Pending outputs had no fixture.
+             ['scripts/cycle-context.mjs', "  if (standing) out.push(", "  if (false) out.push(", /Current Standing missing/],
+             ['scripts/cycle-context.mjs', "for (const h of ['Current', 'Where I left off', 'Pending / not yet done'])", "for (const h of ['Current', 'Where I left off'])", /Pending section missing/]],
   'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
-  'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/]],
+  'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/],
+             // Cycle-7 Batch 7 (F38): dedupe removed — each invariant gets its own key, so a shared command runs per rule.
+             ['scripts/invariant-check.mjs', 'if (cmd) { if (!byCmd.has(cmd)) byCmd.set(cmd, []); byCmd.get(cmd).push(inv); }', "if (cmd) { byCmd.set(cmd + ' #' + inv.id, [inv]); }", /identical commands must run once/],
+             // Cycle-7 Batch 8 (F42): Verify commands back in the caller's directory.
+             ['scripts/invariant-check.mjs', 'execSync(cmd, { cwd, stdio:', 'execSync(cmd, { stdio:', /did not run in the project root/]],
   'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],
   'INV-32': [['scripts/check-output-blocks.mjs', 'export function validate', 'export function validate_renamed', /✗|error/i]],
@@ -192,7 +229,8 @@ const CASES = {
   'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i]],
   // INV-70 — reintroduce the disclosure/use split: select with a truncated
   // seed while the header still prints the full one.
-  'INV-70': [['scripts/verification-pack.mjs', 'const probes = selectProbes(invariants, seed);', 'const probes = selectProbes(invariants, String(seed).slice(0, 4));', /does NOT reproduce/i]],
+  // Re-targeted in Cycle-7 Batch 8: buildPack now dispatches through SELECTORS (F21).
+  'INV-70': [['scripts/verification-pack.mjs', 'const probes = SELECTORS[selector](invariants, seed);', 'const probes = SELECTORS[selector](invariants, String(seed).slice(0, 4));', /does NOT reproduce/i]],
 };
 
 // ── Coverage, derived from the live library ───────────────────────────────────

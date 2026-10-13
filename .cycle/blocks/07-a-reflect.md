@@ -1,0 +1,11 @@
+---CYCLE SUMMARY BLOCK---
+Scope: broad — Interactive Console (HTML) + Tooling & Sync Infrastructure + Canonical Templates & Docs | Cycle: 7 / 2026-10-13
+Production fixes: 21 — severity: High 2 (F01 no command owned the cycle number; F12 editing the active project left stale prompts that Copy pasted), Medium 14 (F02 F13 F14 F18 F22 F23 F24 F25 F26 F30 F34 F35 F36, follow-on A project delete), Low-Med 3 (F17 F27 F29), Low 2 (F11 F28)
+New capabilities/features: 0
+Defensive/structural: 39 (incl. 15 guard false greens proven by injecting the defect first: F31 F45 F18-adjacent F48 F49 F47 F46 F50 F37 F38 F44 + follow-ons C D K, and F33 symlinked-script silent pass)
+New failure modes: 0 at deploy level — severity: n/a (one in-cycle regression: v1.36.0's false "repaired" warning for a blank Axis B, fixed in v1.38.0 before PR #26 merged; main never carried it)
+Net score: 21 − 0 = 21 (CORRECTED from the batch self-reports' 25: v1.36.0 F15/F16 need corrupted or concurrently deleted state; v1.42.0 F10 — the operator's own projects are healthcare, so the HIPAA add-on was right for them; v1.43.0 B — no known console project carries a literal pipe. All four reclassified defensive.)
+Invariant candidates: INV-76 command files stand alone (check 17) | INV-77 console §4v probes reproducible via verification-pack --selector console | INV-78 a CI stage counts only as a bare run: with no if:/continue-on-error/trigger filter | INV-79 the hostile fixture seeds every stored AND fetched input the console renders, field lists derived from their producers | INV-80 the re-pull list classifies every release since v1.19.0 exactly once (check 18) | INV-81 deleting a project removes every ccg:<id>:* key except ccg:secret:* and longer ids' keys | INV-82 the active project id always names an existing project, and every structured ccg:* key is shape-validated on import and shape-tolerant on load
+Most structurally significant change: F01 — CYCLE OPEN gave the cycle number an owner; every .cycle/ artifact (blocks, metrics rows, pack selection) keys on a number nothing used to write.
+Should-have-been-deferred: F21's --selector console — the finding was a false "reproducible" claim, which one line of prompt text would have fixed; porting FNV-1a into the pack added a selector and a parity test for a reproduction nobody has asked to run.
+---END CYCLE SUMMARY BLOCK---

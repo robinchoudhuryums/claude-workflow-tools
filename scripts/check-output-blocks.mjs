@@ -14,9 +14,11 @@
 //   2. each block's producing command actually EMITS it (the behavioral
 //      assertion — "does /audit still produce a SESSION HANDOFF BLOCK?")
 //   3. every occurrence of a block carries all its required fields (shape)
-//   4. blocks defined BOTH in a command body and in the Handoff Block
-//      Formats reference agree on their field set (no inline-vs-reference
-//      field drift)
+//   4. every copy of a block — command body, Handoff Block Formats
+//      reference, and each console rendering — carries the SAME set of
+//      field labels (validateCopies; until Cycle-7 F50 this compared only
+//      the hand-listed `fields` subset, as substrings, so two copies could
+//      disagree on any field not on that list)
 //   5. no unregistered ---NAME--- block delimiter has crept in unguarded
 //
 // This is the static, deterministic half of R13 and the part that belongs
@@ -62,7 +64,7 @@ export const BLOCKS = [
       'OPERATOR ACTIONS SURFACED', 'DO NOT TOUCH:'] },
   { name: 'BROAD SCAN IMPLEMENTATION SUMMARY', open: '---BROAD SCAN IMPLEMENTATION SUMMARY---', close: '---END BROAD SCAN IMPLEMENTATION SUMMARY---',
     producer: 'broad-implement', inFormats: false,
-    fields: ['Findings implemented:', 'Files modified:', 'CHANGES:', 'TEST RESULTS:',
+    fields: ['Findings implemented:', 'New capabilities (G/ST):', 'Files modified:', 'CHANGES:', 'TEST RESULTS:',
       'REGRESSION RISKS:', 'INVARIANTS AT RISK:', 'NET SCORE:', 'OPERATOR ACTIONS / DEPLOY:',
       'FOLLOW-ON ITEMS:', 'DOCUMENTATION UPDATES NEEDED:'] },
   { name: 'TARGETED IMPLEMENTATION SUMMARY', open: '---TARGETED IMPLEMENTATION SUMMARY---', close: '---END TARGETED IMPLEMENTATION SUMMARY---',
@@ -161,6 +163,24 @@ export function validate(claudeMd, loadCmd) {
   return failures;
 }
 
+// The console text with entities decoded and container punctuation stripped.
+// The console carries these blocks in two containers, and BOTH put syntax on
+// the delimiter line: a builder ends its template literal as "---END X---`;",
+// and a static display ends as "---END X---</pre>". Strip the container
+// punctuation before comparing, or every block in the file reads as
+// unbalanced — a defect in the checker, not in the console. (First run of
+// this check reported 5 such false positives; they were all this.)
+export function consoleText(htmlText) {
+  const unesc = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+  const strip = l => l.trim()
+    .replace(/^<pre\b[^>]*>/, '')      // static display opens on the delimiter line
+    .replace(/^`/, '')                 // builder opens its template literal there
+    .replace(/<\/pre>\s*$/, '')        // …and closes it there too
+    .replace(/`\s*;?\s*$/, '')
+    .trim();
+  return unesc(htmlText).split('\n').map(strip).join('\n');
+}
+
 // INV-55 — the console renders these same blocks, in static <pre> displays and
 // in builder template literals, and NOTHING checked their shape: dropping
 // `Net score:` from the console's VERIFICATION BLOCK, or renaming its END
@@ -170,20 +190,7 @@ export function validate(claudeMd, loadCmd) {
 // check-template-sync's derived presence check, not this one).
 export function validateHtml(htmlText) {
   const failures = [];
-  const unesc = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-  // The console carries these blocks in two containers, and BOTH put syntax on
-  // the delimiter line: a builder ends its template literal as "---END X---`;",
-  // and a static display ends as "---END X---</pre>". Strip the container
-  // punctuation before comparing, or every block in the file reads as
-  // unbalanced — a defect in the checker, not in the console. (First run of
-  // this check reported 5 such false positives; they were all this.)
-  const strip = l => l.trim()
-    .replace(/^<pre\b[^>]*>/, '')      // static display opens on the delimiter line
-    .replace(/^`/, '')                 // builder opens its template literal there
-    .replace(/<\/pre>\s*$/, '')        // …and closes it there too
-    .replace(/`\s*;?\s*$/, '')
-    .trim();
-  const text = unesc(htmlText).split('\n').map(strip).join('\n');
+  const text = consoleText(htmlText);
   for (const b of BLOCKS) {
     const opens = text.split('\n').filter(l => l === b.open).length;
     if (!opens) continue;                                  // not rendered in the console — fine
@@ -199,6 +206,38 @@ export function validateHtml(htmlText) {
   return failures;
 }
 
+// F50 (Cycle 7): copies of a block must agree on their FULL field set, not
+// just the hand-listed `fields`. The registry subset let the Handoff Block
+// Formats copy of the VERIFICATION BLOCK drop "Cycle being verified:" and
+// "Category D candidates", and the TIER 2 copies disagree on "Production bugs
+// (would fire this month):" vs "Production bugs:", with every check green.
+// A field label is a line's text up to its first colon, where that text holds
+// no placeholder bracket or row pipe. A label carrying `${` is rendered by a
+// console builder at run time (the Seams block's "Validated (N existing):"
+// replaces a canonical placeholder line) and is not compared.
+export function fieldLabels(body) {
+  return [...new Set(body.split('\n').map(l => l.trim())
+    .map(l => (l.match(/^([A-Za-z][^:[\]|]*?):/) || [])[1])
+    .filter(l => l && !l.includes('${')))];
+}
+export function validateCopies(claudeMd, htmlText) {
+  const failures = [];
+  const html = htmlText == null ? '' : consoleText(htmlText);
+  for (const b of BLOCKS) {
+    const copies = [
+      ...findSpans(claudeMd, b.open, b.close).map((sp, i) => [`CLAUDE.md copy ${i + 1}`, fieldLabels(sp.body)]),
+      ...findSpans(html, b.open, b.close).map((sp, i) => [`console copy ${i + 1}`, fieldLabels(sp.body)]),
+    ];
+    if (copies.length < 2) continue;
+    const all = [...new Set(copies.flatMap(c => c[1]))];
+    for (const [where, labels] of copies) {
+      const lacks = all.filter(l => !labels.includes(l));
+      if (lacks.length) failures.push(`${b.name} (${where} of ${copies.length}): lacks field(s) other copies carry — ${lacks.map(l => JSON.stringify(l + ':')).join(', ')} (F50)`);
+    }
+  }
+  return failures;
+}
+
 function main() {
   const root = new URL('..', import.meta.url);
   const claudeMd = readFileSync(new URL('CLAUDE.md', root), 'utf8');
@@ -209,12 +248,14 @@ function main() {
     const htmlText = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
     htmlBlocks = BLOCKS.filter(b => htmlText.includes(b.open)).length;
     failures.push(...validateHtml(htmlText));
+    failures.push(...validateCopies(claudeMd, htmlText));
   } catch (e) { failures.push('could not read the console for block-shape validation: ' + e.message); }
 
   console.log('Output-block shape check (R13 — CLAUDE.md ↔ .claude/commands/):\n');
   if (!failures.length) {
     console.log(`  ✓ ${BLOCKS.length} output blocks well-formed in CLAUDE.md + .claude/commands/ (delimiters balanced, required fields present, producers emit them)`);
     console.log(`  ✓ ${htmlBlocks} of them are also rendered by the console, and are shape-valid there too (INV-55)`);
+    console.log(`  ✓ every copy of each block — command, Handoff Block Formats, console — carries the same field labels (F50)`);
     console.log('\nAll prompt-output blocks are shape-valid. ✓');
     return 0;
   }

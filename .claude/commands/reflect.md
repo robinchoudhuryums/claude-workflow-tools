@@ -20,7 +20,8 @@ For each action completed this cycle, answer two binary questions:
 
 Tally (three-way classification):
 - Production fixes (YES to Q1): [count] — severity breakdown
-- New capabilities / features: [count]
+- New capabilities / features: [count — from the summary's "New capabilities
+  (G/ST)" field where there is one; never folded into production fixes]
 - Defensive/structural (NO to Q1, not a feature): [count]
 - New failure modes (YES to Q2): [count] — severity breakdown
 - Net score: [production fixes] − [new failure modes] = [net]
@@ -84,10 +85,11 @@ next unused lowercase letter among this cycle's non-release blocks (a for the
 first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
-summary reported, say so in the metrics `notes` field — the pack assembler
-(scripts/verification-pack.mjs) surfaces that to the verifier automatically,
-so the "don't trust the self-report" signal is generated rather than
-remembered. Skip if no .cycle/.
+summary reported, say so in the metrics `notes` field — where the project
+uses the pack assembler (scripts/verification-pack.mjs) it surfaces that to
+the verifier automatically, so the "don't trust the self-report" signal is
+generated rather than remembered; without it, the §4v operator reads it
+from metrics.csv. Skip if no .cycle/.
 
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection

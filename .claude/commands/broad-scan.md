@@ -21,6 +21,9 @@ STAGE 1 — BROAD PASS
 ═══════════════════════════════════════════
 
 Audit the codebase thoroughly. For each finding:
+- ID: F1, F2, … — one sequence across all three stages (Stage 2 and
+  interface findings continue it; a retracted ID is never reused). These
+  are session-local labels for the batch plan, not invariant IDs
 - State the issue, cite the file and function/line area
 - Severity: Critical / High / Medium / Low
 - Confidence: High / Medium / Low (flag if you only skimmed this area)
@@ -168,7 +171,7 @@ FEATURE EFFECTIVENESS (for each major feature area):
   [1-2 sentences on how effectively it serves users, not code quality]
 
 INTERFACE FINDINGS (structural only — omit if no user-facing surface):
-- [Finding] — [file/component] — [Severity] — [what a user hits] —
+- [ID] — [Finding] — [file/component] — [Severity] — [what a user hits] —
   [effort: S/M/L + rough time estimate]
 (or "None — no structural interface findings")
 

@@ -22,7 +22,7 @@
 //
 // Usage:
 //   node scripts/verification-pack.mjs [--cycle N] [--seed S] [--out FILE]
-//       [--root DIR] [--project NAME] [--template PATH]
+//       [--root DIR] [--project NAME] [--template PATH] [--selector sha|console]
 //   (cycle defaults to .cycle/STATE.md's Cycle field — the single source of
 //    truth per P3; seed defaults to the current git HEAD sha; root defaults to
 //    the current directory; project defaults to the root's directory name.)
@@ -64,6 +64,28 @@ export function selectProbes(invariantLines, seed, count = 5) {
     .map(x => x.line);
 }
 
+// F21 (Cycle 7): the CONSOLE's selection, ported so its seed is reproducible.
+// The console has no commit sha and no synchronous sha256, so it seeds from
+// "<project>:<UTC day>" and orders by FNV-1a(seed + '|' + id) — a different
+// function from selectProbes above, and its prompt claimed "a verifier can
+// reproduce it" while no tool could. `--selector console --seed "<seed>"` runs
+// this; tests/verification-pack.test.mjs executes the console's own code on the
+// same input and requires the same five.
+export function hash32(str) {
+  let h = 2166136261 >>> 0; const s = String(str);
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+export function selectProbesConsole(invariantLines, seed, count = 5) {
+  return invariantLines
+    .map(line => ({ line, id: line.split('|')[0].trim() }))
+    .map(x => ({ ...x, h: hash32(seed + '|' + x.id) }))
+    .sort((a, b) => a.h - b.h || a.id.localeCompare(b.id))
+    .slice(0, count)
+    .map(x => x.line);
+}
+export const SELECTORS = { sha: selectProbes, console: selectProbesConsole };
+
 // Blocks persisted by the implement commands / /reflect at CHECKPOINT.
 // F02 (Cycle 6): .cycle/blocks/ ACCUMULATES across cycles, and the first pack
 // generated after Cycle 5 would have handed the verifier all nine Cycle-5
@@ -93,18 +115,26 @@ export function sameCycle(a, b) {
   const x = String(a).trim(), y = String(b).trim();
   return /^\d+$/.test(x) && /^\d+$/.test(y) ? Number(x) === Number(y) : x === y;
 }
+// Columns are found by HEADER name (Cycle-7 follow-on), as netTrend and
+// render-metrics already do: indexing by position read the wrong column from a
+// file with a reordered or extra column. A file with no header falls back to
+// the canonical order.
+const METRICS_COLUMNS = ['date', 'cycle', 'subsystem', 'phase', 'net_score', 'prod_fixes', 'new_failure_modes', 'category_d_ratio', 'axis_b_lowest', 'notes', 'defensive_count'];
 export function cycleTotals(metricsCsv, cycle) {
-  const rows = parseCSV(metricsCsv || '').slice(1);
+  const all = parseCSV(metricsCsv || '');
+  const head = (all[0] || []).map(h => h.trim());
+  const hasHeader = head.includes('cycle') && head.includes('phase');
+  const idx = name => (hasHeader ? head : METRICS_COLUMNS).indexOf(name);
+  const at = (c, name) => { const i = idx(name); return i === -1 ? '' : String(c[i] == null ? '' : c[i]).trim(); };
   let net = 0, fixes = 0, nfm = 0, defensive = 0, n = 0;
   const corrections = [];
-  for (const raw of rows) {
+  for (const c of (hasHeader ? all.slice(1) : all)) {
     // F03: a quote-aware parse — a comma-bearing SUBSYSTEM no longer shifts columns.
-    const c = raw.map(x => x.trim());
-    if (!sameCycle(c[1] || '', cycle) || c[3] !== 'reflect') continue;
+    if (!sameCycle(at(c, 'cycle'), cycle) || at(c, 'phase') !== 'reflect') continue;
     n++;
-    net += parseFloat(c[4]) || 0; fixes += parseFloat(c[5]) || 0; nfm += parseFloat(c[6]) || 0;
-    defensive += parseFloat(c[10]) || 0;
-    const notes = c[9] || '';
+    net += parseFloat(at(c, 'net_score')) || 0; fixes += parseFloat(at(c, 'prod_fixes')) || 0; nfm += parseFloat(at(c, 'new_failure_modes')) || 0;
+    defensive += parseFloat(at(c, 'defensive_count')) || 0;
+    const notes = at(c, 'notes');
     if (/CORRECTION/i.test(notes)) corrections.push(notes.slice(0, 240));
   }
   return { rows: n, net, fixes, nfm, defensive, corrections };
@@ -117,8 +147,9 @@ export function cycleTotals(metricsCsv, cycle) {
 // reproduce command returned a different five, and §4v's "do NOT substitute your
 // own picks" was unauditable. A `probes` override is deliberately NOT accepted:
 // an override reopens exactly that divergence.
-export function buildPack({ body, invariants, blocks, totals, cycle, seed, project }) {
-  const probes = selectProbes(invariants, seed);
+export function buildPack({ body, invariants, blocks, totals, cycle, seed, project, selector = 'sha' }) {
+  if (!SELECTORS[selector]) throw new Error(`unknown selector "${selector}" — use sha or console`);
+  const probes = SELECTORS[selector](invariants, seed);
   const header = [
     `CYCLE UNDER VERIFICATION: ${project} — Cycle ${cycle}`,
     '',
@@ -127,7 +158,7 @@ export function buildPack({ body, invariants, blocks, totals, cycle, seed, proje
     '',
     `Rotation probes were seeded from ${seed} — they were NOT chosen by the`,
     'implementer. Reproduce the selection with:',
-    `  node scripts/verification-pack.mjs --cycle ${cycle} --seed ${seed}`,
+    `  node scripts/verification-pack.mjs --cycle ${cycle} --seed ${seed}${selector === 'console' ? ' --selector console' : ''}`,
     '',
   ];
   if (totals.rows) {
@@ -216,6 +247,11 @@ function main(argv) {
     catch { seed = 'no-git-' + cycle; }
   }
 
+  // F21: `--selector console` reproduces the console's §4v picks from the seed
+  // its prompt states ("<project>:<UTC day>"); the default is the sha selection.
+  const selector = arg('selector') || 'sha';
+  if (!SELECTORS[selector]) { console.error(`Unknown --selector "${selector}" — use sha (default) or console.`); return 1; }
+
   let metrics = '';
   try { metrics = readFileSync(at('.cycle/metrics.csv'), 'utf8'); } catch {}
 
@@ -223,7 +259,7 @@ function main(argv) {
     body, invariants,
     blocks: readBlocks(at('.cycle/blocks'), { cycle }),
     totals: cycleTotals(metrics, cycle),
-    cycle, seed, project: arg('project') || basename(rootDir),
+    cycle, seed, project: arg('project') || basename(rootDir), selector,
   });
 
   const out = arg('out');

@@ -46,6 +46,7 @@ const bad = m => { failures++; log.push('  ✗ ' + m); };
 function expectFail(label, mutate, signal) {
   const d = setup();
   try { mutate(d); const r = runGuard(d); if (r.code !== 0 && signal.test(r.out)) ok(label); else bad(`${label} — guard did not fail as expected (code ${r.code})`); }
+  catch (e) { bad(`${label} — ${e.message}`); }
   finally { rmSync(d, { recursive: true, force: true }); }
 }
 
@@ -147,6 +148,84 @@ expectFail('detects VERSION disagreeing with the newest CHANGELOG entry (F09)',
 expectFail('detects the CI workflow losing its least-privilege permissions (F15)',
   d => { const f = join(d, '.github', 'workflows', 'sync-check.yml'); writeFileSync(f, readFileSync(f, 'utf8').replace(/^permissions:\s*\n\s+contents: read\n/m, '')); },
   /permissions/i);
+
+// 16) CI workflow read as STRUCTURE (F31). Each of these passed the old
+// raw-text regexes: a commented-out stage, a stage that cannot fail (`|| true`),
+// a failure-tolerant or conditional step, and a filtered trigger. The parity
+// cases need the live Test Command, so they copy .cycle/config.md in.
+const ciEdit = (d, find, repl, withConfig = true) => {
+  if (withConfig) { mkdirSync(join(d, '.cycle'), { recursive: true }); copyFileSync(join(repo, '.cycle', 'config.md'), join(d, '.cycle', 'config.md')); }
+  const f = join(d, '.github', 'workflows', 'sync-check.yml'), t = readFileSync(f, 'utf8');
+  if (!t.includes(find)) throw new Error('fixture rotted: ' + find);
+  writeFileSync(f, t.replace(find, repl));
+};
+expectFail('detects a CI stage commented out behind `echo` (F31)',
+  d => ciEdit(d, 'run: node tests/portfolio-status.test.mjs', 'run: echo skipped  # node tests/portfolio-status.test.mjs'),
+  /CI never runs: tests\/portfolio-status\.test\.mjs/);
+expectFail('detects a CI stage that cannot fail (`|| true`) (F31)',
+  d => ciEdit(d, 'run: node tests/mutation-audit.mjs', 'run: node tests/mutation-audit.mjs || true'),
+  /is not a bare stage/);
+expectFail('detects a failure-tolerant CI step (continue-on-error) (F31)',
+  d => ciEdit(d, '        run: node tests/guard.test.mjs\n', '        run: node tests/guard.test.mjs\n        continue-on-error: true\n'),
+  /continue-on-error: true/);
+expectFail('detects a conditional CI step (if:) (F31)',
+  d => ciEdit(d, '      - name: Guard regression test', '      - if: false\n        name: Guard regression test'),
+  /if: false/);
+expectFail('detects a branch filter on the pull_request trigger (F31)',
+  d => ciEdit(d, '  pull_request:\n', '  pull_request:\n    branches: [never-a-real-branch]\n', false),
+  /filters its pull_request trigger/);
+expectFail('detects an inline filter on the push trigger (F31)',
+  d => ciEdit(d, '  push:\n', '  push: {branches: [x]}\n', false),
+  /filters its push trigger/);
+expectFail('detects `contents: read` surviving only as a comment (F31)',
+  d => ciEdit(d, 'permissions:\n  contents: read\n', 'permissions:\n  # contents: read\n  actions: read\n', false),
+  /do not grant read-only contents: actions: read$/m);
+// 17) CSV header parity (F49): a header that drops a MIDDLE column, and a file
+// whose headers were all rewritten away, were both invisible to the old
+// prefix-only scan.
+expectFail('detects a metrics header missing a middle column (F49)',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace('axis_b_lowest,notes,defensive_count', 'axis_b_lowest,defensive_count')); },
+  /not matching the canonical column list/);
+expectFail('detects a file whose metrics headers all disappeared (F49 count floor)',
+  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count', '(see CLAUDE.md)')); },
+  /only 0 metrics/);
+// 18) F44 (Cycle 7): the permissions block ends where the block ends. Its
+// pattern used to match newlines, so the "block" ran to end of file and a
+// step NAMED with "write" anywhere below read as a write-scope request — a
+// false red (and, the other way round, a comment's `contents: read` a false
+// green — case 16). Nothing in the permissions block changed here.
+{
+  const d = setup();
+  try {
+    ciEdit(d, '      - name: Guard regression test (fails closed on injected drift)', '      - name: Guard regression test — write-path drift (fails closed on injected drift)', false);
+    const r = runGuard(d);
+    if (r.code === 0) ok('a later step mentioning "write" does not read as a write permission (F44)');
+    else bad('permissions check read past its block (F44): ' + r.out.split('\n').filter(l => l.includes('✗')).join(' | '));
+  } catch (e) { bad('F44 case — ' + e.message); } finally { rmSync(d, { recursive: true, force: true }); }
+}
+// 19) F11 (Cycle 7): command files stand alone — a consuming project copies
+// .claude/commands/ and nothing else.
+expectFail('detects a command delegating to another command\'s step (F11)',
+  d => { const f = join(d, '.claude', 'commands', 'targeted-implement.md'); writeFileSync(f, readFileSync(f, 'utf8').replace('1. RUN TESTS —', '1. RUN TESTS — See `/broad-implement` Step 1. Then:')); },
+  /delegates to another command/);
+expectFail('detects a command naming a helper script unconditionally (F11)',
+  d => { const f = join(d, '.claude', 'commands', 'regression.md'); writeFileSync(f, readFileSync(f, 'utf8') + '\nRun scripts/invariant-check.mjs first.\n'); },
+  /names scripts\/invariant-check\.mjs unconditionally/);
+// 20) Cycle-7 follow-on to F05: the re-pull list classifies every release
+// since v1.19.0. v1.33.0 sat in neither list for nine releases.
+expectFail('detects a release missing from the Operator State Checklist re-pull list (F05 class)',
+  d => { mkdirSync(join(d, '.cycle'), { recursive: true }); const t = readFileSync(join(repo, '.cycle', 'config.md'), 'utf8'); if (!t.includes('v1.33.0 changed')) throw new Error('fixture rotted: v1.33.0 changed'); writeFileSync(join(d, '.cycle', 'config.md'), t.replace('v1.33.0 changed', 'v1.33.0 altered')); },
+  /in neither list: v1\.33\.0/);
+// …and a block-scalar run: with the bare command is still a stage, not a problem.
+{
+  const d = setup();
+  try {
+    ciEdit(d, 'run: node tests/guard.test.mjs', 'run: |\n          node tests/guard.test.mjs');
+    const r = runGuard(d);
+    if (r.code === 0) ok('a block-scalar run: holding the bare command still counts as the stage (F31)');
+    else bad('block-scalar bare stage rejected: ' + r.out.split('\n').filter(l => l.includes('✗')).join(' | '));
+  } catch (e) { bad('block-scalar case — ' + e.message); } finally { rmSync(d, { recursive: true, force: true }); }
+}
 
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));

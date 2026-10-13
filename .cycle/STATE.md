@@ -2,14 +2,17 @@
 
 ## Current
 Cycle: 7
-Phase: implement
+Phase: reflect
 Scope: broad (Cycle-7 /broad-scan, 2026-10-12 — 50 findings F01–F50, 8 fix batches, expansion plan E1–E4)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
-Subsystem cycles since last Seams audit: 0 (cadence 3 — /reflect increments it, a Seams audit resets it)
-Updated: 2026-10-12
+Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it, a Seams audit resets it)
+Updated: 2026-10-13
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1–4 are complete (v1.35.0–v1.38.0). Batches 5–8 and the expansion plan are not started.
+- All 8 fix batches are complete (v1.35.0–v1.42.0; 1–4 merged in PR #26). The expansion plan is not started.
+- Correction carried forward: the v1.41.0 block says INV-26's rule text was widened; it was not until v1.42.0.
+- The actionable follow-on items from Batches 1–8 shipped as v1.43.0; what remains under Open follow-on items is
+  deliberate, perceptual, strategic or conditional.
 - The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. Batch definitions below are the record of what each batch contains.
 - Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
@@ -36,15 +39,29 @@ Updated: 2026-10-12
   link after the slide-in; F22 invariant tables' own column rules; F23 main min-width:0. Browser-verified with the
   scan's probes. Also: INV-49 delegation guard tightened (false green exposed by this batch); v1.36.0's false
   "repaired" warning for a blank Axis B fixed.
+- v1.39.0 | Batch 5 | F30 fill tokens never used as text (37 → --on-*), --text-muted ≥4.5:1, custom invariant rows on
+  --surface2, contrast guard extended; F27 tracker restores focus, forms focus in and back, deletes focus a neighbour;
+  F29 live regions, copy announced, errors role=alert + aria-invalid/describedby, aria-expanded on every disclosure;
+  F28 empty required fields explained and focused. Also: INV-45 regex false red on aria-controls fixed.
+- v1.40.0 | Batch 6 | F31 CI workflow parsed (comments stripped, bare run: stages only, if:/continue-on-error and
+  trigger filters fail; permissions block bounded); F45 hostile fixture seeds dashCache/dashManual from derived field
+  lists, concat sinks scanned, reach floor; F18 placeholder cap lifted in console + check (§6a SEAMS field offered);
+  F48 one attribute-order-agnostic <pre> scanner; F49 every CSV header exact + per-file floor; F20 builders render the
+  passed project's invariants and seed. Each guard proven a false green before the fix.
+- v1.41.0 | Batch 7 | F47 canonicalCoverage ordered (LCS), multiset, case-sensitive — one real reorder in Tier 1
+  realigned; F46 norm exempts only single-token lines; F50 every block copy carries the same full field-label set,
+  Formats VERIFICATION/TIER 2 copies aligned (live drift); F37 hook Standing + Pending asserted; F38 dedupe counted by
+  executions; F44 no false red on a later "write" (bound shipped in v1.40.0).
+- v1.42.0 | Batch 8 | F10 security add-on regime-agnostic; F07 finding IDs + interface ID slot, Batch-name scope,
+  New capabilities (G/ST) field; F11 commands stand alone (+ check 17); F42 invariant-check shell model documented,
+  runs in the project root; F19 dead files plumbing removed, bank on every systems-map field; F21 grid width,
+  gitignore note, --selector console; F08/F09/F05 docs. Re-pull: 5 commands (and v1.33.0's /setup-cycle).
+- v1.43.0 | follow-ons | project delete purges its keys; invariant pipes escaped; manual Refresh feedback + 404
+  hint; INV-12 step set derived (+§1s/§6a); re-pull list guard (check 18); cycleTotals by header; ordered drift
+  report; legacyCopy success test; cycle-qualified F20 labels; two gotchas + README lock text restated.
 
 ## Pending / not yet done
-- Batch 5 — focus, feedback, theme: F30, F27, F29, F28.
-- Batch 6 — guard false greens I: F31 (CI YAML read as text), F45 (hostile fixture never seeds remote Dashboard
-  data), F18 (199-char placeholder cap), F48, F49, F20. Lands AFTER Batches 2–3.
-- Batch 7 — guard false greens II: F47 (order-blind canonicalCoverage), F46, F50 (block copies disagree now),
-  F37, F38, F44.
-- Batch 8 — docs/agnosticism: F10 (HIPAA-only "generic" security add-on), F42 (invariant-check runs arbitrary
-  shell; header says otherwise), F07, F08, F05 (v1.33.0 missing from the re-pull list), F09, F11, F19, F21.
+- §4v for Cycle 7 in a FRESH session (node scripts/verification-pack.mjs --out pack.md), then §6a synthesis.
 - Deferred: F43 (hook framing/size cap) — tied to the §4v-vs-SessionStart-hook decision.
 - Expansion (optional): E1 ST4+G5, E2 ST1+G1, E3 G2, E4 ST3+G4. Not batched: ST2 (packaging decision), G3.
 - OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
@@ -52,14 +69,13 @@ Updated: 2026-10-12
 - Phase "verify" is still written by nothing — §4v is read-only. The §4v-vs-hook decision depends on it.
 
 ## Open follow-on items
-- deleteProject() leaves ccg:<pid>:invariants / :archive / :cycle behind; a new project deriving the
-  same id inherits a dead project's invariants.
-- The project form splits invariant lines on `|`, so rule text containing a pipe mis-parses (this
-  repo's own INV-08/INV-46 would).
 - --accent is 3.4:1 on the light surface; left alone deliberately as the identity colour.
 - The `#fff` phase-dot label on a semantic fill is 2.3:1 — perceptual, for S8.
-- legacyCopy()'s SUCCESS path is still unexercised (the stub execCommand returns false).
-- Strategic: CSP (needs event delegation, L), no LICENSE file.
+- Strategic: CSP (needs event delegation, L), no LICENSE file (the licence is the owner's choice).
+- The Axis B project-form field splits on `|` like the invariant field used to; measures/playbook text with a
+  literal pipe would mis-parse (not seen yet — the invariant fix in v1.43.0 is the pattern to copy).
+- Conditional consolidations, not work yet: a 4th hand-rolled parser (YAML/CSV/invariant readers exist) or a
+  5th script main-module check would justify a shared module.
 
 ## Decisions made (so the next session doesn't re-litigate)
 - The console's prompts are GENERATED/LOCKED from CLAUDE.md. As of v1.29.0 this covers EVERY static
@@ -83,6 +99,6 @@ Updated: 2026-10-12
   what let disclosure and use diverge; re-adding one reopens the class.
 
 ## Where I left off
-Cycle 7 open; Batches 1–4 shipped (v1.35.0–v1.38.0), all on branch claude/tender-clarke-x722xl, not yet merged.
-Next: /broad-implement Batch 5 (focus, feedback, theme — F27 builds on Batch 4's handlers). Batches 6–7 tighten
-guards and can follow. Console rendering of Batches 2 and 4 still wants a person at a browser after merge.
+Cycle 7 open; all 8 fix batches and the follow-ons shipped (v1.35.0–v1.43.0). 1–4 are merged (PR #26); 5–8 and the
+follow-ons are on branch claude/tender-clarke-x722xl. Cycle 7 reflected (07-a-reflect.md: 21 − 0, corrected from the self-reported 25). Next: §4v in a fresh session,
+then §6a. The console's rendering of Batches 2, 4 and 5 still wants a person at a browser (S5–S9).

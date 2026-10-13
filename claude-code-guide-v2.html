@@ -12,7 +12,7 @@
   --prompt-bg:#090c12; --border:#2a3142; --border-light:#1e2840;
   --accent:#4f8ef7; --green:#22c55e; --amber:#f59e0b; --red:#ef4444;
   --teal:#14b8a6; --purple:#a78bfa; --orange:#fb923c;
-  --text:#dde4f0; --text-sec:#8899b3; --text-muted:#4e5e7a;
+  --text:#dde4f0; --text-sec:#8899b3; --text-muted:#7f8ea9;
   --tag-bg:#1e2d1a; --tag-text:#6ee7b7;
   /* ON-SURFACE TEXT (F13). The semantic hues above are FILLS and stay put
      ("chrome only" — see the light block). These are the TEXT colours drawn on
@@ -27,13 +27,18 @@
   --ph-bg:rgba(245,158,11,0.1); --ph-border:rgba(245,158,11,0.35); --ph-text:#fbbf24;
   --nav-w:256px; --r:8px; --r-sm:5px;
 }
+/* F30 (Cycle 7): text uses the --on-* tokens, never a fill token (--amber,
+   --teal, --purple, --green, --red). Fills do not flip, so as TEXT they fell to
+   1.7–2.4:1 on the light surfaces. --text-muted was 2.4–3.0:1 in BOTH themes;
+   it now clears 4.5:1 on --bg, --surface and --surface2 (--surface3 is only a
+   hover background). */
 /* LIGHT THEME — flips chrome only; prompt/code blocks (--prompt-bg) and accent
    colors stay as-is, so dark code blocks + the hardcoded prompt text color
    (#c5cfe0) remain legible in both themes. */
 [data-theme="light"]{
   --bg:#f4f7fb; --surface:#ffffff; --surface2:#eef2f8; --surface3:#e2e9f3;
   --border:#d6deea; --border-light:#e7ecf4;
-  --text:#1d2433; --text-sec:#475066; --text-muted:#8a94a8;
+  --text:#1d2433; --text-sec:#475066; --text-muted:#5a6579;
   --tag-bg:#e4f3e9; --tag-text:#157f49;
   --ph-bg:rgba(245,158,11,0.12); --ph-border:rgba(245,158,11,0.45); --ph-text:#b45309;
   --on-green:#166534; --on-amber:#92400e; --on-red:#b91c1c;
@@ -100,14 +105,14 @@ nav a.active{color:var(--accent);border-left-color:var(--accent);background:rgba
 .ct-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .ct-title{font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em}
 .ct-reset{font-size:10px;color:var(--text-muted);cursor:pointer;background:none;border:none;font-family:inherit;padding:0;transition:color .15s}
-.ct-reset:hover{color:var(--red)}
+.ct-reset:hover{color:var(--on-red)}
 .ct-progress{height:3px;background:var(--border);border-radius:2px;margin-bottom:10px;overflow:hidden}
 .ct-bar{height:100%;background:var(--green);border-radius:2px;transition:width .3s}
 .ct-item{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;user-select:none}
 .ct-label{font-size:11.5px;color:var(--text-sec);transition:color .15s}
 .ct-item:hover .ct-label{color:var(--text)}
 .ct-item.done .ct-label{color:var(--text-muted);text-decoration:line-through}
-.ct-complete{font-size:11px;color:var(--green);text-align:center;padding:4px 0 0;display:none}
+.ct-complete{font-size:11px;color:var(--on-green);text-align:center;padding:4px 0 0;display:none}
 
 /* MAIN */
 /* F23 (Cycle 7): min-width:0 — a flex item defaults to min-width:auto, so any
@@ -129,7 +134,7 @@ main{margin-left:var(--nav-w);flex:1;min-width:0;max-width:880px;padding:40px 44
 .farr{color:var(--text-muted);font-size:13px;padding:0 6px}
 .flbl{font-size:11px;color:var(--text-muted);padding:0 4px}
 .flow-note{font-size:11.5px;color:var(--text-muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.55}
-.flow-note strong{color:var(--amber);font-weight:500}
+.flow-note strong{color:var(--on-amber);font-weight:500}
 
 /* SECTION */
 section{margin-bottom:52px}
@@ -141,7 +146,7 @@ main > .panel.active{display:block;animation:panelIn .18s ease}
 .snum{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;white-space:nowrap;margin-top:2px}
 .stitle{font-size:18px;font-weight:600;color:var(--text)}
 .spurp{font-size:13px;color:var(--text-sec);margin-top:3px;line-height:1.5}
-.spurp strong{color:var(--teal);font-weight:500}
+.spurp strong{color:var(--on-teal);font-weight:500}
 
 /* SUBSYSTEM TABLE */
 .sub-table-wrap{margin-bottom:18px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
@@ -171,13 +176,13 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .pb-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .pb-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
 .ptag{font-size:10.5px;padding:2px 6px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);font-weight:500;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
-.fill-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--r-sm);color:var(--amber);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
+.fill-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--r-sm);color:var(--on-amber);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
 .fill-btn:hover{background:rgba(245,158,11,.18)}
 .fill-btn.active{background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.5)}
 .copy-btn{display:flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);border-radius:var(--r-sm);color:var(--accent);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
 .copy-btn:hover{background:rgba(79,142,247,.2)}
-.copy-btn.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:var(--green)}
-.copy-btn.fail{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--red);white-space:normal}
+.copy-btn.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:var(--on-green)}
+.copy-btn.fail{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--on-red);white-space:normal}
 /* FOCUS VISIBILITY (INV-56/INV-69). Many rules set outline:none, most of them
    inline on form controls, where a stylesheet :focus rule can never win on
    specificity. (The count is derived by check-html and deliberately not stated
@@ -192,7 +197,7 @@ table.st tr:hover td:first-child{color:var(--accent)}
 /* FILL FORM */
 .fill-form{display:none;padding:14px 14px 10px;border-bottom:1px solid var(--border);background:#0e1520}
 .fill-form.open{display:block}
-.fill-form-title{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.fill-form-title{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--on-amber);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .fill-form-title span{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px}
 /* EXTRACTED UTILITIES (inline-style → class cleanup) */
 .lbl-note{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0}
@@ -201,7 +206,7 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .mb12{margin-bottom:12px}
 .note-mut{font-size:11px;color:var(--text-muted)}
 .hint-mut{font-size:11px;color:var(--text-muted);margin-top:2px}
-.pf-err{font-size:11px;color:var(--red);margin-top:3px;display:none}
+.pf-err{font-size:11px;color:var(--on-red);margin-top:3px;display:none}
 .fill-row{margin-bottom:9px}
 .fill-label{font-size:11px;color:var(--text-sec);margin-bottom:3px;display:flex;align-items:center;gap:6px}
 .fill-label .opt{font-size:10px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:0 4px}
@@ -224,13 +229,13 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .wnote{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)}
 .inote .ic,.wnote .ic{font-size:13px;margin-top:1px;flex-shrink:0}
 .inote strong,.wnote strong{color:var(--text);font-weight:500}
-.wnote strong{color:var(--amber)}
+.wnote strong{color:var(--on-amber)}
 
 /* VARIANTS */
 .vt{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;margin-bottom:6px;user-select:none;transition:background .15s}
 .vt:hover{background:var(--surface3)}
 .vt-label{font-size:12.5px;font-weight:500;color:var(--text-sec)}
-.vt-label em{color:var(--purple);font-style:normal;font-size:10.5px;margin-right:6px;text-transform:uppercase;letter-spacing:.05em}
+.vt-label em{color:var(--on-purple);font-style:normal;font-size:10.5px;margin-right:6px;text-transform:uppercase;letter-spacing:.05em}
 .ch{transition:transform .2s;font-size:10px;color:var(--text-muted)}
 .ch.open{transform:rotate(180deg)}
 .vb{display:none}
@@ -242,11 +247,11 @@ table.st tr:hover td:first-child{color:var(--accent)}
 .tip-ttl{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px;display:flex;gap:7px;align-items:center}
 .td{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:2px}
 .tip p{font-size:12px;color:var(--text-sec);line-height:1.6}
-.tip p strong{color:var(--amber);font-weight:500}
+.tip p strong{color:var(--on-amber);font-weight:500}
 
 /* ARCHIVE */
 .archive-banner{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);border-radius:var(--r);margin-bottom:16px;font-size:12.5px;color:var(--text-sec)}
-.archive-banner strong{color:var(--purple);font-weight:500}
+.archive-banner strong{color:var(--on-purple);font-weight:500}
 .log-body{display:none;padding:18px}
 .log-body.open{display:block}
 
@@ -257,6 +262,8 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 .actions-bar{display:flex;gap:8px;margin-bottom:14px;align-items:center}
 .abar-btn{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-sec);font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
 .abar-btn:hover{color:var(--text);border-color:var(--text-muted)}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 @media(max-width:768px){
   /* F17: body is a flex ROW for the desktop layout. Without this the mobile
@@ -276,6 +283,9 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
 </style>
 </head>
 <body>
+
+<!-- F29: polite live region for transient results (copy feedback). -->
+<div id="srAnnounce" class="sr-only" role="status" aria-live="polite"></div>
 
 <!-- MOBILE TOP BAR -->
 <div class="mobilebar">
@@ -353,7 +363,7 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
   <div style="margin-bottom:30px">
     <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Claude Code · Structured Workflow</div>
     <h1 style="font-size:26px;font-weight:600;color:var(--text);line-height:1.2">Session Prompt Guide</h1>
-    <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
+    <p style="font-size:13.5px;color:var(--text-sec);margin-top:8px;line-height:1.6">Paste-ready prompts for systematic codebase auditing, planning, and implementation. Use <span style="color:var(--on-amber);font-weight:500">Fill fields</span> on any prompt to populate placeholders before copying. Values are saved automatically.</p>
     <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.18);border-radius:7px;padding:10px 13px">
       <strong style="color:var(--text-sec);font-weight:600">How this relates to your repo:</strong> these prompts mirror the canonical commands in <code>CLAUDE.md</code>, which install as slash commands from <code>.claude/commands/</code> (copy that folder, or run <code>/sync-commands</code> to pull updates). Per-project subsystems, dimensions, Axis&nbsp;B categories and invariants come from each project's <strong>Cycle Workflow Config</strong>. Cross-session state can persist in a <code>.cycle/</code> directory (read by <code>/cycle-status</code> and <code>/cycle-resume</code>) — and this console's own state can be backed up via <strong>Projects → Export state</strong>.
     </p>
@@ -365,9 +375,9 @@ hr.dv{border:none;border-top:1px solid var(--border);margin:20px 0}
     <div class="dash-head">
       <div class="dash-actions">
         <button class="dash-btn" onclick="refreshDashboard(true)">↻ Refresh</button>
-        <button class="dash-btn sec" onclick="toggleDashToken()">GitHub token</button>
+        <button class="dash-btn sec" id="dashTokenBtn" aria-expanded="false" aria-controls="dashToken" onclick="toggleDashToken()">GitHub token</button>
       </div>
-      <div id="dashStatus" class="note-mut"></div>
+      <div id="dashStatus" class="note-mut" role="status" aria-live="polite"></div>
     </div>
     <div class="dash-token" id="dashToken">
       <label for="dashTokenInput" style="font-size:11.5px;color:var(--text-sec);font-weight:500">Personal access token <span style="color:var(--text-muted);font-weight:400">— optional, for private repos &amp; higher rate limits</span></label>
@@ -652,7 +662,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 1 — Broad Scan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Single session</span>
-          <button class="fill-btn" onclick="toggleFill('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1a" onclick="toggleFill(\'t1a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t1a" onclick="doCopy('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -665,7 +675,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 1 — Broad Implement Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After your approval</span>
-          <button class="fill-btn" onclick="toggleFill('t1i')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1i" onclick="toggleFill(\'t1i\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t1i" onclick="doCopy('t1i')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -700,7 +710,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 2 — Audit + Plan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 1 of 2</span>
-          <button class="fill-btn" onclick="toggleFill('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t2a" onclick="toggleFill(\'t2a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t2a" onclick="doCopy('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -736,7 +746,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-p">§5 Roadmap</div><div class="farr">→</div><div class="flbl">after 2–3 audit cycles</div></div>
     <div class="flow-row" style="margin-bottom:11px"><div class="fn fn-t" style="background:rgba(20,184,166,.18);border-color:rgba(20,184,166,.4)">§1s Seams &amp; Invariants Audit</div><div class="farr">→</div><div class="flbl">every 3–4 subsystem cycles — no implementation phase</div><div class="farr">→</div><div class="fn fn-a">Updated Invariant Library</div></div>
     <div class="flow-row"><div class="fn fn-g">§6a Health Synthesis</div><div class="farr">→</div><div class="flbl">after full cycle — takes Handoff + Cycle Summary + Verification Block</div><div style="padding:0 8px;color:var(--text-muted)">|</div><div class="fn fn-g" style="opacity:.7">§6b Pulse</div><div class="farr">→</div><div class="flbl">anytime</div></div>
-    <div class="flow-note"><strong>Your workflow:</strong> Session 1 = Systems Map (once). Session 2 per subsystem = Audit → Planning (same session). Session 3 per subsystem = Implementation (new session). Session 4 = Regression Check + Reflection (new session). <strong style="color:var(--red)">Session 5 = Verification Pass (fresh session, no implementation context — produces VERIFICATION BLOCK).</strong> <strong>Key habit:</strong> Paste the Systems Map summary at the top of every follow-on session. Paste any Follow-On Audit Items at the top of the next audit for the flagged module.</div>
+    <div class="flow-note"><strong>Your workflow:</strong> Session 1 = Systems Map (once). Session 2 per subsystem = Audit → Planning (same session). Session 3 per subsystem = Implementation (new session). Session 4 = Regression Check + Reflection (new session). <strong style="color:var(--on-red)">Session 5 = Verification Pass (fresh session, no implementation context — produces VERIFICATION BLOCK).</strong> <strong>Key habit:</strong> Paste the Systems Map summary at the top of every follow-on session. Paste any Follow-On Audit Items at the top of the next audit for the flagged module.</div>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
       <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Cycle Rotation</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px">
@@ -747,7 +757,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <span class="fn fn-t" style="padding:3px 9px;font-size:11px">Cycle 5: Subsystem D</span><span class="farr" style="font-size:11px">→</span>
         <span style="color:var(--text-muted);font-size:11px">…</span>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:7px;line-height:1.5">Each subsystem cycle = audit + implement + verify. The <strong style="color:var(--teal);font-weight:500">Seams &amp; Invariants</strong> cycle runs every 3–4 subsystem cycles, has <strong style="color:var(--amber);font-weight:500">no implementation phase</strong>, and produces an updated invariant library. It audits the seams between subsystems — the things no vertical audit can own.</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:7px;line-height:1.5">Each subsystem cycle = audit + implement + verify. The <strong style="color:var(--on-teal);font-weight:500">Seams &amp; Invariants</strong> cycle runs every 3–4 subsystem cycles, has <strong style="color:var(--on-amber);font-weight:500">no implementation phase</strong>, and produces an updated invariant library. It audits the seams between subsystems — the things no vertical audit can own.</div>
     </div>
   </div>
 
@@ -762,7 +772,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Systems Map Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 0 only</span>
-          <button class="fill-btn" onclick="toggleFill('p0')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p0" onclick="toggleFill(\'p0\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p0" onclick="doCopy('p0')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -814,7 +824,7 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
         <div class="pb-label">Layered Audit Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 1+</span>
-          <button class="fill-btn" onclick="toggleFill('p1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1" onclick="toggleFill(\'p1\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p1" onclick="doCopy('p1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -912,21 +922,27 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
       <button class="abar-btn" onclick="collapseAllVariants('s1-variants')">Collapse all ↑</button>
     </div>
     <div id="s1-variants">
-      <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-sec',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; HIPAA Compliance Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-sec" onclick="toggleVariant(\'v-sec\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; Compliance Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-sec">
         <div class="pb" id="block-p1sec">
-          <div class="pb-header"><div class="pb-label">Security / HIPAA Audit Add-on</div><div class="pb-meta"><span class="ptag">Replace or add to flag list</span><button class="copy-btn" id="copy-p1sec" onclick="doCopy('p1sec')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
-          <pre id="p1sec">This is a security and HIPAA compliance audit only. Focus exclusively on:
-- PHI handling (storage, transmission, logging, access control)
+          <div class="pb-header"><div class="pb-label">Security &amp; Compliance Audit Add-on</div><div class="pb-meta"><span class="ptag">Replace or add to flag list</span><button class="copy-btn" id="copy-p1sec" onclick="doCopy('p1sec')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
+          <pre id="p1sec">This is a security and compliance audit only. Focus exclusively on:
+- Sensitive-data handling (storage, transmission, logging, access control) —
+  whatever this project's regulated or confidential data is: health records,
+  payment data, personal data, credentials, customer content
 - Authentication and authorization enforcement
 - Data validation and sanitization
 - Encryption at rest and in transit
 - Audit logging completeness
-- Any surface area that would fail a HIPAA technical safeguards review
-For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.</pre>
+- Any surface area that would fail the compliance regime this project is
+  subject to (e.g. HIPAA technical safeguards, PCI DSS, SOC 2, GDPR) — name
+  the regime, or state that none applies
+For each finding, name the control or safeguard it maps to under that regime
+(e.g. a HIPAA Required vs. Addressable safeguard, a PCI DSS requirement
+number), or "general hardening" if no regime applies.</pre>
         </div>
       </div>
-      <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-perf',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-perf" onclick="toggleVariant(\'v-perf\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-perf">
         <div class="pb" id="block-p1perf">
           <div class="pb-header"><div class="pb-label">Performance Audit Add-on</div><div class="pb-meta"><span class="ptag">Add to or replace flag list</span><button class="copy-btn" id="copy-p1perf" onclick="doCopy('p1perf')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -967,7 +983,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
         <div class="pb-label">Seams &amp; Invariants Audit Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Every 3–4 subsystem cycles</span>
-          <button class="fill-btn" onclick="toggleFill('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1s" onclick="toggleFill(\'p1s\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p1s" onclick="doCopy('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -988,7 +1004,7 @@ For each finding, note whether it is a Required vs. Addressable HIPAA safeguard.
         <div class="pb-label">Planning Prompt</div>
         <div class="pb-meta">
           <span class="ptag">End of audit session or fresh session</span>
-          <button class="fill-btn" onclick="toggleFill('p2')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p2" onclick="toggleFill(\'p2\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p2" onclick="doCopy('p2')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1067,7 +1083,7 @@ ORDERING RATIONALE: [1–2 sentences]
         <div class="pb-label">Implementation Session Prompt</div>
         <div class="pb-meta">
           <span class="ptag">New session — code-writing</span>
-          <button class="fill-btn" onclick="toggleFill('p3')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p3" onclick="toggleFill(\'p3\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p3" onclick="doCopy('p3')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1144,10 +1160,10 @@ DOCUMENTATION UPDATES NEEDED:
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
-    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-single',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-single" onclick="toggleVariant(\'v-single\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
     <div class="vb" id="v-single">
       <div class="pb" id="block-p3single">
-        <div class="pb-header"><div class="pb-label">Single Finding Prompt</div><div class="pb-meta"><button class="fill-btn" onclick="toggleFill('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button><button class="copy-btn" id="copy-p3single" onclick="doCopy('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
+        <div class="pb-header"><div class="pb-label">Single Finding Prompt</div><div class="pb-meta"><button class="fill-btn" aria-expanded="false" aria-controls="fill-p3single" onclick="toggleFill(\'p3single\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button><button class="copy-btn" id="copy-p3single" onclick="doCopy('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
         <div class="fill-form" id="fill-p3single"></div>
         <pre id="p3single">[DESCRIBE THE SINGLE FINDING TO ADDRESS AND ITS FILE/FUNCTION LOCATION]
 
@@ -1173,7 +1189,7 @@ After completing the change, note: what was modified, whether anything unexpecte
         <div class="pb-label">Pre-Implementation Check</div>
         <div class="pb-meta">
           <span class="ptag">Before High/Very High risk changes</span>
-          <button class="fill-btn" onclick="toggleFill('p4pre')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4pre" onclick="toggleFill(\'p4pre\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4pre" onclick="doCopy('p4pre')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1202,7 +1218,7 @@ Do not begin implementation until this check is complete.</pre>
         <div class="pb-label">Post-Implementation Regression Check</div>
         <div class="pb-meta">
           <span class="ptag">After implementation, before merge</span>
-          <button class="fill-btn" onclick="toggleFill('p4post')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4post" onclick="toggleFill(\'p4post\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4post" onclick="doCopy('p4post')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1238,7 +1254,7 @@ Prioritize the verification list by likelihood of breakage. Then:
 ---END FOLLOW-ON AUDIT ITEMS---</pre>
     </div>
 
-    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-reflect',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-reflect" onclick="toggleVariant(\'v-reflect\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
     <div class="vb" id="v-reflect">
       <div class="pb" id="block-p4reflect">
         <div class="pb-header">
@@ -1270,7 +1286,8 @@ For each action completed this cycle, answer two binary questions:
 
 Tally (three-way classification):
 - Production fixes (YES to Q1): [count] — severity breakdown
-- New capabilities / features: [count]
+- New capabilities / features: [count — from the summary's "New capabilities
+  (G/ST)" field where there is one; never folded into production fixes]
 - Defensive/structural (NO to Q1, not a feature): [count]
 - New failure modes (YES to Q2): [count] — severity breakdown
 - Net score: [production fixes] − [new failure modes] = [net]
@@ -1334,10 +1351,11 @@ next unused lowercase letter among this cycle's non-release blocks (a for the
 first, then b, c, …). §4v and §6a consume it
 in a FRESH session with none of this context, so a block that lives only in
 chat cannot reach them. If you CORRECTED a count that an implementation
-summary reported, say so in the metrics `notes` field — the pack assembler
-(scripts/verification-pack.mjs) surfaces that to the verifier automatically,
-so the "don't trust the self-report" signal is generated rather than
-remembered. Skip if no .cycle/.
+summary reported, say so in the metrics `notes` field — where the project
+uses the pack assembler (scripts/verification-pack.mjs) it surfaces that to
+the verifier automatically, so the "don't trust the self-report" signal is
+generated rather than remembered; without it, the §4v operator reads it
+from metrics.csv. Skip if no .cycle/.
 
 SEAM COUNTER (optional — only if .cycle/ exists): increment "Subsystem
 cycles since last Seams audit" in .cycle/STATE.md by 1 — this reflection
@@ -1373,15 +1391,16 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
     <!-- Invariant Management -->
     <div style="margin-bottom:16px">
       <button onclick="toggleInvariantForm()" id="addInvariantBtn"
-        style="width:100%;padding:8px;border-radius:6px;background:rgba(20,184,166,.06);border:1px dashed rgba(20,184,166,.3);color:var(--teal);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">
+        style="width:100%;padding:8px;border-radius:6px;background:rgba(20,184,166,.06);border:1px dashed rgba(20,184,166,.3);color:var(--on-teal);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">
         + Add invariant
       </button>
       <div id="invariantForm" style="display:none;margin-top:8px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)">
-        <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:10px">Add Invariant</div>
+        <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--on-teal);margin-bottom:10px">Add Invariant</div>
         <div style="margin-bottom:8px">
           <label class="fill-label" for="inv-text">Invariant rule <span style="color:var(--text-muted);font-weight:400;font-size:10px">(one sentence — what must always hold)</span></label>
           <textarea id="inv-text" rows="2" placeholder="e.g. PHI redactor runs before any external API call that includes transcript text"
             style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+          <div id="inv-text-err" class="pf-err" role="alert"></div>
         </div>
         <div style="margin-bottom:10px">
           <label class="fill-label" for="inv-sub">Subsystem / seam it guards</label>
@@ -1397,7 +1416,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
           <button onclick="toggleInvariantForm()"
             style="padding:4px 11px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:11px;cursor:pointer;font-family:inherit">Cancel</button>
           <button onclick="saveInvariant()"
-            style="padding:4px 11px;border-radius:var(--r-sm);background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit">Save invariant</button>
+            style="padding:4px 11px;border-radius:var(--r-sm);background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--on-green);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit">Save invariant</button>
         </div>
       </div>
       <div id="customInvariantsList" style="margin-top:8px"></div>
@@ -1408,7 +1427,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
         <div class="pb-label">Verification Pass Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Fresh session — no implementation context</span>
-          <button class="fill-btn" onclick="toggleFill('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4v" onclick="toggleFill(\'p4v\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4v" onclick="doCopy('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1419,7 +1438,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
     <div class="inote"><div class="ic">📌</div><div>The VERIFICATION BLOCK produced here becomes a <strong>required input</strong> for §6a Health Synthesis alongside the SESSION HANDOFF BLOCK and CYCLE SUMMARY BLOCK. All three are needed for accurate scoring.</div></div>
 
     <!-- VERIFICATION BLOCK format reference -->
-    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-vblock-ref',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-vblock-ref" onclick="toggleVariant(\'v-vblock-ref\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
     <div class="vb" id="v-vblock-ref">
       <div class="pb" id="block-vblockref">
         <div class="pb-header"><div class="pb-label">VERIFICATION BLOCK — Output Format</div><div class="pb-meta"><span class="ptag">Reference only</span><button class="copy-btn" id="copy-vblockref" onclick="doCopy('vblockref')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1467,7 +1486,7 @@ Category D ratio: [X%]
         <div class="pb-label">PR Review Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Read-only</span>
-          <button class="fill-btn" onclick="toggleFill('pr')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-pr" onclick="toggleFill(\'pr\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-pr" onclick="doCopy('pr')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1487,7 +1506,7 @@ Category D ratio: [X%]
         <div class="pb-label">Roadmap Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After 2–3 audit cycles</span>
-          <button class="fill-btn" onclick="toggleFill('p5')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p5" onclick="toggleFill(\'p5\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p5" onclick="doCopy('p5')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1516,7 +1535,7 @@ estimate (S/M/L + rough time). For Tier 4: 3 distinct directions, a short
 paragraph each. End with the one strategic bet you'd prioritize if
 resources were limited, and why.</pre>
     </div>
-    <div class="vt" role="button" tabindex="0" onclick="toggleVariant('v-rm-opts',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-rm-opts" onclick="toggleVariant(\'v-rm-opts\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
     <div class="vb" id="v-rm-opts">
       <div class="pb" id="block-p5opts">
         <div class="pb-header"><div class="pb-label">Roadmap — Optional add-ons</div><div class="pb-meta"><button class="copy-btn" id="copy-p5opts" onclick="doCopy('p5opts')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1539,7 +1558,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
         <div class="pb-label">Health Synthesis Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After full audit cycle</span>
-          <button class="fill-btn" onclick="toggleFill('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6a" onclick="toggleFill(\'p6a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p6a" onclick="doCopy('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1567,7 +1586,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
         <div class="pb-label">Health Pulse Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Anytime / Quick check</span>
-          <button class="fill-btn" onclick="toggleFill('p6b')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6b" onclick="toggleFill(\'p6b\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p6b" onclick="doCopy('p6b')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1664,7 +1683,7 @@ Policy responses triggered: [list categories, or "None"]
           <div class="hint-mut">All state lives in this browser only. Export to a JSON file to back up or move to another machine.</div>
         </div>
         <div class="flex-g8">
-          <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
+          <button onclick="exportState()" style="padding:5px 12px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:var(--on-green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Export state</button>
           <button onclick="document.getElementById('importStateFile').click()" style="padding:5px 12px;border-radius:5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Import state</button>
           <input id="importStateFile" type="file" accept="application/json,.json" aria-label="Choose a state backup file to import" style="display:none" onchange="importStateFile(this)">
         </div>
@@ -1673,13 +1692,13 @@ Policy responses triggered: [list categories, or "None"]
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div class="note-mut">Sync console state directly to the repo's <code>.cycle/</code> (File System Access; Chromium-based browsers, served over http(s)/localhost). Falls back to Export/Import elsewhere.</div>
           <div class="flex-g8">
-            <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
-            <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
-            <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--purple);font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
+            <button onclick="connectRepoFolder()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--on-purple);font-size:11px;cursor:pointer;font-family:inherit">Connect repo folder</button>
+            <button onclick="saveStateToRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--on-purple);font-size:11px;cursor:pointer;font-family:inherit">Save → repo</button>
+            <button onclick="loadStateFromRepo()" style="padding:4px 10px;border-radius:5px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);color:var(--on-purple);font-size:11px;cursor:pointer;font-family:inherit">Load ← repo</button>
           </div>
         </div>
       </div>
-      <div id="stateIoMsg" style="font-size:11px;margin-top:8px;display:none"></div>
+      <div id="stateIoMsg" role="status" aria-live="polite" style="font-size:11px;margin-top:8px;display:none"></div>
     </div>
     <div id="projectsBuiltIn"></div>
     <div id="projectsCustom"></div>
@@ -1688,19 +1707,19 @@ Policy responses triggered: [list categories, or "None"]
       + Add custom project
     </button>
     <div id="projectForm" style="display:none;margin-top:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
-      <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:16px">New Project</div>
+      <div id="projectFormTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--on-green);margin-bottom:16px">New Project</div>
       <div class="mb12">
         <label class="fill-label" for="pf-name">Project name</label>
         <input id="pf-name" type="text" placeholder="e.g. My Internal Tool"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box">
         <div id="pf-name-preview" style="font-size:11px;color:var(--text-muted);margin-top:3px"></div>
-        <div id="pf-name-err" class="pf-err"></div>
+        <div id="pf-name-err" class="pf-err" role="alert"></div>
       </div>
       <div class="mb12">
         <label class="fill-label" for="pf-dims">Health dimensions <span class="lbl-note">(comma-separated)</span></label>
         <textarea id="pf-dims" rows="3"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5">Overall, Architecture &amp; Code Quality (incl. test coverage), Security &amp; Compliance, Operational Integrity, Operational Readiness</textarea>
-        <div id="pf-dims-err" class="pf-err"></div>
+        <div id="pf-dims-err" class="pf-err" role="alert"></div>
       </div>
       <div class="mb12">
         <label class="fill-label" for="pf-axisb">Horizontal (Axis B) categories <span class="lbl-note">(one per line — format: name | what it measures | pulse question | policy playbook. A 3-field line is read as the legacy name | measures | playbook.)</span></label>
@@ -1715,7 +1734,7 @@ Policy responses triggered: [list categories, or "None"]
           style="width:100%;margin-top:6px;padding:6px;border-radius:5px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.3);color:var(--accent);font-size:12px;cursor:pointer;font-family:inherit">
           + Add subsystem
         </button>
-        <div id="pf-subs-err" class="pf-err"></div>
+        <div id="pf-subs-err" class="pf-err" role="alert"></div>
       </div>
       <div class="mb12">
         <label class="fill-label" for="pf-invs">Invariants <span class="lbl-note">(optional — one per line, format: [INV-NN |] rule text | subsystem | verify (optional). Existing ids are kept; a line with no id gets the next free number.)</span></label>
@@ -1738,7 +1757,7 @@ Policy responses triggered: [list categories, or "None"]
         <button onclick="cancelProjectForm()"
           style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Cancel</button>
         <button onclick="saveProjectForm()"
-          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">
+          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--on-green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">
           <span id="pf-save-label">Create project</span>
         </button>
       </div>
@@ -1757,22 +1776,24 @@ Policy responses triggered: [list categories, or "None"]
     </div>
     <div id="archiveEntries"></div>
     <button onclick="openArchiveForm()" id="addArchiveBtn"
-      style="width:100%;margin-top:8px;padding:9px;border-radius:7px;background:rgba(167,139,250,.06);border:1px dashed rgba(167,139,250,.3);color:var(--purple);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
+      style="width:100%;margin-top:8px;padding:9px;border-radius:7px;background:rgba(167,139,250,.06);border:1px dashed rgba(167,139,250,.3);color:var(--on-purple);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
       + Add entry
     </button>
     <div id="archiveForm" style="display:none;margin-top:12px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin-bottom:12px">New Archive Entry</div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--on-amber);margin-bottom:12px">New Archive Entry</div>
       <label for="af-title" style="display:block;font-size:11px;color:var(--text-sec);margin-bottom:4px">Title (e.g. "Observatory — Security & HIPAA Audit")</label>
       <input id="af-title" type="text" placeholder="Project — Subsystem Scope"
         style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 9px;outline:none;box-sizing:border-box;margin-bottom:8px">
+      <div id="af-title-err" class="pf-err" role="alert" style="margin:-6px 0 8px"></div>
       <label for="af-content" style="display:block;font-size:11px;color:var(--text-sec);margin-bottom:4px">Content — paste handoff block, implementation summary, or key findings</label>
       <textarea id="af-content" rows="8" placeholder="Paste session output here..."
         style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:monospace;font-size:12px;padding:6px 9px;outline:none;box-sizing:border-box;resize:vertical;margin-bottom:10px"></textarea>
+      <div id="af-content-err" class="pf-err" role="alert" style="margin:-6px 0 8px"></div>
       <div style="display:flex;gap:10px">
         <button onclick="cancelArchiveForm()"
           style="padding:5px 13px;border-radius:5px;background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>
         <button onclick="saveArchiveEntry()"
-          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Save entry</button>
+          style="padding:5px 13px;border-radius:5px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:var(--on-green);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Save entry</button>
       </div>
     </div>
   </section>
@@ -2050,22 +2071,25 @@ function switchProject(id){
 }
 
 // ─── INVARIANT STORAGE (per project) ─────────────────────────
-function invariantKey(){ return `ccg:${activeProjectId}:invariants`; }
+// F20 (Cycle 7): keyed by an explicit project id when a caller has one. The
+// builders take a project argument but read the ACTIVE project's invariants,
+// so §4v/§1s/PR-review rendered for project B carried project A's library.
+function invariantKey(pid){ return `ccg:${pid||activeProjectId}:invariants`; }
 // F16 (Cycle 7): every loader below trusted the stored SHAPE, so one malformed
 // value — "{}", "null", a number where a string belongs — threw at init and
 // blanked everything rendered after it. Parse failures were caught; wrong
 // shapes were not.
 function isPlainObj(v){ return !!v&&typeof v==='object'&&!Array.isArray(v); }
-function loadCustomInvariants(){
-  let v; try{v=JSON.parse(localStorage.getItem(invariantKey())||'[]')}catch(e){return []}
+function loadCustomInvariants(pid){
+  let v; try{v=JSON.parse(localStorage.getItem(invariantKey(pid))||'[]')}catch(e){return []}
   if(!Array.isArray(v)) return [];
   return v.filter(isPlainObj).map(i=>({...i,id:String(i.id==null?'':i.id),text:String(i.text==null?'':i.text),subsystem:String(i.subsystem==null?'':i.subsystem)}));
 }
 function saveCustomInvariants(arr){ try{localStorage.setItem(invariantKey(),JSON.stringify(arr))}catch(e){storageWarn(e)} }
-function getProjectInvariants(){
-  const project=getProject();
+function getProjectInvariants(proj){
+  const project=proj||getProject();
   const builtIn=project.invariants||[];
-  const custom=loadCustomInvariants();
+  const custom=loadCustomInvariants(project.id);
   return [...builtIn,...custom];
 }
 function getNextInvariantId(){
@@ -2082,7 +2106,10 @@ function toggleInvariantForm(){
   const show=form.style.display==='none';
   form.style.display=show?'block':'none';
   btn.style.display=show?'none':'';
-  if(!show){document.getElementById('inv-text').value='';document.getElementById('inv-sub').value='';var iv=document.getElementById('inv-verify');if(iv)iv.value='';}
+  if(!show){document.getElementById('inv-text').value='';document.getElementById('inv-sub').value='';var iv=document.getElementById('inv-verify');if(iv)iv.value='';clearFieldErrs(['inv-text-err']);}
+  // F27: the button just pressed is hidden on open — move focus into the form,
+  // and back to the button when the form closes, instead of leaving it on <body>.
+  focusEl(show?'inv-text':'addInvariantBtn');
 }
 
 function saveInvariant(){
@@ -2090,7 +2117,10 @@ function saveInvariant(){
   const sub=document.getElementById('inv-sub').value.trim();
   const verifyEl=document.getElementById('inv-verify');
   const verify=verifyEl?verifyEl.value.trim():'';
-  if(!text)return;
+  // F28 (Cycle 7): an empty rule used to `return` silently — the form stayed
+  // open and nothing said why.
+  clearFieldErrs(['inv-text-err']);
+  if(!text){ showPfErr('inv-text-err','Write the rule before saving — one sentence describing what must always hold.'); focusEl('inv-text'); return; }
   const inv={id:getNextInvariantId(),text,subsystem:sub||'Unassigned'};
   if(verify)inv.verify=verify;
   const custom=loadCustomInvariants();
@@ -2105,13 +2135,20 @@ function saveInvariant(){
 }
 
 function deleteInvariant(id){
-  const custom=loadCustomInvariants().filter(inv=>inv.id!==id);
+  const before=loadCustomInvariants(), at=before.findIndex(inv=>inv.id===id);
+  const custom=before.filter(inv=>inv.id!==id);
   saveCustomInvariants(custom);
   renderInvariantTable();
   renderSeamsInvariantTable();
   renderCustomInvariantsList();
   renderVerification();
   renderSeams();
+  // F27: the deleted row's button is gone — focus the delete button now in its
+  // place (or the one before it), else the Add button.
+  const list=document.getElementById('customInvariantsList');
+  const btns=list&&list.querySelectorAll?[...list.querySelectorAll('button')]:[];
+  const next=btns[Math.min(Math.max(at,0),btns.length-1)];
+  if(next&&next.focus) next.focus(); else focusEl('addInvariantBtn');
 }
 
 function renderCustomInvariantsList(){
@@ -2122,11 +2159,11 @@ function renderCustomInvariantsList(){
   // here reads as "nothing saved" rather than "no CUSTOM invariants yet".
   if(!custom.length){el.innerHTML='<div style="font-size:11px;color:var(--text-muted);padding:4px 2px">No custom invariants yet — add one above, or let them accrue via /reflect and Seams audits.</div>';return;}
   el.innerHTML='<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:6px">Custom invariants (editable)</div>'+
-    custom.map(inv=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;background:var(--prompt-bg);border:1px solid var(--border-light);border-radius:var(--r-sm);margin-bottom:4px">
-      <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${esc(inv.id)}</span>
+    custom.map(inv=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border-light);border-radius:var(--r-sm);margin-bottom:4px">
+      <span style="color:var(--on-teal);font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;margin-top:1px">${esc(inv.id)}</span>
       <span style="font-size:12px;color:var(--text-sec);flex:1">${esc(inv.text)}</span>
       <span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0">${esc(inv.subsystem)}</span>
-      <button onclick="deleteInvariant(${jsArg((inv.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
+      <button onclick="deleteInvariant(${jsArg((inv.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--on-red);cursor:pointer;font-family:inherit;flex-shrink:0">×</button>
     </div>`).join('');
 }
 
@@ -2146,7 +2183,12 @@ function saveVal(pid,name,val){ try{localStorage.setItem(lsKey(pid,name),val)}ca
 // apart STRUCTURALLY rather than by a keyword list: a token inside an
 // ---OUTPUT BLOCK--- span, or sharing its opening line with another token (a
 // template row), is a format token.
-const PH_RE = /\[([A-Z][^\]]{0,199})\]/g;
+// F18 (Cycle 7): no length cap. {0,199} silently dropped any longer field —
+// §6a's 224-char "[OPTIONAL: PASTE SEAMS & INVARIANTS AUDIT BLOCK — …]" never
+// reached its fill form, and the check shared the cap so it could not see the
+// loss. A token stops at the next "[" instead, so a stray bracket cannot
+// swallow the real tokens after it.
+const PH_RE = /\[([A-Z][^\][]*)\]/g;
 const LARGE_KEYS=['PASTE','LIST','DESCRIBE','NOTE'];
 const OPT_KEYS=['OPTIONAL','IF APPLICABLE'];
 // The prompts' own vocabulary for "the operator supplies this". A token is a
@@ -2157,7 +2199,7 @@ const OPT_KEYS=['OPTIONAL','IF APPLICABLE'];
 // to WRITE, not a field to fill).
 const DIRECTIVE_KEYS=['PASTE','LIST','DESCRIBE','NOTE','OPTIONAL','IF '];
 const ALLCAPS_PH=/^[A-Z][A-Z0-9\s\/\-&',:.()]*$/;
-const ANY_TOKEN=/\[[^\]]{0,199}\]/g;
+const ANY_TOKEN=/\[[^\][]*\]/g;
 function isFillField(name){ return ALLCAPS_PH.test(name)||DIRECTIVE_KEYS.some(k=>name.startsWith(k)); }
 function isLarge(name){return LARGE_KEYS.some(k=>name.startsWith(k))}
 function isOpt(name){return OPT_KEYS.some(k=>name.startsWith(k))}
@@ -2202,9 +2244,15 @@ function buildFillForm(pid){
   const phs=getPlaceholders(pre.textContent);
   if(!phs.length){form.innerHTML='<div style="padding:10px;font-size:12px;color:var(--text-muted)">No fillable placeholders in this prompt.</div>';return;}
   const project=getProject();
-  const isSysMap=n=>n==='PASTE SYSTEMS MAP SUMMARY HERE';
+  // F19 (Cycle 7): every variant of the systems-map field gets the bank
+  // buttons. The exact-match test missed §1's "[PASTE SYSTEMS MAP SUMMARY HERE —
+  // 3–5 bullets]" and the §4 "…INCLUDING THE INTER-MODULE DEPENDENCY MAP" forms,
+  // so the bank was offered only on the prompts that needed it least. The files
+  // field (LIST RELEVANT FILES AND DIRECTORIES) is gone from every prompt — the
+  // subsystem's files come from the Cycle Workflow Config — so its branch and
+  // the values saved for it were dead and are removed.
+  const isSysMap=n=>n.startsWith('PASTE SYSTEMS MAP SUMMARY HERE');
   const isSubsys=n=>n==='SUBSYSTEM GROUP NAME';
-  const isFiles=n=>n==='LIST RELEVANT FILES AND DIRECTORIES';
 
   let html='<div class="fill-form-title">Fill in placeholders <span>— values auto-saved per project · copied version will include your text</span></div>';
   phs.forEach(ph=>{
@@ -2226,7 +2274,7 @@ function buildFillForm(pid){
       // Systems map — large textarea with save-to-bank button
       html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
       html+=`<div style="display:flex;gap:8px;margin-top:4px">
-        <button onclick="saveBank(document.getElementById('${safeId}').value)" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);color:var(--teal);cursor:pointer;font-family:inherit">Save to bank</button>
+        <button onclick="saveBank(document.getElementById('${safeId}').value)" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);color:var(--on-teal);cursor:pointer;font-family:inherit">Save to bank</button>
         <button onclick="loadBank('${safeId}',${argPid},${argName})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Load from bank</button>
       </div>`;
     } else if(isSubsys(ph.name)){
@@ -2242,8 +2290,6 @@ function buildFillForm(pid){
       if(val&&!project.subsystems.find(s=>s.name===val)){
         html+=`<input class="fill-input" id="${safeId}_custom" aria-label="Custom subsystem name" style="margin-top:4px" type="text" value="${esc(val)}" placeholder="Custom subsystem name" oninput="saveVal(${argPid},${argName},this.value)">`;
       }
-    } else if(isFiles(ph.name)){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="2" placeholder="Files for this subsystem..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else if(large){
       html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else {
@@ -2258,9 +2304,6 @@ function buildFillForm(pid){
 function handleSubSelect(pid,val){
   if(val==='__custom__')return;
   saveVal(pid,'SUBSYSTEM GROUP NAME',val);
-  const project=getProject();
-  const match=project.subsystems.find(s=>s.name===val);
-  if(match) saveVal(pid,'LIST RELEVANT FILES AND DIRECTORIES',match.files);
   buildFillForm(pid); // refresh to show selected state
 }
 
@@ -2283,6 +2326,7 @@ function toggleFill(pid){
   if(!form.innerHTML)buildFillForm(pid);
   const isOpen=form.classList.toggle('open');
   if(btn)btn.classList.toggle('active',isOpen);
+  if(btn&&btn.setAttribute)btn.setAttribute('aria-expanded',isOpen?'true':'false');   // F29
 }
 
 function getFilledText(pid){
@@ -2322,6 +2366,7 @@ function copyFeedback(btn,ok){
   }catch(e){}
   btn.classList.remove('ok','fail');
   btn.classList.add(ok?'ok':'fail');
+  announce(ok?'Copied to clipboard.':'Copy failed — select the text and copy it manually.');
   btn.innerHTML=ok?COPIED_ICON:'Copy failed — select the text and copy manually';
   if(!ok){ try{console.warn('claude-workflow-tools: clipboard write failed');}catch(_){} }
   setTimeout(()=>{btn.classList.remove('ok','fail');btn.innerHTML=orig;},ok?2000:4000);
@@ -2368,16 +2413,14 @@ function renderSubsysTable(){
     // The old hand-rolled quote escaping only handled ' — a name containing "
     // broke out of the onclick attribute entirely.
     const argName=jsArg((s.name));
-    const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillSubsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillSubsystem(${argName},${argFiles})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillSubsystem(${argName})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillSubsystem(${argName})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 
-function fillSubsystem(name,files){
+function fillSubsystem(name){
   saveVal('p1','SUBSYSTEM GROUP NAME',name);
-  saveVal('p1','LIST RELEVANT FILES AND DIRECTORIES',files);
   const form=document.getElementById('fill-p1');
   if(form&&form.classList.contains('open'))buildFillForm('p1');
   if(form&&!form.classList.contains('open')){
@@ -2408,7 +2451,11 @@ function renderCycle(){
   const complete=document.getElementById('ctComplete');
   if(!container)return;
   let totalPhases=groups.length*3, donePhases=0;
-  container.innerHTML=groups.map(g=>{
+  // F27 (Cycle 7): innerHTML replaces the focused control, so after Enter on a
+  // label or dot focus fell to <body>. Each control carries a stable key; the
+  // one that had focus gets it back after the render.
+  const had=document.activeElement, fk=(had&&container.contains&&container.contains(had)&&had.getAttribute)?had.getAttribute('data-fk'):null;
+  container.innerHTML=groups.map((g,gi)=>{
     const phase=data[g]||null; // null, 'audit', 'implement', 'verify'
     const phaseIdx=phase?CYCLE_PHASES.indexOf(phase):-1;
     const isDone=phase==='verify';
@@ -2422,16 +2469,17 @@ function renderCycle(){
       // assistive tech saw one button with its children flattened into its name,
       // and a key press on a dot also reached the row. aria-pressed states which
       // phases are marked; the name says which phase the dot sets.
-      return `<button type="button" class="ct-dot" title="${PHASE_TITLES[p]}" aria-label="${esc(g)}: ${PHASE_TITLES[p]}" aria-pressed="${active?'true':'false'}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'var(--fg-on-solid)':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</button>`;
+      return `<button type="button" class="ct-dot" data-fk="g${gi}-d${i}" title="${PHASE_TITLES[p]}" aria-label="${esc(g)}: ${PHASE_TITLES[p]}" aria-pressed="${active?'true':'false'}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border-radius:3px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;background:${active?color:'none'};border:1.5px solid ${color};color:${active?'var(--fg-on-solid)':'var(--text-muted)'};cursor:pointer" onclick="event.stopPropagation();setPhase(${argG},'${p}')">${PHASE_LABELS[p]}</button>`;
     }).join('');
     // The row stays clickable for the mouse; the keyboard reaches the same
     // action through the label <button> — the label and the dots are siblings in
     // the tab order, never controls nested inside another control.
     return `<div class="ct-item${isDone?' done':''}" onclick="advancePhase(${argG})" style="justify-content:space-between">
-      <button type="button" class="ct-label" onclick="event.stopPropagation();advancePhase(${argG})" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:0;padding:0;font:inherit;font-size:11.5px;text-align:left;cursor:pointer">${esc(g)}</button>
+      <button type="button" class="ct-label" data-fk="g${gi}-l" onclick="event.stopPropagation();advancePhase(${argG})" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:0;padding:0;font:inherit;font-size:11.5px;text-align:left;cursor:pointer">${esc(g)}</button>
       <div style="display:flex;gap:3px;flex-shrink:0;margin-left:6px">${phaseDots}</div>
     </div>`;
   }).join('');
+  if(fk&&container.querySelector){ const back=container.querySelector('[data-fk="'+fk+'"]'); if(back&&back.focus) back.focus(); }
   const pct=totalPhases?Math.round(donePhases/totalPhases*100):0;
   if(bar)bar.style.width=pct+'%';
   if(complete)complete.style.display=donePhases===totalPhases?'block':'none';
@@ -2488,13 +2536,18 @@ function buildP6aText(project){
   const consecCycles=project.policyConsecutiveCycles||2;
   const axisB=getAxisB(project);
   const axisBList=axisB.map((c,i)=>`${i+1}. ${c.name} (score 1–10)\n   Measured by: ${c.measures||'trend in findings of this shape this cycle vs. prior, and whether a durable guard exists against the pattern.'}`).join('\n\n');
-  const axisBGrid=axisB.map(c=>`${c.name.padEnd(32)}X/10      Improving/Stable/Degrading`).join('\n');
+  // F21 (Cycle 7): a category name of 32+ characters ran straight into its
+  // score ("…Regression PostureX/10"). Pad every row to the longest name + 2,
+  // never less than the header's 32, so the rows stay aligned with each other.
+  const gridW=Math.max(32,...axisB.map(c=>c.name.length+2));
+  const axisBGrid=axisB.map(c=>`${c.name.padEnd(gridW)}X/10      Improving/Stable/Degrading`).join('\n');
   const axisBPlaybooks=axisB.map(c=>`${c.name} triggered → ${c.playbook||'Identify the systemic root cause and add a concrete, durable guard (test, lint rule, startup check, or consolidation) so the pattern cannot silently recur. One guard per cycle until the category score recovers.'}`).join('\n\n');
   return `Do not make any changes to any files during this session, other than the
 optional metrics.csv append in step 8.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
 (Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
+For a Tier 1 cycle (/broad-scan), there is no per-subsystem Session Handoff Block: paste the scan's FINAL REPORT and batch plan once in its place, and one Cycle Summary Block and Verification Block for the cycle.
 
 ${subsystemLines}
 
@@ -2514,7 +2567,7 @@ AXIS A — VERTICAL (Subsystem Health)
 
 For each dimension below, provide:
 - A score out of 10, OR "Not assessed this cycle" if no direct signal exists from the cycle inputs
-  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. RAG, Business Viability, or any domain-specific dimension without direct signal this cycle).
+  Do NOT fabricate a score from indirect evidence. If no subsystem cycle touched a dimension and no Verification Block probed it, mark it "Not assessed." This is especially likely for dimensions where no dedicated cycle has run (e.g. a domain-specific or product dimension that no subsystem cycle touched and no Verification Block probed).
 - Coverage confidence: High (full cycle with verification block) / Medium (cycle summary only, no verification) / Low (inferred from adjacent signals)
 - 2–3 sentences of reasoning grounded in specific findings from the cycle inputs, not general impressions
 - The single most important finding or unresolved item driving the score
@@ -2730,8 +2783,8 @@ function renderCustomProjects(){
         </div>
         <div class="flex-g8">
           <button onclick="switchProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">Switch</button>
-          <button onclick="openEditProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
-          <button onclick="deleteProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
+          <button onclick="openEditProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--on-amber);font-size:11px;cursor:pointer;font-family:inherit">Edit</button>
+          <button onclick="deleteProject(${jsArg((p.id))})" style="padding:4px 10px;border-radius:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--on-red);font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
         </div>
       </div>`).join('');
 }
@@ -2753,6 +2806,7 @@ function openProjectForm(){
   renderSubRows();
   clearPfErrors();
   document.getElementById('projectForm').style.display='block';
+  focusEl('pf-name');   // F27: "Add project" is hidden by the form it opens
 }
 
 function openEditProject(id){
@@ -2763,7 +2817,12 @@ function openEditProject(id){
   document.getElementById('pf-dims').value=p.healthDimensions;
   document.getElementById('pf-axisb').value=axisBToText(getAxisB(p));
   // F05: emit the id so it survives the round-trip. A line without one is new.
-  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.id?inv.id+' | ':''}${inv.text} | ${inv.subsystem}${inv.verify?` | ${inv.verify}`:''}`).join('\n');
+  // A literal pipe inside a field is written `\|` so it survives the split
+  // below — the same escape the Cycle Workflow Config's invariant readers use.
+  // Unescaped, "a | b" in rule text (this repo's own INV-08 and INV-46) became
+  // two fields and pushed the subsystem into the rule.
+  const escPipe=v=>String(v==null?'':v).replace(/\|/g,'\\|');
+  document.getElementById('pf-invs').value=(p.invariants||[]).map(inv=>`${inv.id?inv.id+' | ':''}${escPipe(inv.text)} | ${escPipe(inv.subsystem)}${inv.verify?` | ${escPipe(inv.verify)}`:''}`).join('\n');
   document.getElementById('pf-thresh').value=p.policyThreshold||4;
   document.getElementById('pf-consec').value=p.policyConsecutiveCycles||2;
   document.getElementById('pf-name-preview').textContent=`ID: ${p.id} (locked)`;
@@ -2780,11 +2839,10 @@ function cancelProjectForm(){
   document.getElementById('projectForm').style.display='none';
   document.getElementById('addProjectBtn').style.display='';
   pfEditingId=null;pfSubRows=[];
+  focusEl('addProjectBtn');   // F27
 }
 
-function clearPfErrors(){
-  ['pf-name-err','pf-dims-err','pf-subs-err'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.display='none';e.textContent=''}});
-}
+function clearPfErrors(){ clearFieldErrs(['pf-name-err','pf-dims-err','pf-subs-err']); }
 
 function renderSubRows(){
   const c=document.getElementById('pf-subs');
@@ -2793,7 +2851,7 @@ function renderSubRows(){
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <span style="font-size:11px;color:var(--text-muted);font-weight:500">Subsystem ${i+1}</span>
-        ${pfSubRows.length>1?`<button onclick="removeSubRow(${i})" style="font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">Remove</button>`:''}
+        ${pfSubRows.length>1?`<button onclick="removeSubRow(${i})" style="font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--on-red);cursor:pointer;font-family:inherit">Remove</button>`:''}
       </div>
       <input type="text" value="${esc(s.name)}" aria-label="Subsystem ${i+1} name" placeholder="Subsystem name (e.g. Core Architecture & Pipeline)"
         style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:12px;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:5px"
@@ -2805,7 +2863,13 @@ function renderSubRows(){
 }
 
 function addSubRow(){ pfSubRows.push({name:'',files:''});renderSubRows(); }
-function removeSubRow(i){ pfSubRows.splice(i,1);if(!pfSubRows.length)pfSubRows=[{name:'',files:''}];renderSubRows(); }
+function removeSubRow(i){
+  pfSubRows.splice(i,1);if(!pfSubRows.length)pfSubRows=[{name:'',files:''}];renderSubRows();
+  // F27: focus the name field of the row that took this one's place.
+  const c=document.getElementById('pf-subs');
+  const names=c&&c.querySelectorAll?[...c.querySelectorAll('input[type="text"]')].filter(x=>/name$/.test(x.getAttribute('aria-label')||'')):[];
+  const t=names[Math.min(i,names.length-1)]; if(t&&t.focus) t.focus();
+}
 
 // F05 (Cycle 6): the form used to renumber every invariant INV-01..N from line
 // ORDER on each save, so deleting line 3 of 10 shifted seven ids and broke every
@@ -2822,7 +2886,8 @@ function parseInvariantFormLines(raw,pid){
     if(Array.isArray(custom))custom.forEach(inv=>{ if(inv&&inv.id)taken.add(String(inv.id).toUpperCase()); });
   }catch(e){}
   const out=raw.split('\n').filter(l=>l.trim()).map(l=>{
-    const parts=l.split('|').map(x=>x.trim());
+    // Split on UNESCAPED pipes only; `\|` is a literal pipe inside a field.
+    const parts=l.split(/(?<!\\)\|/).map(x=>x.trim().replace(/\\\|/g,'|'));
     let id=null;
     if(/^INV-\d+$/i.test(parts[0]||''))id=parts.shift().toUpperCase();
     const inv={id,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
@@ -2881,12 +2946,57 @@ function saveProjectForm(){
   renderProjectSelector();
 }
 
-function showPfErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';}}
+// F29 (Cycle 7): an error is linked to its field — aria-invalid plus
+// aria-describedby on the control whose id is the error id minus "-err" — and
+// the message element is role="alert", so it is announced when it appears.
+function showPfErr(id,msg){
+  const e=document.getElementById(id); if(!e)return;
+  e.textContent=msg; e.style.display='block';
+  const f=document.getElementById(id.replace(/-err$/,''));
+  if(f&&f.setAttribute){ f.setAttribute('aria-invalid','true'); f.setAttribute('aria-describedby',id); }
+}
+function clearFieldErrs(ids){
+  ids.forEach(id=>{
+    const e=document.getElementById(id); if(e){ e.style.display='none'; e.textContent=''; }
+    const f=document.getElementById(id.replace(/-err$/,''));
+    if(f&&f.removeAttribute){ f.removeAttribute('aria-invalid'); f.removeAttribute('aria-describedby'); }
+  });
+}
+// F27: move focus to an element by id (no-op if absent).
+function focusEl(id){ const e=document.getElementById(id); if(e&&typeof e.focus==='function') e.focus(); }
+// F29: one polite live region for transient results (copy succeeded/failed).
+function announce(msg){ const r=document.getElementById('srAnnounce'); if(!r)return; r.textContent=''; r.textContent=msg; }
 
+// Deleting a project used to remove only its entry from ccg:customProjects:
+// its invariants, archive, cycle tracker, saved fill values, systems-map bank
+// and Dashboard source stayed behind, and a NEW project that derived the same
+// id (re-create "My App") silently inherited the dead project's invariant
+// library. Every per-project key is `ccg:<id>:…`; remove them all, and the id's
+// entries in the three Dashboard maps. Two exclusions: ccg:secret:* is never
+// touched (a project named "Secret" derives the id `secret`), and a key that
+// belongs to a surviving project whose id extends this one (`a:b` vs `a`) is
+// that project's, not this one's.
+function purgeProjectData(id){
+  const prefix=`ccg:${id}:`;
+  const longer=getAllProjects().map(p=>p.id).filter(o=>o!==id&&String(o).indexOf(id+':')===0);
+  try{
+    const doomed=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.indexOf(prefix)===0&&!isSecretKey(k)&&!longer.some(o=>k.indexOf(`ccg:${o}:`)===0)) doomed.push(k);
+    }
+    doomed.forEach(k=>localStorage.removeItem(k));
+  }catch(e){ storageWarn(e); }
+  ['ccg:dashRepos','ccg:dashCache','ccg:dashManual'].forEach(key=>{
+    const m=dashLoad(key);
+    if(Object.prototype.hasOwnProperty.call(m,id)){ delete m[id]; dashSave(key,m); }
+  });
+}
 function deleteProject(id){
   if(!confirm(`Delete project? This cannot be undone.`))return;
   const updated=loadCustomProjects().filter(p=>p.id!==id);
   saveCustomProjects(updated);
+  purgeProjectData(id);
   if(activeProjectId===id)switchProject(PROJECTS[0].id);
   renderProjectsTab();
   renderProjectSelector();
@@ -3116,13 +3226,13 @@ function renderArchive(){
     const isSeed=seeds.find(s=>s.id===e.id);
     return `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
       <div onclick="toggleLog('arlog-${i}',this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);cursor:pointer">
-        <button type="button" onclick="event.stopPropagation();toggleLog('arlog-${i}',this.parentNode)" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer">
+        <button type="button" aria-expanded="false" aria-controls="arlog-${i}" onclick="event.stopPropagation();toggleLog('arlog-${i}',this.parentNode)" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer">
           <span style="color:var(--accent);font-size:11px;flex-shrink:0">▶</span>
           <span style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.title)}</span>
         </button>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
           <span style="font-size:11px;color:var(--text-muted);font-family:monospace">${esc(e.date)}</span>
-          ${!isSeed?`<button type="button" aria-label="Delete archive entry: ${esc(e.title)}" onclick="event.stopPropagation();deleteArchiveEntry(${jsArg((e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;font-family:inherit">×</button>`:''}
+          ${!isSeed?`<button type="button" aria-label="Delete archive entry: ${esc(e.title)}" onclick="event.stopPropagation();deleteArchiveEntry(${jsArg((e.id))})" style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--on-red);cursor:pointer;font-family:inherit">×</button>`:''}
           <span style="color:var(--text-muted);font-size:10px">▼</span>
         </div>
       </div>
@@ -3141,15 +3251,23 @@ function openArchiveForm(){
   document.getElementById('af-content').value='';
   document.getElementById('archiveForm').style.display='block';
   document.getElementById('addArchiveBtn').style.display='none';
+  clearFieldErrs(['af-title-err','af-content-err']);
+  focusEl('af-title');   // F27
 }
 function cancelArchiveForm(){
   document.getElementById('archiveForm').style.display='none';
   document.getElementById('addArchiveBtn').style.display='';
+  clearFieldErrs(['af-title-err','af-content-err']);
+  focusEl('addArchiveBtn');   // F27
 }
 function saveArchiveEntry(){
   const title=document.getElementById('af-title').value.trim();
   const content=document.getElementById('af-content').value.trim();
-  if(!title||!content)return;
+  // F28 (Cycle 7): say which required field is empty instead of returning silently.
+  clearFieldErrs(['af-title-err','af-content-err']);
+  if(!title) showPfErr('af-title-err','A title is required.');
+  if(!content) showPfErr('af-content-err','Paste the content to archive.');
+  if(!title||!content){ focusEl(!title?'af-title':'af-content'); return; }
   const today=new Date();
   const date=`${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}/${String(today.getFullYear()).slice(2)}`;
   const entries=loadArchiveEntries();
@@ -3168,11 +3286,11 @@ function deleteArchiveEntry(id){
 // ─── TIER 1 & TIER 2 PROMPTS — dynamic per project ─────────
 function buildTier1Text(project){
   const dimList=project.healthDimensions.split(',').map(d=>`- ${d.trim()}`).join('\n');
-  return `Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
-README, and the roadmap carefully before doing anything else.
-
-Do not make any changes to any files during the audit phase, other than
+  return `Do not make any changes to any files during the audit phase, other than
 the optional CYCLE OPEN step below.
+
+Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
+README, and the roadmap carefully before doing anything else.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
 a new cycle, and this is the ONLY file write the session may make. Unless
@@ -3191,6 +3309,9 @@ STAGE 1 — BROAD PASS
 ═══════════════════════════════════════════
 
 Audit the codebase thoroughly. For each finding:
+- ID: F1, F2, … — one sequence across all three stages (Stage 2 and
+  interface findings continue it; a retracted ID is never reused). These
+  are session-local labels for the batch plan, not invariant IDs
 - State the issue, cite the file and function/line area
 - Severity: Critical / High / Medium / Low
 - Confidence: High / Medium / Low (flag if you only skimmed this area)
@@ -3339,7 +3460,7 @@ FEATURE EFFECTIVENESS (for each major feature area):
   [1-2 sentences on how effectively it serves users, not code quality]
 
 INTERFACE FINDINGS (structural only — omit if no user-facing surface):
-- [Finding] — [file/component] — [Severity] — [what a user hits] —
+- [ID] — [Finding] — [file/component] — [Severity] — [what a user hits] —
   [effort: S/M/L + rough time estimate]
 (or "None — no structural interface findings")
 
@@ -3518,10 +3639,15 @@ Rules:
 
 After all actions complete:
 
-1. RUN TESTS — read Test Command from CLAUDE.md. If \`manual\`, walk
-   Regression Scenarios for the touched subsystem(s) instead. Classify
-   failures (this session / pre-existing / real bug). See
-   \`/broad-implement\` Step 1 for the full branching detail.
+1. RUN TESTS — read the Test Command from CLAUDE.md's Cycle Workflow Config.
+   - If it is \`manual\`: walk every Regression Scenario whose Subsystem
+     overlaps a file you modified, and record PASS / FAIL / NOT APPLICABLE
+     (with the reason for NOT APPLICABLE). A FAIL counts as a test failure.
+   - Otherwise: run the suite (the Test Command, or \`npm test\` if none is
+     set), then walk any configured Regression Scenarios.
+   Classify each failure: caused by this session (fix now) / pre-existing
+   (note, don't fix) / a real production bug exposed by a correct test or
+   scenario (flag as a follow-on, don't fix here).
 2. REGRESSION CHECK — review each modified file for breakage risk,
    cross-reference CROSS-MODULE RISKS from handoff block
 3. REFLECT — for each action: production bug? (YES/NO) New failure
@@ -3602,6 +3728,9 @@ Read CLAUDE.md (especially Common Gotchas) before starting.
 
 Rules:
 - Implement ONLY the findings specified above — nothing else
+- A batch name ("Batch 2", "E1") means every item the scan's plan lists
+  under it. Read the list from the scan report; if the report is not in
+  this session, ask for it rather than guessing what the batch held
 - G (completeness gap) and ST (strategic suggestion) items from the
   scan's EXPANSION PLAN are in scope only when named above, by ID or by
   their E-batch. They are new capability, not fixes — see REFLECT
@@ -3665,6 +3794,7 @@ Produce a BROAD SCAN IMPLEMENTATION SUMMARY:
 
 ---BROAD SCAN IMPLEMENTATION SUMMARY---
 Findings implemented: [list finding IDs and one-line descriptions]
+New capabilities (G/ST): [list G/ST IDs and one-line descriptions, or "None"]
 Files modified: [list all files touched]
 
 CHANGES:
@@ -3719,7 +3849,7 @@ and /sync-docs if any documentation updates are needed.`;
 // Mirrors canonical /pr-review; the project's invariant library is injected so
 // the console prompt is standalone. Locked by gen-html-prompts --assert.
 function buildPrReviewText(project){
-  const invs=getProjectInvariants();
+  const invs=getProjectInvariants(project);
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet for this project)';
@@ -3765,7 +3895,8 @@ Review across these lenses, scoped to the diff:
    test (Category D).
 8. Invariant cross-check: does the diff touch any rule in the Invariant
    Library? Flag every invariant at risk, and run its Verify test if one
-   is defined (command-style Verify runs via scripts/invariant-check.mjs).
+   is defined (if the project has scripts/invariant-check.mjs it runs
+   command-style Verify fields; otherwise run the Verify command directly).
 9. Docs drift: does the PR change behavior the docs/README/CLAUDE.md
    describe without updating them?
 
@@ -3861,16 +3992,14 @@ function renderT2SubsysTable(){
   if(title)title.textContent=`${project.name} — Subsystem Groups`;
   tbody.innerHTML=project.subsystems.map(s=>{
     const argName=jsArg((s.name));
-    const argFiles=jsArg((s.files));
     const displayName=esc(s.name);
     const displayFiles=esc(s.files);
-    return `<tr onclick="fillT2Subsystem(${argName},${argFiles})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillT2Subsystem(${argName},${argFiles})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
+    return `<tr onclick="fillT2Subsystem(${argName})"><td>${displayName}<button class="use-btn" onclick="event.stopPropagation();fillT2Subsystem(${argName})">Use ↗</button></td><td>${displayFiles}</td></tr>`;
   }).join('');
 }
 
-function fillT2Subsystem(name,files){
+function fillT2Subsystem(name){
   saveVal('t2a','SUBSYSTEM GROUP NAME',name);
-  saveVal('t2a','LIST RELEVANT FILES AND DIRECTORIES',files);
   const form=document.getElementById('fill-t2a');
   if(form&&form.classList.contains('open'))buildFillForm('t2a');
   if(form&&!form.classList.contains('open')){
@@ -3884,7 +4013,7 @@ function fillT2Subsystem(name,files){
 
 // ─── SEAMS & INVARIANTS AUDIT (§1s) — dynamic per project ───
 function buildSeamsText(project){
-  const invs=getProjectInvariants();
+  const invs=getProjectInvariants(project);
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet — this audit will create the initial library)';
@@ -4011,7 +4140,7 @@ function renderSeamsInvariantTable(){
 
 // ─── VERIFICATION PASS (§4v) — dynamic per project ──────────
 function buildVerificationText(project){
-  const invs=getProjectInvariants();
+  const invs=getProjectInvariants(project);
   const invLines=invs.length
     ? invs.map(inv=>`  ${inv.id} | ${inv.text} | Subsystem: ${inv.subsystem}${inv.verify?` | Verify: ${inv.verify}`:''}`).join('\n')
     : '  (No invariants defined yet — add via Project Manager or grow organically via /reflect)';
@@ -4037,10 +4166,12 @@ PART 1 — INVARIANT PROBE RESULTS
 Re-probe every invariant that the cycle claimed to fix or touch. Additionally, probe the following 5 pre-selected invariants from the library (selected deterministically from a stated seed, not chosen by the implementer — do NOT substitute your own picks):
 
 MANDATORY ROTATION PROBES:
-${invs.length>=5?selectSeededInvariants(invs,5,probeSeed()).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
-(Probe seed: ${probeSeed()} — the selection is a pure function of the seed and
+${invs.length>=5?selectSeededInvariants(invs,5,probeSeed(project)).map(inv=>`  → ${inv.id} | ${inv.text}`).join('\n'):'  (Library has fewer than 5 invariants — probe all of them)'}
+(Probe seed: ${probeSeed(project)} — the selection is a pure function of the seed and
 the invariant ids, so a verifier can reproduce it and the implementer cannot
-re-roll it. It rotates once per UTC day.)
+re-roll it. It rotates once per UTC day. Reproduce it against the project's
+own library with:
+  node scripts/verification-pack.mjs --selector console --seed "${probeSeed(project)}")
 
 For each invariant probed:
 - Read the relevant code directly (do not rely on the cycle's description of what changed)
@@ -4117,7 +4248,7 @@ Finally, answer: "What invariants should be added to the library based on what t
 // scripts/verification-pack.mjs by seeding from the commit sha; this is the same
 // property in the browser, where there is no sha: seed from the project + UTC
 // day, state the seed in the prompt, and never re-roll on copy.
-function probeSeed(){ return `${activeProjectId}:${new Date().toISOString().slice(0,10)}`; }
+function probeSeed(project){ return `${(project&&project.id)||activeProjectId}:${new Date().toISOString().slice(0,10)}`; }
 function hash32(str){ let h=2166136261>>>0; const s=String(str); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
 function selectSeededInvariants(invs,count,seed){
   return [...invs]
@@ -4154,7 +4285,7 @@ function renderInvariantTableInto(tbodyId,titleId){
   tbody.innerHTML=invs.map(inv=>{
     const displayText=esc(inv.text);
     const displaySub=esc(inv.subsystem);
-    return `<tr><td><span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-right:6px">${esc(inv.id)}</span>${displayText}</td><td>${displaySub}</td></tr>`;
+    return `<tr><td><span style="color:var(--on-teal);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-right:6px">${esc(inv.id)}</span>${displayText}</td><td>${displaySub}</td></tr>`;
   }).join('');
 }
 
@@ -4166,8 +4297,9 @@ function renderInvariantTable(){
 function toggleVariant(id,toggle){
   const body=document.getElementById(id);
   const ch=toggle.querySelector('.ch');
-  body.classList.toggle('open');
+  const open=body.classList.toggle('open');
   ch.classList.toggle('open');
+  if(toggle.setAttribute)toggle.setAttribute('aria-expanded',open?'true':'false');   // F29
 }
 function expandAllVariants(containerId){
   const c=document.getElementById(containerId)||document.querySelector('#s1');
@@ -4181,8 +4313,12 @@ function toggleLog(id,hdr){
   const body=document.getElementById(id);
   if(!body)return;
   const ch=hdr?hdr.querySelector('.ch'):null;
-  body.classList.toggle('open');
+  const open=body.classList.toggle('open');
   if(ch)ch.classList.toggle('open');
+  // F29: the control that reports this section's state (the header itself, or
+  // the button inside it) carries aria-expanded.
+  const st=hdr&&(hdr.getAttribute&&hdr.getAttribute('aria-expanded')!==null?hdr:(hdr.querySelector?hdr.querySelector('[aria-expanded]'):null));
+  if(st&&st.setAttribute)st.setAttribute('aria-expanded',open?'true':'false');
 }
 
 // ─── NAV ACTIVE STATE ────────────────────────────────────────
@@ -4260,7 +4396,10 @@ function dashToken(){ try{return localStorage.getItem('ccg:ghToken')||''}catch(e
 // message is kept — it names the file and status — but 404/403 get the fix.
 function dashErrHint(msg){
   const m=String(msg||'');
-  if(/HTTP 404/.test(m)) return m+' — repo or file not found. Private repo? Add a GitHub token above.';
+  // A 404 with a token already saved is not fixed by adding one — say what is.
+  if(/HTTP 404/.test(m)) return m+(dashToken()
+    ? ' — repo or file not found. Check the owner/repo spelling and branch, and that your saved token can read this repo.'
+    : ' — repo or file not found. Private repo? Add a GitHub token above.');
   if(/HTTP 401|HTTP 403/.test(m)) return m+' — unauthorized or rate-limited. Add a token above, or wait for the limit to reset.';
   if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return m+' — network unreachable, or the page is opened from file:// (fetch is blocked there).';
   return m;
@@ -4303,12 +4442,18 @@ async function fetchProjectStatus(spec){
   return status;
 }
 let dashRefreshing=false;
-async function refreshDashboard(){
-  if(typeof fetch!=='function'||dashRefreshing)return;
+// `manual` is true only from the Refresh button. It used to be ignored, so a
+// click while a refresh was already running, or on file:// where fetch does not
+// exist, did nothing at all. A background refresh still returns quietly; a
+// click always says why nothing happened.
+async function refreshDashboard(manual){
+  const st=document.getElementById('dashStatus');
+  if(typeof fetch!=='function'){ if(manual&&st) st.textContent='Live refresh needs fetch — open the console over http(s) or localhost, not file://. Cached and self-reported values still show.'; return; }
+  if(dashRefreshing){ if(manual&&st) st.textContent='A refresh is already running — results will appear when it finishes.'; return; }
   dashRefreshing=true;
   const repos=dashRepos(), cache=dashCache();
   const ids=Object.keys(repos).filter(id=>repos[id]);
-  const st=document.getElementById('dashStatus'); if(st) st.textContent=ids.length?'Refreshing…':'No repos configured — add one per card below (⚙ source)';
+  if(st) st.textContent=ids.length?'Refreshing…':'No repos configured — add one per card below (⚙ source)';
   let okN=0, failN=0;
   try{
   for(const id of ids){
@@ -4356,7 +4501,7 @@ function dashboardCard(p){
     +(summary?'<div class="dcard-summary">'+esc(summary)+'</div>':'')
     +((status&&status.topVertical)?'<div class="dcard-pri">▲ '+esc(status.topVertical)+'</div>':'')
     +((status&&status.topHorizontal)?'<div class="dcard-pri">▬ '+esc(status.topHorizontal)+'</div>':'')
-    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+esc(ghUrl)+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" onclick="toggleDashEdit('+argId+')">⚙ source</button></div>'
+    +'<div class="dcard-foot">'+(ghUrl?'<a class="dlink" href="'+esc(ghUrl)+'" target="_blank" rel="noopener">'+esc(r.owner+'/'+r.repo)+' ↗</a>':'<span class="note-mut">no repo set</span>')+'<button class="dlink" id="dsrc-btn-'+esc(p.id)+'" aria-expanded="false" aria-controls="dedit-'+esc(p.id)+'" onclick="toggleDashEdit('+argId+')">⚙ source</button></div>'
     +'<div class="dedit" id="dedit-'+esc(p.id)+'">'
     +'<label for="dspec-'+esc(p.id)+'">GitHub repo — <code>owner/repo</code> or <code>owner/repo@branch</code></label><input id="dspec-'+esc(p.id)+'" value="'+esc(spec)+'" placeholder="owner/repo">'
     +'<div class="dcard-err" id="dspec-err-'+esc(p.id)+'" role="alert" style="display:none"></div>'
@@ -4371,7 +4516,7 @@ function renderDashboard(){
   el.innerHTML=getAllProjects().map(dashboardCard).join('');
   const ti=document.getElementById('dashTokenInput'); if(ti&&dashToken()) ti.placeholder='•••••••• (token saved)';
 }
-function toggleDashEdit(id){ const e=document.getElementById('dedit-'+id); if(e) e.classList.toggle('open'); }
+function toggleDashEdit(id){ const e=document.getElementById('dedit-'+id); if(!e)return; const open=e.classList.toggle('open'); const b=document.getElementById('dsrc-btn-'+id); if(b&&b.setAttribute) b.setAttribute('aria-expanded',open?'true':'false'); }
 function saveDashCard(id){
   const v=i=>{const e=document.getElementById(i);return e&&e.value?e.value.trim():'';};
   const spec=v('dspec-'+id), repos=dashRepos();
@@ -4384,7 +4529,7 @@ function saveDashCard(id){
   if(o||ph||nt) manual[id]={overall:o,phase:ph,note:nt}; else delete manual[id]; dashSave('ccg:dashManual',manual);
   renderDashboard(); setTimeout(refreshDashboard,0);
 }
-function toggleDashToken(){ const t=document.getElementById('dashToken'); if(t) t.classList.toggle('open'); }
+function toggleDashToken(){ const t=document.getElementById('dashToken'); if(!t)return; const open=t.classList.toggle('open'); const b=document.getElementById('dashTokenBtn'); if(b&&b.setAttribute) b.setAttribute('aria-expanded',open?'true':'false'); }
 function saveDashToken(){ const i=document.getElementById('dashTokenInput'); if(i&&i.value){ try{localStorage.setItem('ccg:ghToken',i.value.trim())}catch(e){storageWarn(e)} i.value=''; } toggleDashToken(); setTimeout(refreshDashboard,0); }
 function clearDashToken(){ try{localStorage.removeItem('ccg:ghToken')}catch(e){} const i=document.getElementById('dashTokenInput'); if(i){i.value='';i.placeholder='ghp_…';} renderDashboard(); }
 

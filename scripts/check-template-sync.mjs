@@ -192,20 +192,40 @@ else console.log(`  ✓ Command-pair parity — shared behaviors consistent acro
 //       net_score/prod_fixes/new_failure_modes are owned ONLY by phase=reflect
 //       rows (P1, v1.6.0), or the render-metrics cumulative trend double-counts.
 const htmlRaw = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
-const HEADER_PREFIX = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes';
+// F49 (Cycle 7): find EVERY header, not just the ones with the exact prefix.
+// The old scan only counted headers that matched the first ten columns
+// verbatim, so a header that dropped or renamed a MIDDLE column (notes, say)
+// matched nothing and was never checked — and with no count floor, deleting
+// every header passed too. Now every `date,cycle,…` run must be exactly the
+// metrics or the estimates header, and each file must still carry its floor.
+const METRICS_HEADER = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count';
+const ESTIMATES_HEADER = 'date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note';
 let metricsFail = 0;
-for (const [f, raw] of [['CLAUDE.md', claudeRaw], ['claude-code-guide-v2.html', htmlRaw]]) {
-  const re = new RegExp(HEADER_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(,defensive_count)?', 'g');
-  let m, stale = 0;
-  while ((m = re.exec(raw)) !== null) { if (!m[1]) stale++; }
-  if (stale) { metricsFail++; console.log(`  ✗ ${f}: ${stale} metrics.csv header(s) missing the trailing defensive_count column (P11)`); }
+const liveCsv = f => { try { return readFileSync(new URL(f, root), 'utf8').split(/\r?\n/)[0]; } catch (e) { return null; } };
+const headerSources = [['CLAUDE.md', claudeRaw, 4, 3], ['claude-code-guide-v2.html', htmlRaw, 2, 1]];
+for (const [f, floorKind] of [['.cycle/metrics.csv', 'm'], ['.cycle/estimates.csv', 'e']]) {
+  const h = liveCsv(f); if (h != null) headerSources.push([f, h, floorKind === 'm' ? 1 : 0, floorKind === 'e' ? 1 : 0]);
+}
+for (const [f, raw, mFloor, eFloor] of headerSources) {
+  const found = [...raw.matchAll(/\bdate,cycle(?:,[a-z_]+)*/g)].map(m => m[0]);
+  const bad = found.filter(h => h !== METRICS_HEADER && h !== ESTIMATES_HEADER);
+  const nM = found.filter(h => h === METRICS_HEADER).length, nE = found.filter(h => h === ESTIMATES_HEADER).length;
+  // Name what differs against whichever canonical header it is closest to.
+  const diff = h => {
+    const cols = h.split(','), share = c => c.split(',').filter(x => cols.includes(x)).length;
+    const canon = (share(METRICS_HEADER) >= share(ESTIMATES_HEADER) ? METRICS_HEADER : ESTIMATES_HEADER).split(',');
+    const miss = canon.filter(x => !cols.includes(x)), extra = cols.filter(x => !canon.includes(x));
+    return `${JSON.stringify(h)} (${[miss.length && 'missing ' + miss.join('/'), extra.length && 'unexpected ' + extra.join('/'), !miss.length && !extra.length && 'columns out of order'].filter(Boolean).join('; ')})`;
+  };
+  if (bad.length) { metricsFail++; console.log(`  ✗ ${f}: ${bad.length} CSV header(s) not matching the canonical column list (P11/F49): ${[...new Set(bad)].map(diff).join(', ')}`); }
+  if (nM < mFloor || nE < eFloor) { metricsFail++; console.log(`  ✗ ${f}: only ${nM} metrics / ${nE} estimates header(s) found, expected at least ${mFloor} / ${eFloor} — a header was deleted or rewritten out of recognition (F49)`); }
 }
 if (/phase=synthesis with the overall net_score/i.test(htmlRaw)) {
   metricsFail++;
   console.log('  ✗ HTML §6a tells the phase=synthesis row to write net_score — owned only by phase=reflect (P1 double-count footgun)');
 }
 if (metricsFail) failures += metricsFail;
-else console.log('  ✓ Metrics-row ownership + defensive_count schema parity (P1 + P11)');
+else console.log(`  ✓ Metrics-row ownership + exact CSV header parity across ${headerSources.length} source(s) (P1 + P11 + F49)`);
 
 // ── Structural check 7 (R16): per-builder parity for the DYNAMIC console
 // prompt builders. ALL NINE are now gated by gen-html-prompts --assert against
@@ -238,6 +258,75 @@ for (const b of DYNAMIC_BUILDERS) {
 if (builderFail) failures += builderFail;
 else console.log(`  ✓ Dynamic console builder parity — ${DYNAMIC_BUILDERS.length} builders pinned to their canonical contracts (R16)`);
 
+// ── F31: the CI workflow is read as STRUCTURE, not text. Checks 8 and 14 used
+// to regex the raw YAML, so three mutations passed: a step turned into
+// `run: echo skipped  # node tests/x.mjs` (the comment still "ran" the stage),
+// `run: node tests/mutation-audit.mjs || true` (a stage that can never fail the
+// job), and `branches: [never-a-real-branch]` under pull_request (a trigger
+// that never fires). Comments are stripped, each step's keys are parsed, and a
+// stage counts only when its run: value is the BARE command.
+function stripYamlComments(s) { return s.split(/\r?\n/).map(l => l.replace(/(^|\s)#.*$/, '')).join('\n'); }
+const indentOf = l => l.match(/^ */)[0].length;
+function ciSteps(wf) {
+  const lines = stripYamlComments(wf).split('\n');
+  const raw = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^\s*steps:\s*$/.test(lines[i])) continue;
+    const base = indentOf(lines[i]);
+    let cur = null, dashInd = -1, j = i + 1;
+    for (; j < lines.length; j++) {
+      const l = lines[j]; if (!l.trim()) continue;
+      const ind = indentOf(l), dash = l.match(/^ *-\s+(.*)$/);
+      if (dash && (dashInd === -1 ? ind >= base : ind === dashInd)) { dashInd = ind; cur = [' '.repeat(ind + 2) + dash[1]]; raw.push(cur); continue; }
+      if (ind <= base || (dashInd !== -1 && ind <= dashInd)) break;
+      if (cur) cur.push(l);
+    }
+    i = j - 1;
+  }
+  return raw.map(st => {
+    const keyInd = indentOf(st[0]), keys = {};
+    for (let k = 0; k < st.length; k++) {
+      if (indentOf(st[k]) !== keyInd) continue;
+      const m = st[k].match(/^\s*([\w-]+):\s*(.*)$/); if (!m) continue;
+      let v = m[2].trim();
+      if (/^[|>][-+]?$/.test(v)) { const body = []; while (k + 1 < st.length && indentOf(st[k + 1]) > keyInd) body.push(st[++k].trim()); v = body.join('\n'); }
+      keys[m[1]] = v.replace(/^(['"])(.*)\1$/, '$2');
+    }
+    return keys;
+  });
+}
+const STAGE_RE = /^node\s+((?:scripts|tests)\/[\w.-]+\.mjs(?:\s+--[\w-]+)?)$/;
+// Stages in run order, plus every reason a stage could pass without running.
+function ciStages(wf) {
+  const stages = [], problems = [], text = stripYamlComments(wf);
+  const gate = text.match(/^\s*(?:-\s+)?(if|continue-on-error)\s*:.*$/m);
+  if (gate) problems.push(`\`${gate[0].trim()}\` — a conditional or failure-tolerant job/step can skip or swallow a stage`);
+  for (const st of ciSteps(wf)) {
+    if (st.run == null) continue;
+    const m = st.run.match(STAGE_RE);
+    if (m) stages.push(m[1].replace(/\s+/g, ' '));
+    else if (/node\s+(?:scripts|tests)\//.test(st.run)) problems.push(`\`run: ${st.run.replace(/\n/g, ' ⏎ ')}\` is not a bare stage — chained, piped or \`|| true\` commands can pass without the stage passing`);
+  }
+  return { stages, problems };
+}
+// A trigger with any filter (branches, paths, types, …) fires on some pushes or
+// PRs, not all — `branches: [never-a-real-branch]` passed the old text check.
+function ciTriggerProblems(wf) {
+  const lines = stripYamlComments(wf).split('\n');
+  const at = lines.findIndex(l => /^["']?on["']?:\s*$/.test(l));
+  if (at === -1) return { missing: ['push', 'pull_request'], filtered: [] };
+  const found = {}, filtered = [];
+  for (let j = at + 1; j < lines.length; j++) {
+    const l = lines[j]; if (!l.trim()) continue;
+    if (indentOf(l) === 0) break;
+    const m = l.match(/^(\s+)(push|pull_request)\s*:\s*(.*)$/); if (!m) continue;
+    found[m[2]] = true;
+    const next = lines.slice(j + 1).find(x => x.trim());
+    if (!/^(|\{\s*\}|null|~)$/.test(m[3].trim()) || (next && indentOf(next) > m[1].length)) filtered.push(m[2]);
+  }
+  return { missing: ['push', 'pull_request'].filter(t => !found[t]), filtered };
+}
+
 // ── Structural check 8 (F15): the CI workflow declares least privilege. Every
 // step only reads the checkout — no step posts, pushes or publishes — so
 // without an explicit block the job inherits whatever the repository default
@@ -246,7 +335,10 @@ else console.log(`  ✓ Dynamic console builder parity — ${DYNAMIC_BUILDERS.le
 // silently.
 try {
   const wf = readFileSync(new URL('.github/workflows/sync-check.yml', root), 'utf8');
-  const perms = wf.match(/^permissions:\s*\n((?:\s+\S.*\n)+)/m);
+  // Blank and comment-only lines are dropped first, and the body is bounded by
+  // [ \t]+ — the old `\s+` matched newlines, so the "block" ran to EOF and a
+  // `contents: read` anywhere below (or in a comment) satisfied it (F31).
+  const perms = stripYamlComments(wf).split('\n').filter(l => l.trim()).join('\n').concat('\n').match(/^permissions:[ \t]*\n((?:[ \t]+\S.*\n)+)/m);
   if (!perms) { failures++; console.log('  ✗ CI workflow declares no permissions: block — the job inherits the repo default (F15)'); }
   else if (!/contents:\s*read/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow permissions do not grant read-only contents: ${perms[1].trim().replace(/\n/g, ', ')}`); }
   else if (/write/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow requests write permission it does not need: ${perms[1].trim().replace(/\n/g, ', ')}`); }
@@ -257,11 +349,10 @@ try {
   // Verify field pointed at the YAML file as prose, so nothing asserted it: the
   // trigger list or the step could have been dropped and only INV-57's
   // permissions clause was being read out of this file.
-  const on = wf.match(/^on:\s*\n((?:\s+\S.*\n)+)/m);
-  const triggers = on ? on[1] : '';
-  const missingTrigger = ['push', 'pull_request'].filter(t => !new RegExp(`^\\s+${t}\\s*:`, 'm').test(triggers));
-  if (missingTrigger.length) { failures++; console.log(`  ✗ CI workflow does not trigger on: ${missingTrigger.join(', ')} (INV-14)`); }
-  else if (!/run:\s*node scripts\/check-template-sync\.mjs/.test(wf)) {
+  const trig = ciTriggerProblems(wf);
+  if (trig.missing.length) { failures++; console.log(`  ✗ CI workflow does not trigger on: ${trig.missing.join(', ')} (INV-14)`); }
+  else if (trig.filtered.length) { failures++; console.log(`  ✗ CI workflow filters its ${trig.filtered.join(' and ')} trigger (branches/paths/types) — it must fire on every push and PR (INV-14, F31)`); }
+  else if (!ciStages(wf).stages.includes('scripts/check-template-sync.mjs')) {
     failures++; console.log('  ✗ CI workflow has no step running scripts/check-template-sync.mjs (INV-14)');
   } else console.log('  ✓ CI runs check-template-sync.mjs on push and pull_request (INV-14)');
 } catch (e) { failures++; console.log('  ✗ could not read .github/workflows/sync-check.yml: ' + e.message); }
@@ -318,26 +409,53 @@ try {
 // workflow with no loss. Both invariants' Verify fields read "code read of
 // command text", i.e. nothing was checking it; an ungated CHECKPOINT would
 // silently make .cycle/ mandatory for every consumer.
+//
+// Cycle-7 follow-on: the step set is DERIVED, not listed. A step heading
+// (an ALL-CAPS label such as "6. CHECKPOINT (" or "SEAM COUNTER (") whose body
+// writes to .cycle/ is a writing step, wherever it lives — every command file,
+// AND the §1s and §6a section bodies, which carry writes of their own (the
+// SEAM COUNTER reset and the step-8 METRICS append) and sat outside the old
+// hand-listed scan. The old names stay as a FLOOR: a heading with one of them
+// must still be recognised as writing, so the derivation cannot quietly drop
+// a step whose wording changed.
 {
-  const STEP = /^(?:\d+\.\s*)?(CHECKPOINT|METRICS|ESTIMATE CALIBRATION|BLOCKS|SEAM COUNTER|CYCLE OPEN)\b(.*)$/;
+  const HEAD = /^\s*(?:\d+\.\s*)?([A-Z][A-Z0-9 &/-]{2,}[A-Z])(?=\s*(?:\(|:|—|$))/;
+  const WRITE = /\b(creat\w*|updat\w*|append\w*|writ\w*|increment\w*|reset\w*|set)\b[^.]{0,160}?\.cycle\/|\.cycle\/[\s\S]{0,240}?\b(file write|increment|reset|append)\b/i;
   const GATE = /optional\s*—\s*only if|if a \.cycle\/ directory exists|skip if no \.cycle\//i;
-  const ungated = [];
+  const KNOWN = ['CHECKPOINT', 'METRICS', 'ESTIMATE CALIBRATION', 'BLOCKS', 'SEAM COUNTER', 'CYCLE OPEN'];
+  // Commands whose whole premise is the directory: /cycle-init creates it, and
+  // /cycle-resume stops at its first step when .cycle/STATE.md is absent.
+  const EXEMPT = { 'cycle-init': 'creates .cycle/ — its whole job', 'cycle-resume': 'stops first if .cycle/STATE.md is absent' };
+  const fencedSection = h => { const i = claudeRaw.indexOf('### ' + h + '\n'); if (i === -1) return null; const a = claudeRaw.indexOf('```\n', i); return a === -1 ? null : claudeRaw.slice(a + 4, claudeRaw.indexOf('\n```', a + 4)); };
+  const sources = [];
+  try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) sources.push([f, readFileSync(new URL('.claude/commands/' + f, root), 'utf8'), f.replace(/\.md$/, '')]); } catch (e) {}
+  for (const [label, h] of [['§1s Seams audit', 'Seams & Invariants Audit (Section 1s in HTML tool)'], ['§6a Health Synthesis', 'Health Synthesis (Section 6a in HTML tool)']]) sources.push([label, fencedSection(h), null]);
+  const ungated = [], unrecognised = [], missingSections = [];
+  const kinds = new Set();
   let stepCount = 0;
-  for (const name of tableCmds) {
-    const txt = (() => { try { return readFileSync(new URL(`.claude/commands/${name}.md`, root), 'utf8'); } catch { return null; } })();
-    if (!txt) continue;
-    const lines = txt.split('\n');
-    lines.forEach((line, i) => {
-      const m = line.match(STEP);
-      if (!m) return;
-      stepCount++;
-      // The gate may sit on the heading line or the sentence immediately under it.
-      if (!GATE.test(lines.slice(i, i + 3).join(' '))) ungated.push(`${name}.md: "${m[1]}"`);
+  for (const [label, txt, cmd] of sources) {
+    if (txt == null) { missingSections.push(label); continue; }
+    if (cmd && EXEMPT[cmd]) continue;
+    const L = txt.split('\n'), heads = [];
+    L.forEach((l, i) => { if (HEAD.test(l)) heads.push(i); });
+    heads.forEach((h, k) => {
+      const name = L[h].match(HEAD)[1];
+      const body = L.slice(h, k + 1 < heads.length ? heads[k + 1] : L.length).join(' ').replace(/\s+/g, ' ');
+      const writes = WRITE.test(body);
+      const known = KNOWN.find(n => name === n);
+      if (known && !writes) unrecognised.push(`${label}: "${name}"`);
+      if (!writes && !known) return;
+      stepCount++; kinds.add(name);
+      if (!GATE.test(L.slice(h, h + 3).join(' '))) ungated.push(`${label}: "${name}"`);
     });
   }
-  if (!stepCount) { failures++; console.log('  ✗ no .cycle/-writing steps found in any command — the gating check is vacuous (INV-12)'); }
-  else if (ungated.length) { failures++; console.log(`  ✗ .cycle/-writing step(s) not gated on the directory existing: ${ungated.join(', ')} (INV-12/INV-18)`); }
-  else console.log(`  ✓ all ${stepCount} .cycle/-writing command steps are gated on .cycle/ existing (INV-12/INV-18)`);
+  const problems = [];
+  if (missingSections.length) problems.push(`could not locate ${missingSections.join(', ')} — part of the scan would be vacuous`);
+  if (!stepCount) problems.push('no .cycle/-writing steps found anywhere — the gating check is vacuous');
+  if (ungated.length) problems.push(`.cycle/-writing step(s) not gated on the directory existing: ${ungated.join(', ')}`);
+  if (unrecognised.length) problems.push(`known .cycle/-writing step(s) no longer read as writing — the derivation lost them: ${unrecognised.join(', ')}`);
+  if (problems.length) { failures++; console.log(`  ✗ ${problems.join('; ')} (INV-12/INV-18)`); }
+  else console.log(`  ✓ all ${stepCount} .cycle/-writing steps — derived across the commands and the §1s/§6a bodies (${[...kinds].join(', ')}) — are gated on .cycle/ existing; exempt by design: ${Object.keys(EXEMPT).join(', ')} (INV-12/INV-18)`);
 }
 
 // ── Structural check 11 (F15): .cycle/STATE.md must keep the SHAPE its own
@@ -490,11 +608,14 @@ try {
   try { ciRaw = readFileSync(new URL('.github/workflows/sync-check.yml', root), 'utf8'); } catch (e) {}
   try { libRaw = readFileSync(new URL('.cycle/config.md', root), 'utf8'); } catch (e) { libRaw = claudeRaw; }
   const tc = (libRaw.match(/^###\s+Test Command\s*\n([\s\S]*?)(?=\n###\s|\n##\s)/m) || [])[1] || '';
-  const stages = s => [...s.matchAll(/node\s+((?:scripts|tests)\/[\w.-]+\.mjs(?:\s+--[\w-]+)?)/g)]
-    .map(m => m[1].replace(/\s+/g, ' ').trim());
-  const want = stages(tc), have = ciRaw ? stages(ciRaw) : [];
+  const want = [...tc.matchAll(/node\s+((?:scripts|tests)\/[\w.-]+\.mjs(?:\s+--[\w-]+)?)/g)].map(m => m[1].replace(/\s+/g, ' ').trim());
+  const ci = ciRaw ? ciStages(ciRaw) : { stages: [], problems: [] }, have = ci.stages;
   if (!ciRaw) console.log('  · no .github/workflows/sync-check.yml — CI/Test-Command parity skipped (optional per project)');
   else if (!want.length) console.log('  · the Test Command names no script stages — CI/Test-Command parity skipped (nothing to compare)');
+  else if (ci.problems.length) {
+    failures++;
+    for (const p of ci.problems) console.log(`  ✗ CI/Test-Command parity (INV-74, F31): ${p}`);
+  }
   else if (JSON.stringify(want) !== JSON.stringify(have)) {
     failures++;
     const missing = want.filter(s => !have.includes(s));
@@ -566,6 +687,76 @@ try {
     failures++;
     console.log(`  ✗ relative policy trigger (INV-75): ${problems.join('; ')}. A fixed floor never fires on a healthy project — the primary trigger must be relative.`);
   } else console.log('  ✓ the §6a policy trigger is relative and parameterised — four clauses, both config fields read by name, no hardcoded floor (INV-75)');
+}
+
+// ── Structural check 17 (Cycle-7 F11): every command file STANDS ALONE. A
+// consuming project copies .claude/commands/ and nothing else, so a body that
+// says "See /broad-implement Step 1" only works if the agent opens a second
+// command, and one that names scripts/… names a file the project may not have.
+// No cross-command step delegation; every scripts/ mention is conditional.
+{
+  const problems = [];
+  let files = [];
+  try { files = readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md')); } catch (e) {}
+  for (const f of files) {
+    const body = readFileSync(new URL('.claude/commands/' + f, root), 'utf8');
+    const deleg = body.match(/\bsee\s+`?\/[a-z][\w-]*`?\s+step\b/i);
+    if (deleg) problems.push(`${f} delegates to another command (${JSON.stringify(deleg[0])})`);
+    for (const m of body.matchAll(/\bscripts\/[\w.-]+/g)) {
+      const before = body.slice(Math.max(0, m.index - 160), m.index).replace(/\s+/g, ' ');
+      if (!/if the project has|where the project uses/i.test(before)) problems.push(`${f} names ${m[0]} unconditionally — a project that copied only .claude/commands/ may not have it`);
+    }
+  }
+  if (!files.length) { failures++; console.log('  ✗ standalone commands (F11): no .claude/commands/*.md found — the check would be vacuous'); }
+  else if (problems.length) { failures++; console.log(`  ✗ standalone commands (F11): ${problems.join('; ')}`); }
+  else console.log(`  ✓ every command file stands alone — no cross-command step delegation, every scripts/ mention conditional (${files.length} files, F11)`);
+}
+
+// ── Structural check 18 (Cycle-7 follow-on to F05): the Operator State
+// Checklist's re-pull paragraph classifies EVERY release since v1.19.0 — either
+// "vX changed /cmd" or inside the "… changed none" list (ranges expanded
+// against the CHANGELOG). v1.33.0 changed /setup-cycle and sat in neither list
+// for nine releases; this repo's maintainer missed it while editing that very
+// line. CI checks out a shallow clone, so the CHANGELOG is the ground truth,
+// not git history. The NEWEST release must also match what its own entry says.
+{
+  let cfg = null;
+  try { cfg = readFileSync(new URL('.cycle/config.md', root), 'utf8'); } catch (e) {}
+  let changelog = '';
+  try { changelog = readFileSync(new URL('CHANGELOG.md', root), 'utf8'); } catch (e) {}
+  const start = cfg ? cfg.indexOf('**Run `/sync-commands` in consuming projects**') : -1;
+  if (!cfg) console.log('  · no .cycle/config.md — re-pull list check skipped (this repo only)');
+  else if (start === -1) { failures++; console.log('  ✗ re-pull list: the Operator State Checklist has no "Run `/sync-commands` in consuming projects" paragraph'); }
+  else {
+    const end = cfg.indexOf('\n- **', start + 10);
+    const para = cfg.slice(start, end === -1 ? undefined : end).replace(/\s+/g, ' ');
+    const cmp = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };
+    const entries = [...changelog.matchAll(/^## (\d+\.\d+\.\d+) — [^\n]*\n([\s\S]*?)(?=^## \d|(?![\s\S]))/gm)].map(m => ({ v: m[1], body: m[2] }));
+    const versions = entries.map(e => e.v).filter(v => cmp(v, '1.19.0') >= 0).sort(cmp);
+    const changed = new Set([...para.matchAll(/\bv(\d+\.\d+\.\d+) changed\b(?! none)/g)].map(m => m[1]));
+    const noneM = para.match(/((?:v\d+\.\d+\.\d+(?:–v\d+\.\d+\.\d+)?(?:,| and|,? and)?\s*)+)changed none/);
+    const none = new Set();
+    if (noneM) for (const t of noneM[1].matchAll(/v(\d+\.\d+\.\d+)(?:–v(\d+\.\d+\.\d+))?/g)) {
+      if (!t[2]) none.add(t[1]);
+      else versions.filter(v => cmp(v, t[1]) >= 0 && cmp(v, t[2]) <= 0).forEach(v => none.add(v));
+    }
+    const problems = [];
+    if (!versions.length) problems.push('no CHANGELOG releases since v1.19.0 found — the check would be vacuous');
+    if (!noneM) problems.push('no "… changed none." list found in the paragraph');
+    const missing = versions.filter(v => !changed.has(v) && !none.has(v));
+    const both = versions.filter(v => changed.has(v) && none.has(v));
+    if (missing.length) problems.push(`release(s) in neither list: ${missing.map(v => 'v' + v).join(', ')} — say whether they changed a command body`);
+    if (both.length) problems.push(`release(s) listed as both changed and changed-none: ${both.map(v => 'v' + v).join(', ')}`);
+    const newest = entries[0];
+    if (newest) {
+      const saysNo = /no (?:command-body|`?\/sync-commands`? re-pull)/i.test(newest.body);
+      const saysYes = /run `\/sync-commands`|command bodies changed/i.test(newest.body);
+      if (saysNo && changed.has(newest.v)) problems.push(`v${newest.v}'s CHANGELOG says no re-pull, but the checklist lists it as changed`);
+      if (saysYes && !saysNo && none.has(newest.v)) problems.push(`v${newest.v}'s CHANGELOG asks for a re-pull, but the checklist lists it as changed none`);
+    }
+    if (problems.length) { failures++; console.log(`  ✗ re-pull list (Operator State Checklist): ${problems.join('; ')}`); }
+    else console.log(`  ✓ the re-pull list classifies every release since v1.19.0 exactly once — ${changed.size} changed, ${none.size} changed none — and the newest matches its CHANGELOG entry`);
+  }
 }
 
 if (failures) {
