@@ -57,7 +57,18 @@ const CFG = 'CLAUDE.md';
 // a fixture passes while an individual field is unguarded.
 const CASES = {
   // ── node scripts/check-html.mjs ─────────────────────────────────────────────
-  'INV-04': [[HTML, 'function esc(s){', 'function esc(s){ ((( ', /syntax error/i]],
+  'INV-04': [[HTML, 'function esc(s){', 'function esc(s){ ((( ', /syntax error/i],
+             // Cycle-8 Batch 1 (F16/F17): an inline handler is JavaScript too, and nothing compiled one.
+             // The first mutation IS the v1.39.0 defect that left every Fill fields button dead for
+             // five releases; the second breaks a RENDERED handler (it used to be swallowed by the
+             // hostile-fixture executor's catch); the third renames a callee out from under the markup.
+             // Signals are phrases only the failing line prints.
+             [HTML, `onclick="toggleFill('t1a')"`, `onclick="toggleFill(\\'t1a\\')"`, /static inline handler\(s\) do not compile/],
+             [HTML, 'fillSubsystem(${argName})"', 'fillSubsystem(${argName}"', /rendered inline handler\(s\) do not compile/],
+             [HTML, `onclick="expandAllVariants('s1-variants')"`, `onclick="expandEveryVariant('s1-variants')"`, /call function\(s\) the script does not define/],
+             // Cycle-8 Batch 1 (F30): Node parses a regex lookbehind, Safari < 16.4 does not — and a
+             // parse error in the one inline script stops all of it.
+             [HTML, 'const parts=splitUnescapedPipes(l);', "const parts=l.split(/(?<!\\\\)\\|/).map(x=>x.trim().replace(/\\\\\\|/g,'|'));", /regex lookbehind\(s\) in the console script/]],
   'INV-05': [[HTML, 'const dims=project.healthDimensions;', 'const dims=project.healthDimensions_TYPO;', /unresolved|leaked "undefined"/i],
              // Cycle-7 Batch 6 (F20): a defect only in the SECOND project's library. The builders
              // rendered the active project's invariants, so this was never rendered or checked.
@@ -82,7 +93,7 @@ const CASES = {
     // hostile fixture now reaches it, one sink at a time.
     [HTML, '<option value="${esc(s.name)}"${val===s.name', '<option value="${s.name}"${val===s.name', /unescaped stored content|injected data executed/i],
     [HTML, 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>', 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${val}</textarea>', /unescaped stored content|injected data executed/i],
-    [HTML, "'Paste content here...'}\" onchange=\"saveVal(${argPid},${argName},this.value)\">${esc(val)}</textarea>", "'Paste content here...'}\" onchange=\"saveVal(${argPid},${argName},this.value)\">${val}</textarea>", /unescaped stored content|injected data executed/i],
+    [HTML, "'Paste content here...'}\" oninput=\"saveVal(${argPid},${argName},this.value)\">${esc(val)}</textarea>", "'Paste content here...'}\" oninput=\"saveVal(${argPid},${argName},this.value)\">${val}</textarea>", /unescaped stored content|injected data executed/i],
     [HTML, 'value="${esc(val)}" oninput="saveVal(${argPid}', 'value="${val}" oninput="saveVal(${argPid}', /unescaped stored content|injected data executed/i],
   ],
   'INV-21': [[HTML, 'function storageWarn(e){', 'function storageWarn(e){ return;', /storageWarn/i]],
@@ -110,7 +121,13 @@ const CASES = {
   // Reinstating the real collision: <pre id="t1a"> back to id="t1", which the
   // enclosing <section id="t1"> then shadows.
   'INV-67': [[HTML, '<pre id="t1a"></pre>', '<pre id="t1"></pre>', /duplicate id/i]],
-  'INV-63': [[HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/],
+  // Cycle-8 Batch 1 (F29/F19/F21): three ways the fill form failed the operator that the F11 check
+  // could not see, because it starts from prompts that already have a working form. Listed first so
+  // the original case keeps its place; signals are phrases only the failing line prints.
+  'INV-63': [[HTML, '<div class="fill-form" id="fill-p4reflect"></div>', '', /no fill form: p4reflect/],
+             [HTML, 'function isLarge(name){return DIRECTIVE_PREFIX.test(name)||', 'function isLarge(name){return ', /render as a single-line input/],
+             [HTML, "if(val==='__custom__'){", "if(val==='__custom__')return;\n  if(false){", /renders no custom input/],
+             [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/],
              // Cycle-7 Batch 6 (F18): the length cap back — §6a's 224-char field drops out of its form.
              [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", /F11/],
              // Cycle-7 Batch 8 (F19): the exact-match systems-map test back — §1 and §4 lose the bank.

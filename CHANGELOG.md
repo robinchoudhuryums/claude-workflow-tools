@@ -5,6 +5,52 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.44.0 — 2026-11-19
+
+Cycle-8 Batch 1: the console is usable again. Console and guards only. **No
+command-body or config-schema change, so no `/sync-commands` re-pull.** Every
+fix was verified in Chromium and is pinned by a mutation case that fails
+against the v1.43.0 code.
+
+- **Every "Fill fields" button and every variant toggle was dead (F16).**
+  v1.39.0, the batch that added `aria-expanded`, wrote the handlers as
+  `onclick="toggleFill(\'t1a\')"`. A backslash is not an escape in an HTML
+  attribute, so all 22 were syntax errors the browser reports only on click:
+  16 fill forms could not be opened from their own button, and four prompts —
+  `/reflect`, the single-finding variant, the roadmap add-ons and the
+  VERIFICATION BLOCK reference — could not be opened at all. Live on the hosted
+  console from v1.39.0 to v1.43.0. The 44 backslashes are gone.
+- **Nothing compiled an inline handler, which is why that shipped green (F17).**
+  `check-html`'s syntax check covered the `<script>` block only; every other
+  check read those tags as text or called `toggleFill()` directly; and the
+  hostile-fixture executor swallowed a handler that would not compile together
+  with runtime throws. Now every static `on*` attribute must compile and call
+  only functions the script defines, and every rendered handler must compile
+  before it is executed. INV-04's rule is widened to say so.
+- **Copy and Fill fields were clipped off narrow screens (F18).** The prompt
+  header was one non-wrapping row inside an `overflow:hidden` block. At 375px
+  Copy was 0% visible on §2, §3, both §4 prompts and §4v, and partly clipped
+  again at 769–820px beside the sidebar. The header wraps; measured at 15
+  widths from 320 to 1280px, no header button is clipped, including the long
+  "Copy failed" label.
+- **Pasted blocks were flattened to one line in nine fields (F19).** A field
+  opening with `OPTIONAL:` or `IF TRIGGERED:` rendered as a single-line
+  input, which turns pasted newlines into spaces — so a POLICY RESPONSE block
+  went into the copied prompt as one run-on line. They are textareas now.
+- **"Custom…" in the subsystem select did nothing (F21).** No input appeared
+  and the previously chosen subsystem stayed stored, so Copy pasted it as the
+  scope. It now opens a custom input, clears the stored scope and takes focus.
+- **The `/reflect` prompt had a paste placeholder and no fill form (F29).**
+  Added, with a guard that derives which prompts need a form from the prompts
+  rather than from the forms that exist. INV-63's rule is widened to cover
+  F19, F21 and this.
+- **A regex lookbehind would stop the whole console on Safari < 16.4 (F30).**
+  Added in v1.43.0 for escaped pipes in the invariant form; replaced with a
+  plain splitter and guarded, since Node's parser accepts what that Safari
+  does not. Not reproduced on Safari — only Chromium is available here.
+
+Mutation cases 104 → 111; library unchanged at 73 (two rules widened).
+
 ## 1.43.0 — 2026-10-13
 
 Cycle-7 follow-on items: the actionable follow-ons that Batches 1–8 recorded

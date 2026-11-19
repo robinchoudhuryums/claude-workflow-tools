@@ -33,6 +33,30 @@ const bad = (msg) => { failures++; log.push(`  ✗ ${msg}`); };
 try { new vm.Script(src, { filename: 'console#script' }); ok('inline <script> parses'); }
 catch (e) { bad('inline <script> syntax error: ' + e.message); }
 
+// 1b) F17 (Cycle 8): every STATIC inline handler compiles. The syntax check
+// above covers the <script> block only, and an `on*="…"` attribute is JavaScript
+// too — compiled by the browser on first use, so a broken one loads cleanly and
+// then does nothing when clicked. v1.39.0 shipped `onclick="toggleFill(\'t1a\')"`
+// in 22 attributes (a backslash is not an escape in an HTML attribute): every
+// Fill fields button and variant toggle was dead for five releases while this
+// script reported the console sound, because every other check read those tags
+// as TEXT (aria-expanded present? role present?) or called toggleFill() directly.
+const decodeAttr = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+// A handler body compiles the way the browser compiles it: as a function body.
+const handlerCompileError = body => { try { new vm.Script('(function(event){' + body + '\n})'); return null; } catch (e) { return e.message; } };
+// Prompt text inside <pre> is content, not markup, and <script> is checked above.
+const STATIC_MARKUP = html.replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/(<pre\b[^>]*>)[\s\S]*?(<\/pre>)/gi, '$1$2');
+const STATIC_HANDLERS = [...STATIC_MARKUP.matchAll(/\s(on[a-z]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)].map(m => ({ attr: m[1], src: decodeAttr(m[2] ?? m[3]) }));
+{
+  const broken = STATIC_HANDLERS.filter(h => handlerCompileError(h.src));
+  // Floor: the toggles this was written for must be among what was scanned, or
+  // the derivation has narrowed and "all compile" would be vacuous.
+  const sawFill = STATIC_HANDLERS.some(h => /^toggleFill\(/.test(h.src)), sawVariant = STATIC_HANDLERS.some(h => /^toggleVariant\(/.test(h.src));
+  if (!STATIC_HANDLERS.length || !sawFill || !sawVariant) bad(`Cycle-8 F17: static inline-handler scan found too little to check (${STATIC_HANDLERS.length} handler(s), toggleFill ${sawFill}, toggleVariant ${sawVariant}) — the assertion would be vacuous`);
+  else if (broken.length) bad(`Cycle-8 F17: ${broken.length} static inline handler(s) do not compile — the control does nothing when used: ${[...new Set(broken.map(h => `${h.attr}="${h.src.slice(0, 48)}"`))].slice(0, 4).join(' | ')}`);
+  else ok(`all ${STATIC_HANDLERS.length} static inline handlers in the markup compile (Cycle-8 F17)`);
+}
+
 // 2) Run under stubbed browser globals
 const store = {};
 const dummy = new Proxy(
@@ -149,6 +173,20 @@ ctx.globalThis = ctx;
 let loaded = false;
 try { vm.createContext(ctx); vm.runInContext(src, ctx, { filename: 'console' }); loaded = true; ok('inline <script> runs under stubbed DOM'); }
 catch (e) { bad('inline <script> threw on load: ' + e.message); }
+
+// F17 (Cycle 8), second half: a static handler that compiles can still name a
+// function that does not exist (a rename that missed the markup). In a browser
+// that is a ReferenceError on click and nothing else.
+if (loaded) {
+  const KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'function', 'return', 'typeof', 'void', 'new', 'delete', 'do', 'else']);
+  const missing = new Set();
+  for (const h of STATIC_HANDLERS) {
+    const code = h.src.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '""');   // names inside string literals are data
+    for (const c of code.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(/g)) if (!KEYWORDS.has(c[1]) && typeof ctx[c[1]] !== 'function') missing.add(c[1]);
+  }
+  if (missing.size) bad(`Cycle-8 F17: static inline handler(s) call function(s) the script does not define: ${[...missing].join(', ')}`);
+  else ok('every function a static inline handler calls is defined by the script (Cycle-8 F17)');
+}
 
 // Snapshot BEFORE the assertions below write to elements themselves.
 const initWrites = new Set(writtenIds);
@@ -654,11 +692,20 @@ if (loaded && typeof ctx.switchProject === 'function') {
       for (const m of h.matchAll(/\son[a-z]+="([^"]*)"/gi)) handlers.push([id, decode(m[1])]);
     }
     let tripped = null;
+    // F17 (Cycle 8): a handler that does not COMPILE is a dead control, and it
+    // used to be swallowed by the catch below together with runtime throws —
+    // "a handler that throws is not an injection" was true and beside the
+    // point. Stored data that breaks the handler's syntax is an escaping defect
+    // in its own right, so every rendered handler must compile first; only a
+    // throw at RUN time (a stubbed global behaving unlike the real one) is
+    // tolerated.
+    const uncompilable = handlers.filter(([, src]) => handlerCompileError(src));
+    if (uncompilable.length) bad(`Cycle-8 F17: ${uncompilable.length} rendered inline handler(s) do not compile — the control does nothing when used: ${uncompilable.slice(0, 3).map(([id, src]) => id + ' → ' + src.slice(0, 60)).join(' | ')}`);
     const noop = new Proxy(function () {}, { get: (t, p) => (p === Symbol.toPrimitive ? undefined : noop), apply: () => noop });
     for (const [id, src] of handlers) {
       const sbx = { alert: () => { tripped = tripped || [id, src]; } };
       const scope = new Proxy(sbx, { has: () => true, get: (t, p) => (p in t ? t[p] : noop) });
-      try { vm.runInNewContext(src, scope); } catch (e) { /* a handler that throws is not an injection */ }
+      try { vm.runInNewContext(src, scope); } catch (e) { /* a RUNTIME throw is not an injection; syntax was checked above */ }
     }
     if (handlers.length && !tripped) ok(`inline handlers survive entity-decode + execute — ${handlers.length} checked, none injectable (INV-20/F04)`);
     else if (!handlers.length) bad('no inline handlers found in the hostile render — the attribute check is vacuous');
@@ -963,9 +1010,9 @@ if (loaded && typeof ctx.showPanel === 'function') {
 {
   const mq = html.match(/@media\(max-width:768px\)\{([\s\S]*?)\n\}/);
   const inner = mq ? mq[1] : '';
-  if (!mq) bad('no @media(max-width:768px) block found — the mobile layout rules are gone (F17)');
+  if (!mq) bad('no @media(max-width:768px) block found — the mobile layout rules are gone (Cycle-8 F17)');
   else if (/body\{[^}]*(flex-direction:\s*column|display:\s*block)/.test(inner)) ok('mobile breakpoint stacks the top bar and main (body flex-direction:column) — F17');
-  else bad('mobile breakpoint leaves body as a flex ROW — the top bar renders as a side column and main overflows the viewport (F17)');
+  else bad('mobile breakpoint leaves body as a flex ROW — the top bar renders as a side column and main overflows the viewport (Cycle-8 F17)');
 }
 
 // F04 — a malformed stored project must not brick the console. init has no
@@ -1371,6 +1418,102 @@ if (loaded && typeof ctx.buildFillForm === 'function' && typeof ctx.getPlacehold
   else ok(`every systems-map field offers the bank (${sysMapPrompts.length} prompts) and nothing saves the retired files field (F19)`);
 }
 
+// Cycle-8 Batch 1 — the fill forms. Four defects, each invisible to the checks
+// above because those start from the prompts that already HAVE a working form.
+if (loaded && typeof ctx.buildFillForm === 'function' && typeof ctx.getPlaceholders === 'function') {
+  const textOf = pid => (preBody(html, pid) || (elStore[pid] && elStore[pid].textContent) || '');
+  const safe = (pid, name) => pid + '_' + name.replace(/\W+/g, '_');
+  // An operator PASTE field, re-derived here rather than asked of isLarge():
+  // anything that names PASTE, or that opens with a directive prefix
+  // ("OPTIONAL: …", "IF TRIGGERED: …").
+  const isPasteField = n => /\bPASTE\b/.test(n) || /^(?:OPTIONAL|IF [A-Z ]+):/.test(n);
+
+  // F29 — a prompt that asks the operator for input must offer the form. The
+  // /reflect prompt carried "[PASTE IMPLEMENTATION SUMMARY BLOCK — …]" with no
+  // form and no button, and the F11 check iterates only prompts that have one.
+  const allPres = scanPres(html).map(p => p.id).filter(Boolean);
+  const noForm = [], noButton = [];
+  let promptsNeedingForm = 0;
+  for (const pid of allPres) {
+    const fields = ctx.getPlaceholders(textOf(pid)).filter(p => isPasteField(p.name) || /^(?:LIST|DESCRIBE|NOTE)\b/.test(p.name));
+    if (!fields.length) continue;
+    promptsNeedingForm++;
+    if (!new RegExp('\\sid="fill-' + pid + '"').test(html)) noForm.push(pid);
+    else if (!STATIC_HANDLERS.some(h => h.src.replace(/\s/g, '') === "toggleFill('" + pid + "')") || !new RegExp('\\saria-controls="fill-' + pid + '"').test(html)) noButton.push(pid);
+  }
+  if (allPres.length < 20 || promptsNeedingForm < 12) bad(`Cycle-8 F29: only ${allPres.length} prompt(s) scanned, ${promptsNeedingForm} with operator fields — the fill-form coverage check would be vacuous`);
+  else if (noForm.length || noButton.length) bad(`Cycle-8 F29: prompt(s) with operator placeholders but ${noForm.length ? 'no fill form: ' + noForm.join(', ') : ''}${noForm.length && noButton.length ? '; ' : ''}${noButton.length ? 'no working Fill fields button: ' + noButton.join(', ') : ''}`);
+  else ok(`every prompt that asks the operator for input has a fill form and a Fill fields button wired to it — ${promptsNeedingForm} of ${allPres.length} prompts (Cycle-8 F29)`);
+
+  // F19 — every paste field is a <textarea>. An <input type="text"> turns each
+  // pasted newline into a space, so a POLICY RESPONSE block landed in the copied
+  // prompt as one run-on line. isLarge() tested startsWith('PASTE') and so
+  // missed every field behind an "OPTIONAL:" / "IF TRIGGERED:" prefix.
+  const fills = [...html.matchAll(/\sid="fill-([^"]+)"/g)].map(m => m[1]);
+  const flattened = []; let pasteSeen = 0, prefixedSeen = 0;
+  for (const pid of fills) {
+    const text = textOf(pid);
+    const fields = ctx.getPlaceholders(text).filter(p => isPasteField(p.name));
+    if (!fields.length) continue;
+    getEl(pid).textContent = text;
+    ctx.buildFillForm(pid);
+    const out = elStore['fill-' + pid] ? elStore['fill-' + pid].innerHTML : '';
+    for (const fl of fields) {
+      pasteSeen++;
+      if (/^(?:OPTIONAL|IF [A-Z ]+):/.test(fl.name)) prefixedSeen++;
+      if (!out.includes('<textarea class="fill-textarea" id="' + safe(pid, fl.name) + '"')) flattened.push(pid + ': ' + fl.full.replace(/\s+/g, ' ').slice(0, 48));
+    }
+  }
+  if (pasteSeen < 20 || prefixedSeen < 6) bad(`Cycle-8 F19: only ${pasteSeen} paste field(s) found (${prefixedSeen} behind a directive prefix) — the multi-line check would be vacuous`);
+  else if (flattened.length) bad(`Cycle-8 F19: ${flattened.length} paste field(s) render as a single-line input — a pasted block is flattened to one line: ${flattened.slice(0, 4).join(' | ')}`);
+  else ok(`every paste field is a multi-line textarea — ${pasteSeen} fields, ${prefixedSeen} of them behind an OPTIONAL:/IF …: prefix (Cycle-8 F19)`);
+
+  // F21 — "Custom…" in the subsystem select opens a custom input, clears the
+  // previously stored subsystem (Copy used to keep pasting it) and takes focus.
+  if (typeof ctx.handleSubSelect === 'function') {
+    const problems = [];
+    const pid = 'p1', key = 'SUBSYSTEM GROUP NAME', cid = safe(pid, key) + '_custom';
+    const first = (ctx.getProject().subsystems[0] || {}).name;
+    getEl(pid).textContent = textOf(pid);
+    const formHtml = () => (elStore['fill-' + pid] ? elStore['fill-' + pid].innerHTML : '');
+    ctx.handleSubSelect(pid, first);
+    if (ctx.loadVal(pid, key) !== first) problems.push('choosing a listed subsystem does not store it');
+    if (formHtml().includes('id="' + cid + '"')) problems.push('a listed subsystem renders the custom input');
+    focused = null;
+    ctx.handleSubSelect(pid, '__custom__');
+    if (!formHtml().includes('id="' + cid + '"')) problems.push('choosing "Custom…" renders no custom input — the option is a dead end');
+    if (!/<option value="__custom__" selected>/.test(formHtml())) problems.push('the select does not stay on "Custom…"');
+    if (ctx.loadVal(pid, key) !== '') problems.push(`the previous subsystem (${JSON.stringify(ctx.loadVal(pid, key))}) is still stored after choosing "Custom…" — Copy would paste it as the scope`);
+    if (focused !== cid) problems.push('focus does not move to the custom input');
+    ctx.saveVal(pid, key, 'A scope not in the list');
+    ctx.buildFillForm(pid);
+    if (!formHtml().includes('value="A scope not in the list"')) problems.push('a typed custom name is not shown when the form is rebuilt');
+    if (!ctx.getFilledText(pid).includes('A scope not in the list')) problems.push('the copied prompt does not carry the custom name');
+    ctx.handleSubSelect(pid, first);
+    if (formHtml().includes('id="' + cid + '"')) problems.push('going back to a listed subsystem leaves the custom input behind');
+    ctx.saveVal(pid, key, '');
+    ctx.buildFillForm(pid);
+    if (formHtml().includes('id="' + cid + '"')) problems.push('custom mode survives after a listed subsystem was chosen');
+    if (!problems.length) ok('"Custom…" opens a custom subsystem input, clears the stored scope and takes focus; a listed choice closes it (Cycle-8 F21)');
+    else bad('Cycle-8 F21: ' + problems.join('; '));
+  } else bad('handleSubSelect not defined — Cycle-8 F21 unguarded');
+
+  // F30 — no regex lookbehind in the console script. It is a parse-time
+  // SyntaxError in Safari before 16.4, and a syntax error anywhere in the one
+  // inline <script> stops all of it. Node's parser accepts it, so the syntax
+  // check at the top cannot see this.
+  const lookbehinds = (src.match(/\(\?<[=!]/g) || []).length;
+  if (lookbehinds) bad(`Cycle-8 F30: ${lookbehinds} regex lookbehind(s) in the console script — a parse error in Safari < 16.4 that stops the whole script`);
+  else if (typeof ctx.splitUnescapedPipes !== 'function') bad('Cycle-8 F30: splitUnescapedPipes is not defined — the invariant form has no lookbehind-free pipe splitter');
+  else {
+    const got = JSON.stringify(ctx.splitUnescapedPipes('INV-01 | a\\|b | Core |  x \\| y '));
+    if (got !== JSON.stringify(['INV-01', 'a|b', 'Core', 'x | y'])) bad('Cycle-8 F30: splitUnescapedPipes mis-splits an escaped pipe: ' + got);
+    else ok('the console script uses no regex lookbehind, and escaped pipes still split correctly without one (Cycle-8 F30)');
+  }
+  for (const k of Object.keys(store)) delete store[k];
+  if (typeof ctx.switchProject === 'function') ctx.switchProject('obs');
+}
+
 // F14 — §4v rotation probes must be REPRODUCIBLE, not a coin flip the
 // implementer can re-roll. They were Math.random() AND re-rolled on every Copy,
 // so the copied prompt differed from the displayed one and "do NOT substitute
@@ -1481,7 +1624,7 @@ if (loaded) {
       const realQSA = ctx.document.querySelectorAll;
       ctx.document.querySelectorAll = sel => (sel === '.fill-form' ? [closed] : realQSA(sel));
       try { ctx.switchProject(firstId); } finally { ctx.document.querySelectorAll = realQSA; }
-      if (closed.innerHTML !== '') problems.push('a closed fill form built for the previous project survived the switch and would reopen stale (F17)');
+      if (closed.innerHTML !== '') problems.push('a closed fill form built for the previous project survived the switch and would reopen stale (Cycle-8 F17)');
     }
     if (!problems.length) ok('editing the active project re-renders its prompts, and closed fill forms are discarded on project switch (F12/F17)');
     else bad(problems.join('; '));

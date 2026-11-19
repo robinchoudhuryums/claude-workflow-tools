@@ -172,9 +172,14 @@ table.st tr:hover td:first-child{color:var(--accent)}
 
 /* PROMPT BLOCK */
 .pb{margin-bottom:18px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface)}
-.pb-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--surface2);border-bottom:1px solid var(--border);gap:10px}
+/* F18 (Cycle 8): the header WRAPS. It was a single non-wrapping row whose
+   right-hand group could not shrink, inside a block with overflow:hidden — so
+   below ~480px (and again at 769–820px, beside the sidebar) Copy and Fill
+   fields were pushed past the edge and clipped: 0% visible on five prompts at
+   375px, with no scrollbar to reach them. */
+.pb-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--surface2);border-bottom:1px solid var(--border);gap:8px 10px}
 .pb-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
-.pb-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.pb-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;min-width:0;margin-left:auto}
 .ptag{font-size:10.5px;padding:2px 6px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);font-weight:500;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
 .fill-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--r-sm);color:var(--on-amber);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
 .fill-btn:hover{background:rgba(245,158,11,.18)}
@@ -662,7 +667,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 1 — Broad Scan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Single session</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1a" onclick="toggleFill(\'t1a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1a" onclick="toggleFill('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t1a" onclick="doCopy('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -675,7 +680,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 1 — Broad Implement Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After your approval</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1i" onclick="toggleFill(\'t1i\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1i" onclick="toggleFill('t1i')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t1i" onclick="doCopy('t1i')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -710,7 +715,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 2 — Audit + Plan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 1 of 2</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t2a" onclick="toggleFill(\'t2a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t2a" onclick="toggleFill('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t2a" onclick="doCopy('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -772,7 +777,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Systems Map Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 0 only</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p0" onclick="toggleFill(\'p0\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p0" onclick="toggleFill('p0')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p0" onclick="doCopy('p0')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -824,7 +829,7 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
         <div class="pb-label">Layered Audit Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 1+</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1" onclick="toggleFill(\'p1\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1" onclick="toggleFill('p1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p1" onclick="doCopy('p1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -922,7 +927,7 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
       <button class="abar-btn" onclick="collapseAllVariants('s1-variants')">Collapse all ↑</button>
     </div>
     <div id="s1-variants">
-      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-sec" onclick="toggleVariant(\'v-sec\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; Compliance Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-sec" onclick="toggleVariant('v-sec',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; Compliance Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-sec">
         <div class="pb" id="block-p1sec">
           <div class="pb-header"><div class="pb-label">Security &amp; Compliance Audit Add-on</div><div class="pb-meta"><span class="ptag">Replace or add to flag list</span><button class="copy-btn" id="copy-p1sec" onclick="doCopy('p1sec')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -942,7 +947,7 @@ For each finding, name the control or safeguard it maps to under that regime
 number), or "general hardening" if no regime applies.</pre>
         </div>
       </div>
-      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-perf" onclick="toggleVariant(\'v-perf\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-perf" onclick="toggleVariant('v-perf',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-perf">
         <div class="pb" id="block-p1perf">
           <div class="pb-header"><div class="pb-label">Performance Audit Add-on</div><div class="pb-meta"><span class="ptag">Add to or replace flag list</span><button class="copy-btn" id="copy-p1perf" onclick="doCopy('p1perf')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -983,7 +988,7 @@ number), or "general hardening" if no regime applies.</pre>
         <div class="pb-label">Seams &amp; Invariants Audit Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Every 3–4 subsystem cycles</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1s" onclick="toggleFill(\'p1s\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1s" onclick="toggleFill('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p1s" onclick="doCopy('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1004,7 +1009,7 @@ number), or "general hardening" if no regime applies.</pre>
         <div class="pb-label">Planning Prompt</div>
         <div class="pb-meta">
           <span class="ptag">End of audit session or fresh session</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p2" onclick="toggleFill(\'p2\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p2" onclick="toggleFill('p2')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p2" onclick="doCopy('p2')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1083,7 +1088,7 @@ ORDERING RATIONALE: [1–2 sentences]
         <div class="pb-label">Implementation Session Prompt</div>
         <div class="pb-meta">
           <span class="ptag">New session — code-writing</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p3" onclick="toggleFill(\'p3\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p3" onclick="toggleFill('p3')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p3" onclick="doCopy('p3')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1160,10 +1165,10 @@ DOCUMENTATION UPDATES NEEDED:
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-single" onclick="toggleVariant(\'v-single\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-single" onclick="toggleVariant('v-single',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
     <div class="vb" id="v-single">
       <div class="pb" id="block-p3single">
-        <div class="pb-header"><div class="pb-label">Single Finding Prompt</div><div class="pb-meta"><button class="fill-btn" aria-expanded="false" aria-controls="fill-p3single" onclick="toggleFill(\'p3single\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button><button class="copy-btn" id="copy-p3single" onclick="doCopy('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
+        <div class="pb-header"><div class="pb-label">Single Finding Prompt</div><div class="pb-meta"><button class="fill-btn" aria-expanded="false" aria-controls="fill-p3single" onclick="toggleFill('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button><button class="copy-btn" id="copy-p3single" onclick="doCopy('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
         <div class="fill-form" id="fill-p3single"></div>
         <pre id="p3single">[DESCRIBE THE SINGLE FINDING TO ADDRESS AND ITS FILE/FUNCTION LOCATION]
 
@@ -1189,7 +1194,7 @@ After completing the change, note: what was modified, whether anything unexpecte
         <div class="pb-label">Pre-Implementation Check</div>
         <div class="pb-meta">
           <span class="ptag">Before High/Very High risk changes</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4pre" onclick="toggleFill(\'p4pre\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4pre" onclick="toggleFill('p4pre')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4pre" onclick="doCopy('p4pre')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1218,7 +1223,7 @@ Do not begin implementation until this check is complete.</pre>
         <div class="pb-label">Post-Implementation Regression Check</div>
         <div class="pb-meta">
           <span class="ptag">After implementation, before merge</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4post" onclick="toggleFill(\'p4post\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4post" onclick="toggleFill('p4post')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4post" onclick="doCopy('p4post')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1254,16 +1259,18 @@ Prioritize the verification list by likelihood of breakage. Then:
 ---END FOLLOW-ON AUDIT ITEMS---</pre>
     </div>
 
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-reflect" onclick="toggleVariant(\'v-reflect\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-reflect" onclick="toggleVariant('v-reflect',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
     <div class="vb" id="v-reflect">
       <div class="pb" id="block-p4reflect">
         <div class="pb-header">
           <div class="pb-label">Post-Cycle Reflection</div>
           <div class="pb-meta">
             <span class="ptag">Same session as regression check</span>
+            <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4reflect" onclick="toggleFill('p4reflect')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
             <button class="copy-btn" id="copy-p4reflect" onclick="doCopy('p4reflect')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
           </div>
         </div>
+        <div class="fill-form" id="fill-p4reflect"></div>
         <pre id="p4reflect">Read CLAUDE.md before starting. Do not make any changes to any files
 during this session (other than the optional metrics / estimates / blocks
 writes and the STATE counter and phase update below).
@@ -1427,7 +1434,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
         <div class="pb-label">Verification Pass Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Fresh session — no implementation context</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4v" onclick="toggleFill(\'p4v\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4v" onclick="toggleFill('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4v" onclick="doCopy('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1438,7 +1445,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
     <div class="inote"><div class="ic">📌</div><div>The VERIFICATION BLOCK produced here becomes a <strong>required input</strong> for §6a Health Synthesis alongside the SESSION HANDOFF BLOCK and CYCLE SUMMARY BLOCK. All three are needed for accurate scoring.</div></div>
 
     <!-- VERIFICATION BLOCK format reference -->
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-vblock-ref" onclick="toggleVariant(\'v-vblock-ref\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-vblock-ref" onclick="toggleVariant('v-vblock-ref',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
     <div class="vb" id="v-vblock-ref">
       <div class="pb" id="block-vblockref">
         <div class="pb-header"><div class="pb-label">VERIFICATION BLOCK — Output Format</div><div class="pb-meta"><span class="ptag">Reference only</span><button class="copy-btn" id="copy-vblockref" onclick="doCopy('vblockref')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1486,7 +1493,7 @@ Category D ratio: [X%]
         <div class="pb-label">PR Review Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Read-only</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-pr" onclick="toggleFill(\'pr\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-pr" onclick="toggleFill('pr')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-pr" onclick="doCopy('pr')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1506,7 +1513,7 @@ Category D ratio: [X%]
         <div class="pb-label">Roadmap Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After 2–3 audit cycles</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p5" onclick="toggleFill(\'p5\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p5" onclick="toggleFill('p5')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p5" onclick="doCopy('p5')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1535,7 +1542,7 @@ estimate (S/M/L + rough time). For Tier 4: 3 distinct directions, a short
 paragraph each. End with the one strategic bet you'd prioritize if
 resources were limited, and why.</pre>
     </div>
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-rm-opts" onclick="toggleVariant(\'v-rm-opts\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-rm-opts" onclick="toggleVariant('v-rm-opts',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
     <div class="vb" id="v-rm-opts">
       <div class="pb" id="block-p5opts">
         <div class="pb-header"><div class="pb-label">Roadmap — Optional add-ons</div><div class="pb-meta"><button class="copy-btn" id="copy-p5opts" onclick="doCopy('p5opts')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1558,7 +1565,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
         <div class="pb-label">Health Synthesis Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After full audit cycle</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6a" onclick="toggleFill(\'p6a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6a" onclick="toggleFill('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p6a" onclick="doCopy('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1586,7 +1593,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
         <div class="pb-label">Health Pulse Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Anytime / Quick check</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6b" onclick="toggleFill(\'p6b\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6b" onclick="toggleFill('p6b')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p6b" onclick="doCopy('p6b')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -2201,7 +2208,15 @@ const DIRECTIVE_KEYS=['PASTE','LIST','DESCRIBE','NOTE','OPTIONAL','IF '];
 const ALLCAPS_PH=/^[A-Z][A-Z0-9\s\/\-&',:.()]*$/;
 const ANY_TOKEN=/\[[^\][]*\]/g;
 function isFillField(name){ return ALLCAPS_PH.test(name)||DIRECTIVE_KEYS.some(k=>name.startsWith(k)); }
-function isLarge(name){return LARGE_KEYS.some(k=>name.startsWith(k))}
+// F19 (Cycle 8): a field that opens with a directive prefix — "OPTIONAL: PASTE
+// ANY FOLLOW-ON ITEMS…", "IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS…" — is
+// a paste field too. startsWith('PASTE') missed all nine of them, so they
+// rendered as a single-line text input, which turns every pasted newline into a
+// space: a POLICY RESPONSE block (the prompt's "MANDATORY scope additions")
+// went into the copied prompt as one run-on line, with no signal. What stays
+// single-line is what is left: short identifiers such as [PR NUMBER OR URL].
+const DIRECTIVE_PREFIX=/^(?:OPTIONAL|IF [A-Z ]+):/;
+function isLarge(name){return DIRECTIVE_PREFIX.test(name)||LARGE_KEYS.some(k=>name.startsWith(k))}
 function isOpt(name){return OPT_KEYS.some(k=>name.startsWith(k))}
 
 function outputBlockSpans(text){
@@ -2279,19 +2294,27 @@ function buildFillForm(pid){
       </div>`;
     } else if(isSubsys(ph.name)){
       const opts=project.subsystems.map(s=>`<option value="${esc(s.name)}"${val===s.name?' selected':''}>${esc(s.name)}</option>`).join('');
+      // F21 (Cycle 8): custom mode is a stored name that is not in the list, OR
+      // "Custom…" just chosen with nothing typed yet. Only the first used to
+      // count — and nothing in the UI could produce it — so the option was a
+      // dead end.
+      const custom=!!((val&&!project.subsystems.find(s=>s.name===val))||(!val&&subCustomMode[subCustomKey(pid)]));
       // F13: .fill-select carried these exact rules and had ZERO users — the
       // select duplicated them inline and its <option> background rule was dead
       // (and un-themed). Use the class; drop the duplication.
       html+=`<select class="fill-select" id="${safeId}" onchange="handleSubSelect(${argPid},this.value)">
         <option value="">— select a subsystem —</option>
         ${opts}
-        <option value="__custom__">Custom…</option>
+        <option value="__custom__"${custom?' selected':''}>Custom…</option>
       </select>`;
-      if(val&&!project.subsystems.find(s=>s.name===val)){
+      if(custom){
         html+=`<input class="fill-input" id="${safeId}_custom" aria-label="Custom subsystem name" style="margin-top:4px" type="text" value="${esc(val)}" placeholder="Custom subsystem name" oninput="saveVal(${argPid},${argName},this.value)">`;
       }
     } else if(large){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
+      // oninput, not onchange (F19): nine of these fields were single-line inputs
+      // that saved on every keystroke. onchange fires only on blur, so text typed
+      // here and followed by a reload would have been lost where it used to be kept.
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" oninput="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else {
       html+=`<input class="fill-input" id="${safeId}" type="text" placeholder="${opt?'Leave blank to keep placeholder as-is':'Enter value...'}" value="${esc(val)}" oninput="saveVal(${argPid},${argName},this.value)">`;
     }
@@ -2301,8 +2324,23 @@ function buildFillForm(pid){
   form.innerHTML=html;
 }
 
+// F21 (Cycle 8): choosing "Custom…" returned here and did nothing — no input
+// appeared, the select read "Custom…", and the STORED value stayed the previous
+// subsystem, which is what Copy then pasted as the session's scope. It now
+// clears the stored value (the placeholder stays unfilled until a name is
+// typed), shows the custom input and moves focus into it. The flag is per
+// project and per prompt, and only matters while nothing is stored.
+const subCustomMode={};
+function subCustomKey(pid){ return activeProjectId+':'+pid; }
 function handleSubSelect(pid,val){
-  if(val==='__custom__')return;
+  if(val==='__custom__'){
+    subCustomMode[subCustomKey(pid)]=true;
+    saveVal(pid,'SUBSYSTEM GROUP NAME','');
+    buildFillForm(pid);
+    focusEl(pid+'_SUBSYSTEM_GROUP_NAME_custom');
+    return;
+  }
+  delete subCustomMode[subCustomKey(pid)];
   saveVal(pid,'SUBSYSTEM GROUP NAME',val);
   buildFillForm(pid); // refresh to show selected state
 }
@@ -2887,7 +2925,7 @@ function parseInvariantFormLines(raw,pid){
   }catch(e){}
   const out=raw.split('\n').filter(l=>l.trim()).map(l=>{
     // Split on UNESCAPED pipes only; `\|` is a literal pipe inside a field.
-    const parts=l.split(/(?<!\\)\|/).map(x=>x.trim().replace(/\\\|/g,'|'));
+    const parts=splitUnescapedPipes(l);
     let id=null;
     if(/^INV-\d+$/i.test(parts[0]||''))id=parts.shift().toUpperCase();
     const inv={id,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
@@ -2899,6 +2937,23 @@ function parseInvariantFormLines(raw,pid){
   taken.forEach(t=>{const m=t.match(/^INV-(\d+)$/);if(m)max=Math.max(max,parseInt(m[1],10));});
   out.forEach(inv=>{ if(!inv.id){ max++; inv.id=`INV-${String(max).padStart(2,'0')}`; taken.add(inv.id); } });
   return out;
+}
+
+// F30 (Cycle 8): split on unescaped pipes WITHOUT a regex lookbehind. The
+// v1.43.0 form used a lookbehind literal, which is a parse-time SyntaxError
+// in Safari before 16.4 — and a syntax error anywhere in this one inline
+// script stops ALL of it, so the whole console would be dead there, not just
+// this form. "\|" is a literal pipe inside a field; every other "|" separates.
+function splitUnescapedPipes(line){
+  const parts=[]; let cur='';
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='\\'&&line[i+1]==='|'){ cur+='|'; i++; }
+    else if(c==='|'){ parts.push(cur); cur=''; }
+    else cur+=c;
+  }
+  parts.push(cur);
+  return parts.map(x=>x.trim());
 }
 
 function saveProjectForm(){

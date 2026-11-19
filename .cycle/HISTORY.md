@@ -11,6 +11,68 @@ workflow itself (gotchas, design decisions, invariants) lives in
 
 Entries are newest-first.
 
+## Cycle 7 — /broad-scan (50 findings) → 8 fix batches + follow-ons, v1.35.0 → v1.43.0 — REFLECTED, NOT VERIFIED
+
+Moved out of STATE.md when Cycle 8's first implement checkpoint rolled it
+(2026-11-19). Cycle 7 was reflected on 2026-10-13 (`07-a-reflect.md`: 21 − 0,
+corrected from the self-reported 25) and merged (PRs #26, #27). **Its §4v and
+§6a never ran** — Cycle 8 opened on top of it — so the 21 production fixes are
+self-reported, and one of the batches below (v1.39.0) shipped the regression
+that Cycle 8 found as F16: all 22 Fill fields / variant-toggle handlers dead.
+What follows is STATE.md's Cycle-7 record, verbatim.
+
+### In progress (as recorded)
+- All 8 fix batches are complete (v1.35.0–v1.42.0; 1–4 merged in PR #26). The expansion plan is not started.
+- Correction carried forward: the v1.41.0 block says INV-26's rule text was widened; it was not until v1.42.0.
+- The actionable follow-on items from Batches 1–8 shipped as v1.43.0; what remains under Open follow-on items is
+  deliberate, perceptual, strategic or conditional.
+- The scan's full output (50 findings, ratings, batch + expansion plans) exists only in the session chat — the
+  scan writes no file. Batch definitions below are the record of what each batch contains.
+- Cycle was set to 7 BY HAND in this checkpoint: the scan ran on v1.34.0, before CYCLE OPEN existed (F01).
+  From v1.35.0 on, the opening audit writes it.
+
+### Completed this cycle (as recorded)
+- v1.35.0 | Batch 1 | F01 CYCLE OPEN step in /broad-scan, /audit, /targeted-audit owns the Cycle increment;
+  implement CHECKPOINTs + /cycle-resume set Phase: implement, /reflect sets Phase: reflect, /cycle-init starts
+  Cycle at 0; INV-12 gating check covers the new step. F02 §1s body ends with a gated SEAM COUNTER reset and
+  reads the configured cadence. F03 §6a opener permits its step-8 metrics append. F04 /reflect exemption covers
+  BLOCKS; <letter> defined. F06 /broad-implement points at the Invariant Library.
+- v1.36.0 | Batch 2 | F12 editing the active project re-renders every prompt; F13 §6a block placeholders are
+  per subsystem; F14 malformed repo spec is a visible failure, fetch timeout, STATE.md reason kept, bad spec
+  refused at save; F15 stale active id resolved at load; F16 loaders tolerate wrong-shape values, Axis B repaired,
+  import refuses wrong-shape keys whole; F17 closed fill forms discarded on switch. Six check-html cases, each
+  proven to fail with its fix reverted.
+- v1.37.0 | Batch 3 | F33 symlinked scripts run (real-path main check, 4 scripts); F34 verification-pack works in
+  a consumer (cwd root, --template/--project); F32 synthesis net excluded from totals (test had asserted the bug);
+  F35 CRLF/indent-tolerant invariant parsing in all three readers; F36 cadence read from its line; F39 shared CSV
+  parser + numeric cycle match; F40 line-bounded fields, escaped pipes, HEALTH_SECTION; F41 maxBuffer, --timeout,
+  capped reason, exitCode. INV-68 mutation case re-targeted (went false green once both parsers agreed).
+- v1.38.0 | Batch 4 | F24 kbdActivate stops propagation; F25 tracker dots and archive delete are native sibling
+  buttons (named, aria-pressed); F26 closed drawer visibility:hidden, open drawer traps focus and focuses its first
+  link after the slide-in; F22 invariant tables' own column rules; F23 main min-width:0. Browser-verified with the
+  scan's probes. Also: INV-49 delegation guard tightened (false green exposed by this batch); v1.36.0's false
+  "repaired" warning for a blank Axis B fixed.
+- v1.39.0 | Batch 5 | F30 fill tokens never used as text (37 → --on-*), --text-muted ≥4.5:1, custom invariant rows on
+  --surface2, contrast guard extended; F27 tracker restores focus, forms focus in and back, deletes focus a neighbour;
+  F29 live regions, copy announced, errors role=alert + aria-invalid/describedby, aria-expanded on every disclosure;
+  F28 empty required fields explained and focused. Also: INV-45 regex false red on aria-controls fixed.
+- v1.40.0 | Batch 6 | F31 CI workflow parsed (comments stripped, bare run: stages only, if:/continue-on-error and
+  trigger filters fail; permissions block bounded); F45 hostile fixture seeds dashCache/dashManual from derived field
+  lists, concat sinks scanned, reach floor; F18 placeholder cap lifted in console + check (§6a SEAMS field offered);
+  F48 one attribute-order-agnostic <pre> scanner; F49 every CSV header exact + per-file floor; F20 builders render the
+  passed project's invariants and seed. Each guard proven a false green before the fix.
+- v1.41.0 | Batch 7 | F47 canonicalCoverage ordered (LCS), multiset, case-sensitive — one real reorder in Tier 1
+  realigned; F46 norm exempts only single-token lines; F50 every block copy carries the same full field-label set,
+  Formats VERIFICATION/TIER 2 copies aligned (live drift); F37 hook Standing + Pending asserted; F38 dedupe counted by
+  executions; F44 no false red on a later "write" (bound shipped in v1.40.0).
+- v1.42.0 | Batch 8 | F10 security add-on regime-agnostic; F07 finding IDs + interface ID slot, Batch-name scope,
+  New capabilities (G/ST) field; F11 commands stand alone (+ check 17); F42 invariant-check shell model documented,
+  runs in the project root; F19 dead files plumbing removed, bank on every systems-map field; F21 grid width,
+  gitignore note, --selector console; F08/F09/F05 docs. Re-pull: 5 commands (and v1.33.0's /setup-cycle).
+- v1.43.0 | follow-ons | project delete purges its keys; invariant pipes escaped; manual Refresh feedback + 404
+  hint; INV-12 step set derived (+§1s/§6a); re-pull list guard (check 18); cycleTotals by header; ordered drift
+  report; legacyCopy success test; cycle-qualified F20 labels; two gotchas + README lock text restated.
+
 ## Cycle 6 — full release list v1.26.0 → v1.34.0 — ✅ CLOSED (§6a 2026-09-04: 9.0 → 9.2)
 Rolled out of STATE.md's "Completed this cycle" when Cycle 7 opened (2026-10-12). v1.33.0 and v1.34.0
 landed after §6a and before the Cycle-7 scan, so they are filed under Cycle 6 (blocks 06-1.33.0, 06-1.34.0).
