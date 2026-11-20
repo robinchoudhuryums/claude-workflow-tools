@@ -261,6 +261,52 @@ expectFail('detects a hardcoded policy floor in other words (Cycle-8 F45)',
     d => edit(d, '.claude/commands/implement.md', s => s.replace(/^description: ".*"$/m, 'description: "Execute the plan, updating test doubles"').replace(/test doubles/g, (m, off) => (off < 120 ? m : 'test stand-ins'))),
     /implement family: shared behavior "test doubles" missing from implement/);
 }
+// Cycle-8 follow-on to F8: a description is a label the prose scans skip, so the one rule of
+// theirs that fits a label is held by check 20 — it names no scripts/ helper.
+expectFail('detects a command description that names a scripts/ helper (Cycle-8 F8 follow-on)',
+  d => { const f = join(d, 'CLAUDE.md'); const s = readFileSync(f, 'utf8'); const find = '| `/regression` | Post-implementation regression check | — |'; if (!s.includes(find)) throw new Error('fixture rotted: /regression row'); writeFileSync(f, s.replace(find, '| `/regression` | Post-implementation regression check (runs scripts/regress.mjs) | — |')); },
+  /command descriptions \(Cycle-8 F8\): [^\n]*the Command Index describes \/regression with a scripts\/ path \(scripts\/regress\.mjs\)/);
+// Cycle-8 follow-on to F9: the roadmap said "queued for Cycle 7" through Cycle 8 and named two
+// finished items as its bet. Read against the LIVE ROADMAP.md and STATE.md, so a stale roadmap
+// in this repo fails here as well as in the guard's own stage.
+{
+  const withRoadmap = fn => {
+    const d = setup();
+    try {
+      mkdirSync(join(d, '.cycle'), { recursive: true });
+      copyFileSync(join(repo, '.cycle', 'STATE.md'), join(d, '.cycle', 'STATE.md'));
+      const live = readFileSync(join(repo, 'ROADMAP.md'), 'utf8');
+      const text = fn ? fn(live) : live;
+      if (fn && text === live) throw new Error('fixture rotted: ROADMAP.md');
+      if (text != null) writeFileSync(join(d, 'ROADMAP.md'), text);
+      return runGuard(d);
+    } finally { rmSync(d, { recursive: true, force: true }); }
+  };
+  const line = r => (r.out.split('\n').find(l => /roadmap currency|the roadmap does not contradict/.test(l)) || '(no roadmap line)').trim();
+  const cycle = Number((readFileSync(join(repo, '.cycle', 'STATE.md'), 'utf8').match(/^Cycle:\s*(\d+)/m) || [])[1]);
+  const openItem = /^(- \*\*R24 — [^\n]*)$/m, bet = /^\*\*Current bet:\*\*[^\n]*$/m;
+  const problems = [];
+  try {
+    const live = withRoadmap(null);
+    if (live.code !== 0 || !/✓ the roadmap does not contradict the cycle/.test(live.out)) problems.push(`the live ROADMAP.md fails — ${line(live)}`);
+    const stale = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle - 1})`));
+    if (stale.code === 0 || !new RegExp(`R24 is still "queued for Cycle ${cycle - 1}" and the project is on Cycle ${cycle}`).test(stale.out)) problems.push(`an open item queued for a cycle that has run is not flagged — ${line(stale)}`);
+    const current = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle})`));
+    if (current.code !== 0) problems.push(`an item queued for the CURRENT cycle is rejected — ${line(current)}`);
+    const history = withRoadmap(t => t.replace(openItem, `$1 (it was queued for Cycle ${cycle - 1} and slipped)`));
+    if (history.code !== 0) problems.push(`a past-tense "was queued for" is read as a live status — ${line(history)}`);
+    const spent = withRoadmap(t => t.replace(bet, '**Current bet:** R1, then R6.'));
+    if (spent.code === 0 || !/the strategic bet names R1, which is marked done or dropped/.test(spent.out)) problems.push(`a bet naming a finished item is not flagged — ${line(spent)}`);
+    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R22 (its derived half).'));
+    if (open.code !== 0) problems.push(`a bet naming an open item is rejected — ${line(open)}`);
+    const unstated = withRoadmap(t => t.replace(bet, 'The bet is discussed below.'));
+    if (unstated.code === 0 || !/has no "\*\*Current bet:\*\*" line/.test(unstated.out)) problems.push(`a roadmap that states no bet is not flagged — ${line(unstated)}`);
+    const unknown = withRoadmap(t => t.replace(bet, '**Current bet:** R999.'));
+    if (unknown.code === 0 || !/the strategic bet names R999, which is not an item in the roadmap/.test(unknown.out)) problems.push(`a bet naming an unknown item is not flagged — ${line(unknown)}`);
+  } catch (e) { problems.push(e.message); }
+  if (!problems.length) ok('the roadmap is read against the cycle: stale "queued for" on an open item, and a bet that names finished work (Cycle-8 F9 follow-on)');
+  else bad('Cycle-8 F9 follow-on: ' + problems.join('; '));
+}
 // 20) Cycle-7 follow-on to F05: the re-pull list classifies every release
 // since v1.19.0. v1.33.0 sat in neither list for nine releases.
 expectFail('detects a release missing from the Operator State Checklist re-pull list (F05 class)',

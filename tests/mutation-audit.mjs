@@ -225,7 +225,12 @@ const CASES = {
 
   // ── node tests/guard.test.mjs ───────────────────────────────────────────────
   'INV-22': [['scripts/check-template-sync.mjs', 'const cmdMissing = tableCmds.filter', 'const cmdMissing = [] || tableCmds.filter', /README command lacking/i]],
-  'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i]],
+  'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i],
+             // Cycle-8 follow-on to F9: the roadmap contradicts the cycle. guard.test reads the LIVE ROADMAP.md.
+             ['ROADMAP.md', '**Current bet:** none chosen.', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
+             ['ROADMAP.md', '- **R24 — Persist the scan report.** `effort: S (~1.5h)`', '- **R24 — Persist the scan report.** `effort: S (~1.5h)` — queued for Cycle 7', /the live ROADMAP\.md fails — [^\n]*R24 is still "queued for Cycle 7"/],
+             // the check stops telling a finished item from an open one
+             ['scripts/check-template-sync.mjs', 'closed: /✅ DONE|✗ DROPPED/.test(l) });', 'closed: false });', /a bet naming a finished item is not flagged/]],
   'INV-43': [['scripts/check-template-sync.mjs', 'const WORKFLOW_BLOCKS = BLOCKS.map(b => b.name.toLowerCase());', "const WORKFLOW_BLOCKS = ['session handoff block'];", /registry block with no console representation/i]],
   'INV-57': [['.github/workflows/sync-check.yml', 'permissions:\n  contents: read\n', '', /least-privilege permissions|baseline/i],
              // Cycle-7 Batch 7 (F44): the permissions block unbounded again — it reads to end of file.
@@ -263,7 +268,9 @@ const CASES = {
   'INV-76': [['.claude/commands/pr-review.md', 'if the project has scripts/invariant-check.mjs', 'the helper scripts/invariant-check.mjs', /standalone commands \(F11\): [^\n]*names scripts\/invariant-check\.mjs unconditionally/],
              ['.claude/commands/audit.md', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit) before', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit step 2) before', /standalone commands \(F11\): [^\n]*delegates to another command/],
              // Cycle-8 E2: a command that includes a canonical section but does not hold its text.
-             ['.claude/commands/verify.md', 'PART 2 — REGRESSION COUNT', 'PART 2 — REGRESSIONS', /verify\.md does not carry the body of "Verification Pass/]],
+             ['.claude/commands/verify.md', 'PART 2 — REGRESSION COUNT', 'PART 2 — REGRESSIONS', /verify\.md does not carry the body of "Verification Pass/],
+             // Cycle-8 follow-on to F8: the label names a script — the body rule, applied to the description.
+             [CFG, '| `/regression` | Post-implementation regression check | — |', '| `/regression` | Post-implementation regression check (runs scripts/regress.mjs) | — |', /the Command Index describes \/regression with a scripts\/ path/]],
   // INV-77 — the script's port of the console hash drifts from the console's own.
   'INV-77': [['scripts/verification-pack.mjs', 'h = Math.imul(h, 16777619) >>> 0; }', 'h = Math.imul(h, 16777621) >>> 0; }', /F21: --selector console picks differ/]],
   // INV-78 — a stage that is listed but cannot fail the job. (The first case proved this under

@@ -210,7 +210,7 @@ wording below is the same text: it comes from the Command Index table in
 | `/sync-docs` | 1,2,3 | 1 | Detect and fix documentation drift, roadmap currency included; propose promoting invariant candidates to the library |
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
-| `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
+| `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons; proposes the updates the project's roadmap file needs |
 | `/cycle-init` | any | 1 | Scaffold the optional `.cycle/` state dir + `PROJECT_HEALTH.md` (idempotent) |
 | `/cycle-status` | any | 1 | Read-only: report standing + the next action for the current phase |
 | `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |

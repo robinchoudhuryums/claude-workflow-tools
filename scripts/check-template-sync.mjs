@@ -1018,6 +1018,15 @@ try {
     else if (hint && hint !== row.hint) problems.push(`${f} hints its arguments as ${JSON.stringify(hint)} but its Command Index row says ${JSON.stringify(row.hint)}`);
   }
   for (const name of index.keys()) if (!files.includes(name + '.md')) problems.push(`the Command Index lists /${name}, which has no command file`);
+  // (e) A description is a label and the prose scans above do not read it — so the one rule of
+  // theirs that applies to a label is held here: it names no scripts/ helper (check 17 allows a
+  // body to name one conditionally; a one-line label has no room for the condition). A label MAY
+  // describe a write to .cycle/ — /cycle-init and /cycle-close do — which is why check 10 is not
+  // run over it.
+  for (const [name, row] of index) {
+    const script = (row.description + ' ' + row.hint).match(/\bscripts\/[\w.-]+/);
+    if (script) problems.push(`the Command Index describes /${name} with a scripts/ path (${script[0]}) — a project that copied only the commands may not have it`);
+  }
   // (d) the README table
   const readmeRows = new Map([...readmeRaw.matchAll(/^\| `\/([a-z0-9-]+)` \|[^|\n]*\|[^|\n]*\| (.*?) \|$/gm)].map(m => [m[1], m[2].replace(/`/g, '').trim()]));
   if (index.size && !readmeRows.size) problems.push('the README has no readable command table — its descriptions would go unchecked');
@@ -1028,6 +1037,64 @@ try {
   }
   if (problems.length) { failures++; console.log(`  ✗ command descriptions (Cycle-8 F8): ${problems.join('; ')}`); }
   else console.log(`  ✓ every command is listed by what it does — ${files.length} files open with their Command Index description, an argument hint exactly where the body reads $ARGUMENTS (${[...index.values()].filter(r => r.hint).length}), and the README table says the same (F8)`);
+}
+
+// ── Structural check 21 (Cycle-8 follow-on to F9): the roadmap does not
+// contradict the cycle it is read in. ROADMAP.md said "queued for Cycle 7"
+// through Cycle 8 and named two finished items as its one strategic bet, and
+// nothing failed. Most of a roadmap is judgment and stays with /sync-docs'
+// roadmap-currency check; two things are mechanical:
+//   (a) an item not marked done or dropped must not still be "queued for
+//       Cycle N" once the project's Cycle (.cycle/STATE.md) has passed N —
+//       past tense ("was queued for") is history and is left alone;
+//   (b) the "Current bet:" line under the strategic-bet heading names only
+//       items that are still open, or says none is chosen.
+// Skipped when the project keeps no ROADMAP.md; (a) needs .cycle/STATE.md.
+{
+  let roadmap = null, state = null;
+  try { roadmap = readFileSync(new URL('ROADMAP.md', root), 'utf8'); } catch (e) {}
+  try { state = readFileSync(new URL('.cycle/STATE.md', root), 'utf8'); } catch (e) {}
+  if (roadmap == null) console.log('  ✓ roadmap currency skipped — this project keeps no ROADMAP.md');
+  else {
+    const problems = [];
+    const L = roadmap.split('\n');
+    const items = [];
+    L.forEach((l, i) => {
+      const m = l.match(/^- \*\*(R\d+) — /);
+      if (m) items.push({ id: m[1], start: i, closed: /✅ DONE|✗ DROPPED/.test(l) });
+    });
+    items.forEach((it, k) => {
+      let end = k + 1 < items.length ? items[k + 1].start : L.length;
+      for (let j = it.start + 1; j < end; j++) if (/^## /.test(L[j])) { end = j; break; }
+      it.text = L.slice(it.start, end).join(' ').replace(/\s+/g, ' ');
+    });
+    if (!items.length) problems.push('no "- **R<n> — …" items found — the check would be vacuous');
+    const dup = items.map(i => i.id).filter((id, k, a) => a.indexOf(id) !== k);
+    if (dup.length) problems.push(`item ID used twice: ${[...new Set(dup)].join(', ')}`);
+    // (a)
+    const cycle = state ? Number((state.match(/^Cycle:\s*(\d+)/m) || [])[1]) : NaN;
+    if (Number.isFinite(cycle)) for (const it of items.filter(i => !i.closed)) {
+      for (const m of it.text.matchAll(/(?<!\b(?:was|were|been) )queued for Cycle (\d+)/gi)) {
+        if (Number(m[1]) < cycle) problems.push(`${it.id} is still "queued for Cycle ${m[1]}" and the project is on Cycle ${cycle} — mark it done, re-queue it, or say what happened`);
+      }
+    }
+    // (b)
+    const betAt = L.findIndex(l => /^## The one strategic bet\s*$/.test(l));
+    const betLine = betAt === -1 ? null : L.slice(betAt + 1).find(l => /^\*\*Current bet:\*\*/.test(l));
+    if (betAt === -1) problems.push('no "## The one strategic bet" section');
+    else if (betLine == null) problems.push('the strategic-bet section has no "**Current bet:**" line — nothing states what the bet is');
+    else {
+      const named = [...betLine.matchAll(/\bR\d+\b/g)].map(m => m[0]);
+      if (!named.length && !/\bnone\b/i.test(betLine)) problems.push('the "Current bet:" line names no item and does not say none is chosen');
+      for (const id of named) {
+        const it = items.find(i => i.id === id);
+        if (!it) problems.push(`the strategic bet names ${id}, which is not an item in the roadmap`);
+        else if (it.closed) problems.push(`the strategic bet names ${id}, which is marked done or dropped`);
+      }
+    }
+    if (problems.length) { failures++; console.log(`  ✗ roadmap currency (Cycle-8 F9): ${problems.join('; ')}`); }
+    else console.log(`  ✓ the roadmap does not contradict the cycle — ${items.length} items (${items.filter(i => !i.closed).length} open), none queued for a cycle that has run${Number.isFinite(cycle) ? '' : ' (not checked: no .cycle/STATE.md)'}, and the stated bet names only open items (F9)`);
+  }
 }
 
 if (failures) {

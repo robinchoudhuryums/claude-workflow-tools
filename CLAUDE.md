@@ -137,7 +137,7 @@ the same descriptions, and the guard holds the two equal.
 | `/sync-docs` | Detect and fix documentation drift, roadmap currency included; propose promoting invariant candidates to the library | — |
 | `/health-pulse` | Quick directional health check (both axes) | — |
 | `/systems-map` | Architectural overview (run once per project) | — |
-| `/roadmap` | Strategic planning across 4 time horizons | — |
+| `/roadmap` | Strategic planning across 4 time horizons; proposes the updates the project's roadmap file needs | — |
 | `/cycle-init` | Scaffold the optional .cycle/ state dir + PROJECT_HEALTH.md (idempotent) | — |
 | `/cycle-status` | Read-only: report standing + the next action for the current phase | — |
 | `/cycle-resume` | Continue an in-progress implementation thread from .cycle/STATE.md | — |
@@ -1727,10 +1727,17 @@ audit/plan/implement sessions, plus the inter-module dependency map.
 
 ```
 Read CLAUDE.md and README before starting. Do not make any changes to any
-files during this session.
+files during this session, other than the roadmap file update the operator
+approves at the end.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 [OPTIONAL: SUMMARY OF RECENT AUDIT FINDINGS]
+
+If the project already keeps a roadmap file (ROADMAP.md, or the file its
+docs name), read it first. Keep its item IDs and carry every open item
+forward under its ID. Check each stated status against the code and the
+changelog: an item that has shipped is marked done, not listed again as
+work.
 
 Produce a roadmap in four tiers. Ground Tiers 1–3 in specific findings,
 gaps, or architectural realities — no ungrounded wishlist items. Tier 4
@@ -1749,6 +1756,14 @@ For Tiers 1–3: 3–5 items each with a one-line rationale and an effort
 estimate (S/M/L + rough time). For Tier 4: 3 distinct directions, a short
 paragraph each. End with the one strategic bet you'd prioritize if
 resources were limited, and why.
+
+ROADMAP FILE — if the project keeps a roadmap file, close with the
+changes it needs: items to add (each with the next free ID), statuses to
+change, items to drop, and the strategic bet where yours differs from
+the one it states. Show the list and ask the operator to approve it. On
+approval, update the file, keeping its format and its IDs; without
+approval, leave it alone — the roadmap in chat is the record. The bet is
+a proposal: the operator chooses it.
 ```
 
 ### /test-sync

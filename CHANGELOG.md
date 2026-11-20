@@ -5,6 +5,34 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.51.0 — 2026-11-20
+
+Cycle-8 follow-ons to Batch 9 — the four items its summary left open.
+**Command bodies changed — run `/sync-commands` in consuming projects
+(`/roadmap`).**
+
+- **The roadmap is checked against the cycle** (structural check 21). Two
+  things in `ROADMAP.md` are mechanical and the guard now reads them: an item
+  not marked done or dropped must not still be "queued for Cycle N" once the
+  project's cycle has passed N (past tense — "was queued for" — is history),
+  and the strategic bet's **Current bet:** line names only open items, or
+  says none is chosen. Everything else about a roadmap is judgment and stays
+  with `/sync-docs`. Skipped where a project keeps no `ROADMAP.md`.
+- **`/roadmap` reads the roadmap file and proposes its update.** It produced
+  a roadmap in chat with no connection to the file a project keeps. It now
+  reads that file first, keeps its item IDs and checks each stated status,
+  and closes with the changes the file needs — applied only on the operator's
+  approval. The strategic bet stays a proposal.
+- **A command description may not name a `scripts/` helper.** The guard's
+  prose scans skip a description (it is a label), so the one rule of theirs
+  that fits a label is held by check 20. A description may describe a write
+  to `.cycle/` — `/cycle-init` and `/cycle-close` do.
+- **ROADMAP.md lists what is left of the Cycle-8 scan's expansion plan** as
+  R24–R27 (scan persistence, the interface lens in `/pr-review`,
+  `allowed-tools`, a mechanical mutation sweep). It was tracked only in
+  `.cycle/STATE.md`.
+- INV-23 and INV-76 widened; mutation cases 154 → 158; library unchanged at 78.
+
 ## 1.50.0 — 2026-11-20
 
 Cycle-8 Batch 9: command descriptions and a current roadmap (F8, F9).

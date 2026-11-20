@@ -8,9 +8,12 @@ L ≈ 3+ days for one developer working with Claude Code.
 
 Item IDs (R#) are stable references for planning sessions.
 
-**Last reviewed: 2026-11-20 (Cycle 8, v1.50.0).** Statuses below were brought
+**Last reviewed: 2026-11-20 (Cycle 8, v1.51.0).** Statuses below were brought
 up to date in that review; `/sync-docs` now carries a roadmap-currency check
-so they are looked at each cycle rather than when someone notices. One change
+so they are looked at each cycle rather than when someone notices, and the
+guard fails on two things it can read mechanically: an open item still
+"queued for" a cycle that has run, and a strategic bet that names a finished
+item. One change
 of direction since the items were written: v1.48.0 made the whole cycle
 runnable from chat and froze the console (see R23). Items that only served
 the console are closed as dropped, not left open.
@@ -53,6 +56,39 @@ the console are closed as dropped, not left open.
   agree — the `axis_b_lowest` column, Current Standing's "Top horizontal
   priority", and the Score History entry. INV-71 guarded those *labels* in
   v1.32.0; nothing checks the *values* match.
+
+- **R24 — Persist the scan report.** `effort: S (~1.5h)`
+  *(Cycle-8 scan, G3.)* `/broad-scan` writes no file, so its report — the
+  findings, the ratings, the batch and expansion plans — lives only in the
+  chat it ran in. `/broad-implement Batch 2` in a fresh session needs it, and
+  so does Health Synthesis for a Tier 1 cycle ("paste the scan's FINAL REPORT
+  and batch plan"). Cycle 8 is the evidence: the wording of every finding that
+  was dropped with the console freeze survives only in a session transcript.
+  Shape: an optional, gated write of the report to `.cycle/blocks/` at the end
+  of the scan — which means widening the scan's "only file write" rule.
+
+- **R25 — The interface lens in `/pr-review`.** `effort: S–M (~3h)`
+  *(Cycle-8 scan, G5.)* R18 put the INTERFACE & VISUAL LAYER lens in
+  `/broad-scan` and deferred `/audit` and `/pr-review` "by decision" until
+  it had run on a real UI project. Two cycles of that experience now exist,
+  and per-change review is where an interface defect is cheapest to catch.
+
+- **R26 — `allowed-tools` on the read-only commands.** `effort: S–M (~3h)`
+  *(Cycle-8 scan, ST1.)* "Do not make any changes to any files" is a request,
+  not a constraint. Command files have carried frontmatter since v1.50.0, so
+  the constraint has somewhere to live; the guard refuses any frontmatter key
+  it does not know, so adding this one is a decision, not an accident. The
+  work is in the exceptions: most "read-only" commands carry one permitted
+  write (CYCLE OPEN, the SEAM COUNTER, a block, the metrics row).
+
+- **R27 — Mechanical mutation sweep.** `effort: M (~1 day)`
+  *(Cycle-8 scan, ST3.)* The mutation audit's cases are written by hand, one
+  violation at a time. Generating them per site — drop each gate, each
+  escape, each guard clause in turn — would find the sites nobody thought to
+  write a case for; a trial sweep during the scan found 10 survivors in 71
+  sites. Most of those sites were in the console, which is now frozen, so
+  the sweep's first target would be the scripts' own gates. The audit runs
+  cases in parallel since v1.49.0, which is what makes a sweep affordable.
 
 - **R21 — Dead/superseded-artifact lens in `/broad-scan`.** `effort: S (~30 min)` — ✅ DONE (v1.34.0, applied verbatim before the Cycle-7 scan). The `/audit` focus-area-2 / `/targeted-audit` asymmetry below is still undecided.
   The Stage 1 flag list reads *"Dead code, unused exports, stale TODOs only if
@@ -386,7 +422,9 @@ the console are closed as dropped, not left open.
 
 ## The one strategic bet
 
-**Not currently chosen — this is the operator's decision.** The bet written
+**Current bet:** none chosen.
+
+This is the operator's decision. The bet written
 here until 2026-11-20 was *R1 (dogfood) immediately, then R6 (SessionStart
 hook)*. Both are done, and R1 did what it was chosen for: its audits reordered
 this roadmap more than any planning session did.
@@ -405,6 +443,10 @@ What is open, for whoever picks the next one:
   — a decision, not a build.
 - R11 stays held until Dynamic Workflows leaves preview.
 
-The Cycle-8 scan's own expansion plan (scan persistence, an interface lens for
-`/pr-review`, `allowed-tools` frontmatter, a mechanical mutation sweep) is
-tracked in `.cycle/STATE.md`, not here.
+- **R24–R27** — what is left of the Cycle-8 scan's expansion plan: scan
+  persistence, the interface lens in `/pr-review`, `allowed-tools`, a
+  mechanical mutation sweep. Each fits one session.
+
+The guard reads the **Current bet:** line above. Name an item there by its ID
+(`R22`), or leave it as "none chosen"; an item marked done or dropped is
+refused.

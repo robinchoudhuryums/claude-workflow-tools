@@ -9,10 +9,11 @@ Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it
 Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
-- Every fix batch of the plan is complete or dropped: Batches 1–3, 8 and 9, the follow-ons and expansion E2
-  (v1.44.0–v1.50.0; one block each in .cycle/blocks/). What is left is optional: expansions E3 and E4.
-- v1.50.0's command descriptions follow the documented frontmatter keys (description, argument-hint). They
-  have not been seen in a live picker: a session lists its commands when it starts.
+- Every fix batch of the plan is complete or dropped: Batches 1–3, 8 and 9, two rounds of follow-ons and
+  expansion E2 (v1.44.0–v1.51.0; one block each in .cycle/blocks/). What is left is optional: expansions E3
+  and E4, now also listed in ROADMAP.md as R24–R27.
+- v1.50.0's command descriptions were seen working: the session that ran the v1.51.0 follow-ons listed every
+  command by its description.
 - The four commands added in v1.48.0 have been checked structurally only — none has been run end to end.
   Cycle 7's owed verification (/verify 7 in a fresh session, then /health-synthesis 7) is their first real use.
 - A scheduled task, "Weekly cross-project board", runs Mondays 7:36 America/Chicago over seven repositories.
@@ -85,10 +86,16 @@ Updated: 2026-11-20
   currency) and ROADMAP.md is current: R1, R2, R5, R10 done; R9, R22 partly; R20 dropped; R23 recorded; the
   strategic bet is marked unchosen. Mutation cases 149 → 154; library 78 (INV-13 widened, INV-01 reworded).
   Every command file changed — consuming projects re-pull.
+- v1.51.0 | Batch 9 follow-ons | (1) Structural check 21: an open ROADMAP item may not stay "queued for Cycle
+  N" after cycle N, and the "Current bet:" line names only open items or none; guard.test reads the live
+  ROADMAP.md. (2) Check 20 refuses a description that names a scripts/ helper. (3) /roadmap reads the
+  project's roadmap file, keeps its IDs, and proposes the file's update — applied on approval only. (4)
+  ROADMAP.md lists the scan's open expansion items as R24–R27 and states its bet on one line (none chosen).
+  Mutation cases 154 → 158; library 78 (INV-23, INV-76 widened). /roadmap's body changed.
 
 ## Pending / not yet done
 - Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
-  E4 ST3 mechanical mutation sweep.
+  E4 ST3 mechanical mutation sweep. (ROADMAP R24, R25, R26, R27.)
 - DROPPED with the console freeze (2026-11-20, operator decision — known defects on the hosted page, none
   rated High; the scan's wording survives only in the session transcript):
   Batch 4 F20 F22 F23 F24 F25 F26 F27 F28 · Batch 5 F32 F33 F34 F35 F36 · Batch 6 F31 F37 F38 F39 ·
@@ -145,10 +152,11 @@ follow-ons went with the freeze):
 - The same-audit-round window is 7 days: a second audit of one round started later than that, with nothing
   implemented between, opens a new cycle.
 - .cycle/HISTORY.md is now written by the first CHECKPOINT of a cycle and still read by nothing.
-- ROADMAP.md has no mechanical check: /sync-docs' roadmap check is an instruction, and nothing fails when an
-  item says "queued for Cycle N" after Cycle N has run.
-- The Command Index is read by check 20 and by the whole-file CLAUDE.md scans only. Checks 10, 17 and 19 treat
-  a description as a label and do not read it.
+- The roadmap guard (check 21) reads two things: "queued for Cycle N" on an open item, and the Current bet
+  line. An item that shipped and is not marked done, or one stale in other words, is still /sync-docs' to find.
+- Check 21 is written for this repo's ROADMAP.md shape ("- **R<n> — …" items, ✅ DONE / ✗ DROPPED on the
+  heading line, a "**Current bet:**" line). A consuming project does not run this guard.
+- /roadmap's new closing step has not been run end to end.
 - A project on a /sync-commands older than v1.50.0 needs two runs to pick up the frontmatter (the first
   updates /sync-commands itself), or a copy of the whole directory.
 - Strategic, carried: no LICENSE file (the licence is the owner's choice).
@@ -210,9 +218,13 @@ follow-ons went with the freeze):
   assume heading-then-fence. Frontmatter is description + argument-hint only; allowed-tools is ST1's decision.
 - An argument hint goes on every command whose body reads $ARGUMENTS, including the three that read it only
   to detect an empty call (/plan, /implement, /targeted-implement).
+- A description is a label: it may describe a write to .cycle/ (two do) and may not name a scripts/ helper.
+- /roadmap writes the roadmap file only on approval; its bet is a proposal. No "last reviewed N cycles ago"
+  guard: it would go red when an audit's CYCLE OPEN moved the cycle on, in a session that may write nothing else.
 
 ## Where I left off
-Cycle 8. v1.44.0–v1.50.0 are on branch claude/stoic-goldberg-gg0oz5 (not merged). Every fix batch of the
-scan is done or dropped (1–3, 8, 9; 4–7 went with the console freeze); the optional expansions E3 and E4 are
-all that is left of it. Next: /reflect for Cycle 8. Cycle 7 still owes /verify 7 (fresh session) and
-/health-synthesis 7. Consuming projects need /sync-commands for v1.47.0–v1.50.0 (v1.50.0 changes every file).
+Cycle 8. v1.44.0–v1.51.0 are on branch claude/stoic-goldberg-gg0oz5 (not merged). Every fix batch of the
+scan is done or dropped (1–3, 8, 9 and their follow-ons; 4–7 went with the console freeze); the optional
+expansions E3 and E4 (ROADMAP R24–R27) are all that is left of it. Next: /reflect for Cycle 8. Cycle 7 still
+owes /verify 7 (fresh session) and /health-synthesis 7. Consuming projects need /sync-commands for
+v1.47.0–v1.51.0 (v1.50.0 changes every file).
