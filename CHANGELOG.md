@@ -260,6 +260,12 @@ command-body or config-schema change, so no `/sync-commands` re-pull.** Verified
 in headless Chromium; each fix pinned by a check-html case proven to fail with
 the fix reverted.
 
+> **Correction (v1.44.0):** this release also rewrote the 22 static
+> `toggleFill` / `toggleVariant` handlers with a backslash-quoted argument,
+> which left every Fill fields button and variant toggle dead until v1.44.0.
+> "Verified in headless Chromium" was true of the behaviours this batch
+> changed; nothing clicked Fill fields.
+
 - **F30 — light-mode text that could not flip.** 37 text colours used a FILL
   token (`--amber`, `--teal`, `--purple`, `--green`, `--red`), which does not
   change with the theme, so on the light surfaces they read at 1.7–2.4:1. They

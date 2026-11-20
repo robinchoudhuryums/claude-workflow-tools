@@ -152,7 +152,9 @@ For projects that want lossless session-to-session continuity without manual
 copy-paste, keep a `.cycle/` directory at the project root:
 
 - `.cycle/STATE.md` — rolling "where I left off" (template below). Written by
-  the implement commands' CHECKPOINT step, read by `/cycle-resume` and
+  the opening audit's CYCLE OPEN step (Cycle, Phase, Scope, Updated), the
+  implement commands' CHECKPOINT step, `/reflect` (Phase and the seams counter)
+  and a Seams audit (counter reset); read by `/cycle-resume` and
   `/cycle-status`. It is ROLLING: it carries the current cycle only, and its
   sections are exactly the template's. Narrative history from completed cycles
   belongs in `.cycle/HISTORY.md` — left unchecked this file accumulates

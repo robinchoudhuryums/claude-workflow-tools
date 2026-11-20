@@ -148,7 +148,9 @@ S3 | Export then re-import state round-trip | Subsystem: Interactive Console (HT
 S4 | Copy a filled command prompt | Subsystem: Interactive Console (HTML)
   Steps:
     - On a Tier-1/Tier-3 prompt, Fill fields, then Copy
-  Expected: clipboard holds the fully-substituted prompt with no [PLACEHOLDER] or ${} left
+  Expected: clipboard holds the fully-substituted prompt with no [PLACEHOLDER] or ${} left.
+    (Walk this after ANY edit to the prompt-block markup: v1.39.0 broke every
+    Fill fields button with an attribute edit, and no headless check clicked one.)
 S5 | VISUAL — light mode legibility | Subsystem: Interactive Console (HTML)
   Steps:
     - Open the console, toggle to light mode (☀/☾ in the sidebar)
@@ -189,6 +191,44 @@ S9 | VISUAL — phone layout | Subsystem: Interactive Console (HTML)
   Expected: one column, top bar pinned at the top, no horizontal scroll,
     prompt blocks wrap inside the viewport. (Cycle-6 F17: body was a flex ROW
     below 768px; the fix is pinned by a static CSS check, not by geometry.)
+S10 | VISUAL — light-mode accent controls | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Toggle light mode; open §2 Planning and the Dashboard
+    - Look at Copy, the blue block titles, the active sidebar link, "⚙ source", Refresh
+  Expected: each reads at arm's length without leaning in. (S10–S17 are the
+    Cycle-8 scan's OPERATOR VISUAL CHECKS, promoted here so they outlive the
+    session that emitted them. None has been walked. This one measures
+    2.6–3.2:1 today — scan finding F31, open.)
+S11 | VISUAL — phone prompt header | Subsystem: Interactive Console (HTML)
+  Steps:
+    - At 375px open §2, §3, §4, §4v and §1s; find Fill fields and Copy on each block; tap Copy
+  Expected: both buttons fully visible and tappable; the title is not squeezed
+    to one word per line. (Cycle-8 F18: Copy was 0% visible on five prompts at
+    375px. The header wraps since v1.44.0 — measured, not pinned by any guard.)
+S12 | VISUAL — focus ring in both themes | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Tab through the sidebar, a prompt header, a fill form and the tracker in dark, then light
+  Expected: the ring is obvious on every stop and not cut off at card edges
+S13 | VISUAL — cycle tracker legibility | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Mark Audited / Implemented / Verified on two subsystems, in both themes
+  Expected: the A/I/V letters read on their fills; marked and unmarked dots differ at a glance
+S14 | VISUAL — Dashboard card states | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Configure one working repo, one misspelled repo, one self-reported fallback, one empty; Refresh
+  Expected: Live / Cached / Fetch failed / Self-reported / No source are distinguishable in both themes
+S15 | VISUAL — form field boundaries and placeholders | Subsystem: Interactive Console (HTML)
+  Steps:
+    - Open a fill form and the project form in both themes
+  Expected: every input edge is visible against its card; placeholder instructions are readable
+S16 | VISUAL — drawer over content | Subsystem: Interactive Console (HTML)
+  Steps:
+    - At 375px open the drawer on a long panel; scroll inside it to the tracker
+  Expected: the drawer reads as a layer above a dimmed page and its last item is reachable
+S17 | VISUAL — density at 200% zoom | Subsystem: Interactive Console (HTML)
+  Steps:
+    - At 1280px set zoom to 200%; walk Dashboard, §1 with a fill form open, Projects with the form open
+  Expected: single column, nothing overlapping, labels sit with their fields
 
 ### Deploy Command
 Interactive Console (HTML): merge to `main` — GitHub Pages republishes
@@ -235,6 +275,12 @@ Cycle Workflow Config.
   carry). It is a floor, not the coverage — since v1.41.0 every copy of a block
   is also compared on its FULL derived field-label set (F50), so a field off
   that list can no longer drift between copies unseen.
+  **That "no guard's coverage is hand-listed" was itself wrong** (Cycle-8
+  scan): the `--assert` lock's builder set (`DYNAMIC_MANIFEST`), `check-html`'s
+  list of builders that take a project argument (it omits two), INV-61's
+  fill-token list (it omits `--accent`) and the mutation audit's cases are all
+  still written by hand. Open as F31, F42 and F47. A sentence that says "none
+  remain" is one more hand-maintained list — let a guard report the count.
 - **A derivation can narrow itself the moment it is introduced.** The first
   version of the derived sink set (F09) placed its marker AFTER
   `switchProject()`, so the init-time sinks silently left the scan and three
@@ -373,6 +419,42 @@ Cycle Workflow Config.
   projects happen to be configured at 5. When a body states a project-specific
   number, ask which artifact actually reads the config field of that name; if the
   answer is "not this one", the field is decoration and the two will diverge.
+- **An inline `on*` handler is JavaScript, and the `<script>` syntax check never
+  saw it.** v1.39.0 added `aria-expanded` to 22 tags and rewrote their handlers
+  as `onclick="toggleFill(\'t1a\')"`. `\'` is right inside a JS template
+  literal that BUILDS markup and wrong in static markup, where a backslash is
+  just a backslash — the form was carried from one context into the other. The
+  browser compiles a handler on first use, so the page loaded cleanly and every
+  Fill fields button and variant toggle did nothing for five releases. Every
+  other check read those tags as TEXT (is `aria-expanded` present?) or called
+  `toggleFill()` directly. Since v1.44.0 `check-html` compiles every static and
+  rendered handler (INV-04). Same family as the `esc()`-in-attribute gotcha at
+  the top of this list: which language are you in right now?
+- **"Verified in headless Chromium" describes a session, not the committed
+  file.** v1.39.0's CHANGELOG entry says it, and the file it shipped had the
+  dead handlers. What was driven was what the batch changed (focus, live
+  regions, contrast); nobody clicked Fill fields. A browser claim should name
+  what was driven, and after ANY edit to the prompt-block markup that includes
+  S4 (Fill fields → Copy).
+- **Node's parser is not the browser matrix.** The v1.43.0 invariant form used a
+  regex lookbehind. Node accepts it, so the syntax check passed; Safari before
+  16.4 raises a parse error, and a parse error anywhere in the one inline
+  script stops ALL of it. Syntax a supported browser cannot parse has to be
+  checked for by name (INV-04 now does, for lookbehind).
+- **`check-html`'s markup regexes scan the whole file, comments included.** A
+  JS comment that quoted a literal `<input …>` tag was counted as an unlabelled
+  form control and failed the label check (Cycle-8 Batch 1). Describe tags in
+  comments in prose.
+- **Finding ids restart every scan.** F19, F21 and F30 name different defects in
+  Cycle 7 and Cycle 8, older checks already print them, and the mutation audit
+  credits a case by matching a string in the output. Cycle-qualify any label a
+  guard prints ("Cycle-8 F19"), and make a mutation signal a phrase only the
+  FAILING line prints.
+- **Opening a cycle does not close the last one.** CYCLE OPEN moves `Cycle:`
+  and `verification-pack.mjs` defaults to it. Cycle 8 opened with Cycle 7's
+  §4v and §6a still pending, and the command STATE.md listed for that §4v then
+  built an empty Cycle-8 pack without complaint. Until CYCLE OPEN checks for a
+  pending verification (F4), pass `--cycle N` explicitly.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
@@ -478,6 +560,17 @@ machine or after a release.
   mobile drawer and `legacyCopy()`'s success path have no headless coverage.
   After v1.27.0's F17 fix, walk S9 (phone layout) once Pages republishes —
   the geometry is machine-checked (static CSS rule only), the look is not.
+  After ANY edit to the prompt-block markup, walk S4 (Fill fields → Copy) and
+  S11 (phone prompt header): inline handlers are compiled by `check-html` since
+  v1.44.0, but no CI stage clicks a button or measures a layout (ROADMAP R20).
+- **One-time, the hosted console between v1.39.0 and v1.43.0:** every Fill
+  fields button and variant toggle was dead, and Copy was clipped off phone
+  screens on five prompts. Both are fixed in v1.44.0, which reaches the hosted
+  page only when it is on `main`. After Pages republishes, click Fill fields on
+  any prompt and open one on a phone.
+- **After a new cycle is opened, the previous cycle's §4v pack needs
+  `--cycle N`.** `verification-pack.mjs` defaults to STATE.md's `Cycle`, which
+  the opening audit has already moved on (scan finding F4, open).
 - **`§4v` must run in a fresh session** with no implementation context.
 
 ## Cycle Rotation Plan (operator reference)

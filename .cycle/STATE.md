@@ -6,7 +6,7 @@ Phase: implement
 Scope: broad (Cycle-8 /broad-scan, 2026-11-19 — 48 findings F1–F48, 9 fix batches, expansion plan E1–E5)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it, a Seams audit resets it)
-Updated: 2026-11-19
+Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
 - Batch 1 of 9 is complete (v1.44.0, block 08-1.44.0-broad-implement.md). Batches 2–9 and the expansion plan
@@ -16,8 +16,11 @@ Updated: 2026-11-19
 - Cycle 7 was reflected (21 − 0) and merged (PRs #26, #27) but its §4v and §6a never ran; Cycle 8 opened on
   top of it. Its STATE record moved to .cycle/HISTORY.md in this checkpoint.
 - Batch 1 was verified in Chromium through real clicks, keys and a real paste. S1–S4 were walked by
-  automation, not by a person; S5–S9 (visual) have still never been walked.
+  automation, not by a person; S5–S17 (visual) have never been walked.
 - This repo's console is live on GitHub Pages from `main`: v1.44.0 reaches users only when this branch merges.
+- /sync-docs ran after Batch 1 (2026-11-20, docs only, no version bump): six gotchas added and one corrected,
+  three operator-checklist entries, the scan's visual checks promoted as S10–S17, PROJECT_HEALTH's live-defect
+  line, README and CLAUDE.md state-writer prose, a correction under CHANGELOG 1.39.0. It closed F10.
 
 ## Completed this cycle
 - v1.44.0 | Batch 1 | F16 the 22 static Fill fields / variant-toggle handlers compile again (v1.39.0 had
@@ -50,8 +53,8 @@ Updated: 2026-11-19
 - Batch 8 — sync, lock, mutation audit: F41 mutation signals matched against passing output; F42 --assert
   drops 23 lines and hand-lists builders; F43 INV-33 one literal phrase; F44 INV-12 step-shaped writes only;
   F45 INV-75 one spelling (after F39); F46 job-level permissions.
-- Batch 9 — docs and adoption: F8 command frontmatter; F9 ROADMAP stale; F10 four doc corrections; F14 token
-  note omits the shared github.io origin.
+- Batch 9 — docs and adoption: F8 command frontmatter; F9 ROADMAP stale; F14 token note omits the shared
+  github.io origin. (F10 was closed by /sync-docs on 2026-11-20.)
 - Deferred: F13 — operator question: is CallAnalyzer's file layout and invariant list meant to be public?
 - Expansion (optional): E1 G2 real-browser CI stage; E2 ST4 cycle-close + G1 §1s/§6a commands; E3 G3 scan
   persistence + G5 interface lens in /pr-review + ST1 allowed-tools; E4 ST3 mechanical mutation sweep;
@@ -71,7 +74,6 @@ Updated: 2026-11-19
   (beyond alert/confirm/setTimeout) fails the callee check until the stub is added.
 - Generic paste textareas now save per keystroke (oninput) rather than on blur; the systems-map textarea
   still saves on blur (onchange), as before.
-- The v1.39.0 CHANGELOG entry says "Browser-verified in Chromium"; the shipped file had the dead handlers.
 - Strategic, carried: no LICENSE file (the licence is the owner's choice).
 
 ## Decisions made (so the next session doesn't re-litigate)
@@ -104,4 +106,4 @@ Updated: 2026-11-19
 ## Where I left off
 Cycle 8, Batch 1 shipped as v1.44.0 on branch claude/stoic-goldberg-gg0oz5 (not merged — the hosted console
 still serves v1.43.0 with the dead Fill buttons until it is). Next: merge, then /broad-implement Batch 2.
-Cycle 7's §4v and §6a are still owed (pass --cycle 7). A person still needs to walk S5–S9.
+Cycle 7's §4v and §6a are still owed (pass --cycle 7). A person still needs to walk S5–S17.

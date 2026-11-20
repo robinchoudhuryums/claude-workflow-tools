@@ -106,12 +106,13 @@ If context fills mid-implementation (work unfinished), the optional `.cycle/` st
 
 ### Cycle State & Resuming
 For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
-- `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it. It keeps the shape of the template in `CLAUDE.md` and carries the *current* cycle only — `check-template-sync` fails if it grows a section the template doesn't define, because unchecked it accumulates per-release narrative until the substrate a new session loads is buried in it.
+- `.cycle/STATE.md` — a rolling "where I left off" file. The audit that opens a cycle writes its `Cycle`/`Phase`/`Scope` (CYCLE OPEN), the implement commands' CHECKPOINT step writes the rest, and `/reflect` sets the phase and the seams counter; `/cycle-status` and `/cycle-resume` read it. It keeps the shape of the template in `CLAUDE.md` and carries the *current* cycle only — `check-template-sync` fails if it grows a section the template doesn't define, because unchecked it accumulates per-release narrative until the substrate a new session loads is buried in it.
 - `.cycle/HISTORY.md` — optional: the narrative record of completed cycles, moved out of `STATE.md` so that file stays rolling. Reference prose; nothing reads it.
 - `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
 - `.cycle/estimates.csv` — estimate-vs-actual effort log that `/reflect` appends, surfacing your personal calibration over time.
+- `.cycle/blocks/` — the summary blocks themselves, written verbatim by the implement commands and `/reflect` as `<cycle>-…` files. §4v and §6a run in a fresh session and read this directory, so a block that exists only in chat cannot reach them.
 
-Run **`/cycle-init`** to scaffold all of the above (and `PROJECT_HEALTH.md`) in one step — it only creates what's missing.
+Run **`/cycle-init`** to scaffold `STATE.md`, the two CSVs and `PROJECT_HEALTH.md` in one step — it only creates what's missing. `blocks/` appears with the first CHECKPOINT; `HISTORY.md` is kept by hand.
 
 Seven optional helpers (all fail-safe, all covered by the Test Command):
 - **SessionStart context hook** (`scripts/cycle-context.mjs`) — auto-loads the substrate (STATE + current standing + invariant count) into every new session, so you never have to paste it. Enable by copying the script and adding a `SessionStart` hook to `.claude/settings.json` (see CLAUDE.md "Cycle State & Memory" for the snippet). With no `.cycle/` it prints nothing.
@@ -222,6 +223,8 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | VERIFICATION BLOCK | Verification Pass | Health Synthesis |
 | SEAMS & INVARIANTS AUDIT BLOCK | Seams Audit | Next subsystem audit, Synthesis |
 | CYCLE SUMMARY BLOCK | `/reflect` | Health Synthesis |
+| FOLLOW-ON AUDIT ITEMS | `/regression` | The next audit of that scope (pasted as follow-on items) |
+| POLICY RESPONSE | Health Synthesis (when a trigger fires) | The next cycle's audit and plan — mandatory scope |
 | PR REVIEW BLOCK | `/pr-review` | Operator (merge decision); optionally posted to the PR |
 
 ## Maintaining this repo
@@ -250,4 +253,4 @@ The guard exits non-zero if any tracked capability (manual test mode, Regression
 >
 > As of v1.29.0 the lock covers **every** prompt the console renders: all 16 static `<pre>` blocks (the nine that had no slash-command counterpart now have canonical bodies under "Console Reference Prompts" in `CLAUDE.md`) and all nine dynamic builders — and `--assert` fails if a *new* static prompt appears with no manifest entry, so the class cannot quietly reopen. That last gap was real, not theoretical: the console's `/setup-cycle` prompt had decayed to a pre-R18 copy that never asked about a user-facing surface, and the file-global markers could not see it.
 >
-> What is still *not* verified automatically: the console's surrounding prose, section framing and layout, and anything about how it renders (the Cycle-6 scan found the mobile layout broken below 768px by driving headless Chromium; no CI stage does that yet — ROADMAP R20). Two lessons the closure cost: a marker check is file-global, so it can be green while an individual builder is stale; and a `locked:false` exemption, however well reasoned when written, stops being re-read — §T2b's decayed behind one for four releases. See Common Gotchas in `.cycle/config.md`.
+> What is still *not* verified automatically: the console's surrounding prose, section framing and layout, and anything about how it renders (the Cycle-6 scan found the mobile layout broken below 768px by driving headless Chromium; no CI stage does that yet — ROADMAP R20; the Cycle-8 scan found Copy clipped off phone screens, and every Fill fields button dead, the same way). Two lessons the closure cost: a marker check is file-global, so it can be green while an individual builder is stale; and a `locked:false` exemption, however well reasoned when written, stops being re-read — §T2b's decayed behind one for four releases. See Common Gotchas in `.cycle/config.md`.
