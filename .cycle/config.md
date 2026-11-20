@@ -41,7 +41,8 @@ Tooling & Sync Infrastructure:
 Cycle state (not audited as source, but read/written by the tooling above):
   .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/,
   .cycle/HISTORY.md (narrative history split out of STATE.md in Cycle 6 / F15 — reference
-  prose, deliberately NOT substrate: nothing reads it, and no guard depends on it)
+  prose, deliberately NOT substrate: nothing reads it, and no guard depends on it; since
+  v1.47.0 the first implement CHECKPOINT of a cycle writes the previous cycle's entries to it)
 
 ### Invariant Library
 INV-01 | .claude/commands/*.md are byte-identical to the command blocks extracted from CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
@@ -117,6 +118,11 @@ INV-71 | PROJECT_HEALTH.md's "Current Standing" label set has ONE definition (sc
 INV-74 | CI runs EVERY stage of the documented Test Command, in the same order. INV-14 asserted only that CI runs check-template-sync, so a stage added to the Test Command and forgotten in the workflow would be run by every contributor and by nothing in CI — or the reverse, a CI stage no contributor can reproduce locally. Parity is exact today (16 stages); this keeps it that way | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 14)
 INV-72 | every release of the CURRENT cycle has a summary block in .cycle/blocks/. §4v and §6a read that directory and nothing else — not the CHANGELOG, not the commit log — so a release that ships without a block is invisible to verification and synthesis BY CONSTRUCTION. v1.30.1 changed the console and had no block; §4v found it only by fetching origin, and the pack it was handed could not have shown it. The floor is DERIVED so the rule never reaches back into cycles predating the convention: it is the first release AFTER the newest version any EARLIER cycle has a block for, so a cycle's FIRST release is covered too (Cycle-8 F7: the floor was this cycle's own lowest block, which skipped the check until a cycle had one and could never flag a release below it — the v1.30.1 case again whenever it opened a cycle); the ceiling is VERSION | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs && node tests/guard.test.mjs (structural check 15; the first-release case needs a sandbox, which guard.test builds)
 INV-75 | the §6a policy trigger is RELATIVE and PARAMETERISED: the canonical body names all four clauses (DECLINE / SHARP DROP / PERSISTENT LAGGARD / ABSOLUTE FLOOR), reads `Policy threshold` and `Consecutive cycles` from the Cycle Workflow Config by name, and contains no hardcoded "≤N/10 for N consecutive cycles" floor. It WAS a literal in the canonical body while the config carried a threshold field the body never read — the config value was decorative. And a fixed floor cannot fire on a healthy project: across six cycles here the mechanism engaged ZERO times, scores sitting between 7 and 9.5, including the cycle Guard / Test Coverage Quality fell 9.0 → 7.0. The console builder renders the same clauses by canonicalCoverage (INV-36), so this guards the source | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 16)
+INV-76 | Every command file stands alone: none delegates a step to another command ("see /x step N"), and none names a scripts/ helper except conditionally ("if the project has…", "where the project uses…"). A consuming project copies .claude/commands/ and nothing else, so a delegated step or an assumed script is an instruction that cannot be followed there (Cycle-7 F11; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 17)
+INV-77 | The console's §4v rotation probes are reproducible by a tool: verification-pack.mjs --selector console, given the seed the console prompt states ("<project>:<UTC day>"), returns the same five the console picked — proven by executing the console's own hash and selection code beside the script's. Without it the prompt's "selected deterministically from a stated seed" could be read but never checked (Cycle-7 F21; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/verification-pack.test.mjs
+INV-78 | A CI stage counts only when its step's run: is the BARE stage command and nothing can skip or swallow it — no if:, no continue-on-error, no chained, piped or `|| true` command. The workflow is read as structure, not text: INV-74 proves every stage is listed in order, this proves a listed stage can actually fail the job (Cycle-7 F31; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 14, via ciStages)
+INV-80 | The Operator State Checklist's re-pull paragraph classifies EVERY release since v1.19.0 exactly once — "vX changed /cmd" or inside the "changed none" list — and the newest release's classification agrees with its own CHANGELOG entry. v1.33.0 changed /setup-cycle and sat in neither list for nine releases, so consuming projects were never told to re-pull it (Cycle-7 follow-on to F05; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 18)
+INV-81 | Deleting a project removes every ccg:<id>:* key and its Dashboard entries, and nothing else: the keys of a surviving project whose id extends the deleted one (ccg:<id>:two:*) and every ccg:secret:* key are kept — so a project re-created under the same derived id starts clean and no other project loses data (Cycle-7 follow-on A; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 
 ### Policy Configuration
 Policy threshold: 4/10
@@ -468,6 +474,15 @@ Cycle Workflow Config.
   to pick the next action, list who sets each value and who clears it; a value
   with no writer is unreachable and a value with no exit sticks (structural
   check 19 derives both).
+- **An invariant candidate is a claim by the implementer, and it can be false
+  by the time it is promoted.** Cycle 7's /reflect minted INV-79 ("the hostile
+  fixture seeds every stored AND fetched input") and INV-82 ("every structured
+  ccg:* key is shape-validated on import"). The Cycle-8 scan then showed the
+  fixture blind to five sinks (F40) and import accepting two damaging shapes
+  (F28). Both candidates would have entered the library with a Verify that
+  passes over a known violation. Before promoting a candidate, check it against
+  the newest audit, and hold it — number reserved — until the finding that
+  contradicts it is closed.
 - **A guard's floor must not come from the thing it guards.** INV-72 ("every
   release of the cycle has a block") took its floor from the cycle's own lowest
   block — so with no block yet there was no floor and the check was skipped,
@@ -522,6 +537,18 @@ so treat these as settled unless the reasoning below is what changed.
   itself on introduction). Treat "I will list the cases" as a design smell:
   derive the set from the artifact under test, give the derivation a floor,
   or the guard proves only the cases someone thought of.
+- **`Phase` is a closed lifecycle of four values, each with one kind of
+  writer:** CYCLE OPEN → `audit`, the implement CHECKPOINTs → `implement`,
+  `/reflect` → `reflect`, Health Synthesis → `idle`. `plan`, `regression` and
+  `verify` were dropped in v1.47.0 because the sessions that would write them
+  are read-only. Adding a value means adding its writer in the same change
+  (structural check 19 fails otherwise). "Same audit round" is `Phase: audit`
+  updated within 7 days, any scope.
+- **Invariant candidates are promoted by `/sync-docs`, with the operator's
+  approval — never by `/reflect` or an implement session.** A candidate keeps
+  the number `/reflect` gave it until it is promoted or declined; a declined
+  number is not reused. A promoted rule needs a runnable `Verify:` and a
+  mutation case in the same change, or the mutation audit fails on it.
 - **R11 (Dynamic Workflows orchestrator) is HELD until DW leaves research
   preview** — a live integration cannot meet the verification bar in this
   environment. This is the same discipline that kept visual assessment out
@@ -614,7 +641,15 @@ machine or after a release.
   any prompt and open one on a phone.
 - **After a new cycle is opened, the previous cycle's §4v pack needs
   `--cycle N`.** `verification-pack.mjs` defaults to STATE.md's `Cycle`, which
-  the opening audit has already moved on (scan finding F4, open).
+  the opening audit has already moved on. Since v1.47.0 the audit says so at
+  the top of its output and the pack warns when built without `--cycle`, but
+  neither changes the default — pass the number.
+- **Projects with a `.cycle/` directory, after re-pulling v1.47.0:** nothing to
+  migrate. A `Phase` of `plan`, `regression` or `verify` keeps working (it
+  reads as work in progress; `verify` as awaiting close-out). Health Synthesis
+  now writes `.cycle/STATE.md` (`Phase: idle`) as well as its metrics row. A
+  project that never synthesizes rests at `Phase: reflect` between cycles —
+  the next audit opens the next cycle from there.
 - **`§4v` must run in a fresh session** with no implementation context.
 
 ## Cycle Rotation Plan (operator reference)

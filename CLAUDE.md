@@ -285,7 +285,8 @@ And two operate across projects:
   (STATE.md phase / in-progress / seams counter, metrics.csv net trend)
   into one board (`Project | Overall | Phase | In-progress | Net Δ | Seams
   | Updated`), so you see where your next action is (resume in-progress
-  work, run a DUE Seams audit), not just which project is unhealthiest.
+  implementation, implement an audit that has just opened, close out a
+  reflected cycle, run a DUE Seams audit), not just which project is unhealthiest.
   Same args; projects without a `.cycle/` still list (status columns `—`).
 
 This is **fully optional and additive**: if `.cycle/` does not exist, every

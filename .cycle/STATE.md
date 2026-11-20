@@ -21,6 +21,10 @@ Updated: 2026-11-20
 - /sync-docs ran after Batch 1 (2026-11-20, docs only, no version bump): six gotchas added and one corrected,
   three operator-checklist entries, the scan's visual checks promoted as S10–S17, PROJECT_HEALTH's live-defect
   line, README and CLAUDE.md state-writer prose, a correction under CHANGELOG 1.39.0. It closed F10.
+- /sync-docs ran again after Batch 3 (2026-11-20, docs and tests, no version bump): INV-76, 77, 78, 80 and 81
+  promoted from Cycle 7's candidates with a Verify and a mutation case each (library 73 → 78, mutation cases
+  128 → 135); INV-79 and INV-82 HELD. One gotcha, two design decisions and two operator-checklist entries added;
+  PROJECT_HEALTH's live-defect line, README and CLAUDE.md prose reconciled with v1.47.0.
 
 ## Completed this cycle
 - v1.44.0 | Batch 1 | F16 the 22 static Fill fields / variant-toggle handlers compile again (v1.39.0 had
@@ -58,12 +62,13 @@ Updated: 2026-11-20
 - Batch 4 — console data: F20 config-format invariant lines double their labels; F22 Dashboard not re-rendered
   on switch/add/delete/import; F23 Dashboard cache keyed by id only; F24 parseHealth/parseState unscoped;
   F25 refresh races; F26 Save → repo creates .cycle/; F27 project-form edge cases; F28 import shapes.
+  Closing F28 makes candidate INV-82 true — promote it then (/sync-docs).
 - Batch 5 — console focus and structure: F32 focus lost after eight actions; F33 no headings on 18 panels;
   F36 silent save failures after the first; F34 drawer trap above 768px; F35 aria-expanded drift, 16px dots.
 - Batch 6 — console theme and prose: F31 --accent as text in light mode; F37 no reduced-motion /
   forced-colors / color-scheme / print; F38 six small items; F39 stale tips and cadence text.
 - Batch 7 — check-html false greens: F40 hostile fixture blind to five sinks; F47 ten single-instance proofs;
-  F48 four false reds. (After Batches 5 and 6.)
+  F48 four false reds. (After Batches 5 and 6.) Closing F40 makes candidate INV-79 true — promote it then.
 - Batch 8 — sync, lock, mutation audit: F41 mutation signals matched against passing output; F42 --assert
   drops 23 lines and hand-lists builders; F43 INV-33 one literal phrase; F44 INV-12 step-shaped writes only;
   F45 INV-75 one spelling (after F39); F46 job-level permissions.
@@ -76,8 +81,9 @@ Updated: 2026-11-20
 - Cycle 7 still owes §4v in a FRESH session — `node scripts/verification-pack.mjs --cycle 7 --out pack.md`
   (without --cycle the pack builds Cycle 8 and now says Cycle 7 is owed) — then §6a. Carried from Cycle 7: F43
   (hook framing/size cap).
-- Cycle 7's invariant candidates INV-76…82 (07-a-reflect.md) are not in the library: /sync-docs check 5 now
-  proposes them; the operator approves or declines each.
+- Two Cycle-7 candidates are HELD, not declined — numbers reserved, text in 07-a-reflect.md: INV-79 (hostile
+  fixture seeds every stored and fetched input; contradicted by F40) and INV-82 (active id names a project,
+  ccg:* keys shape-validated on import; contradicted by F28). The next new candidate is INV-83.
 - OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
   independence vs the SessionStart hook; R21's /audit vs /targeted-audit dead-code asymmetry.
 
@@ -108,7 +114,6 @@ What is left is deliberate, needs a capability that does not exist yet, or is th
 - The same-audit-round window is 7 days: a second audit of one round started later than that, with nothing
   implemented between, opens a new cycle.
 - .cycle/HISTORY.md is now written by the first CHECKPOINT of a cycle and still read by nothing.
-- PROJECT_HEALTH.md's "Open live defect" line still lists F2 (fixed in v1.45.0) — a /sync-docs item.
 - Strategic, carried: no LICENSE file (the licence is the owner's choice).
 
 ## Decisions made (so the next session doesn't re-litigate)
@@ -150,11 +155,13 @@ What is left is deliberate, needs a capability that does not exist yet, or is th
   synthesis row for some cycle. A project that does not synthesize owes none, and a notice that fires every
   cycle teaches its reader to skip it.
 - Candidates are promoted by /sync-docs with the operator's approval, never by /reflect or an implement
-  session — which is why Batch 3 widened INV-35/52/65 and left INV-76…82 where they are.
+  session — which is why Batch 3 widened INV-35/52/65 and left INV-76…82 where they were.
+- A candidate the newest audit contradicts is HELD until the contradicting finding closes — promoting it
+  would add a rule whose Verify passes over a known violation (INV-79 / F40, INV-82 / F28).
 
 ## Where I left off
 Cycle 8, Batches 1–3 and the follow-ons shipped as v1.44.0–v1.47.0 on branch claude/stoic-goldberg-gg0oz5
-(not merged — the hosted console still serves v1.43.0 with the dead Fill buttons until it is). Next: merge,
-have consuming projects run /sync-commands (v1.47.0 changed ten command bodies), then /broad-implement
-Batch 4 (console data). Cycle 7's §4v and §6a are still owed (pass --cycle 7), and /sync-docs should now
-propose INV-76…82. A person still needs to walk S5–S17.
+(not merged — the hosted console still serves v1.43.0 with the dead Fill buttons until it is). /sync-docs has
+run on top (library 78; INV-79 and INV-82 held). Next: merge, have consuming projects run /sync-commands
+(v1.47.0 changed ten command bodies), then /broad-implement Batch 4 (console data). Cycle 7's §4v and §6a
+are still owed (pass --cycle 7). A person still needs to walk S5–S17.

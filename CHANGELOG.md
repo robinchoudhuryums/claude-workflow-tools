@@ -68,6 +68,15 @@ config-schema change.
 Not done here: this repo's own candidates INV-76…82 are still unpromoted —
 that is `/sync-docs`'s new check, run with the operator's approval.
 
+*Docs and tests follow-up, 2026-11-20 (`/sync-docs`; same version):* five of
+those candidates are now in the library under the IDs `/reflect` gave them —
+INV-76 (commands stand alone), INV-77 (console §4v probes reproducible),
+INV-78 (a CI stage is a bare run), INV-80 (re-pull list complete), INV-81
+(project delete purges exactly its own keys). Each has a runnable `Verify:`
+and a mutation case: library 73 → 78, mutation cases 128 → 135. INV-79 and
+INV-82 are HELD, numbers reserved: the Cycle-8 scan contradicts both (F40,
+F28), so they are promoted with the batches that close those findings.
+
 ## 1.46.0 — 2026-11-20
 
 Cycle-8 follow-on items: the actionable follow-ons that Batches 1 and 2

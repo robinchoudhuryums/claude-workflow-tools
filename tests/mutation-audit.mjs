@@ -218,7 +218,22 @@ const CASES = {
   'INV-71': [['scripts/health-fields.mjs', "topVertical:    'Top vertical priority:'", "topVertical:    'Top vertical priorities:'", /health-field contract/i]],
   // INV-74 — drop a stage from CI that the Test Command still documents.
   'INV-74': [['.github/workflows/sync-check.yml', 'run: node tests/portfolio.test.mjs', 'run: echo skipped', /CI never runs|Test-Command parity/i],
-             ['.github/workflows/sync-check.yml', 'run: node tests/mutation-audit.mjs', 'run: node tests/mutation-audit.mjs || true', /not a bare stage/]],
+  ],
+  // ── Cycle-7 candidates promoted by /sync-docs on 2026-11-20 (INV-76, 77, 78, 80, 81) ──
+  // INV-76 — a command that names a helper script unconditionally; one that delegates a step.
+  'INV-76': [['.claude/commands/pr-review.md', 'if the project has scripts/invariant-check.mjs', 'the helper scripts/invariant-check.mjs', /standalone commands \(F11\): [^\n]*names scripts\/invariant-check\.mjs unconditionally/],
+             ['.claude/commands/audit.md', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit) before', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit step 2) before', /standalone commands \(F11\): [^\n]*delegates to another command/]],
+  // INV-77 — the script's port of the console hash drifts from the console's own.
+  'INV-77': [['scripts/verification-pack.mjs', 'h = Math.imul(h, 16777619) >>> 0; }', 'h = Math.imul(h, 16777621) >>> 0; }', /F21: --selector console picks differ/]],
+  // INV-78 — a stage that is listed but cannot fail the job. (The first case proved this under
+  // INV-74 until the rule had a line of its own in the library.)
+  'INV-78': [['.github/workflows/sync-check.yml', 'run: node tests/mutation-audit.mjs', 'run: node tests/mutation-audit.mjs || true', /not a bare stage/],
+             ['.github/workflows/sync-check.yml', '        run: node tests/guard.test.mjs', '        continue-on-error: true\n        run: node tests/guard.test.mjs', /a conditional or failure-tolerant job\/step can skip or swallow a stage/]],
+  // INV-80 — a release dropped from the "changed none" list.
+  'INV-80': [['.cycle/config.md', 'v1.36.0–v1.41.0', 'v1.36.0–v1.40.0', /re-pull list \(Operator State Checklist\): [^\n]*in neither list: v1\.41\.0/]],
+  // INV-81 — delete stops purging; delete takes a longer id's keys with it.
+  'INV-81': [[HTML, '  purgeProjectData(id);\n  if(activeProjectId===id)', '  if(activeProjectId===id)', /project delete: [^\n]*survived the delete/],
+             [HTML, '&&!longer.some(o=>k.indexOf(`ccg:${o}:`)===0)) doomed.push(k);', ') doomed.push(k);', /project delete: [^\n]*was wrongly removed/]],
   // INV-72 — ship a release into the current cycle with no block for it.
   // INV-75 — drop one of the three clause labels from the canonical rule.
   'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger/i]],
