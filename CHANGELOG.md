@@ -35,7 +35,7 @@ config-schema change, so no `/sync-commands` re-pull.**
   least-privilege check, which read the workflow-level block only.
 - The piped-pack test is deterministic: its reader waits before reading, so
   the cut it guards against happens every time, not only on an idle machine.
-- INV-12, INV-33, INV-57, INV-58 and INV-75 widened; mutation cases 138 → 151;
+- INV-12, INV-33, INV-57, INV-58 and INV-75 widened; mutation cases 138 → 149;
   library unchanged at 78.
 
 Not scanned: the console. It is a frozen subsystem and its Best Practices tip
