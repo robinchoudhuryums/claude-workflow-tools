@@ -146,7 +146,7 @@ The lens splits findings by what an agent can actually verify, and that split is
 
 Two config hooks make it score rather than just report: include an interface Health Dimension (e.g. `UI/UX & Accessibility`) when the project has a client surface — `/setup-cycle` now proposes one — and optionally swap an Axis B category for `Visual / Interaction Regression Posture`. `/reflect` counts a user-visible interface defect as a production fix (its trigger is a user opening the surface, not load), so interface work shows up in `net_score` instead of being flattened into the excluded defensive/structural bucket.
 
-`/audit` and `/pr-review` do **not** carry this lens yet — a deliberate deferral (ROADMAP R18) pending a cycle's experience with it in `/broad-scan`.
+`/audit` and `/pr-review` do **not** carry this lens yet — R18 deferred it pending a cycle's experience with it in `/broad-scan`. That experience now exists; adding it to `/pr-review` is open as ROADMAP R25.
 
 ### When Tests Can't Run
 If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.

@@ -268,6 +268,7 @@ the console are closed as dropped, not left open.
   proposes the interface dimension instead of hoping it emerges (this repo's
   own 12 dimensions had none, despite the console being its entire face);
   **D4** `/reflect` Q1 counts a user-visible interface defect as YES.
+  *(The `/pr-review` half of the deferral below is now open as R25.)*
   Deferred by decision: the same lens for `/audit` and `/pr-review` — ship
   `/broad-scan` first, run it on a real UI project, then decide (per-change
   review in `/pr-review` is the likelier winner). Subsumes R17's
@@ -302,6 +303,9 @@ the console are closed as dropped, not left open.
   Deliberately out of scope: `/audit` does NOT persist its Session Handoff Block
   — that command's first line is "Do not make any changes to any files", and a
   file write would contradict it. §6a still takes the handoff block by paste.
+  *(Since v1.48.0 `/health-synthesis` reads the cycle's blocks from
+  `.cycle/blocks/` itself; what it still cannot read is an audit handoff or
+  a scan report, because neither is saved — R24.)*
 
 - **R23 — The whole cycle from chat.** `effort: M` — ✅ DONE (v1.47.0–v1.48.0).
   Not on this list when it shipped; recorded because it changed the direction

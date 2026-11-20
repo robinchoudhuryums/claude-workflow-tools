@@ -347,7 +347,11 @@ Cycle Workflow Config.
   locked: every canonical line present, IN ORDER, once per occurrence, with
   case intact (v1.41.0, F46/F47 — before that "100%" meant set membership,
   blind to a moved, dropped-duplicate or re-cased line). Edit builders in
-  canonical order; a harmless-looking reorder now fails.
+  canonical order; a harmless-looking reorder now fails. Since v1.50.0 a
+  command also has a row in CLAUDE.md's Command Index and a matching row in
+  the README table: adding or renaming a command, or changing what it takes
+  as arguments, means editing both rows as well — generation fails on a
+  command with no row, and check 20 on a README row that says something else.
 - **`canonicalCoverage` ignores EXTRA rendered lines.** A console builder
   can carry expanded console-only detail *and* still be locked. The
   "standalone vs locked" tradeoff that justified §T2b's exemption was never
@@ -530,6 +534,21 @@ Cycle Workflow Config.
   places.** Check 20 holds them equal (backticks aside). Reword a command's
   description in the Command Index, then the README row, then regenerate —
   the guard names whichever is left behind.
+- **A new check that fails EARLIER changes which message an existing mutation
+  case sees.** v1.50.0's Command Index check made the generator refuse an
+  un-fenced command one step before the orphan-file check that INV-11's case
+  was written against; the rule was still enforced, by a line the case did
+  not expect, and the audit reported WRONG CHECK. After adding a guard to a
+  script, run the audit for every invariant whose Verify is that script, not
+  only the one you widened.
+- **A command's description is read by the model, not only shown in the
+  picker.** The Claude Code docs define the field as "what the skill does and
+  when to use it. Claude uses this to decide when to apply the skill", and a
+  session lists every command with its description. So a description is not
+  an instruction — the guard's scans rightly skip it — but it is not inert
+  either: write what the command does, never when the model should run it
+  unasked. `disable-model-invocation` exists as a frontmatter key and is not
+  used here; check 20 would refuse it until someone decides.
 
 ## Key Design Decisions
 
@@ -708,7 +727,9 @@ machine or after a release.
   the geometry is machine-checked (static CSS rule only), the look is not.
   After ANY edit to the prompt-block markup, walk S4 (Fill fields → Copy) and
   S11 (phone prompt header): inline handlers are compiled by `check-html` since
-  v1.44.0, but no CI stage clicks a button or measures a layout (ROADMAP R20).
+  v1.44.0, but no CI stage clicks a button or measures a layout (ROADMAP R20,
+  dropped with the console freeze — these walks are owed only if the console
+  is edited at all).
 - **One-time, the hosted console between v1.39.0 and v1.43.0:** every Fill
   fields button and variant toggle was dead, and Copy was clipped off phone
   screens on five prompts. Both are fixed in v1.44.0, which reaches the hosted
@@ -729,6 +750,17 @@ machine or after a release.
   now writes `.cycle/STATE.md` (`Phase: idle`) as well as its metrics row. A
   project that never synthesizes rests at `Phase: reflect` between cycles —
   the next audit opens the next cycle from there.
+- **Consuming projects, re-pulling v1.50.0 or later:** every command file
+  changed (each gained a frontmatter description). A project whose own
+  `/sync-commands` is older than v1.50.0 compares bodies only, so its first
+  run updates `/sync-commands` and `/sync-docs` and reports the other 22
+  CURRENT; run it a second time, or copy `.claude/commands/` whole. Then
+  open a new session — a session lists its commands when it starts.
+- **This repo's ROADMAP.md states its bet on one line the guard reads.**
+  `**Current bet:**` names an open item by ID, or says none is chosen
+  (today: none). Marking an item done while it is still named there fails
+  the guard — change the line in the same edit. An open item must not stay
+  "queued for Cycle N" once that cycle has run.
 - **The hosted console is frozen with known defects (2026-11-20).** The
   Cycle-8 scan's console findings were dropped, not fixed: the Dashboard can
   show a stale or wrong repo's score (F22–F25), pasted config-format invariant

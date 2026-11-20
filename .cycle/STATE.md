@@ -24,6 +24,10 @@ Updated: 2026-11-20
   top of it. Its STATE record moved to .cycle/HISTORY.md in this checkpoint.
 - Batch 1 was verified in Chromium through real clicks, keys and a real paste. S1–S4 were walked by
   automation, not by a person; S5–S17 (visual) have never been walked.
+- /sync-docs ran a third time after the Batch 9 follow-ons (2026-11-20, docs only, no version bump): one
+  gotcha brought up to v1.50.0 and two added, two operator-checklist entries, PROJECT_HEALTH's live-defect line
+  (F41, F43–F46, F8, F9 closed), README and ROADMAP cross-references to R24/R25. No new invariant candidates;
+  INV-79 and INV-82 stay held. The roadmap's bet is still "none chosen" — the operator's to set.
 - This repo's console is live on GitHub Pages from `main`: v1.44.0 reaches users only when this branch merges.
 - /sync-docs ran after Batch 1 (2026-11-20, docs only, no version bump): six gotchas added and one corrected,
   three operator-checklist entries, the scan's visual checks promoted as S10–S17, PROJECT_HEALTH's live-defect
