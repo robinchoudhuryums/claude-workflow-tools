@@ -207,7 +207,10 @@ table.st tr:hover td:first-child{color:var(--accent)}
 /* EXTRACTED UTILITIES (inline-style → class cleanup) */
 .lbl-note{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0}
 .sublabel{margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em}
-.flex-g8{display:flex;gap:8px;flex-shrink:0}
+/* Wraps (Cycle-8 follow-on B): the three repo-sync buttons are wider than a 320px
+   viewport's content box, and a non-shrinking, non-wrapping row pushed the page
+   17px wider than the screen. */
+.flex-g8{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0;max-width:100%}
 .mb12{margin-bottom:12px}
 .note-mut{font-size:11px;color:var(--text-muted)}
 .hint-mut{font-size:11px;color:var(--text-muted);margin-top:2px}
@@ -667,11 +670,9 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 1 — Broad Scan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Single session</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1a" onclick="toggleFill('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t1a" onclick="doCopy('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div class="fill-form" id="fill-t1a"></div>
       <pre id="t1a"></pre>
     </div>
     <div class="inote"><div class="ic">✋</div><div><strong>Approval gate:</strong> review the findings before anything is implemented, then name the ones you want fixed in the prompt below. Produces a <strong>BROAD SCAN IMPLEMENTATION SUMMARY</strong>.</div></div>
@@ -777,11 +778,9 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Systems Map Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 0 only</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p0" onclick="toggleFill('p0')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p0" onclick="doCopy('p0')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div class="fill-form" id="fill-p0"></div>
       <pre id="p0">Read CLAUDE.md and README before starting. Do not make any changes to any
 files during this session. Do not run audits or recommendations — this
 session only maps architecture.
@@ -2287,7 +2286,7 @@ function buildFillForm(pid){
 
     if(isSysMap(ph.name)){
       // Systems map — large textarea with save-to-bank button
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." oninput="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
       html+=`<div style="display:flex;gap:8px;margin-top:4px">
         <button onclick="saveBank(document.getElementById('${safeId}').value)" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);color:var(--on-teal);cursor:pointer;font-family:inherit">Save to bank</button>
         <button onclick="loadBank('${safeId}',${argPid},${argName})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Load from bank</button>
@@ -4021,10 +4020,8 @@ function renderTier1(){
   // buttons — on every load, for every release since the tabbed-nav rewrite.
   const pre=document.getElementById('t1a');
   if(pre) pre.textContent=buildTier1Text(project);
-  const form=document.getElementById('fill-t1a');
-  if(form){form.innerHTML='';form.classList.remove('open');}
-  const btn=document.querySelector('#block-t1a .fill-btn');
-  if(btn)btn.classList.remove('active');
+  // No fill form to reset: this prompt has no operator field, so it carries no
+  // Fill fields button (Cycle-8 follow-on C).
 }
 
 function renderTier2(){

@@ -227,6 +227,10 @@ And two helpers operate on the invariant library:
   runnable, then the whole text runs through a shell — `node -e 0; <anything>`
   runs both. Review edits to the invariant library as you would edits to the
   Test Command, and never run it on a library you would not run the tests of.
+  A command may contain pipes (`| grep -q ok`, `a || b`): the field runs from
+  its label to the end of the line or the next labelled field, exactly as
+  written. A trailing note is `(a parenthesis)` or a labelled field
+  (`| Source: …`) — bare text after a pipe is a pipeline stage.
 - `tests/mutation-audit.mjs` — the **other half of that proof**. A
   `Verify:` command passing on a clean tree is not evidence it would FAIL
   if the rule were violated; a command that cannot see its own invariant

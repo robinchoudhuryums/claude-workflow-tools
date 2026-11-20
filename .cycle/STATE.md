@@ -9,8 +9,8 @@ Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it
 Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1 and 2 of 9 are complete (v1.44.0, v1.45.0; blocks 08-1.44.0-… and 08-1.45.0-broad-implement.md).
-  Batches 3–9 and the expansion plan are not started.
+- Batches 1 and 2 of 9 and their actionable follow-ons are complete (v1.44.0, v1.45.0, v1.46.0; one block
+  each in .cycle/blocks/). Batches 3–9 and the expansion plan are not started.
 - The scan's full output (48 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. The batch definitions under Pending are the record of what each batch contains.
 - Cycle 7 was reflected (21 − 0) and merged (PRs #26, #27) but its §4v and §6a never ran; Cycle 8 opened on
@@ -39,6 +39,12 @@ Updated: 2026-11-20
   first release needs a block; proven by a guard.test sandbox case, which INV-72's Verify now also runs.
   F11 the SessionStart hook command and script are rooted at CLAUDE_PROJECT_DIR (fallback: cwd); the CLAUDE.md
   snippet follows. F15 CI on Node 22. Mutation cases 111 → 116; library unchanged at 73 (four rules widened).
+- v1.46.0 | follow-ons | A a piped verification pack is complete (exitCode, not process.exit(), which cut it
+  at 65,536 bytes). B button rows wrap — no panel scrolls sideways at 320px. C the Tier 1 scan and §0 prompts
+  lost their empty fill forms; a guard holds "a form has fields" beside "a prompt with fields has a form".
+  D the inline-handler scan reads handlers from tags only. E the systems-map field saves as typed. F docs:
+  Verify-with-pipes in README and CLAUDE.md, two gotchas added and one extended, a correction under CHANGELOG
+  1.43.0. Mutation cases 116 → 120; library unchanged at 73 (three rules widened).
 
 ## Pending / not yet done
 - Batch 3 — cycle lifecycle (command bodies change → re-pull): F4 CYCLE OPEN ignores a pending §4v/§6a and the
@@ -69,26 +75,23 @@ Updated: 2026-11-20
   independence vs the SessionStart hook; R21's /audit vs /targeted-audit dead-code asymmetry.
 
 ## Open follow-on items
-- Projects panel overflows the viewport by 17px at 320px (the Backup button row) — present before Batch 1.
-- "Fill fields" on a prompt with no placeholders (Tier 1 scan, §0) opens a form that says so; the button
-  could be hidden instead.
-- F18 has no CI guard: clipping is geometry, and no stage drives a browser (E1 / ROADMAP R20).
-- The static-handler scan matches ` on…="…"` anywhere outside <pre>/<script>; prose that quotes an attribute
-  would be compiled as a handler. A static handler calling a browser global the vm context does not stub
-  (beyond alert/confirm/setTimeout) fails the callee check until the stub is added.
-- Generic paste textareas now save per keystroke (oninput) rather than on blur; the systems-map textarea
-  still saves on blur (onchange), as before.
-- NEW (found in Batch 2, not fixed): piping verification-pack.mjs truncates the pack at 65,536 bytes — Cycle 7's
-  is 119,689. main() calls process.exit() after writing stdout (the F41 class, fixed only in invariant-check).
-  `--out FILE` and a `>` redirect are complete; use those for the Cycle-7 pack.
-- invariant-check passes a Verify to the shell as written, so `\|` is NOT a pipe there (it is what
-  `grep 'a\|b'` needs). The console's project form writes `\|` in its textarea only; nothing emits it into
-  a config. CHANGELOG 1.43.0 still calls it "the escape the config readers already use" — no reader does.
+What is left is deliberate, needs a capability that does not exist yet, or is the owner's call:
+- Layout has no CI guard (F18's header wrap, the 320px button rows): clipping is geometry and no stage drives
+  a browser (E1 / ROADMAP R20). Both were measured in Chromium, 15 widths from 320 to 1280px.
 - F15 has no guard: nothing can tell an end-of-life Node line from a supported one without a date.
+- A static inline handler that calls a browser global the vm context does not stub (beyond alert, confirm,
+  setTimeout) fails check-html's callee check until the stub is added — loud by design.
+- invariant-check passes a Verify to the shell as written: `\|` is NOT a pipe there (`grep 'a\|b'` needs
+  it), and toCommand still ends a command at " (", " + " or " then ", so a Verify cannot contain a subshell
+  or `if … then`. Both documented.
 - The hook snippet is POSIX shell syntax; a Windows setup whose hooks run under PowerShell needs
   `$env:CLAUDE_PROJECT_DIR`. The exec form (`"args"`) the Claude Code docs prefer would avoid the shell, but
   was not adopted: it could not be exercised here and older Claude Code versions may not read it.
+- The Setup prompt's `[N]` is classified as a fill field by getPlaceholders; it has no form, and the F11
+  check's NEVER list would reject a form that offered it.
 - guard.test's F7 case reads this repo's .cycle/STATE.md and CHANGELOG.md to build its sandbox.
+- check-html, check-template-sync and the mutation audit still call process.exit() after printing; their
+  output is far below a pipe's 64 KiB buffer today, so nothing is cut. verification-pack was the one that was.
 - Strategic, carried: no LICENSE file (the licence is the owner's choice).
 
 ## Decisions made (so the next session doesn't re-litigate)
@@ -123,7 +126,7 @@ Updated: 2026-11-20
   invariant's Verify names guard.test as well (INV-72) — a single-file mutation of the live tree cannot.
 
 ## Where I left off
-Cycle 8, Batches 1 and 2 shipped as v1.44.0 and v1.45.0 on branch claude/stoic-goldberg-gg0oz5 (not merged —
-the hosted console still serves v1.43.0 with the dead Fill buttons until it is). Next: merge, then
-/broad-implement Batch 3 (cycle lifecycle — command bodies change, so a re-pull follows).
+Cycle 8, Batches 1 and 2 and their follow-ons shipped as v1.44.0–v1.46.0 on branch claude/stoic-goldberg-gg0oz5
+(not merged — the hosted console still serves v1.43.0 with the dead Fill buttons until it is). Next: merge,
+then /broad-implement Batch 3 (cycle lifecycle — command bodies change, so a re-pull follows).
 Cycle 7's §4v and §6a are still owed (pass --cycle 7). A person still needs to walk S5–S17.

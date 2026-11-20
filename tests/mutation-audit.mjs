@@ -63,11 +63,14 @@ const CASES = {
              // five releases; the second breaks a RENDERED handler (it used to be swallowed by the
              // hostile-fixture executor's catch); the third renames a callee out from under the markup.
              // Signals are phrases only the failing line prints.
-             [HTML, `onclick="toggleFill('t1a')"`, `onclick="toggleFill(\\'t1a\\')"`, /static inline handler\(s\) do not compile/],
+             [HTML, `onclick="toggleFill('t1i')"`, `onclick="toggleFill(\\'t1i\\')"`, /static inline handler\(s\) do not compile/],
              [HTML, 'fillSubsystem(${argName})"', 'fillSubsystem(${argName}"', /rendered inline handler\(s\) do not compile/],
              [HTML, `onclick="expandAllVariants('s1-variants')"`, `onclick="expandEveryVariant('s1-variants')"`, /call function\(s\) the script does not define/],
              // Cycle-8 Batch 1 (F30): Node parses a regex lookbehind, Safari < 16.4 does not — and a
              // parse error in the one inline script stops all of it.
+             // Cycle-8 follow-on D: the handler extractor back to scanning the whole markup — prose that
+             // quotes an attribute would be compiled as a handler. Caught by the extractor's own fixture.
+             ['scripts/check-html.mjs', 'return tagsOf(markup).flatMap(tag =>', 'return [markup].flatMap(tag =>', /Cycle-8 follow-on D: /],
              [HTML, 'const parts=splitUnescapedPipes(l);', "const parts=l.split(/(?<!\\\\)\\|/).map(x=>x.trim().replace(/\\\\\\|/g,'|'));", /regex lookbehind\(s\) in the console script/]],
   'INV-05': [[HTML, 'const dims=project.healthDimensions;', 'const dims=project.healthDimensions_TYPO;', /unresolved|leaked "undefined"/i],
              // Cycle-7 Batch 6 (F20): a defect only in the SECOND project's library. The builders
@@ -92,7 +95,7 @@ const CASES = {
     // F01/F09 — the fill form renders only on interaction; these prove the
     // hostile fixture now reaches it, one sink at a time.
     [HTML, '<option value="${esc(s.name)}"${val===s.name', '<option value="${s.name}"${val===s.name', /unescaped stored content|injected data executed/i],
-    [HTML, 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>', 'placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${val}</textarea>', /unescaped stored content|injected data executed/i],
+    [HTML, 'placeholder="Paste your systems map summary here..." oninput="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>', 'placeholder="Paste your systems map summary here..." oninput="saveVal(${argPid},${argName},this.value)">${val}</textarea>', /unescaped stored content|injected data executed/i],
     [HTML, "'Paste content here...'}\" oninput=\"saveVal(${argPid},${argName},this.value)\">${esc(val)}</textarea>", "'Paste content here...'}\" oninput=\"saveVal(${argPid},${argName},this.value)\">${val}</textarea>", /unescaped stored content|injected data executed/i],
     [HTML, 'value="${esc(val)}" oninput="saveVal(${argPid}', 'value="${val}" oninput="saveVal(${argPid}', /unescaped stored content|injected data executed/i],
   ],
@@ -127,6 +130,9 @@ const CASES = {
   'INV-63': [[HTML, '<div class="fill-form" id="fill-p4reflect"></div>', '', /no fill form: p4reflect/],
              [HTML, 'function isLarge(name){return DIRECTIVE_PREFIX.test(name)||', 'function isLarge(name){return ', /render as a single-line input/],
              [HTML, "if(val==='__custom__'){", "if(val==='__custom__')return;\n  if(false){", /renders no custom input/],
+             // Cycle-8 follow-ons C and E: a fill form with nothing in it comes back; a field saves only on blur.
+             [HTML, '      <pre id="p0">', '      <div class="fill-form" id="fill-p0"></div>\n      <pre id="p0">', /a Fill fields form with nothing to fill/],
+             [HTML, 'placeholder="Paste your systems map summary here..." oninput="saveVal(', 'placeholder="Paste your systems map summary here..." onchange="saveVal(', /save only on blur/],
              [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][A-Z0-9\\s\\/\\-&',:.()]+)\\]/g;", /F11/],
              // Cycle-7 Batch 6 (F18): the length cap back — §6a's 224-char field drops out of its form.
              [HTML, "const PH_RE = /\\[([A-Z][^\\][]*)\\]/g;", "const PH_RE = /\\[([A-Z][^\\]]{0,199})\\]/g;", /F11/],
@@ -254,7 +260,9 @@ const CASES = {
   'INV-51': [['scripts/render-metrics.mjs', "that cycle's net ${synthNet}", "that cycle's net ${lastSynth.net_score}", /✗/]],
   'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i],
              // Cycle-8 Batch 2 (F3): the library injected as a replacement STRING again ($& $' $$ read as patterns).
-             ['scripts/verification-pack.mjs', '() => library)', 'library)', /Cycle-8 F3: /]],
+             ['scripts/verification-pack.mjs', '() => library)', 'library)', /Cycle-8 F3: /],
+             // Cycle-8 follow-on A: process.exit() after writing stdout — a piped pack is cut short.
+             ['scripts/verification-pack.mjs', 'process.exitCode = main(process.argv.slice(2));', 'process.exit(main(process.argv.slice(2)));', /Cycle-8 follow-on A: /]],
   // INV-70 — reintroduce the disclosure/use split: select with a truncated
   // seed while the header still prints the full one.
   // Re-targeted in Cycle-7 Batch 8: buildPack now dispatches through SELECTORS (F21).

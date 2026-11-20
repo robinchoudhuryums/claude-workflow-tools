@@ -281,6 +281,10 @@ function main(argv) {
 // directory the check was false and the script did NOTHING and exited 0 —
 // a guard that passes silently.
 const isMain = (() => { try { return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } })();
+// exitCode, not exit(): process.exit() drops whatever a PIPE has not flushed
+// yet, so a pack printed to stdout and piped onward (`| pbcopy`, `| less`) was
+// cut at 65,536 bytes while --out and a file redirect were whole (Cycle-8
+// follow-on A; the same fix invariant-check got as F41).
 if (isMain) {
-  process.exit(main(process.argv.slice(2)));
+  process.exitCode = main(process.argv.slice(2));
 }

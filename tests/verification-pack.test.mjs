@@ -283,6 +283,43 @@ else bad('readBlocks threw on a missing directory');
   else bad('Cycle-8 F3: ' + problems.join('; '));
 }
 
+// Cycle-8 follow-on A: a PIPED pack is complete. main() wrote the pack to
+// stdout and then called process.exit(), which drops whatever a pipe has not
+// flushed yet — so `verification-pack.mjs | pbcopy` (or `| less`) stopped at
+// exactly 65,536 bytes while `--out` and a `>` redirect, which are synchronous
+// file writes, were whole. Cycle 7's own pack is 119,689 bytes: a piped copy
+// ended mid-block, before the §4v prompt it exists to deliver. The same class
+// F41 fixed in invariant-check (exitCode, not exit()), never applied here.
+{
+  const { mkdtempSync, mkdirSync, writeFileSync, readFileSync: read, rmSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  const proj = join(mkdtempSync(join(tmpdir(), 'cwt-vp-pipe-')), 'big-app');
+  mkdirSync(join(proj, '.cycle', 'blocks'), { recursive: true });
+  writeFileSync(join(proj, 'CLAUDE.md'), '# Big\n\n### Invariant Library\nINV-01 | a rule | Subsystem: Core\n');
+  writeFileSync(join(proj, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 3\n');
+  // One block comfortably past the 64 KiB pipe buffer.
+  writeFileSync(join(proj, '.cycle', 'blocks', '03-1.0.0-broad-implement.md'), '---BROAD SCAN IMPLEMENTATION SUMMARY---\n' + ('a line of a long summary block, repeated to pass the pipe buffer\n').repeat(3200) + '---END BROAD SCAN IMPLEMENTATION SUMMARY---\n');
+  const script = join(repo, 'scripts', 'verification-pack.mjs');
+  const args = ['--seed', 's', '--template', join(repo, 'CLAUDE.md')];
+  const outFile = join(proj, 'pack.md');
+  const toFile = spawnSync('node', [script, ...args, '--out', outFile], { cwd: proj, encoding: 'utf8' });
+  const piped = spawnSync('node', [script, ...args], { cwd: proj, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });   // stdout is a pipe
+  const whole = (() => { try { return read(outFile, 'utf8'); } catch { return ''; } })();
+  const problems = [];
+  if (toFile.status !== 0 || whole.length < 150000) problems.push(`fixture pack too small to cross the pipe buffer (${whole.length} chars, exit ${toFile.status})`);
+  if (piped.status !== 0) problems.push(`piped run exited ${piped.status}`);
+  if (Buffer.byteLength(piped.stdout) !== Buffer.byteLength(whole)) problems.push(`a piped pack is ${Buffer.byteLength(piped.stdout)} bytes, the --out pack ${Buffer.byteLength(whole)} — the pipe was cut`);
+  else if (piped.stdout !== whole) problems.push('piped and --out packs differ in content');
+  if (!/should be probed in future cycles\.\s*$/.test(piped.stdout)) problems.push('the piped pack does not end with the §4v prompt\'s last line');
+  if (!problems.length) ok(`a piped pack is complete — ${Buffer.byteLength(whole)} bytes through a pipe, identical to --out (Cycle-8 follow-on A)`);
+  else bad('Cycle-8 follow-on A: ' + problems.join('; '));
+  rmSync(join(proj, '..'), { recursive: true, force: true });
+}
+
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} verification-pack test(s) failed.`); process.exit(1); }

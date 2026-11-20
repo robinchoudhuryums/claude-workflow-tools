@@ -46,7 +46,42 @@ const decodeAttr = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace
 const handlerCompileError = body => { try { new vm.Script('(function(event){' + body + '\n})'); return null; } catch (e) { return e.message; } };
 // Prompt text inside <pre> is content, not markup, and <script> is checked above.
 const STATIC_MARKUP = html.replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/(<pre\b[^>]*>)[\s\S]*?(<\/pre>)/gi, '$1$2');
-const STATIC_HANDLERS = [...STATIC_MARKUP.matchAll(/\s(on[a-z]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)].map(m => ({ attr: m[1], src: decodeAttr(m[2] ?? m[3]) }));
+// Cycle-8 follow-on D: handlers are read from TAGS, not from anywhere the text
+// ` on…="…"` appears. The first version scanned the whole markup, so a sentence
+// of prose that quoted an attribute — a tip explaining `onclick="…"` — would
+// have been compiled as a handler and failed the build. A tag runs from "<" +
+// a letter to the first ">" outside a quoted value, which is how a browser
+// reads it; only attributes inside one count.
+function tagsOf(markup) {
+  const tags = [];
+  let i = 0;
+  while ((i = markup.indexOf('<', i)) !== -1) {
+    if (!/[a-zA-Z]/.test(markup[i + 1] || '')) { i++; continue; }
+    let j = i + 1, quote = null;
+    for (; j < markup.length; j++) {
+      const c = markup[j];
+      if (quote) { if (c === quote) quote = null; }
+      else if (c === '"' || c === "'") quote = c;
+      else if (c === '>') break;
+    }
+    tags.push(markup.slice(i, j + 1));
+    i = j + 1;
+  }
+  return tags;
+}
+function staticHandlersOf(markup) {
+  return tagsOf(markup).flatMap(tag => [...tag.matchAll(/\s(on[a-z]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)].map(m => ({ attr: m[1], src: decodeAttr(m[2] ?? m[3]) })));
+}
+{
+  // The extractor checked against a fixture it must get exactly right: prose is
+  // not a handler, two handlers on one tag are two, a ">" inside a quoted value
+  // does not end the tag.
+  const got = staticHandlersOf('<p>write onclick="(((" in prose</p><button class="b" onclick="f(1)" onkeydown=\'g()\'>x</button><div title="a > b" onclick="h()">').map(h => h.attr + '=' + h.src).join(' | ');
+  const want = 'onclick=f(1) | onkeydown=g() | onclick=h()';
+  if (got !== want) bad(`Cycle-8 follow-on D: the static-handler extractor is wrong on its own fixture — got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  else ok('the static-handler extractor reads handlers from tags only: prose is skipped, two on one tag are two, a quoted ">" does not end the tag (Cycle-8 follow-on D)');
+}
+const STATIC_HANDLERS = staticHandlersOf(STATIC_MARKUP);
 {
   const broken = STATIC_HANDLERS.filter(h => handlerCompileError(h.src));
   // Floor: the toggles this was written for must be among what was scanned, or
@@ -1467,6 +1502,48 @@ if (loaded && typeof ctx.buildFillForm === 'function' && typeof ctx.getPlacehold
   if (pasteSeen < 20 || prefixedSeen < 6) bad(`Cycle-8 F19: only ${pasteSeen} paste field(s) found (${prefixedSeen} behind a directive prefix) — the multi-line check would be vacuous`);
   else if (flattened.length) bad(`Cycle-8 F19: ${flattened.length} paste field(s) render as a single-line input — a pasted block is flattened to one line: ${flattened.slice(0, 4).join(' | ')}`);
   else ok(`every paste field is a multi-line textarea — ${pasteSeen} fields, ${prefixedSeen} of them behind an OPTIONAL:/IF …: prefix (Cycle-8 F19)`);
+
+  // Cycle-8 follow-on C — and no prompt offers a form with nothing in it. The
+  // Tier 1 scan and §0 Systems Map prompts carry no operator field, yet had a
+  // Fill fields button that opened "No fillable placeholders in this prompt."
+  // The converse of F29: derived from the same prompts, for every built-in project.
+  {
+    const empty = new Set();
+    const before = ctx.getProject().id;
+    const builtinIds = vm.runInContext('typeof PROJECTS !== "undefined" ? PROJECTS.map(p => p.id) : []', ctx);
+    for (const proj of builtinIds) {
+      ctx.switchProject(proj);   // dynamic prompts re-render per project
+      for (const pid of fills) if (!ctx.getPlaceholders(textOf(pid)).length) empty.add(pid);
+    }
+    if (!builtinIds.length) empty.add('(no built-in project reachable — nothing was checked)');
+    if (typeof ctx.switchProject === 'function') ctx.switchProject(before);
+    if (fills.length < 12) bad(`Cycle-8 follow-on C: only ${fills.length} fill form(s) found — the empty-form check would be vacuous`);
+    else if (empty.size) bad(`Cycle-8 follow-on C: a Fill fields form with nothing to fill: ${[...empty].join(', ')} — remove the button and the form, or the prompt lost its placeholders`);
+    else ok(`no prompt offers a fill form with nothing in it — ${fills.length} forms, each with at least one operator field (Cycle-8 follow-on C)`);
+  }
+
+  // Cycle-8 follow-on E — every fill field saves as it is typed. onchange fires
+  // only on blur, so text typed and followed by a reload was lost; the generic
+  // paste textarea moved to oninput in Batch 1 and the systems-map one had not.
+  {
+    const blurOnly = [];
+    let controls = 0;
+    for (const pid of fills) {
+      const text = textOf(pid);
+      if (!ctx.getPlaceholders(text).length) continue;
+      getEl(pid).textContent = text;
+      ctx.buildFillForm(pid);
+      const out = elStore['fill-' + pid] ? elStore['fill-' + pid].innerHTML : '';
+      for (const m of out.matchAll(/<(textarea|input)\b[^>]*>/g)) {
+        if (!/saveVal\(/.test(m[0])) continue;
+        controls++;
+        if (!/\soninput="saveVal\(/.test(m[0])) blurOnly.push(pid + ' <' + m[1] + '>');
+      }
+    }
+    if (controls < 30) bad(`Cycle-8 follow-on E: only ${controls} saving fill control(s) found — the check would be vacuous`);
+    else if (blurOnly.length) bad(`Cycle-8 follow-on E: ${blurOnly.length} fill field(s) save only on blur — typed text is lost on a reload: ${[...new Set(blurOnly)].slice(0, 4).join(', ')}`);
+    else ok(`every fill field saves as it is typed — ${controls} controls, none blur-only (Cycle-8 follow-on E)`);
+  }
 
   // F21 — "Custom…" in the subsystem select opens a custom input, clears the
   // previously stored subsystem (Copy used to keep pasting it) and takes focus.

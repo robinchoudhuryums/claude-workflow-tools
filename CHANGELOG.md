@@ -5,6 +5,41 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.46.0 — 2026-11-20
+
+Cycle-8 follow-on items: the actionable follow-ons that Batches 1 and 2
+recorded in STATE.md and their summary blocks. Console, tooling and docs. **No
+command-body or config-schema change, so no `/sync-commands` re-pull.**
+
+- **A piped verification pack was cut short.** `verification-pack.mjs` wrote
+  the pack to stdout and then called `process.exit()`, which drops whatever a
+  pipe has not flushed: `… | pbcopy` stopped at 65,536 bytes of Cycle 7's
+  119,689, mid-block and before the §4v prompt itself. `--out` and a `>`
+  redirect were always whole. It sets `exitCode` now — the fix
+  `invariant-check` got in v1.37.0 and this script never did.
+- **The Projects panel overflowed a 320px screen by 17px.** The three
+  repo-sync buttons sat in a row that could neither wrap nor shrink. Button
+  rows wrap now; no panel scrolls sideways at 320px.
+- **Two prompts offered a fill form with nothing in it.** The Tier 1 scan and
+  §0 Systems Map prompts have no operator field, yet carried a Fill fields
+  button that opened "No fillable placeholders in this prompt." The button and
+  form are gone from those two, and a guard derives the rule in both
+  directions: a prompt with fields has a form, a form has fields.
+- **The systems-map field saved only on blur.** Text typed there and followed
+  by a reload was lost. It saves as it is typed, like every other fill field.
+- **The inline-handler check could fail on prose.** It scanned the whole
+  markup for `on…="…"`, so a sentence quoting an attribute would have been
+  compiled as a handler. It reads handlers from tags only now.
+- **Docs.** README and CLAUDE.md say a Verify command may contain pipes and how
+  to write a trailing note; two gotchas added and one extended; a correction
+  under 1.43.0, which called `\|` "the escape the config readers already use".
+
+Not taken, by design: a guard for layout clipping (needs a browser in CI —
+ROADMAP R20) or for an end-of-life Node line (needs a date); the hook's exec
+form; the `(annotation)` stripping in Verify fields; a LICENSE file.
+
+Mutation cases 116 → 120; library unchanged at 73 (three rules widened).
+
 ## 1.45.0 — 2026-11-20
 
 Cycle-8 Batch 2: runner and pack correctness. Tooling only. **No command-body
@@ -107,7 +142,9 @@ fix is pinned by a test that fails against the v1.42.0 code.
 - **A literal `|` in an invariant broke the project form.** The textarea was
   split on every pipe, so "a | b" in a rule or Verify command became two
   fields, and this repo's own INV-08/INV-46 would mis-parse. Fields are now
-  written with `\|`, the escape the config readers already use, and split on
+  written with `\|` (correction, v1.46.0: no config reader uses that escape —
+  it exists only in this form's textarea, and since v1.45.0 the invariant
+  runner passes a Verify command to the shell exactly as written) and split on
   unescaped pipes only.
 - **The Refresh button's argument was ignored.** A click while a refresh was
   running, or on `file://`, did nothing visible. A manual Refresh now says why
