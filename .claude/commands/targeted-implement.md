@@ -1,3 +1,8 @@
+---
+description: "Implement from the Tier 2 handoff block"
+argument-hint: "[paste the TIER 2 HANDOFF BLOCK first if it is not in this session]"
+---
+
 If $ARGUMENTS is empty or missing AND no TIER 2 HANDOFF BLOCK exists
 earlier in this session, respond with exactly this and stop:
 

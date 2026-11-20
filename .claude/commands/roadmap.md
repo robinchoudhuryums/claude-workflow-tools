@@ -1,3 +1,7 @@
+---
+description: "Strategic planning across 4 time horizons"
+---
+
 Read CLAUDE.md and README before starting. Do not make any changes to any
 files during this session.
 

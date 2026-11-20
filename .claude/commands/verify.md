@@ -1,3 +1,8 @@
+---
+description: "Independent Verification Pass: gathers the cycle's blocks, the library and seeded rotation probes itself, saves the Verification Block"
+argument-hint: "[cycle number]"
+---
+
 If this session implemented, planned or reflected on the cycle being
 verified, respond with exactly this and stop:
 

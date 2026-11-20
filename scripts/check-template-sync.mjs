@@ -74,6 +74,11 @@ const CHECKS = [
   // R19 — the §4v pack assembler. Script + the .cycle/blocks/ convention it
   // reads; console-independent, so it is pinned in the canonical docs only.
   { feature: 'Verification pack assembler (R19)', marker: 'verification-pack', files: ['CLAUDE.md', 'README.md'] },
+  // Cycle-8 F9: the roadmap said the repo "has never been run through its own cycle" while it
+  // was on its eighth, and no command was responsible for noticing. /sync-docs carries the check
+  // now; the marker is the step's own numbered heading, so the phrase turning up in a
+  // description elsewhere does not satisfy it.
+  { feature: 'Roadmap currency check in /sync-docs (Cycle-8 F9)', marker: '6. roadmap currency', files: ['CLAUDE.md'] },
 ];
 
 // Every workflow output block must be representable in BOTH the canonical
@@ -107,6 +112,11 @@ console.log(lines.join('\n'));
 // has a fenced template in CLAUDE.md (so /sync-commands can manage it). ──
 const claudeRaw = readFileSync(new URL('CLAUDE.md', root), 'utf8');
 const readmeRaw = readFileSync(new URL('README.md', root), 'utf8');
+// A generated command file is a frontmatter block (its picker description — Cycle-8 F8) and
+// then the body. Every prose scan below reads the BODY: a description is a label, not an
+// instruction, and check 20 holds it equal to the Command Index in CLAUDE.md, which IS scanned.
+const splitCommandFile = raw => { const m = raw.match(/^---\n([\s\S]*?)\n---\n+/); return m ? { front: m[1], body: raw.slice(m[0].length) } : { front: null, body: raw }; };
+const commandBodyOf = file => splitCommandFile(readFileSync(new URL('.claude/commands/' + file, root), 'utf8')).body;
 const tableCmds = [...new Set([...readmeRaw.matchAll(/`\/([a-z0-9-]+)`/g)].map(m => m[1]))];
 const cmdMissing = tableCmds.filter(n => !new RegExp('### /' + n + '\\n+```').test(claudeRaw));
 if (cmdMissing.length) {
@@ -168,7 +178,7 @@ const COMMAND_GROUPS = [
   { name: 'audit family', cmds: ['audit', 'targeted-audit'],
     markers: ['fire in production this month', 'operator actions surfaced', 'do not flag style preferences'] },
 ];
-const cmdText = name => { try { return readFileSync(new URL(`.claude/commands/${name}.md`, root), 'utf8').toLowerCase(); } catch { return null; } };
+const cmdText = name => { try { return commandBodyOf(name + '.md').toLowerCase(); } catch { return null; } };
 let parityFail = 0;
 for (const g of COMMAND_GROUPS) {
   const loaded = g.cmds.map(c => [c, cmdText(c)]);
@@ -469,7 +479,7 @@ try {
   const EXEMPT = { 'cycle-init': 'creates .cycle/ — its whole job', 'cycle-resume': 'stops first if .cycle/STATE.md is absent' };
   const fencedSection = h => { const i = claudeRaw.indexOf('### ' + h + '\n'); if (i === -1) return null; const a = claudeRaw.indexOf('```\n', i); return a === -1 ? null : claudeRaw.slice(a + 4, claudeRaw.indexOf('\n```', a + 4)); };
   const sources = [];
-  try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) sources.push([f, readFileSync(new URL('.claude/commands/' + f, root), 'utf8'), f.replace(/\.md$/, '')]); } catch (e) {}
+  try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) sources.push([f, commandBodyOf(f), f.replace(/\.md$/, '')]); } catch (e) {}
   for (const [label, h] of [['§1s Seams audit', 'Seams & Invariants Audit (Section 1s in HTML tool)'], ['§6a Health Synthesis', 'Health Synthesis (Section 6a in HTML tool)']]) sources.push([label, fencedSection(h), null]);
   const ungated = [], unrecognised = [], missingSections = [];
   const kinds = new Set();
@@ -780,7 +790,7 @@ try {
     const SCORE = /(?<![\w[X.])\d+(?:\.\d+)?\s*\/\s*10\b/;
     const COUNT = /\b(?:\d+|two|three|four|five)\s+(?:consecutive\s+|straight\s+|successive\s+)?(?:synthesis\s+)?cycles?\b(?!\s+since)|\bcycles?\s+(?:running|in a row|straight)\b|\bconsecutive(?:ly)?\b/i;
     const prose = [['CLAUDE.md', claudeRaw], ['README.md', readmeRaw]];
-    try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) prose.push([f, readFileSync(new URL('.claude/commands/' + f, root), 'utf8')]); } catch (e) {}
+    try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) prose.push([f, commandBodyOf(f)]); } catch (e) {}
     const floors = [];
     for (const [label, raw] of prose) {
       const text = raw.split('\n').filter(l => !/^\s*Policy threshold:/.test(l)).join('\n');
@@ -807,7 +817,7 @@ try {
   let files = [];
   try { files = readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md')); } catch (e) {}
   for (const f of files) {
-    const body = readFileSync(new URL('.claude/commands/' + f, root), 'utf8');
+    const body = commandBodyOf(f);
     const deleg = body.match(/\bsee\s+`?\/[a-z][\w-]*`?\s+step\b/i);
     if (deleg) problems.push(`${f} delegates to another command (${JSON.stringify(deleg[0])})`);
     for (const m of body.matchAll(/\bscripts\/[\w.-]+/g)) {
@@ -828,14 +838,14 @@ try {
       const open = at === -1 ? -1 : claudeRaw.indexOf('```\n', at);
       const body = open === -1 ? null : claudeRaw.slice(open + 4, claudeRaw.indexOf('\n```', open + 4)).trim();
       let file = null;
-      try { file = readFileSync(new URL('.claude/commands/' + m[1] + '.md', root), 'utf8'); } catch (e) {}
+      try { file = commandBodyOf(m[1] + '.md'); } catch (e) {}
       if (body == null || !body) problems.push(`/${m[1]} includes "${heading}", which has no fenced body in CLAUDE.md`);
       else if (file == null) problems.push(`/${m[1]} includes "${heading}" but has no command file`);
       else if (!file.includes(body)) problems.push(`${m[1]}.md does not carry the body of "${heading}" — a command that includes a section must hold its full text`);
     }
   }
   for (const f of files) {
-    if (/^\{\{include: /m.test(readFileSync(new URL('.claude/commands/' + f, root), 'utf8'))) problems.push(`${f} still contains an unexpanded include marker`);
+    if (/^\{\{include: /m.test(commandBodyOf(f))) problems.push(`${f} still contains an unexpanded include marker`);
   }
   if (!files.length) { failures++; console.log('  ✗ standalone commands (F11): no .claude/commands/*.md found — the check would be vacuous'); }
   else if (problems.length) { failures++; console.log(`  ✗ standalone commands (F11): ${problems.join('; ')}`); }
@@ -913,7 +923,7 @@ try {
   const offered = phaseLine ? phaseLine[1].split('—')[0].split('|').map(v => v.trim().toLowerCase()).filter(Boolean) : [];
   const fenced = h => { const i = claudeRaw.indexOf('### ' + h + '\n'); if (i === -1) return null; const a = claudeRaw.indexOf('```\n', i); return a === -1 ? null : claudeRaw.slice(a + 4, claudeRaw.indexOf('\n```', a + 4)); };
   const sources = [];
-  try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) sources.push([f.replace(/\.md$/, ''), readFileSync(new URL('.claude/commands/' + f, root), 'utf8')]); } catch (e) {}
+  try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) sources.push([f.replace(/\.md$/, ''), commandBodyOf(f)]); } catch (e) {}
   const commandCount = sources.length;
   sources.push(['§6a', fenced('Health Synthesis (Section 6a in HTML tool)') || ''], ['§1s', fenced('Seams & Invariants Audit (Section 1s in HTML tool)') || '']);
   const problems = [];
@@ -963,6 +973,61 @@ try {
 
   if (problems.length) { failures++; console.log(`  ✗ cycle lifecycle (Cycle-8 F1): ${problems.join('; ')}`); }
   else console.log(`  ✓ the cycle lifecycle is closed — ${offered.length} Phase values, each set by a step (${offered.map(v => `${v}: ${[...setters.get(v)].join('/')}`).join('; ')}); one CYCLE OPEN text across ${openers.length} audits; ${checkpointers.length} CHECKPOINTs roll STATE and never overwrite a block; invariant candidates go to /${owner} (Cycle-8 F1)`);
+}
+
+// ── Structural check 20 (Cycle-8 F8): every command is listed by what it does.
+// The generated files had no frontmatter, so the picker showed each command's
+// first body line — for a third of them "If $ARGUMENTS is empty or missing…",
+// which tells an operator choosing a command nothing. gen-commands.mjs now
+// writes a description (and an argument hint) from the Command Index table in
+// CLAUDE.md. gen --check compares each file with the generator's own output, so
+// a generator that dropped the block would agree with itself; this reads the
+// table and the files separately:
+//   (a) every command file opens with frontmatter whose description is its
+//       Command Index row, and carries no key this check does not know;
+//   (b) a file has an argument hint exactly when its body reads $ARGUMENTS;
+//   (c) no two commands share a description, and none is the body's first line;
+//   (d) the README's command table says the same thing — one wording, two
+//       places, held equal rather than left to drift.
+{
+  const problems = [];
+  const sec = claudeRaw.match(/\n## Command Index\n([\s\S]*?)(?=\n## |$)/);
+  const index = new Map();
+  if (sec) for (const m of sec[1].matchAll(/^\| `\/([a-z0-9-]+)` \| (.*?) \| (.*?) \|$/gm)) index.set(m[1], { description: m[2].replace(/`/g, '').trim(), hint: /^(?:—|-|)$/.test(m[3].trim()) ? '' : m[3].replace(/`/g, '').trim() });
+  let files = [];
+  try { files = readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md')); } catch (e) {}
+  if (!index.size) problems.push('CLAUDE.md has no readable "## Command Index" table — the check would be vacuous');
+  if (!files.length) problems.push('no command files found — the check would be vacuous');
+  const quoted = (front, key) => { const m = front.match(new RegExp('^' + key + ': (".*")$', 'm')); if (!m) return null; try { return JSON.parse(m[1]); } catch (e) { return undefined; } };
+  const seen = new Map();
+  for (const f of index.size ? files : []) {
+    const name = f.replace(/\.md$/, ''), row = index.get(name);
+    const { front, body } = splitCommandFile(readFileSync(new URL('.claude/commands/' + f, root), 'utf8'));
+    if (!row) { problems.push(`${f} has no Command Index row`); continue; }
+    if (front == null) { problems.push(`${f} has no frontmatter description — the picker would show its first body line`); continue; }
+    const extra = front.split('\n').filter(l => l.trim() && !/^(?:description|argument-hint): /.test(l));
+    if (extra.length) problems.push(`${f} frontmatter carries a line this check does not know (${JSON.stringify(extra[0].slice(0, 40))})`);
+    const description = quoted(front, 'description'), hint = quoted(front, 'argument-hint');
+    if (!description) problems.push(`${f} has no frontmatter description — the picker would show its first body line`);
+    else if (description !== row.description) problems.push(`${f} is described as ${JSON.stringify(description)} but its Command Index row says ${JSON.stringify(row.description)}`);
+    else if (description === (body.split('\n').find(l => l.trim()) || '').trim()) problems.push(`${f} is described by its own first body line`);
+    if (description) { if (seen.has(description)) problems.push(`${f} and ${seen.get(description)} share one description`); else seen.set(description, f); }
+    const takesArgs = /\$ARGUMENTS/.test(body);
+    if (takesArgs && !hint) problems.push(`${f} reads $ARGUMENTS and carries no argument hint`);
+    else if (!takesArgs && hint) problems.push(`${f} carries an argument hint and never reads $ARGUMENTS`);
+    else if (hint && hint !== row.hint) problems.push(`${f} hints its arguments as ${JSON.stringify(hint)} but its Command Index row says ${JSON.stringify(row.hint)}`);
+  }
+  for (const name of index.keys()) if (!files.includes(name + '.md')) problems.push(`the Command Index lists /${name}, which has no command file`);
+  // (d) the README table
+  const readmeRows = new Map([...readmeRaw.matchAll(/^\| `\/([a-z0-9-]+)` \|[^|\n]*\|[^|\n]*\| (.*?) \|$/gm)].map(m => [m[1], m[2].replace(/`/g, '').trim()]));
+  if (index.size && !readmeRows.size) problems.push('the README has no readable command table — its descriptions would go unchecked');
+  for (const [name, row] of index) {
+    if (!readmeRows.size) break;
+    if (!readmeRows.has(name)) problems.push(`the README command table has no row for /${name}`);
+    else if (readmeRows.get(name) !== row.description) problems.push(`the README lists /${name} as ${JSON.stringify(readmeRows.get(name))} but the Command Index says ${JSON.stringify(row.description)}`);
+  }
+  if (problems.length) { failures++; console.log(`  ✗ command descriptions (Cycle-8 F8): ${problems.join('; ')}`); }
+  else console.log(`  ✓ every command is listed by what it does — ${files.length} files open with their Command Index description, an argument hint exactly where the body reads $ARGUMENTS (${[...index.values()].filter(r => r.hint).length}), and the README table says the same (F8)`);
 }
 
 if (failures) {

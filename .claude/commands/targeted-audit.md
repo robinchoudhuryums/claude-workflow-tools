@@ -1,3 +1,8 @@
+---
+description: "Scoped subsystem audit + plan"
+argument-hint: "<subsystem-name>"
+---
+
 If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
 Usage: /targeted-audit <subsystem-name>

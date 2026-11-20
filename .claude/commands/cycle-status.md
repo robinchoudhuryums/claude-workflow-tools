@@ -1,3 +1,7 @@
+---
+description: "Read-only: report standing + the next action for the current phase"
+---
+
 Do not make any changes to any files during this session. This is a
 read-only status check — do not start any audit or implementation.
 

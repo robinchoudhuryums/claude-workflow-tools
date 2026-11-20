@@ -1,3 +1,7 @@
+---
+description: "Three-stage whole-codebase audit (broad + deep dive + effectiveness)"
+---
+
 Do not make any changes to any files during the audit phase, other than
 the optional CYCLE OPEN step below.
 

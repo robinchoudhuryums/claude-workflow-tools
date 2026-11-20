@@ -233,6 +233,34 @@ expectFail('detects an ungated cycle-state write that is not shaped like a step 
 expectFail('detects a hardcoded policy floor in other words (Cycle-8 F45)',
   d => { const f = join(d, 'CLAUDE.md'); const s = readFileSync(f, 'utf8'); const find = '(d) ABSOLUTE FLOOR — it is at or below `Policy threshold`, regardless of trend.'; if (!s.includes(find)) throw new Error('fixture rotted: ABSOLUTE FLOOR clause'); writeFileSync(f, s.replace(find, '(d) ABSOLUTE FLOOR — it is at or below 5/10 for two cycles running, regardless of trend.')); },
   /a hardcoded policy floor is written into the prose \(Cycle-8 F45\)/);
+// Cycle-8 F8: command files had no frontmatter, so the picker listed each by its first body line.
+// gen --check compares a file with the generator's own output; these fail the SEPARATE reading.
+{
+  const edit = (d, rel, fn) => { const f = join(d, ...rel.split('/')); const s = readFileSync(f, 'utf8'); const t = fn(s); if (t === s) throw new Error('fixture rotted: ' + rel); writeFileSync(f, t); };
+  expectFail('detects a command file with no frontmatter description (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/audit.md', s => s.replace(/^---\n[\s\S]*?\n---\n+/, '')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*audit\.md has no frontmatter description/);
+  expectFail('detects a command described differently from its Command Index row (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/reflect.md', s => s.replace('description: "Post-cycle honest assessment"', 'description: "Reflect"')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*reflect\.md is described as "Reflect" but its Command Index row says/);
+  expectFail('detects a README command row that says something else (Cycle-8 F8)',
+    d => edit(d, 'README.md', s => s.replace('| Post-cycle honest assessment |', '| Look back at the cycle |')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*the README lists \/reflect as "Look back at the cycle"/);
+  expectFail('detects a command that reads $ARGUMENTS with no argument hint (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/audit.md', s => s.replace('argument-hint: "<subsystem-name>"\n', '')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*audit\.md reads \$ARGUMENTS and carries no argument hint/);
+  expectFail('detects a command with no Command Index row (Cycle-8 F8)',
+    d => edit(d, 'CLAUDE.md', s => s.replace(/^\| `\/regression` \|.*\n/m, '')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*regression\.md has no Command Index row/);
+  expectFail('detects a frontmatter key nobody decided on (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/reflect.md', s => s.replace('description: "Post-cycle honest assessment"\n', 'description: "Post-cycle honest assessment"\nallowed-tools: Bash\n')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*reflect\.md frontmatter carries a line this check does not know/);
+  // A description is a label, not an instruction: the prose scans read the body. The family-parity
+  // check must still see a marker missing from the BODY when the description happens to say it.
+  expectFail('does not let a description satisfy a body check (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/implement.md', s => s.replace(/^description: ".*"$/m, 'description: "Execute the plan, updating test doubles"').replace(/test doubles/g, (m, off) => (off < 120 ? m : 'test stand-ins'))),
+    /implement family: shared behavior "test doubles" missing from implement/);
+}
 // 20) Cycle-7 follow-on to F05: the re-pull list classifies every release
 // since v1.19.0. v1.33.0 sat in neither list for nine releases.
 expectFail('detects a release missing from the Operator State Checklist re-pull list (F05 class)',

@@ -1,3 +1,8 @@
+---
+description: "Two-axis Health Synthesis from the cycle's blocks; updates PROJECT_HEALTH.md on approval and closes the cycle"
+argument-hint: "[cycle number]"
+---
+
 Usage: /health-synthesis [cycle number]   (default: the cycle owed
 synthesis — see step 1). Run it in a fresh session, after /verify.
 

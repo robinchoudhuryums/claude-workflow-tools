@@ -111,6 +111,45 @@ These definitions are used consistently across all commands:
 
 ---
 
+## Command Index
+
+One row per command: the line the command picker shows for it, and the
+arguments it takes. `scripts/gen-commands.mjs` writes each row into the top
+of its command file as frontmatter (`description`, plus `argument-hint`
+where the Arguments cell is not "—"), so a command is listed by what it does
+rather than by its first line of instructions. Generation fails on a command
+with no row and on a row with no command. The README's command table carries
+the same descriptions, and the guard holds the two equal.
+
+| Command | Description | Arguments |
+|---------|-------------|-----------|
+| `/setup-cycle` | Define subsystems, dimensions, invariants — plus optional regression scenarios, frozen subsystems, and deploy commands | — |
+| `/broad-scan` | Three-stage whole-codebase audit (broad + deep dive + effectiveness) | — |
+| `/broad-implement` | Implement selected findings from a broad scan | `<finding IDs, a batch name, or G/ST expansion IDs>` |
+| `/targeted-audit` | Scoped subsystem audit + plan | `<subsystem-name>` |
+| `/targeted-implement` | Implement from the Tier 2 handoff block | `[paste the TIER 2 HANDOFF BLOCK first if it is not in this session]` |
+| `/audit` | Deep subsystem audit (produces a Session Handoff Block) | `<subsystem-name>` |
+| `/plan` | Convert audit findings into an implementation plan | `[paste the SESSION HANDOFF BLOCK first if it is not in this session]` |
+| `/implement` | Execute the implementation plan | `[paste the IMPLEMENTATION HANDOFF BLOCK first if it is not in this session]` |
+| `/regression` | Post-implementation regression check | — |
+| `/reflect` | Post-cycle honest assessment | — |
+| `/test-sync` | Test quality assessment + failure resolution | — |
+| `/sync-docs` | Detect and fix documentation drift, roadmap currency included; propose promoting invariant candidates to the library | — |
+| `/health-pulse` | Quick directional health check (both axes) | — |
+| `/systems-map` | Architectural overview (run once per project) | — |
+| `/roadmap` | Strategic planning across 4 time horizons | — |
+| `/cycle-init` | Scaffold the optional .cycle/ state dir + PROJECT_HEALTH.md (idempotent) | — |
+| `/cycle-status` | Read-only: report standing + the next action for the current phase | — |
+| `/cycle-resume` | Continue an in-progress implementation thread from .cycle/STATE.md | — |
+| `/verify` | Independent Verification Pass: gathers the cycle's blocks, the library and seeded rotation probes itself, saves the Verification Block | `[cycle number]` |
+| `/seams-audit` | Seams & Invariants Audit on its cadence: seam inventory, every invariant validated, candidates proposed | — |
+| `/health-synthesis` | Two-axis Health Synthesis from the cycle's blocks; updates PROJECT_HEALTH.md on approval and closes the cycle | `[cycle number]` |
+| `/cycle-close` | Confirm what the cycle still owes, roll its record into .cycle/HISTORY.md, return the phase to idle | — |
+| `/pr-review` | Apply the cycle's audit rubrics to a single PR (health per-change); runs by hand or off a PR webhook | `<PR number, PR URL, or a pasted diff>` |
+| `/sync-commands` | Sync this project's command files with the latest templates from the workflow tools repo | `<path-or-url-to-workflow-tools-repo>` |
+
+---
+
 ## Cycle State & Memory
 
 Claude Code has no memory between sessions. This system bridges that gap, but
@@ -1758,7 +1797,7 @@ Read CLAUDE.md and README before starting.
 
 [PASTE THE IMPLEMENTATION SUMMARY / recent changes, if available]
 
-Detect (and, with approval, fix) documentation drift via five checks:
+Detect (and, with approval, fix) documentation drift via six checks:
 1. CLAUDE.md currency — are listed Known Issues / Common Gotchas still
    true? Remove or update resolved ones; add new gotchas this cycle
    surfaced.
@@ -1776,6 +1815,13 @@ Detect (and, with approval, fix) documentation drift via five checks:
    library already uses that ID, give the candidate the next free number
    and say so. A candidate the operator declines is dropped and its number
    is not reused.
+6. Roadmap currency — if the project keeps a roadmap (ROADMAP.md, or the
+   file its docs name), does each item's status still match the code and
+   the changelog? Flag an item that shipped and is not marked done, one
+   marked in progress or queued for a cycle that has already run, and a
+   stated top priority that names finished work. Propose the status edits.
+   Choosing the next priority is the operator's decision: say that the
+   stated one is spent and ask, do not pick one.
 
 Produce a list of proposed doc edits (file → what changes and why), then
 ask for approval before writing any files.
@@ -2489,6 +2535,12 @@ section heading, two closing braces — the command's text is that line
 replaced by the fenced block under that heading in the same CLAUDE.md;
 compare and copy the expanded text (the template repo's own
 .claude/commands/ file is exactly that).
+Each command file also opens with a frontmatter block — the lines between
+two "---" lines: a description, and an argument hint where the command
+takes arguments — taken from that command's row in the Command Index table
+of the same CLAUDE.md. The frontmatter is part of the file: compare it and
+copy it with the body. A project file with no frontmatter, or with a
+different description, is OUTDATED.
 
 For each command, report:
 - CURRENT: matches template (no action needed)

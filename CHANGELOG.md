@@ -5,6 +5,44 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.50.0 — 2026-11-20
+
+Cycle-8 Batch 9: command descriptions and a current roadmap (F8, F9).
+**Command bodies changed — run `/sync-commands` in consuming projects. Every
+command file changes: each gains a frontmatter block.**
+
+- **Commands are listed by what they do** (F8). The generated files had no
+  frontmatter, so the command picker showed each command's first body line —
+  "If $ARGUMENTS is empty or missing, respond with exactly this and stop:" for
+  eight of the 24. `CLAUDE.md` has a **Command Index** table (one row per
+  command: description, arguments), and `gen-commands.mjs` writes each row
+  into its file as `description` and, where the command takes arguments,
+  `argument-hint`. Generation fails on a command with no row and on a row with
+  no command.
+- A new guard check (structural check 20) reads the table and the files
+  separately from the generator: every file opens with its row's description,
+  carries an argument hint exactly when its body reads `$ARGUMENTS`, and has
+  no other frontmatter key; no two commands share a description; and the
+  README's command table says the same thing. Seven README rows were reworded
+  to match.
+- The guard's prose scans (`.cycle/` gating, the hardcoded-floor scan, command
+  families, standalone commands, the lifecycle) read a command file's body,
+  not its frontmatter: a description is a label, not an instruction.
+- `/sync-commands` (Step 3) treats the frontmatter as part of the file: a
+  project file with none, or with a different description, is OUTDATED.
+- **`/sync-docs` has a sixth check, roadmap currency** (F9): items that
+  shipped and are not marked done, items queued for a cycle that has run, a
+  stated top priority that names finished work. It proposes the status edits
+  and asks about the next priority instead of picking one.
+- **ROADMAP.md is current** (F9). It said the repo "has never been run through
+  its own cycle" (it is on its eighth); R2, R5 and R10 had shipped unmarked; R9
+  and R22 are partly done; R20 is dropped with the console freeze; R23 records
+  the chat-first change. "The one strategic bet" named two finished items — it
+  now says no bet is chosen and lists what is open. **Choosing the next one is
+  the operator's decision.**
+- INV-01 reworded and INV-13 widened; mutation cases 149 → 154; library
+  unchanged at 78.
+
 ## 1.49.0 — 2026-11-20
 
 Cycle-8 Batch 8: five guards that could pass over a violation of their own rule

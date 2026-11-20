@@ -1,3 +1,7 @@
+---
+description: "Continue an in-progress implementation thread from .cycle/STATE.md"
+---
+
 You are RESUMING an in-progress implementation thread — you are NOT
 starting a new audit.
 

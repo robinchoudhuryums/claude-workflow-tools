@@ -1,3 +1,7 @@
+---
+description: "Confirm what the cycle still owes, roll its record into .cycle/HISTORY.md, return the phase to idle"
+---
+
 Close the current cycle: confirm what it still owes, then roll its record
 into history and return the phase to idle. Run it after /reflect — and, in
 a project that verifies and synthesizes, after /verify and

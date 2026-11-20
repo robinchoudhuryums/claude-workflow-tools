@@ -8,11 +8,26 @@ L ≈ 3+ days for one developer working with Claude Code.
 
 Item IDs (R#) are stable references for planning sessions.
 
+**Last reviewed: 2026-11-20 (Cycle 8, v1.50.0).** Statuses below were brought
+up to date in that review; `/sync-docs` now carries a roadmap-currency check
+so they are looked at each cycle rather than when someone notices. One change
+of direction since the items were written: v1.48.0 made the whole cycle
+runnable from chat and froze the console (see R23). Items that only served
+the console are closed as dropped, not left open.
+
 ---
 
 ## Tier 1 — Short-term (days–weeks)
 
-- **R22 — `scripts/synthesis-pack.mjs`, the §6a sibling of the §4v pack (queued for Cycle 7).** `effort: M (~½ day)`
+- **R22 — `scripts/synthesis-pack.mjs`, the §6a sibling of the §4v pack.** `effort: M (~½ day)` — ◐ PARTLY SUPERSEDED (v1.48.0); the derived half is open.
+  *Status, 2026-11-20:* this was queued for Cycle 7 and not picked up there.
+  `/health-synthesis` (v1.48.0) then removed the paste step: the command reads
+  the cycle's blocks, the prior scores and the config itself, so §6a is no
+  longer "the only stage with no assembler" for a chat session. What it does
+  by instruction it still does not do by derivation — nothing sums the
+  `NET SCORE` lines against the reflect row, and nothing checks that the three
+  artifacts a synthesis writes agree in value. Those two are what remains.
+  The original case, kept for the record:
   §6a is the ONLY stage of the cycle with no assembler. Its canonical body still
   says *"Paste three blocks per subsystem"*, while §4v has had
   `verification-pack.mjs` since R19 — deriving its prompt body from canonical,
@@ -92,7 +107,11 @@ Item IDs (R#) are stable references for planning sessions.
   mid-cycle would mean §4v verifies findings produced by a different version
   of the command that produced them.
 
-- **R20 — Real-DOM console test stage.** `effort: M (~1 day)`
+- **R20 — Real-DOM console test stage.** `effort: M (~1 day)` — ✗ DROPPED (2026-11-20, with the console freeze).
+  The console is a frozen subsystem (`.cycle/config.md`, Frozen Subsystems): it
+  is kept working — `check-html` and `--assert` still run — and no longer
+  extended, so a new test stage for it is not worth a day. Unfreezing the
+  console would revive this item. The original case, kept for the record:
   The Cycle-6 scan found two High findings no headless check could see —
   a fill-form XSS sink that only renders on interaction (F01) and a mobile
   layout that put the top bar in a side column below 768px (F17) — by
@@ -106,13 +125,13 @@ Item IDs (R#) are stable references for planning sessions.
   static CSS rule. Same lesson as R14/R16: what has no proof surface gets
   no guard.
 
-- **R1 — Dogfood the workflow on this repo itself.** `effort: S`
-  The tool ships its own `.claude/commands/` as skills but has never
-  been run through its own cycle. Run `/setup-cycle`, write its Cycle
-  Workflow Config, and do one real `/broad-scan` → `/broad-implement`.
-  Fastest way to surface friction invisible from the outside, and it
-  will likely re-prioritise the rest of this roadmap. *(In progress —
-  `/setup-cycle` is the first step.)*
+- **R1 — Dogfood the workflow on this repo itself.** `effort: S` — ✅ DONE (ongoing since Cycle 1; the repo is on its eighth cycle).
+  The repo runs its own workflow: `.cycle/config.md` is its live Cycle
+  Workflow Config, `.cycle/blocks/` holds each cycle's blocks, and
+  `PROJECT_HEALTH.md` its score history. It did what the item predicted —
+  most of what shipped after v1.19 came out of those audits, not out of this
+  list. As written: run `/setup-cycle`, write the config, and do one real
+  `/broad-scan` → `/broad-implement`.
 
 - **R4 — `/cycle-init` scaffolding command.** `effort: S` — ✅ DONE.
   `/cycle-init` (`.claude/commands/cycle-init.md`) creates `.cycle/`, seeds
@@ -120,14 +139,21 @@ Item IDs (R#) are stable references for planning sessions.
   `PROJECT_HEALTH.md`, and never overwrites an existing file. Removes the manual
   `mkdir` + copy friction from adopting the file-backed state flow.
 
-- **R5 — Command versioning + changelog.** `effort: S`
+- **R5 — Command versioning + changelog.** `effort: S` — ✅ DONE (v1.0.0; hardened since).
+  `VERSION` and `CHANGELOG.md` exist, `/sync-commands` reports the template
+  version and its newest entry before comparing, and the guard holds them
+  honest: VERSION must equal the newest changelog entry, every release must
+  have its block, and every release must be classified as changing command
+  bodies or not. As written:
   Add a `VERSION` / `CHANGELOG.md` and a version marker the guard
   checks, so `/sync-commands` can report *what changed and why* across
   consuming repos, not just *that* text differs. Matters now that
   updates roll across multiple projects (Observatory, CallAnalyzer,
   pers-fin).
 
-- **R10 — Estimate calibration loop.** `effort: S`
+- **R10 — Estimate calibration loop.** `effort: S` — ✅ DONE (v1.0.0).
+  `/reflect` appends estimate-vs-actual rows to `.cycle/estimates.csv` and ends
+  with a calibration line. As written:
   We already capture S/M/L + wall-clock estimates. Log estimate-vs-actual
   over cycles (a metrics column) and surface personal calibration
   ("your L's actually take 5 days"). Cheap, compounding accuracy gain.
@@ -141,7 +167,11 @@ Item IDs (R#) are stable references for planning sessions.
   most-cited friction ("paste the systems map every session") and the
   cross-session memory burden the handoff-block system works around.
 
-- **R2 — Metrics → visualization.** `effort: M`
+- **R2 — Metrics → visualization.** `effort: M` — ✅ DONE (v1.1.0, the markdown half).
+  `scripts/render-metrics.mjs` renders `metrics.csv` as a trend table with
+  sparklines and a cumulative summary. The other option named below — a chart
+  view in the HTML — was not built and will not be while the console is
+  frozen. As written:
   Phase 3 added `metrics.csv` + `PROJECT_HEALTH.md` history but nothing
   renders them — and long-term progress tracking is the HTML tool's
   reason to exist. A generator (markdown sparkline tables, or a chart
@@ -237,6 +267,16 @@ Item IDs (R#) are stable references for planning sessions.
   — that command's first line is "Do not make any changes to any files", and a
   file write would contradict it. §6a still takes the handoff block by paste.
 
+- **R23 — The whole cycle from chat.** `effort: M` — ✅ DONE (v1.47.0–v1.48.0).
+  Not on this list when it shipped; recorded because it changed the direction
+  of everything above. The Verification Pass, the Seams audit and Health
+  Synthesis were reachable only by copying a prompt out of the console and
+  pasting the inputs in by hand. `/verify`, `/seams-audit`,
+  `/health-synthesis` and `/cycle-close` run them from a chat session and
+  gather their own inputs, the phase lifecycle has a writer for every value,
+  and a weekly cross-project board replaces the console's Dashboard. The
+  console was frozen in the same release.
+
 ## Tier 3 — Long-term (months+)
 
 - **R3 — Converge the HTML's two state stores.** `effort: M–L` — ✅ DONE (v1.4.0–1.5.0; browser-verified). File System Access "Connect repo folder" syncs console state to `.cycle/console-state.json`, handle persisted via IndexedDB, Export/Import fallback.
@@ -247,7 +287,12 @@ Item IDs (R#) are stable references for planning sessions.
   repo's `.cycle/` directly, unifying them and making export/import
   largely unnecessary.
 
-- **R9 — Invariants-as-tests as a standalone library.** `effort: M–L`
+- **R9 — Invariants-as-tests as a standalone library.** `effort: M–L` — ◐ PARTLY DONE; the standalone library is open.
+  The `Verify:` field has had a runner since v1.2.0
+  (`scripts/invariant-check.mjs`), and `tests/mutation-audit.mjs` proves each
+  runnable command can fail on its own rule — so "a convention with no
+  runner" below is no longer true of this repo. What is not built is the
+  reusable product: a vitest/pytest plugin outside this workflow. As written:
   The `Verify:` field is a convention with no runner. Generalise it
   into a small vitest/pytest plugin where invariants are declared once
   and become both documentation and executable tests — a reusable
@@ -341,9 +386,25 @@ Item IDs (R#) are stable references for planning sessions.
 
 ## The one strategic bet
 
-If resources were limited, prioritise **R1 (dogfood) immediately, then
-R6 (SessionStart hook)**. R1 is the cheapest way to learn what is
-actually worth building — its findings should reorder everything below
-it. R6 attacks the workflow's deepest structural friction (cross-session
-memory) more directly than anything shipped so far, and compounds with
-every command already in place.
+**Not currently chosen — this is the operator's decision.** The bet written
+here until 2026-11-20 was *R1 (dogfood) immediately, then R6 (SessionStart
+hook)*. Both are done, and R1 did what it was chosen for: its audits reordered
+this roadmap more than any planning session did.
+
+What is open, for whoever picks the next one:
+
+- **R22's derived half** — sum the cycle's net-score lines against the reflect
+  row and check that a synthesis's three artifacts agree. Small, and it closes
+  the last place the cycle's numbers are carried by hand. *(Proposed as the
+  next bet by the Cycle-8 implementer; a proposal, not a decision.)*
+- **R9's standalone library** — the one item here that is a product beyond
+  this workflow rather than an improvement to it.
+- **R12 multi-operator state** — only worth it if the workflow spreads to a
+  team.
+- **R21's undecided asymmetry** (`/audit` focus area 2 vs `/targeted-audit`)
+  — a decision, not a build.
+- R11 stays held until Dynamic Workflows leaves preview.
+
+The Cycle-8 scan's own expansion plan (scan persistence, an interface lens for
+`/pr-review`, `allowed-tools` frontmatter, a mechanical mutation sweep) is
+tracked in `.cycle/STATE.md`, not here.

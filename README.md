@@ -189,20 +189,25 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 
 ## Slash Commands Reference
 
+Each command file opens with a short description (and an argument hint where
+it takes arguments), so the command picker lists it by what it does. The
+wording below is the same text: it comes from the Command Index table in
+`CLAUDE.md`, and the guard holds the two equal.
+
 | Command | Tier | Sessions | Purpose |
 |---|---|---|---|
 | `/setup-cycle` | setup | 1 | Define subsystems, dimensions, invariants — plus optional regression scenarios, frozen subsystems, and deploy commands |
 | `/broad-scan` | 1 | 1 | Three-stage whole-codebase audit (broad + deep dive + effectiveness) |
-| `/broad-implement` | 1 | 1 | Implement selected findings from broad scan |
+| `/broad-implement` | 1 | 1 | Implement selected findings from a broad scan |
 | `/targeted-audit` | 2 | 1 of 2 | Scoped subsystem audit + plan |
-| `/targeted-implement` | 2 | 2 of 2 | Implement from Tier 2 handoff block |
-| `/audit` | 3 | 1 | Deep subsystem audit (produces Session Handoff Block) |
-| `/plan` | 3 | 1 | Convert audit findings to implementation plan |
-| `/implement` | 3 | 1 | Execute implementation plan |
+| `/targeted-implement` | 2 | 2 of 2 | Implement from the Tier 2 handoff block |
+| `/audit` | 3 | 1 | Deep subsystem audit (produces a Session Handoff Block) |
+| `/plan` | 3 | 1 | Convert audit findings into an implementation plan |
+| `/implement` | 3 | 1 | Execute the implementation plan |
 | `/regression` | 3 | 1 | Post-implementation regression check |
 | `/reflect` | 3 | 1 | Post-cycle honest assessment |
 | `/test-sync` | 1,2,3 | 1 | Test quality assessment + failure resolution |
-| `/sync-docs` | 1,2,3 | 1 | Detect and fix documentation drift; propose promoting invariant candidates to the library |
+| `/sync-docs` | 1,2,3 | 1 | Detect and fix documentation drift, roadmap currency included; propose promoting invariant candidates to the library |
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
 | `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
@@ -214,7 +219,7 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | `/health-synthesis` | 3 | 1, fresh | Two-axis Health Synthesis from the cycle's blocks; updates `PROJECT_HEALTH.md` on approval and closes the cycle |
 | `/cycle-close` | any | 1 | Confirm what the cycle still owes, roll its record into `.cycle/HISTORY.md`, return the phase to idle |
 | `/pr-review` | any | 1 | Apply the cycle's audit rubrics to a single PR (health per-change); runs by hand or off a PR webhook |
-| `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
+| `/sync-commands` | maintenance | 1 | Sync this project's command files with the latest templates from the workflow tools repo |
 
 ## Handoff Block Types
 

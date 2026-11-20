@@ -1,3 +1,8 @@
+---
+description: "Execute the implementation plan"
+argument-hint: "[paste the IMPLEMENTATION HANDOFF BLOCK first if it is not in this session]"
+---
+
 If $ARGUMENTS is empty AND no IMPLEMENTATION HANDOFF BLOCK exists earlier
 in this session, respond with exactly this and stop:
 

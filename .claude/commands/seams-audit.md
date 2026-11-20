@@ -1,3 +1,7 @@
+---
+description: "Seams & Invariants Audit on its cadence: seam inventory, every invariant validated, candidates proposed"
+---
+
 This is the Seams & Invariants Audit as a command. It takes no arguments.
 It gathers its own inputs, then follows the canonical prompt below without
 changing it. Do steps 1–4 before reading on.

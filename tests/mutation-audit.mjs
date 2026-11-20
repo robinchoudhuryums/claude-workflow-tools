@@ -179,7 +179,9 @@ const CASES = {
 
   // ── node scripts/check-template-sync.mjs ────────────────────────────────────
   'INV-02': [['README.md', '## Slash Commands Reference', '## Slash Commands Reference\n\nBogus `/totally-made-up` reference.\n', /without a CLAUDE.md template/i]],
-  'INV-03': [['README.md', 'Dynamic Workflows', 'DWF-renamed', /marker "dynamic workflows"/i]],
+  'INV-03': [['README.md', 'Dynamic Workflows', 'DWF-renamed', /marker "dynamic workflows"/i],
+             // Cycle-8 Batch 9 (F9): /sync-docs loses its roadmap check
+             [CFG, '6. Roadmap currency — if the project keeps', '6. Roadmap — if the project keeps', /marker "6\. roadmap currency" missing from: CLAUDE\.md/]],
   'INV-12': [['.claude/commands/reflect.md', 'METRICS (optional — only if .cycle/ exists)', 'METRICS', /not gated on the directory existing/i],
              // v1.35.0: the audits' CYCLE OPEN write must be inside the gating check's step set.
              ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing|no longer read as writing/i],
@@ -189,7 +191,13 @@ const CASES = {
              ['.claude/commands/implement.md', '- Check Common Gotchas before each action', '- Update .cycle/STATE.md after each action\n- Check Common Gotchas before each action', /writes cycle state outside a gated step \(Cycle-8 F44\): implement\.md/],
              // F44: a verb the old seven-verb list did not hold, and a file name with no ".cycle/" in front.
              ['.claude/commands/targeted-implement.md', '- Check Common Gotchas before each action', '- Save your progress to STATE.md as you go\n- Check Common Gotchas before each action', /writes cycle state outside a gated step \(Cycle-8 F44\): targeted-implement\.md/]],
-  'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i]],
+  'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i],
+             // Cycle-8 Batch 9 (F8): the picker entry. gen --check agrees with a generator that drops the
+             // block, so each of these is read by check 20's own parse of the table and the files.
+             ['.claude/commands/audit.md', '---\ndescription: "Deep subsystem audit (produces a Session Handoff Block)"\nargument-hint: "<subsystem-name>"\n---\n\n', '', /command descriptions \(Cycle-8 F8\): [^\n]*audit\.md has no frontmatter description/],
+             ['.claude/commands/reflect.md', 'description: "Post-cycle honest assessment"', 'description: "Reflect"', /reflect\.md is described as "Reflect" but its Command Index row says/],
+             ['README.md', '| Post-cycle honest assessment |', '| Look back at the cycle |', /the README lists \/reflect as "Look back at the cycle"/],
+             ['.claude/commands/audit.md', 'argument-hint: "<subsystem-name>"\n', '', /audit\.md reads \$ARGUMENTS and carries no argument hint/]],
   'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/],
              ['.github/workflows/sync-check.yml', '  pull_request:\n', '  pull_request:\n    branches: [never-a-real-branch]\n', /filters its pull_request trigger/]],
   'INV-16': [[HTML, '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery [N] subsystem cycles\n\n', '', /INV-16/]],
@@ -207,7 +215,9 @@ const CASES = {
 
   // ── node scripts/gen-commands.mjs --check ───────────────────────────────────
   'INV-01': [['.claude/commands/audit.md', 'Read CLAUDE.md', 'TAMPERED\nRead CLAUDE.md', /stale or missing/i]],
-  'INV-11': [[CFG, '### /roadmap\n\n```', '### /roadmap\n\nunfenced prose instead of a template', /orphan command files|stale or missing/i],
+  // v1.50.0: an unfenced command is refused one step earlier — its Command Index row now names a command
+  // the generator cannot extract — so the orphan-file message is no longer the one that prints.
+  'INV-11': [[CFG, '### /roadmap\n\n```', '### /roadmap\n\nunfenced prose instead of a template', /the Command Index lists \/roadmap, which has no command template/],
              // Cycle-8 E2: an include that names no section must fail generation, never expand to nothing —
              // a truncated heading included (it must not resolve to a longer section by prefix).
              [CFG, '{{include: Seams & Invariants Audit (Section 1s in HTML tool)}}', '{{include: Seams & Invariants Audit}}', /include names no section with a fenced body/]],

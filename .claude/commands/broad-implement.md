@@ -1,3 +1,8 @@
+---
+description: "Implement selected findings from a broad scan"
+argument-hint: "<finding IDs, a batch name, or G/ST expansion IDs>"
+---
+
 If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
 Usage: /broad-implement <finding IDs, G/ST expansion IDs, or description of fixes to implement>

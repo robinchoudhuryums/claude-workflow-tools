@@ -1,3 +1,7 @@
+---
+description: "Post-cycle honest assessment"
+---
+
 Read CLAUDE.md before starting. Do not make any changes to any files
 during this session (other than the optional metrics / estimates / blocks
 writes and the STATE counter and phase update below).

@@ -45,7 +45,7 @@ Cycle state (not audited as source, but read/written by the tooling above):
   v1.47.0 the first implement CHECKPOINT of a cycle writes the previous cycle's entries to it)
 
 ### Invariant Library
-INV-01 | .claude/commands/*.md are byte-identical to the command blocks extracted from CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
+INV-01 | .claude/commands/*.md are byte-identical to what the generator builds from CLAUDE.md — each command's fenced block (include lines expanded) under a frontmatter block from its Command Index row | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/gen-commands.mjs --check
 INV-02 | Every command in the README slash-command table has a fenced ### /name template in CLAUDE.md | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 1)
 INV-03 | Every tracked capability marker present in one artifact is present in all required artifacts | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs
 INV-04 | The HTML inline <script> parses with no syntax errors, and so does every inline `on*` handler — static in the markup AND rendered by the script — each static one calling only functions the script defines; the script also uses no syntax a supported browser cannot parse (regex lookbehind: Safari < 16.4). Handlers are read from TAGS, so prose that merely quotes an attribute is not compiled as one. An inline handler is JavaScript the browser compiles on first use, so a broken one loads cleanly and then does nothing: v1.39.0 wrote a backslash-quoted argument into 22 static `onclick` attributes and every Fill fields button and variant toggle was dead for five releases while this rule, scoped to the <script> block, reported the console sound | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
@@ -57,7 +57,7 @@ INV-09 | State export collects exactly the ccg:* localStorage keys EXCEPT secret
 INV-10 | Import rejects non-JSON and missing-"data" payloads with a visible message, writes nothing when the confirm is declined, and installs only non-secret ccg:* keys. Unverified until v1.25.0 (Cycle 5, post-synthesis): the Verify field read "importStateFile logic" and the headless FileReader stub never fired onload, so no clause of this rule had ever executed | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-11 | Every command body in CLAUDE.md is fenced and contains no nested triple-backtick line (so gen can extract it); a command that runs a canonical section (/verify, /seams-audit, /health-synthesis) carries that section's body through an include line the generator expands, so the body has ONE source and the command file a consumer copies still holds the full text — and an include that names no fenced section, by its exact heading, fails generation rather than expanding to nothing | Subsystem: Canonical Templates & Docs | Verify: node scripts/gen-commands.mjs --check (extraction succeeds for all 24)
 INV-12 | Every step that writes to .cycle/ — derived from the text (any step whose body writes there), in every command AND in the §1s/§6a section bodies; CHECKPOINT, METRICS, ESTIMATE CALIBRATION, BLOCKS, SEAM COUNTER and CYCLE OPEN are a floor — is gated on the directory existing, never assumed (/cycle-init and /cycle-resume are exempt by design); and every SENTENCE that writes cycle state — a write verb followed by .cycle/, STATE.md, HISTORY.md, metrics.csv or estimates.csv — sits inside a gated step or carries the condition itself, whatever shape it has (Cycle-8 F44: a bullet under "Rules:" saying "update .cycle/STATE.md after each action" has no step heading and passed) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 10)
-INV-13 | Every installable command has its full text in CLAUDE.md, because /sync-commands reads only CLAUDE.md as template source | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 1)
+INV-13 | Every installable command has its full text in CLAUDE.md, because /sync-commands reads only CLAUDE.md as template source — and its picker entry too: each command has one row in CLAUDE.md's Command Index, every generated file opens with frontmatter whose description is that row, with an argument hint exactly when the body reads $ARGUMENTS and no other key; no two commands share a description, and the README command table carries the same wording. The files had no frontmatter before v1.50.0, so the picker listed each command by its first body line — "If $ARGUMENTS is empty…" for eight of 24 (Cycle-8 F8). The table and the files are read separately from the generator: gen --check would agree with a generator that dropped the block | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural checks 1 and 20)
 INV-14 | CI triggers on both push and pull_request and runs check-template-sync.mjs (which transitively runs gen --check) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 8)
 INV-15 | §6a/§6b ask about the project’s CONFIGURED Axis B categories — rendering a project with a custom axisB emits the custom names, not DEFAULT_AXIS_B. Does NOT yet extend to §1s: buildSeamsText PART 4 and the SEAMS & INVARIANTS AUDIT BLOCK still enumerate the five default categories by name, so a project with custom categories gets a Seams audit asking about ones it does not use (open finding — fixing it means editing an --assert-locked canonical body AND the block’s registered field names) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
 INV-16 | The /setup-cycle config schema is identical across all THREE copies (CLAUDE.md’s config template, CLAUDE.md’s /setup-cycle OUTPUT 1, the console’s Setup <pre>) — same ### section list and an Invariant Library line carrying the "| Verify:" field. Marker parity was a false green: it only proved a phrase appeared SOMEWHERE in each file, and under it the console’s schema was missing "### Seams Audit Cadence" entirely and omitted "| Verify:", so an operator running §Setup from the console got a config whose invariants could never become executable | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 9)
@@ -518,6 +518,18 @@ Cycle Workflow Config.
 - **Counting capabilities or test coverage as production fixes inflates
   `net_score`.** Cycle 5's two batch summaries over-reported by 60% this
   way. A new capability is not a fix; adding a test is not a fix.
+- **A command file is frontmatter plus body, and a scan of command files reads
+  the body.** Since v1.50.0 each generated file opens with a `description`
+  (and `argument-hint`) block. A check that greps a command file for a phrase
+  would count a description that happens to contain it — a label standing in
+  for an instruction. `check-template-sync` reads command files through
+  `commandBodyOf`; a new check there must too. The descriptions themselves are
+  covered where they are written: the Command Index in CLAUDE.md, which every
+  CLAUDE.md scan reads.
+- **The README command table and the Command Index are one wording in two
+  places.** Check 20 holds them equal (backticks aside). Reword a command's
+  description in the Command Index, then the README row, then regenerate —
+  the guard names whichever is left behind.
 
 ## Key Design Decisions
 
@@ -586,6 +598,14 @@ so treat these as settled unless the reasoning below is what changed.
   preview** — a live integration cannot meet the verification bar in this
   environment. This is the same discipline that kept visual assessment out
   of the audit lens until R18 split it into verifiable and perceptual halves.
+- **Picker descriptions live in ONE table (the Command Index), not beside each
+  command heading.** Four parsers assume a command's fenced body opens within
+  a few lines of its `### /name` heading (gen-commands, gen-html-prompts'
+  `commandBody`, check 1, check 17); a description line between the two would
+  have to be taught to each. Frontmatter carries `description` and
+  `argument-hint` only. `allowed-tools` is a separate decision (the scan's
+  ST1), and check 20 fails on any key it does not know so one cannot arrive
+  unnoticed.
 
 ## Operator State Checklist
 
@@ -625,7 +645,10 @@ machine or after a release.
   action); **v1.48.0 ADDED `/verify`, `/seams-audit`, `/health-synthesis`
   and `/cycle-close`** (copy the four new files — `/sync-commands` reports
   them MISSING) **and v1.48.0 changed `/cycle-status`** (CLOSE OUT names the
-  new commands) **and `/sync-commands`** (include lines). v1.19.1,
+  new commands) **and `/sync-commands`** (include lines); **v1.50.0 changed
+  EVERY command file** (each gains a frontmatter description — re-pull the
+  whole directory) **and the bodies of `/sync-docs`** (sixth check: roadmap
+  currency) **and `/sync-commands`** (frontmatter is part of the file). v1.19.1,
   v1.20.0–v1.22.0, v1.24.0, v1.25.0, v1.28.0, v1.30.0–v1.30.1,
   v1.31.0–v1.32.0, v1.36.0–v1.41.0, v1.43.0–v1.46.0 and v1.49.0 changed none.
 - **One-time, projects configured from the CONSOLE's Setup prompt before

@@ -1,3 +1,8 @@
+---
+description: "Deep subsystem audit (produces a Session Handoff Block)"
+argument-hint: "<subsystem-name>"
+---
+
 If $ARGUMENTS is empty or missing, respond with exactly this and stop:
 
 Usage: /audit <subsystem-name>
