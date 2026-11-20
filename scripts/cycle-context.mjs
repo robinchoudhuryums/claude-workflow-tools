@@ -6,7 +6,14 @@
 // so a fresh Claude Code session starts oriented without manual pasting.
 // Wire it via .claude/settings.json:
 //   { "hooks": { "SessionStart": [ { "hooks": [
-//       { "type": "command", "command": "node scripts/cycle-context.mjs" } ] } ] } }
+//       { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR:-.}/scripts/cycle-context.mjs\"" } ] } ] } }
+//
+// F11 (Cycle 8): rooted at the PROJECT directory. Claude Code gives a hook
+// CLAUDE_PROJECT_DIR; the command above and `root` below both use it and fall
+// back to the working directory. A hook runs in the session's CURRENT directory,
+// which moves when the session changes directory; with a bare relative path in
+// the command and process.cwd() here, a hook fired from a subdirectory could
+// not find this script, and would have looked for .cycle/ in the wrong place.
 //
 // Fully additive and fail-safe: with no .cycle/ it prints nothing; it
 // never throws and always exits 0, so it can't break a session.
@@ -14,7 +21,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const root = process.cwd();
+const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const read = p => { try { return readFileSync(p, 'utf8'); } catch { return null; } };
 
 // Extract the body of a "## <heading>" section from a markdown doc.

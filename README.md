@@ -6,7 +6,7 @@ A structured workflow system for managing audit-implement-verify cycles on large
 
 - **`CLAUDE.md`** — The **canonical source** for every command's prompt text (project-agnostic; commands reference the Cycle Workflow Config rather than inlining project specifics).
 - **`.claude/commands/`** — Ready-to-copy slash-command files, one per command, **generated from `CLAUDE.md`** by `scripts/gen-commands.mjs`. Copy the whole directory into a project.
-- **`claude-code-guide-v2.html`** — Interactive HTML console with all prompts, project selector, invariant library, cycle tracker, and archive. Open in a browser to use, or use the hosted version at **https://robinchoudhuryums.github.io/claude-workflow-tools/** (served via GitHub Pages from `index.html`, a redirect to this file — always the latest `main`).
+- **`claude-code-guide-v2.html`** — *(frozen since v1.48.0: kept in step with the commands by the lock, no longer audited or extended — the slash commands and `.cycle/` files are the primary interface)* Interactive HTML console with all prompts, project selector, invariant library, cycle tracker, and archive. Open in a browser to use, or use the hosted version at **https://robinchoudhuryums.github.io/claude-workflow-tools/** (served via GitHub Pages from `index.html`, a redirect to this file — always the latest `main`).
 - **`index.html`** — Tiny redirect to the console above, so the GitHub Pages root URL lands on the tool. Not a content copy (no drift with the console).
 - **`scripts/`** — the generators, drift guards, and `.cycle/` helpers. Generation/guards (run in CI): `gen-commands.mjs` (regenerate the command files), `gen-html-prompts.mjs` (generate/lock the console §-prompts from CLAUDE.md), `check-template-sync.mjs` (cross-artifact drift guard), `check-html.mjs` (console JS soundness), `check-output-blocks.mjs` (output-block shape), `health-fields.mjs` (the one definition of PROJECT_HEALTH's "Current Standing" labels, imported by every reader). `.cycle/` helpers: `cycle-context.mjs` (SessionStart substrate loader), `render-metrics.mjs` (metrics trend report), `invariant-check.mjs` (executable invariant runner), `portfolio.mjs` (cross-project health board), `portfolio-status.mjs` (cross-project *status* board — health + phase/in-progress/trend/seams-due), `verification-pack.mjs` (assembles the §4v prompt for a fresh session), `csv.mjs` (the one quote-aware CSV parser every `metrics.csv` reader imports).
 
@@ -32,6 +32,8 @@ Deep audit of one subsystem with audit+plan in Session 1 and implement+check+ref
 Complete audit → plan → implement → regression check → independent verification → synthesis cycle. Two-axis scoring (vertical subsystem health + horizontal bug-shape posture), invariant library, policy-response feedback loop.
 
 **Session flow:** `Systems Map (once)` → `Layered Audit` → `Planning` → `Implementation` → `Regression Check + Reflect` → `Verification Pass (fresh session)` → `Health Synthesis`
+
+**Command chain:** `/audit <subsystem>` → `/plan` → `/implement` → `/regression` → `/reflect` → `/verify` (fresh session) → `/health-synthesis` → `/cycle-close` — with `/seams-audit` on its cadence. Every step runs from a chat session; nothing needs the console.
 
 **When to use:** Quarterly, before releases, when accumulated Tier 1/2 sessions need verification, or when you want benchmarkable progress tracking.
 
@@ -62,7 +64,7 @@ The frequency is a config field — **`Seams Audit Cadence`** (default: every 4 
 - **Axis B (Horizontal):** Cross-cutting bug-shape posture (Silent Degradation, Startup Ordering, Operator-Only Gaps, Parallel Drift, Test Coverage Quality). Tells you which bug class needs policy intervention. Rough rubric: 8-10 = strong evidence of mitigation, 5-7 = mixed signals, 1-4 = active evidence of the problem pattern.
 
 ### Invariant Library
-Project-specific rules that must always hold (e.g., "WAF ordering is wafPreBody → express.json → wafPostBody"). Probed during verification, validated during seams audits, grown organically via `/reflect`. Stored per-project in the HTML tool and in CLAUDE.md for each project. Invariants marked STALE or UNVERIFIABLE for 2+ consecutive seams audits should be retired. Target library size: 15-40 for a library probed by code read — this repo runs 73, which is only sustainable because every one of them is a runnable `Verify:` command proven fail-closed by `tests/mutation-audit.mjs`. Grow past ~40 only if the probing is automated; otherwise a seams audit cannot honestly validate them all.
+Project-specific rules that must always hold (e.g., "WAF ordering is wafPreBody → express.json → wafPostBody"). Probed during verification, validated during seams audits, grown organically: `/reflect` proposes candidates and `/sync-docs` promotes them to the library with your approval. Stored per-project in the HTML tool and in CLAUDE.md for each project. Invariants marked STALE or UNVERIFIABLE for 2+ consecutive seams audits should be retired. Target library size: 15-40 for a library probed by code read — this repo runs 73, which is only sustainable because every one of them is a runnable `Verify:` command proven fail-closed by `tests/mutation-audit.mjs`. Grow past ~40 only if the probing is automated; otherwise a seams audit cannot honestly validate them all.
 
 ### Policy Response Feedback Loop
 When an Axis B category is **declining** — it fell for `Consecutive cycles` cycles in a row, dropped 1.5+ points in one cycle, or stayed the lowest category without recovering — the synthesis outputs a mandatory policy fix for the next cycle's scope. The configured `Policy threshold` is only an absolute-floor backstop: a fixed floor never fires on a healthy project, so it cannot be the primary trigger (see §6a section 7). Converts one-off bug fixing into systemic improvement.
@@ -106,28 +108,29 @@ If context fills mid-implementation (work unfinished), the optional `.cycle/` st
 
 ### Cycle State & Resuming
 For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
-- `.cycle/STATE.md` — a rolling "where I left off" file. The implement commands' CHECKPOINT step writes it; `/cycle-status` and `/cycle-resume` read it. It keeps the shape of the template in `CLAUDE.md` and carries the *current* cycle only — `check-template-sync` fails if it grows a section the template doesn't define, because unchecked it accumulates per-release narrative until the substrate a new session loads is buried in it.
-- `.cycle/HISTORY.md` — optional: the narrative record of completed cycles, moved out of `STATE.md` so that file stays rolling. Reference prose; nothing reads it.
+- `.cycle/STATE.md` — a rolling "where I left off" file. The audit that opens a cycle writes its `Cycle`/`Phase`/`Scope` (CYCLE OPEN), the implement commands' CHECKPOINT step writes the rest (the first one of a cycle also moves the previous cycle's entries to `HISTORY.md`), `/reflect` sets the phase and the seams counter, and Health Synthesis returns the phase to `idle`, which closes the cycle. `Phase` is one of `audit`, `implement`, `reflect`, `idle`; `/cycle-status` and `/cycle-resume` read it. It keeps the shape of the template in `CLAUDE.md` and carries the *current* cycle only — `check-template-sync` fails if it grows a section the template doesn't define, because unchecked it accumulates per-release narrative until the substrate a new session loads is buried in it.
+- `.cycle/HISTORY.md` — optional: the narrative record of completed cycles, moved out of `STATE.md` so that file stays rolling. The first implement CHECKPOINT of a new cycle moves the previous cycle's entries here. Reference prose; nothing reads it.
 - `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
 - `.cycle/estimates.csv` — estimate-vs-actual effort log that `/reflect` appends, surfacing your personal calibration over time.
+- `.cycle/blocks/` — the summary blocks themselves, written verbatim by the implement commands and `/reflect` as `<cycle>-…` files. §4v and §6a run in a fresh session and read this directory, so a block that exists only in chat cannot reach them.
 
-Run **`/cycle-init`** to scaffold all of the above (and `PROJECT_HEALTH.md`) in one step — it only creates what's missing.
+Run **`/cycle-init`** to scaffold `STATE.md`, the two CSVs and `PROJECT_HEALTH.md` in one step — it only creates what's missing. `blocks/` appears with the first CHECKPOINT, `HISTORY.md` with the first cycle that follows another.
 
 Seven optional helpers (all fail-safe, all covered by the Test Command):
 - **SessionStart context hook** (`scripts/cycle-context.mjs`) — auto-loads the substrate (STATE + current standing + invariant count) into every new session, so you never have to paste it. Enable by copying the script and adding a `SessionStart` hook to `.claude/settings.json` (see CLAUDE.md "Cycle State & Memory" for the snippet). With no `.cycle/` it prints nothing.
 - **Metrics report** (`scripts/render-metrics.mjs`) — renders `.cycle/metrics.csv` into a markdown trend report (table + net-score/Category-D sparklines + cumulative summary). Run `node scripts/render-metrics.mjs` anytime.
-- **Executable invariant runner** (`scripts/invariant-check.mjs`) — runs every invariant whose `Verify:` field is a command and reports PASS/FAIL (prose/test-name `Verify:` fields are MANUAL). Write `Verify:` as a runnable command and the invariant becomes a test — the automated half of the §4v probe. `--list` shows the classification. The library is code: a field is runnable when it starts with a known runner, and then the whole text runs through a shell in the project's root — review edits to it like edits to your test scripts.
-- **Invariant mutation audit** (`tests/mutation-audit.mjs`) — the other half of that proof, and the reason an "N/N invariants PASS" line means something. A `Verify:` command passing on a clean tree is not evidence it would *fail* if the rule were violated: a command that cannot see its own invariant reports PASS forever. This violates each rule in a throwaway copy of the repo, runs that invariant's own `Verify:` command, and requires it to fail **via that invariant's own assertion** — so when twenty invariants share one check, a mutation caught by a neighbour is not counted as proof. Coverage is derived from the live library (an invariant with no mutation case fails the audit), and a case whose find string has rotted away fails instead of reporting a neutral skip. `--only INV-05,INV-20` narrows it. Run it before trusting any invariant probe, including §4v's.
+- **Executable invariant runner** (`scripts/invariant-check.mjs`) — runs every invariant whose `Verify:` field is a command and reports PASS/FAIL (prose/test-name `Verify:` fields are MANUAL). Write `Verify:` as a runnable command and the invariant becomes a test — the automated half of the §4v probe. `--list` shows the classification. The library is code: a field is runnable when it starts with a known runner, and then the whole text runs through a shell in the project's root — review edits to it like edits to your test scripts. A command may contain pipes (`| grep -q ok`, `a || b`); it ends at the end of the line or at the next labelled field, so write a trailing note as `(a parenthesis)` or `| Source: …`, never as bare text after a pipe.
+- **Invariant mutation audit** (`tests/mutation-audit.mjs`) — the other half of that proof, and the reason an "N/N invariants PASS" line means something. A `Verify:` command passing on a clean tree is not evidence it would *fail* if the rule were violated: a command that cannot see its own invariant reports PASS forever. This violates each rule in a throwaway copy of the repo, runs that invariant's own `Verify:` command, and requires it to fail **via that invariant's own assertion** — so when twenty invariants share one check, a mutation caught by a neighbour is not counted as proof. Coverage is derived from the live library (an invariant with no mutation case fails the audit), and a case whose find string has rotted away fails instead of reporting a neutral skip. Only output the mutation *added* counts: each command is first run on an unmodified copy, so a line a passing run prints too is never evidence. `--only INV-05,INV-20` narrows it; `--jobs N` runs N cases at once. Run it before trusting any invariant probe, including §4v's.
 - **Portfolio dashboard** (`scripts/portfolio.mjs`) — aggregates several projects' `PROJECT_HEALTH.md` into one board (lowest overall first = audit next) so you can see across your whole portfolio which project needs attention. Pass the `PROJECT_HEALTH.md` paths.
 - **Verification pack** (`scripts/verification-pack.mjs`) — assembles the §4v Independent Verification prompt so it can be pasted into a fresh session in one go: canonical body + live invariant library + the *current* cycle's blocks from `.cycle/blocks/` (by `<cycle>-` prefix; the directory accumulates, and other cycles' blocks are listed as excluded) + rotation probes **seeded from the commit sha**, so the implementer cannot steer them and a verifier can reproduce the selection — the pack derives its probes from the seed it prints, so the disclosed seed and the used seed cannot diverge (they did, for two releases, until v1.31.0). Warns automatically when `/reflect` corrected a self-reported count. `node scripts/verification-pack.mjs --out pack.md` — from a consuming project, run it inside that project and pass `--template <path to this repo's CLAUDE.md>` (the §4v body lives only here).
-- **Portfolio status board** (`scripts/portfolio-status.mjs`) — the *development-status* sibling of the dashboard: joins each project's health score with the `.cycle/` data it already writes (`STATE.md` phase / in-progress / seams counter, `metrics.csv` net trend) into one board — `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated` — so you see not just which project is unhealthiest but where your next action is (resume in-progress work, run a DUE Seams audit). Same args as `portfolio.mjs`; projects without a `.cycle/` directory still list (status columns show `—`).
+- **Portfolio status board** (`scripts/portfolio-status.mjs`) — the *development-status* sibling of the dashboard: joins each project's health score with the `.cycle/` data it already writes (`STATE.md` phase / in-progress / seams counter, `metrics.csv` net trend) into one board — `Project | Overall | Phase | In-progress | Net Δ | Seams | Updated` — so you see not just which project is unhealthiest but where your next action is (resume in-progress implementation, implement an audit that has just opened, close out a cycle that was reflected but not synthesized, run a DUE Seams audit). Same args as `portfolio.mjs`; projects without a `.cycle/` directory still list (status columns show `—`).
 
 **Secrets are never backed up.** The console's optional GitHub token (and anything stored under `ccg:secret:*`) is excluded from **Export state** and from **Save → repo**, on both the write and the restore side — so a credential can neither be written into a backup file or into `.cycle/console-state.json`, nor installed into your browser from someone else's backup. You re-enter the token after restoring state on a new machine. In this repo `.cycle/console-state.json` is also gitignored as a second layer — if you use **Save → repo** in your own project, add the same line to its `.gitignore`; nothing does that for you.
 
 The HTML console's Backup & Restore card also has a **"Connect repo folder"** option (File System Access API, Chromium-based browsers, served over http(s)/localhost) that syncs the console's state straight to the repo's `.cycle/console-state.json` instead of download/upload — converging the console's `localStorage` with the repo's `.cycle/` state, with the directory handle persisted across reloads via IndexedDB. It falls back to Export/Import where the API is unavailable.
 
 Two commands navigate it:
-- **`/cycle-status`** (read-only) — reports current standing and tells you explicitly whether to **resume** unfinished work or **start a fresh audit**.
+- **`/cycle-status`** (read-only) — reports current standing and names the next action from the phase: **resume** unfinished implementation, **implement** an audit that has just opened, **close out** a cycle that was reflected but not yet verified and synthesized, or **start a fresh audit**.
 - **`/cycle-resume`** — continues an in-progress *implementation* thread. It carries forward **substrate + facts** (systems map, invariants, what's done/pending) but **never inherits the prior session's findings as authoritative** — a new audit always uses fresh eyes. Resume is for continuation, not re-auditing.
 
 This is **fully additive**: with no `.cycle/` directory every command behaves exactly as before (emit the block in chat, copy-paste into the next session). Deleting `.cycle/` returns you to the pure copy-paste workflow with no loss. See "Cycle State & Memory" in `CLAUDE.md` for the `STATE.md` template and the two-memory-channels rationale.
@@ -143,7 +146,7 @@ The lens splits findings by what an agent can actually verify, and that split is
 
 Two config hooks make it score rather than just report: include an interface Health Dimension (e.g. `UI/UX & Accessibility`) when the project has a client surface — `/setup-cycle` now proposes one — and optionally swap an Axis B category for `Visual / Interaction Regression Posture`. `/reflect` counts a user-visible interface defect as a production fix (its trigger is a user opening the surface, not load), so interface work shows up in `net_score` instead of being flattened into the excluded defensive/structural bucket.
 
-`/audit` and `/pr-review` do **not** carry this lens yet — a deliberate deferral (ROADMAP R18) pending a cycle's experience with it in `/broad-scan`.
+`/audit` and `/pr-review` do **not** carry this lens yet — R18 deferred it pending a cycle's experience with it in `/broad-scan`. That experience now exists; adding it to `/pr-review` is open as ROADMAP R25.
 
 ### When Tests Can't Run
 If the test suite requires infrastructure that isn't available (database, API keys, external services), note why tests couldn't run and perform a manual regression check with extra thoroughness. Flag the test gap as a follow-on item.
@@ -186,28 +189,37 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 
 ## Slash Commands Reference
 
+Each command file opens with a short description (and an argument hint where
+it takes arguments), so the command picker lists it by what it does. The
+wording below is the same text: it comes from the Command Index table in
+`CLAUDE.md`, and the guard holds the two equal.
+
 | Command | Tier | Sessions | Purpose |
 |---|---|---|---|
 | `/setup-cycle` | setup | 1 | Define subsystems, dimensions, invariants — plus optional regression scenarios, frozen subsystems, and deploy commands |
 | `/broad-scan` | 1 | 1 | Three-stage whole-codebase audit (broad + deep dive + effectiveness) |
-| `/broad-implement` | 1 | 1 | Implement selected findings from broad scan |
+| `/broad-implement` | 1 | 1 | Implement selected findings from a broad scan |
 | `/targeted-audit` | 2 | 1 of 2 | Scoped subsystem audit + plan |
-| `/targeted-implement` | 2 | 2 of 2 | Implement from Tier 2 handoff block |
-| `/audit` | 3 | 1 | Deep subsystem audit (produces Session Handoff Block) |
-| `/plan` | 3 | 1 | Convert audit findings to implementation plan |
-| `/implement` | 3 | 1 | Execute implementation plan |
+| `/targeted-implement` | 2 | 2 of 2 | Implement from the Tier 2 handoff block |
+| `/audit` | 3 | 1 | Deep subsystem audit (produces a Session Handoff Block) |
+| `/plan` | 3 | 1 | Convert audit findings into an implementation plan |
+| `/implement` | 3 | 1 | Execute the implementation plan |
 | `/regression` | 3 | 1 | Post-implementation regression check |
 | `/reflect` | 3 | 1 | Post-cycle honest assessment |
 | `/test-sync` | 1,2,3 | 1 | Test quality assessment + failure resolution |
-| `/sync-docs` | 1,2,3 | 1 | Detect and fix documentation drift |
+| `/sync-docs` | 1,2,3 | 1 | Detect and fix documentation drift, roadmap currency included; propose promoting invariant candidates to the library |
 | `/health-pulse` | any | 1 | Quick directional health check (both axes) |
 | `/systems-map` | 3 | 1 | Architectural overview (run once per project) |
-| `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons |
+| `/roadmap` | 3 | 1 | Strategic planning across 4 time horizons; proposes the updates the project's roadmap file needs |
 | `/cycle-init` | any | 1 | Scaffold the optional `.cycle/` state dir + `PROJECT_HEALTH.md` (idempotent) |
-| `/cycle-status` | any | 1 | Read-only: report standing + whether to resume or start fresh |
+| `/cycle-status` | any | 1 | Read-only: report standing + the next action for the current phase |
 | `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |
+| `/verify` | 3 (any) | 1, fresh | Independent Verification Pass: gathers the cycle's blocks, the library and seeded rotation probes itself, saves the Verification Block |
+| `/seams-audit` | 3 | 1 | Seams & Invariants Audit on its cadence: seam inventory, every invariant validated, candidates proposed |
+| `/health-synthesis` | 3 | 1, fresh | Two-axis Health Synthesis from the cycle's blocks; updates `PROJECT_HEALTH.md` on approval and closes the cycle |
+| `/cycle-close` | any | 1 | Confirm what the cycle still owes, roll its record into `.cycle/HISTORY.md`, return the phase to idle |
 | `/pr-review` | any | 1 | Apply the cycle's audit rubrics to a single PR (health per-change); runs by hand or off a PR webhook |
-| `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
+| `/sync-commands` | maintenance | 1 | Sync this project's command files with the latest templates from the workflow tools repo |
 
 ## Handoff Block Types
 
@@ -219,9 +231,11 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | TIER 2 HANDOFF BLOCK | `/targeted-audit` | `/targeted-implement` |
 | BROAD SCAN IMPLEMENTATION SUMMARY | `/broad-implement` | `/regression`, `/reflect`, `/test-sync`, `/sync-docs`, Verification Pass |
 | TARGETED IMPLEMENTATION SUMMARY | `/targeted-implement` | `/regression`, `/reflect`, `/test-sync`, `/sync-docs`, Verification Pass |
-| VERIFICATION BLOCK | Verification Pass | Health Synthesis |
-| SEAMS & INVARIANTS AUDIT BLOCK | Seams Audit | Next subsystem audit, Synthesis |
+| VERIFICATION BLOCK | `/verify` (Verification Pass) | `/health-synthesis` |
+| SEAMS & INVARIANTS AUDIT BLOCK | `/seams-audit` | Next subsystem audit, `/health-synthesis`, `/sync-docs` |
 | CYCLE SUMMARY BLOCK | `/reflect` | Health Synthesis |
+| FOLLOW-ON AUDIT ITEMS | `/regression` | The next audit of that scope (pasted as follow-on items) |
+| POLICY RESPONSE | `/health-synthesis` (when a trigger fires) | The next cycle's audit and plan — mandatory scope |
 | PR REVIEW BLOCK | `/pr-review` | Operator (merge decision); optionally posted to the PR |
 
 ## Maintaining this repo
@@ -250,4 +264,4 @@ The guard exits non-zero if any tracked capability (manual test mode, Regression
 >
 > As of v1.29.0 the lock covers **every** prompt the console renders: all 16 static `<pre>` blocks (the nine that had no slash-command counterpart now have canonical bodies under "Console Reference Prompts" in `CLAUDE.md`) and all nine dynamic builders — and `--assert` fails if a *new* static prompt appears with no manifest entry, so the class cannot quietly reopen. That last gap was real, not theoretical: the console's `/setup-cycle` prompt had decayed to a pre-R18 copy that never asked about a user-facing surface, and the file-global markers could not see it.
 >
-> What is still *not* verified automatically: the console's surrounding prose, section framing and layout, and anything about how it renders (the Cycle-6 scan found the mobile layout broken below 768px by driving headless Chromium; no CI stage does that yet — ROADMAP R20). Two lessons the closure cost: a marker check is file-global, so it can be green while an individual builder is stale; and a `locked:false` exemption, however well reasoned when written, stops being re-read — §T2b's decayed behind one for four releases. See Common Gotchas in `.cycle/config.md`.
+> What is still *not* verified automatically: the console's surrounding prose, section framing and layout, and anything about how it renders (the Cycle-6 scan found the mobile layout broken below 768px by driving headless Chromium; no CI stage does that yet — ROADMAP R20; the Cycle-8 scan found Copy clipped off phone screens, and every Fill fields button dead, the same way). Two lessons the closure cost: a marker check is file-global, so it can be green while an individual builder is stale; and a `locked:false` exemption, however well reasoned when written, stops being re-read — §T2b's decayed behind one for four releases. See Common Gotchas in `.cycle/config.md`.

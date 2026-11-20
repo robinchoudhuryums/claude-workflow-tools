@@ -172,9 +172,14 @@ table.st tr:hover td:first-child{color:var(--accent)}
 
 /* PROMPT BLOCK */
 .pb{margin-bottom:18px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface)}
-.pb-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--surface2);border-bottom:1px solid var(--border);gap:10px}
+/* F18 (Cycle 8): the header WRAPS. It was a single non-wrapping row whose
+   right-hand group could not shrink, inside a block with overflow:hidden — so
+   below ~480px (and again at 769–820px, beside the sidebar) Copy and Fill
+   fields were pushed past the edge and clipped: 0% visible on five prompts at
+   375px, with no scrollbar to reach them. */
+.pb-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--surface2);border-bottom:1px solid var(--border);gap:8px 10px}
 .pb-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
-.pb-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.pb-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end;min-width:0;margin-left:auto}
 .ptag{font-size:10.5px;padding:2px 6px;border-radius:3px;background:var(--tag-bg);color:var(--tag-text);font-weight:500;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
 .fill-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--r-sm);color:var(--on-amber);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap}
 .fill-btn:hover{background:rgba(245,158,11,.18)}
@@ -202,7 +207,10 @@ table.st tr:hover td:first-child{color:var(--accent)}
 /* EXTRACTED UTILITIES (inline-style → class cleanup) */
 .lbl-note{color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0}
 .sublabel{margin-bottom:7px;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.07em}
-.flex-g8{display:flex;gap:8px;flex-shrink:0}
+/* Wraps (Cycle-8 follow-on B): the three repo-sync buttons are wider than a 320px
+   viewport's content box, and a non-shrinking, non-wrapping row pushed the page
+   17px wider than the screen. */
+.flex-g8{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0;max-width:100%}
 .mb12{margin-bottom:12px}
 .note-mut{font-size:11px;color:var(--text-muted)}
 .hint-mut{font-size:11px;color:var(--text-muted);margin-top:2px}
@@ -662,11 +670,9 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 1 — Broad Scan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Single session</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1a" onclick="toggleFill(\'t1a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t1a" onclick="doCopy('t1a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div class="fill-form" id="fill-t1a"></div>
       <pre id="t1a"></pre>
     </div>
     <div class="inote"><div class="ic">✋</div><div><strong>Approval gate:</strong> review the findings before anything is implemented, then name the ones you want fixed in the prompt below. Produces a <strong>BROAD SCAN IMPLEMENTATION SUMMARY</strong>.</div></div>
@@ -675,7 +681,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 1 — Broad Implement Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After your approval</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1i" onclick="toggleFill(\'t1i\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t1i" onclick="toggleFill('t1i')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t1i" onclick="doCopy('t1i')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -710,7 +716,7 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Tier 2 — Audit + Plan Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 1 of 2</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t2a" onclick="toggleFill(\'t2a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-t2a" onclick="toggleFill('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-t2a" onclick="doCopy('t2a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -772,11 +778,9 @@ For any Medium or Low, explain what you'd need to verify.</pre>
         <div class="pb-label">Systems Map Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 0 only</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p0" onclick="toggleFill(\'p0\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p0" onclick="doCopy('p0')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
-      <div class="fill-form" id="fill-p0"></div>
       <pre id="p0">Read CLAUDE.md and README before starting. Do not make any changes to any
 files during this session. Do not run audits or recommendations — this
 session only maps architecture.
@@ -824,7 +828,7 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
         <div class="pb-label">Layered Audit Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Session 1+</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1" onclick="toggleFill(\'p1\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1" onclick="toggleFill('p1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p1" onclick="doCopy('p1')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -846,14 +850,28 @@ Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is the ONLY file write the session may make. Unless
-STATE.md's Phase is already "audit" (a parallel or re-run audit of a
-cycle that is already open — then leave Cycle alone and say so),
-increment its Cycle field by 1 (treat a missing or non-numeric value as
-0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
-this audit's scope, and Updated to today's date. Every later phase of
-this cycle carries that number; none of them increments it. Skip if
-.cycle/STATE.md does not exist.
+a new cycle, and this is the ONLY file write the session may make.
+Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
+value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
+Scope to this audit's scope, and Updated to today's date — unless this
+is the SAME audit round: Phase is already "audit" and Updated is within
+the last 7 days (a parallel or re-run audit of a cycle that is already
+open). Then leave Cycle alone, add this audit's scope to the Scope line
+if it is not there, and say so. An older "Phase: audit" is an audit that
+led to no implementation; it does not hold the number — increment past
+it. Every later phase of this cycle carries that number; none of them
+increments it. When you increment:
+- if STATE.md's other sections still describe the cycle you are leaving,
+  do not edit them — end the Scope line with "(sections below still
+  describe Cycle N)", N being that cycle; the first implement CHECKPOINT
+  of the new cycle rolls them into .cycle/HISTORY.md;
+- if .cycle/metrics.csv has a phase=reflect row for cycle N and no
+  phase=synthesis row — while some earlier cycle has one, so this is a
+  project that synthesizes — say at the TOP of your output that cycle N
+  was reflected but never verified or synthesized, and that its
+  verification inputs must now be requested for cycle N by number,
+  because the Cycle field has moved on.
+Skip if .cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from
@@ -922,7 +940,7 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
       <button class="abar-btn" onclick="collapseAllVariants('s1-variants')">Collapse all ↑</button>
     </div>
     <div id="s1-variants">
-      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-sec" onclick="toggleVariant(\'v-sec\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; Compliance Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-sec" onclick="toggleVariant('v-sec',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Security &amp; Compliance Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-sec">
         <div class="pb" id="block-p1sec">
           <div class="pb-header"><div class="pb-label">Security &amp; Compliance Audit Add-on</div><div class="pb-meta"><span class="ptag">Replace or add to flag list</span><button class="copy-btn" id="copy-p1sec" onclick="doCopy('p1sec')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -942,7 +960,7 @@ For each finding, name the control or safeguard it maps to under that regime
 number), or "general hardening" if no regime applies.</pre>
         </div>
       </div>
-      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-perf" onclick="toggleVariant(\'v-perf\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
+      <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-perf" onclick="toggleVariant('v-perf',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Performance &amp; Scalability Pass</div><div class="ch">▼</div></div>
       <div class="vb" id="v-perf">
         <div class="pb" id="block-p1perf">
           <div class="pb-header"><div class="pb-label">Performance Audit Add-on</div><div class="pb-meta"><span class="ptag">Add to or replace flag list</span><button class="copy-btn" id="copy-p1perf" onclick="doCopy('p1perf')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -983,7 +1001,7 @@ number), or "general hardening" if no regime applies.</pre>
         <div class="pb-label">Seams &amp; Invariants Audit Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Every 3–4 subsystem cycles</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1s" onclick="toggleFill(\'p1s\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p1s" onclick="toggleFill('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p1s" onclick="doCopy('p1s')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1004,7 +1022,7 @@ number), or "general hardening" if no regime applies.</pre>
         <div class="pb-label">Planning Prompt</div>
         <div class="pb-meta">
           <span class="ptag">End of audit session or fresh session</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p2" onclick="toggleFill(\'p2\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p2" onclick="toggleFill('p2')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p2" onclick="doCopy('p2')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1083,7 +1101,7 @@ ORDERING RATIONALE: [1–2 sentences]
         <div class="pb-label">Implementation Session Prompt</div>
         <div class="pb-meta">
           <span class="ptag">New session — code-writing</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p3" onclick="toggleFill(\'p3\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p3" onclick="toggleFill('p3')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p3" onclick="doCopy('p3')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1157,13 +1175,22 @@ DOCUMENTATION UPDATES NEEDED:
    .cycle/blocks/&lt;cycle&gt;-&lt;version-or-scope&gt;-implement.md so §4v and §6a
    can read it in a fresh session. Set Phase: implement; never change
    Cycle — the audit's CYCLE OPEN step owns it. Skip both if no .cycle/.
+   If STATE.md's sections still describe an EARLIER cycle (its Scope line
+   says so), this is the new cycle's first checkpoint: move the old "In
+   progress" and "Completed this cycle" entries to .cycle/HISTORY.md under a
+   heading naming that cycle (create the file if needed), keep any pending
+   item, follow-on or decision that is still live, and drop the note from
+   the Scope line.
+   Never overwrite a block: if that name is taken (a second batch under the
+   same version or scope), add the batch number before the command name —
+   &lt;cycle&gt;-&lt;version-or-scope&gt;-2-implement.md.
 
 Suggest /regression, /reflect, /test-sync, /sync-docs as applicable.</pre>
     </div>
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-single" onclick="toggleVariant(\'v-single\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-single" onclick="toggleVariant('v-single',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Variant</em> Single finding implementation</div><div class="ch">▼</div></div>
     <div class="vb" id="v-single">
       <div class="pb" id="block-p3single">
-        <div class="pb-header"><div class="pb-label">Single Finding Prompt</div><div class="pb-meta"><button class="fill-btn" aria-expanded="false" aria-controls="fill-p3single" onclick="toggleFill(\'p3single\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button><button class="copy-btn" id="copy-p3single" onclick="doCopy('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
+        <div class="pb-header"><div class="pb-label">Single Finding Prompt</div><div class="pb-meta"><button class="fill-btn" aria-expanded="false" aria-controls="fill-p3single" onclick="toggleFill('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button><button class="copy-btn" id="copy-p3single" onclick="doCopy('p3single')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
         <div class="fill-form" id="fill-p3single"></div>
         <pre id="p3single">[DESCRIBE THE SINGLE FINDING TO ADDRESS AND ITS FILE/FUNCTION LOCATION]
 
@@ -1189,7 +1216,7 @@ After completing the change, note: what was modified, whether anything unexpecte
         <div class="pb-label">Pre-Implementation Check</div>
         <div class="pb-meta">
           <span class="ptag">Before High/Very High risk changes</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4pre" onclick="toggleFill(\'p4pre\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4pre" onclick="toggleFill('p4pre')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4pre" onclick="doCopy('p4pre')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1218,7 +1245,7 @@ Do not begin implementation until this check is complete.</pre>
         <div class="pb-label">Post-Implementation Regression Check</div>
         <div class="pb-meta">
           <span class="ptag">After implementation, before merge</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4post" onclick="toggleFill(\'p4post\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4post" onclick="toggleFill('p4post')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4post" onclick="doCopy('p4post')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1254,16 +1281,18 @@ Prioritize the verification list by likelihood of breakage. Then:
 ---END FOLLOW-ON AUDIT ITEMS---</pre>
     </div>
 
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-reflect" onclick="toggleVariant(\'v-reflect\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-reflect" onclick="toggleVariant('v-reflect',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
     <div class="vb" id="v-reflect">
       <div class="pb" id="block-p4reflect">
         <div class="pb-header">
           <div class="pb-label">Post-Cycle Reflection</div>
           <div class="pb-meta">
             <span class="ptag">Same session as regression check</span>
+            <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4reflect" onclick="toggleFill('p4reflect')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
             <button class="copy-btn" id="copy-p4reflect" onclick="doCopy('p4reflect')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
           </div>
         </div>
+        <div class="fill-form" id="fill-p4reflect"></div>
         <pre id="p4reflect">Read CLAUDE.md before starting. Do not make any changes to any files
 during this session (other than the optional metrics / estimates / blocks
 writes and the STATE counter and phase update below).
@@ -1300,10 +1329,13 @@ Honest impact summary:
 - Was effort spent on dead code / zero-caller paths / future-proofing?
 
 Invariant growth: list rules this cycle establishes that the next
-Verification Pass should probe. Assign each a NEW invariant ID by reading
-the current maximum INV-N in the library and incrementing (INV-(max+1),
-INV-(max+2), …) — do not invent or reuse a number, so parallel sessions
-don't collide:
+Verification Pass should probe. Assign each a NEW invariant ID: take the
+highest INV-N in the library OR in any earlier "Invariant candidates" line
+under .cycle/blocks/ (a candidate keeps its number until it is promoted or
+dropped) and increment from there (INV-(max+1), INV-(max+2), …) — do not
+invent or reuse a number, so parallel sessions and unpromoted candidates
+don't collide. These are candidates: this session does not edit the
+library, and /sync-docs proposes their promotion:
 [INV-N] | [rule] | [subsystem/seam] | [Verify: test/assertion].
 
 End with: the single most structurally significant change; the finding
@@ -1427,7 +1459,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
         <div class="pb-label">Verification Pass Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Fresh session — no implementation context</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4v" onclick="toggleFill(\'p4v\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p4v" onclick="toggleFill('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p4v" onclick="doCopy('p4v')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1438,7 +1470,7 @@ OPEN step opens the next cycle. Skip if no .cycle/.</pre>
     <div class="inote"><div class="ic">📌</div><div>The VERIFICATION BLOCK produced here becomes a <strong>required input</strong> for §6a Health Synthesis alongside the SESSION HANDOFF BLOCK and CYCLE SUMMARY BLOCK. All three are needed for accurate scoring.</div></div>
 
     <!-- VERIFICATION BLOCK format reference -->
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-vblock-ref" onclick="toggleVariant(\'v-vblock-ref\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-vblock-ref" onclick="toggleVariant('v-vblock-ref',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Reference</em> VERIFICATION BLOCK output format</div><div class="ch">▼</div></div>
     <div class="vb" id="v-vblock-ref">
       <div class="pb" id="block-vblockref">
         <div class="pb-header"><div class="pb-label">VERIFICATION BLOCK — Output Format</div><div class="pb-meta"><span class="ptag">Reference only</span><button class="copy-btn" id="copy-vblockref" onclick="doCopy('vblockref')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1486,7 +1518,7 @@ Category D ratio: [X%]
         <div class="pb-label">PR Review Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Read-only</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-pr" onclick="toggleFill(\'pr\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-pr" onclick="toggleFill('pr')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-pr" onclick="doCopy('pr')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1506,16 +1538,23 @@ Category D ratio: [X%]
         <div class="pb-label">Roadmap Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After 2–3 audit cycles</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p5" onclick="toggleFill(\'p5\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p5" onclick="toggleFill('p5')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p5" onclick="doCopy('p5')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
       <div class="fill-form" id="fill-p5"></div>
       <pre id="p5">Read CLAUDE.md and README before starting. Do not make any changes to any
-files during this session.
+files during this session, other than the roadmap file update the operator
+approves at the end.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 [OPTIONAL: SUMMARY OF RECENT AUDIT FINDINGS]
+
+If the project already keeps a roadmap file (ROADMAP.md, or the file its
+docs name), read it first. Keep its item IDs and carry every open item
+forward under its ID. Check each stated status against the code and the
+changelog: an item that has shipped is marked done, not listed again as
+work.
 
 Produce a roadmap in four tiers. Ground Tiers 1–3 in specific findings,
 gaps, or architectural realities — no ungrounded wishlist items. Tier 4
@@ -1533,9 +1572,17 @@ constrained by current architecture.
 For Tiers 1–3: 3–5 items each with a one-line rationale and an effort
 estimate (S/M/L + rough time). For Tier 4: 3 distinct directions, a short
 paragraph each. End with the one strategic bet you'd prioritize if
-resources were limited, and why.</pre>
+resources were limited, and why.
+
+ROADMAP FILE — if the project keeps a roadmap file, close with the
+changes it needs: items to add (each with the next free ID), statuses to
+change, items to drop, and the strategic bet where yours differs from
+the one it states. Show the list and ask the operator to approve it. On
+approval, update the file, keeping its format and its IDs; without
+approval, leave it alone — the roadmap in chat is the record. The bet is
+a proposal: the operator chooses it.</pre>
     </div>
-    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-rm-opts" onclick="toggleVariant(\'v-rm-opts\',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
+    <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-rm-opts" onclick="toggleVariant('v-rm-opts',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-ons</em> Optional additions for the Roadmap prompt</div><div class="ch">▼</div></div>
     <div class="vb" id="v-rm-opts">
       <div class="pb" id="block-p5opts">
         <div class="pb-header"><div class="pb-label">Roadmap — Optional add-ons</div><div class="pb-meta"><button class="copy-btn" id="copy-p5opts" onclick="doCopy('p5opts')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button></div></div>
@@ -1558,7 +1605,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
         <div class="pb-label">Health Synthesis Prompt</div>
         <div class="pb-meta">
           <span class="ptag">After full audit cycle</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6a" onclick="toggleFill(\'p6a\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6a" onclick="toggleFill('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p6a" onclick="doCopy('p6a')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -1586,7 +1633,7 @@ Note which Tier 2 or 3 items would be significantly easier if Tier 1 items are a
         <div class="pb-label">Health Pulse Prompt</div>
         <div class="pb-meta">
           <span class="ptag">Anytime / Quick check</span>
-          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6b" onclick="toggleFill(\'p6b\')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
+          <button class="fill-btn" aria-expanded="false" aria-controls="fill-p6b" onclick="toggleFill('p6b')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l3-1 7.5-7.5-2-2L3 12l-1 1zm8.5-9.5l2 2"/></svg>Fill fields</button>
           <button class="copy-btn" id="copy-p6b" onclick="doCopy('p6b')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M2 11V3a1 1 0 011-1h8"/></svg>Copy</button>
         </div>
       </div>
@@ -2201,7 +2248,15 @@ const DIRECTIVE_KEYS=['PASTE','LIST','DESCRIBE','NOTE','OPTIONAL','IF '];
 const ALLCAPS_PH=/^[A-Z][A-Z0-9\s\/\-&',:.()]*$/;
 const ANY_TOKEN=/\[[^\][]*\]/g;
 function isFillField(name){ return ALLCAPS_PH.test(name)||DIRECTIVE_KEYS.some(k=>name.startsWith(k)); }
-function isLarge(name){return LARGE_KEYS.some(k=>name.startsWith(k))}
+// F19 (Cycle 8): a field that opens with a directive prefix — "OPTIONAL: PASTE
+// ANY FOLLOW-ON ITEMS…", "IF TRIGGERED: PASTE ANY POLICY RESPONSE BLOCKS…" — is
+// a paste field too. startsWith('PASTE') missed all nine of them, so they
+// rendered as a single-line text input, which turns every pasted newline into a
+// space: a POLICY RESPONSE block (the prompt's "MANDATORY scope additions")
+// went into the copied prompt as one run-on line, with no signal. What stays
+// single-line is what is left: short identifiers such as [PR NUMBER OR URL].
+const DIRECTIVE_PREFIX=/^(?:OPTIONAL|IF [A-Z ]+):/;
+function isLarge(name){return DIRECTIVE_PREFIX.test(name)||LARGE_KEYS.some(k=>name.startsWith(k))}
 function isOpt(name){return OPT_KEYS.some(k=>name.startsWith(k))}
 
 function outputBlockSpans(text){
@@ -2272,26 +2327,34 @@ function buildFillForm(pid){
 
     if(isSysMap(ph.name)){
       // Systems map — large textarea with save-to-bank button
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="4" placeholder="Paste your systems map summary here..." oninput="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
       html+=`<div style="display:flex;gap:8px;margin-top:4px">
         <button onclick="saveBank(document.getElementById('${safeId}').value)" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);color:var(--on-teal);cursor:pointer;font-family:inherit">Save to bank</button>
         <button onclick="loadBank('${safeId}',${argPid},${argName})" style="font-size:11px;padding:3px 9px;border-radius:4px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.3);color:var(--accent);cursor:pointer;font-family:inherit">Load from bank</button>
       </div>`;
     } else if(isSubsys(ph.name)){
       const opts=project.subsystems.map(s=>`<option value="${esc(s.name)}"${val===s.name?' selected':''}>${esc(s.name)}</option>`).join('');
+      // F21 (Cycle 8): custom mode is a stored name that is not in the list, OR
+      // "Custom…" just chosen with nothing typed yet. Only the first used to
+      // count — and nothing in the UI could produce it — so the option was a
+      // dead end.
+      const custom=!!((val&&!project.subsystems.find(s=>s.name===val))||(!val&&subCustomMode[subCustomKey(pid)]));
       // F13: .fill-select carried these exact rules and had ZERO users — the
       // select duplicated them inline and its <option> background rule was dead
       // (and un-themed). Use the class; drop the duplication.
       html+=`<select class="fill-select" id="${safeId}" onchange="handleSubSelect(${argPid},this.value)">
         <option value="">— select a subsystem —</option>
         ${opts}
-        <option value="__custom__">Custom…</option>
+        <option value="__custom__"${custom?' selected':''}>Custom…</option>
       </select>`;
-      if(val&&!project.subsystems.find(s=>s.name===val)){
+      if(custom){
         html+=`<input class="fill-input" id="${safeId}_custom" aria-label="Custom subsystem name" style="margin-top:4px" type="text" value="${esc(val)}" placeholder="Custom subsystem name" oninput="saveVal(${argPid},${argName},this.value)">`;
       }
     } else if(large){
-      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" onchange="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
+      // oninput, not onchange (F19): nine of these fields were single-line inputs
+      // that saved on every keystroke. onchange fires only on blur, so text typed
+      // here and followed by a reload would have been lost where it used to be kept.
+      html+=`<textarea class="fill-textarea" id="${safeId}" rows="3" placeholder="${opt?'Leave blank to keep placeholder as-is':'Paste content here...'}" oninput="saveVal(${argPid},${argName},this.value)">${esc(val)}</textarea>`;
     } else {
       html+=`<input class="fill-input" id="${safeId}" type="text" placeholder="${opt?'Leave blank to keep placeholder as-is':'Enter value...'}" value="${esc(val)}" oninput="saveVal(${argPid},${argName},this.value)">`;
     }
@@ -2301,8 +2364,23 @@ function buildFillForm(pid){
   form.innerHTML=html;
 }
 
+// F21 (Cycle 8): choosing "Custom…" returned here and did nothing — no input
+// appeared, the select read "Custom…", and the STORED value stayed the previous
+// subsystem, which is what Copy then pasted as the session's scope. It now
+// clears the stored value (the placeholder stays unfilled until a name is
+// typed), shows the custom input and moves focus into it. The flag is per
+// project and per prompt, and only matters while nothing is stored.
+const subCustomMode={};
+function subCustomKey(pid){ return activeProjectId+':'+pid; }
 function handleSubSelect(pid,val){
-  if(val==='__custom__')return;
+  if(val==='__custom__'){
+    subCustomMode[subCustomKey(pid)]=true;
+    saveVal(pid,'SUBSYSTEM GROUP NAME','');
+    buildFillForm(pid);
+    focusEl(pid+'_SUBSYSTEM_GROUP_NAME_custom');
+    return;
+  }
+  delete subCustomMode[subCustomKey(pid)];
   saveVal(pid,'SUBSYSTEM GROUP NAME',val);
   buildFillForm(pid); // refresh to show selected state
 }
@@ -2543,7 +2621,7 @@ function buildP6aText(project){
   const axisBGrid=axisB.map(c=>`${c.name.padEnd(gridW)}X/10      Improving/Stable/Degrading`).join('\n');
   const axisBPlaybooks=axisB.map(c=>`${c.name} triggered → ${c.playbook||'Identify the systemic root cause and add a concrete, durable guard (test, lint rule, startup check, or consolidation) so the pattern cannot silently recur. One guard per cycle until the category score recovers.'}`).join('\n\n');
   return `Do not make any changes to any files during this session, other than the
-optional metrics.csv append in step 8.
+optional metrics.csv append and STATE.md phase update in step 8.
 
 PRIMARY INPUT — Paste three blocks per subsystem completed this cycle:
 (Session Handoff Block from §1 audit, Cycle Summary Block from /reflect, Verification Block from §4v)
@@ -2674,7 +2752,11 @@ Block and axis_b_lowest = the lowest-scoring Axis B category this cycle.
 Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK
 — those columns are owned ONLY by the phase=reflect rows (/reflect is
 their sole writer), so a synthesis row must not repeat them or the
-cumulative trend double-counts. If .cycle/ does not exist, skip this step.`;
+cumulative trend double-counts. If .cycle/ does not exist, skip this step.
+When you append that row, also set Phase: idle and Updated in
+.cycle/STATE.md — a synthesized cycle is closed — but only if STATE.md's
+Cycle is the cycle you synthesized. If an audit has already opened a later
+cycle, leave Phase alone and say so.`;
 }
 
 function renderP6a(){
@@ -2887,7 +2969,7 @@ function parseInvariantFormLines(raw,pid){
   }catch(e){}
   const out=raw.split('\n').filter(l=>l.trim()).map(l=>{
     // Split on UNESCAPED pipes only; `\|` is a literal pipe inside a field.
-    const parts=l.split(/(?<!\\)\|/).map(x=>x.trim().replace(/\\\|/g,'|'));
+    const parts=splitUnescapedPipes(l);
     let id=null;
     if(/^INV-\d+$/i.test(parts[0]||''))id=parts.shift().toUpperCase();
     const inv={id,text:parts[0]||l.trim(),subsystem:parts[1]||'Unassigned'};
@@ -2899,6 +2981,23 @@ function parseInvariantFormLines(raw,pid){
   taken.forEach(t=>{const m=t.match(/^INV-(\d+)$/);if(m)max=Math.max(max,parseInt(m[1],10));});
   out.forEach(inv=>{ if(!inv.id){ max++; inv.id=`INV-${String(max).padStart(2,'0')}`; taken.add(inv.id); } });
   return out;
+}
+
+// F30 (Cycle 8): split on unescaped pipes WITHOUT a regex lookbehind. The
+// v1.43.0 form used a lookbehind literal, which is a parse-time SyntaxError
+// in Safari before 16.4 — and a syntax error anywhere in this one inline
+// script stops ALL of it, so the whole console would be dead there, not just
+// this form. "\|" is a literal pipe inside a field; every other "|" separates.
+function splitUnescapedPipes(line){
+  const parts=[]; let cur='';
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='\\'&&line[i+1]==='|'){ cur+='|'; i++; }
+    else if(c==='|'){ parts.push(cur); cur=''; }
+    else cur+=c;
+  }
+  parts.push(cur);
+  return parts.map(x=>x.trim());
 }
 
 function saveProjectForm(){
@@ -3293,14 +3392,28 @@ Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
 README, and the roadmap carefully before doing anything else.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is the ONLY file write the session may make. Unless
-STATE.md's Phase is already "audit" (a parallel or re-run audit of a
-cycle that is already open — then leave Cycle alone and say so),
-increment its Cycle field by 1 (treat a missing or non-numeric value as
-0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
-this audit's scope, and Updated to today's date. Every later phase of
-this cycle carries that number; none of them increments it. Skip if
-.cycle/STATE.md does not exist.
+a new cycle, and this is the ONLY file write the session may make.
+Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
+value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
+Scope to this audit's scope, and Updated to today's date — unless this
+is the SAME audit round: Phase is already "audit" and Updated is within
+the last 7 days (a parallel or re-run audit of a cycle that is already
+open). Then leave Cycle alone, add this audit's scope to the Scope line
+if it is not there, and say so. An older "Phase: audit" is an audit that
+led to no implementation; it does not hold the number — increment past
+it. Every later phase of this cycle carries that number; none of them
+increments it. When you increment:
+- if STATE.md's other sections still describe the cycle you are leaving,
+  do not edit them — end the Scope line with "(sections below still
+  describe Cycle N)", N being that cycle; the first implement CHECKPOINT
+  of the new cycle rolls them into .cycle/HISTORY.md;
+- if .cycle/metrics.csv has a phase=reflect row for cycle N and no
+  phase=synthesis row — while some earlier cycle has one, so this is a
+  project that synthesizes — say at the TOP of your output that cycle N
+  was reflected but never verified or synthesized, and that its
+  verification inputs must now be requested for cycle N by number,
+  because the Cycle field has moved on.
+Skip if .cycle/STATE.md does not exist.
 
 This audit runs in three stages within this session. Complete each stage fully before starting the next.
 
@@ -3537,14 +3650,28 @@ Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is the ONLY file write the session may make. Unless
-STATE.md's Phase is already "audit" (a parallel or re-run audit of a
-cycle that is already open — then leave Cycle alone and say so),
-increment its Cycle field by 1 (treat a missing or non-numeric value as
-0, so a project's first audit is Cycle 1) and set Phase: audit, Scope to
-this audit's scope, and Updated to today's date. Every later phase of
-this cycle carries that number; none of them increments it. Skip if
-.cycle/STATE.md does not exist.
+a new cycle, and this is the ONLY file write the session may make.
+Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
+value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
+Scope to this audit's scope, and Updated to today's date — unless this
+is the SAME audit round: Phase is already "audit" and Updated is within
+the last 7 days (a parallel or re-run audit of a cycle that is already
+open). Then leave Cycle alone, add this audit's scope to the Scope line
+if it is not there, and say so. An older "Phase: audit" is an audit that
+led to no implementation; it does not hold the number — increment past
+it. Every later phase of this cycle carries that number; none of them
+increments it. When you increment:
+- if STATE.md's other sections still describe the cycle you are leaving,
+  do not edit them — end the Scope line with "(sections below still
+  describe Cycle N)", N being that cycle; the first implement CHECKPOINT
+  of the new cycle rolls them into .cycle/HISTORY.md;
+- if .cycle/metrics.csv has a phase=reflect row for cycle N and no
+  phase=synthesis row — while some earlier cycle has one, so this is a
+  project that synthesizes — say at the TOP of your output that cycle N
+  was reflected but never verified or synthesized, and that its
+  verification inputs must now be requested for cycle N by number,
+  because the Cycle field has moved on.
+Skip if .cycle/STATE.md does not exist.
 
 If [SUBSYSTEM GROUP NAME] names a subsystem listed in \`Frozen Subsystems\`:
 print this banner at the top of your output before continuing, then
@@ -3696,10 +3823,19 @@ off" line. This lets /cycle-resume continue cleanly in a fresh session
 if context runs out. Set Phase: implement; leave Cycle exactly as the
 audit's CYCLE OPEN step set it — implement sessions never increment it.
 If .cycle/ does not exist, skip this step.
+If STATE.md's sections still describe an EARLIER cycle (its Scope line
+says so), this is the new cycle's first checkpoint: move the old "In
+progress" and "Completed this cycle" entries to .cycle/HISTORY.md under a
+heading naming that cycle (create the file if needed), keep any pending
+item, follow-on or decision that is still live, and drop the note from
+the Scope line.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-targeted-implement.md (create the
 directory if needed) — §4v and §6a read these in a fresh session.
+Never overwrite a block: if that name is taken (a second batch under the
+same version or scope), add the batch number before the command name —
+<cycle>-<version-or-scope>-2-targeted-implement.md.
 
 Suggest /test-sync and /sync-docs if applicable.
 
@@ -3834,12 +3970,21 @@ exactly as the audit's CYCLE OPEN step set it — implement sessions never
 increment it, so every batch from one audit names its block with the
 same number. If .cycle/ does not exist, skip this step — the summary
 block above is the record, as usual.
+If STATE.md's sections still describe an EARLIER cycle (its Scope line
+says so), this is the new cycle's first checkpoint: move the old "In
+progress" and "Completed this cycle" entries to .cycle/HISTORY.md under a
+heading naming that cycle (create the file if needed), keep any pending
+item, follow-on or decision that is still live, and drop the note from
+the Scope line.
 
 ALSO write the summary block VERBATIM to
 .cycle/blocks/<cycle>-<version-or-scope>-broad-implement.md (create the
 directory if needed). §4v and §6a consume these blocks in a FRESH session
 that has none of this context, so a block that exists only in chat cannot
 reach them — STATE.md carries prose ABOUT the work, not the block itself.
+Never overwrite a block: if that name is taken (a second batch under the
+same version or scope), add the batch number before the command name —
+<cycle>-<version-or-scope>-2-broad-implement.md.
 
 After the summary, suggest running /test-sync if any test failures remain,
 and /sync-docs if any documentation updates are needed.`;
@@ -3966,10 +4111,8 @@ function renderTier1(){
   // buttons — on every load, for every release since the tabbed-nav rewrite.
   const pre=document.getElementById('t1a');
   if(pre) pre.textContent=buildTier1Text(project);
-  const form=document.getElementById('fill-t1a');
-  if(form){form.innerHTML='';form.classList.remove('open');}
-  const btn=document.querySelector('#block-t1a .fill-btn');
-  if(btn)btn.classList.remove('active');
+  // No fill form to reset: this prompt has no operator field, so it carries no
+  // Fill fields button (Cycle-8 follow-on C).
 }
 
 function renderTier2(){

@@ -9,7 +9,7 @@
 //
 // Usage: node tests/verification-pack.test.mjs
 
-import { selectProbes, selectProbesConsole, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack } from '../scripts/verification-pack.mjs';
+import { selectProbes, selectProbesConsole, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack, pendingCloseOut } from '../scripts/verification-pack.mjs';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 
@@ -255,6 +255,122 @@ else bad('readBlocks threw on a missing directory');
     if (pack.includes('--selector console') && selectProbesConsole(lib, 'obs:2026-10-13').every(l => pack.includes(l))) ok('a console-selector pack prints a reproduce command that names the selector (F21)');
     else bad('console-selector pack omits the selector from its reproduce command, or its probes');
   }
+}
+
+// Cycle-8 F3: invariant text is injected VERBATIM. buildPack passed the library
+// and the probes to String.replace as replacement STRINGS, where $&, $`, $' and
+// $$ are patterns — a rule that ends a quoted regex with $' pulled the rest of
+// the prompt into the middle of the library, and nothing in the pack said so.
+{
+  const hostile = [
+    "INV-01 | slugs match '^[a-z0-9-]+$' and nothing else | Subsystem: A",
+    'INV-02 | prices render as $& never raw | Subsystem: A',
+    'INV-03 | the shell prompt is $$ in the fixture | Subsystem: A',
+    'INV-04 | a backtick then dollar `$` stays put, as does $` | Subsystem: A',
+  ];
+  const clean = hostile.map(l => l.replace(/\$/g, 'S'));
+  const mk = invs => buildPack({ body: BODY, invariants: invs, blocks: [], totals: { rows: 0, corrections: [] }, cycle: 8, seed: 's', project: 'p' });
+  const got = mk(hostile), ref = mk(clean);
+  const problems = [];
+  for (const l of hostile) {
+    const n = got.split(l).length - 1;
+    if (n !== 2) problems.push(`${l.slice(0, 6)} appears ${n}× verbatim (want 2: the library and the probes)`);
+  }
+  if (got.length !== ref.length) problems.push(`pack length changed by ${got.length - ref.length} chars against the same library without "$" — text was duplicated or dropped`);
+  if (got.split('---VERIFICATION BLOCK---').length - 1 !== 1) problems.push('the prompt text after the library appears more than once');
+  if (/\[INVARIANT LIBRARY — |\[5 mandatory rotation probes/.test(got)) problems.push('a placeholder leaked back into the pack');
+  if (!problems.length) ok("invariant text containing $', $&, $$ or $` is injected verbatim into the library and the probes (Cycle-8 F3)");
+  else bad('Cycle-8 F3: ' + problems.join('; '));
+}
+
+// Cycle-8 follow-on A: a PIPED pack is complete. main() wrote the pack to
+// stdout and then called process.exit(), which drops whatever a pipe has not
+// flushed yet — so `verification-pack.mjs | pbcopy` (or `| less`) stopped at
+// exactly 65,536 bytes while `--out` and a `>` redirect, which are synchronous
+// file writes, were whole. Cycle 7's own pack is 119,689 bytes: a piped copy
+// ended mid-block, before the §4v prompt it exists to deliver. The same class
+// F41 fixed in invariant-check (exitCode, not exit()), never applied here.
+{
+  const { mkdtempSync, mkdirSync, writeFileSync, readFileSync: read, rmSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  const proj = join(mkdtempSync(join(tmpdir(), 'cwt-vp-pipe-')), 'big-app');
+  mkdirSync(join(proj, '.cycle', 'blocks'), { recursive: true });
+  writeFileSync(join(proj, 'CLAUDE.md'), '# Big\n\n### Invariant Library\nINV-01 | a rule | Subsystem: Core\n');
+  writeFileSync(join(proj, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 3\n');
+  // One block comfortably past the 64 KiB pipe buffer.
+  writeFileSync(join(proj, '.cycle', 'blocks', '03-1.0.0-broad-implement.md'), '---BROAD SCAN IMPLEMENTATION SUMMARY---\n' + ('a line of a long summary block, repeated to pass the pipe buffer\n').repeat(3200) + '---END BROAD SCAN IMPLEMENTATION SUMMARY---\n');
+  const script = join(repo, 'scripts', 'verification-pack.mjs');
+  const args = ['--seed', 's', '--template', join(repo, 'CLAUDE.md')];
+  const outFile = join(proj, 'pack.md');
+  const toFile = spawnSync('node', [script, ...args, '--out', outFile], { cwd: proj, encoding: 'utf8' });
+  // The reader waits before it reads, so the writer finds the pipe FULL: whatever process.exit()
+  // would drop is dropped every time. With a reader that drains at once the cut depended on
+  // timing — under a loaded machine the whole pack sometimes got through, and the mutation audit,
+  // which now really runs cases in parallel (Cycle-8 F41), saw this guard pass over the defect.
+  const piped = spawnSync('bash', ['-c', 'set -o pipefail; node "$PACK_SCRIPT" --seed s --template "$PACK_TEMPLATE" | { sleep 0.4; cat; }'],
+    { cwd: proj, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, PACK_SCRIPT: script, PACK_TEMPLATE: join(repo, 'CLAUDE.md') } });
+  const whole = (() => { try { return read(outFile, 'utf8'); } catch { return ''; } })();
+  const problems = [];
+  if (toFile.status !== 0 || whole.length < 150000) problems.push(`fixture pack too small to cross the pipe buffer (${whole.length} chars, exit ${toFile.status})`);
+  if (piped.status !== 0) problems.push(`piped run exited ${piped.status}`);
+  if (Buffer.byteLength(piped.stdout) !== Buffer.byteLength(whole)) problems.push(`a piped pack is ${Buffer.byteLength(piped.stdout)} bytes, the --out pack ${Buffer.byteLength(whole)} — the pipe was cut`);
+  else if (piped.stdout !== whole) problems.push('piped and --out packs differ in content');
+  if (!/should be probed in future cycles\.\s*$/.test(piped.stdout)) problems.push('the piped pack does not end with the §4v prompt\'s last line');
+  if (!problems.length) ok(`a piped pack is complete — ${Buffer.byteLength(whole)} bytes through a pipe, identical to --out (Cycle-8 follow-on A)`);
+  else bad('Cycle-8 follow-on A: ' + problems.join('; '));
+  rmSync(join(proj, '..'), { recursive: true, force: true });
+}
+
+// Cycle-8 F4: the pack defaults to STATE.md's Cycle, and the next audit's CYCLE
+// OPEN moves that field on. Built after it without --cycle, the pack was for the
+// NEW cycle and said nothing about the one still waiting for §4v.
+{
+  const H = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count';
+  const csv = [H,
+    '2026-01-01,5,X,reflect,2,2,0,,,"old gap — never synthesized",0',
+    '2026-02-01,6,X,reflect,3,3,0,,,"n",0', '2026-02-02,6,all,synthesis,,,,10%,Drift,"n",',
+    '2026-03-01,7,"A, B",reflect,21,21,0,,,"n",4'].join('\n') + '\n';
+  const problems = [];
+  if (pendingCloseOut(csv, 8) !== 7) problems.push(`cycle 8 after an unsynthesized cycle 7 → ${pendingCloseOut(csv, 8)}, expected 7`);
+  if (pendingCloseOut(csv, '08') !== 7) problems.push('a zero-padded cycle is not compared numerically');
+  if (pendingCloseOut(csv, 7) !== null) problems.push('cycle 7 after a synthesized cycle 6 was reported (an older gap, cycle 5, is history)');
+  if (pendingCloseOut(csv + '2026-03-02,7,all,synthesis,,,,5%,Drift,"n",\n', 8) !== null) problems.push('a synthesized cycle 7 was still reported');
+  if (pendingCloseOut('', 8) !== null || pendingCloseOut(csv, 'broad') !== null) problems.push('an empty file or a non-numeric cycle did not return null');
+  const neverSynth = csv.split('\n').filter(l => !/,synthesis,/.test(l)).join('\n');
+  if (pendingCloseOut(neverSynth, 8) !== null) problems.push('a project with no synthesis row at all (it does not synthesize) was told it owes one');
+
+  const { mkdtempSync, mkdirSync, writeFileSync, readFileSync: read, rmSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  const proj = join(mkdtempSync(join(tmpdir(), 'cwt-vp-owed-')), 'owed-app');
+  mkdirSync(join(proj, '.cycle', 'blocks'), { recursive: true });
+  writeFileSync(join(proj, 'CLAUDE.md'), '# Owed\n\n### Invariant Library\nINV-01 | a rule | Subsystem: Core\n');
+  writeFileSync(join(proj, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 8\nPhase: audit\n');
+  writeFileSync(join(proj, '.cycle', 'metrics.csv'), csv);
+  writeFileSync(join(proj, '.cycle', 'blocks', '07-a-reflect.md'), '---CYCLE SUMMARY BLOCK---\ncycle seven\n---END CYCLE SUMMARY BLOCK---\n');
+  const script = join(repo, 'scripts', 'verification-pack.mjs');
+  const run = extra => spawnSync('node', [script, '--seed', 's', '--template', join(repo, 'CLAUDE.md'), ...extra], { cwd: proj, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const dflt = run([]);
+  if (dflt.status !== 0) problems.push(`default run exited ${dflt.status}`);
+  if (!/Cycle 7 was reflected but never synthesized[^\n]*--cycle 7/.test(dflt.stderr)) problems.push('stderr does not name the cycle that is owed and how to build its pack');
+  if (!/CHECK THE CYCLE: cycle 7 was reflected/.test(dflt.stdout) || !/verification-pack\.mjs --cycle 7\n/.test(dflt.stdout)) problems.push('the pack itself does not say it may be for the wrong cycle');
+  if (!/owed-app — Cycle 8/.test(dflt.stdout)) problems.push('the default cycle is no longer STATE.md\'s');
+  const named = run(['--cycle', '7']);
+  if (named.status !== 0 || /CHECK THE CYCLE/.test(named.stdout) || /never synthesized/.test(named.stderr)) problems.push('an explicit --cycle still carries the warning');
+  if (!/owed-app — Cycle 7/.test(named.stdout) || !/cycle seven/.test(named.stdout)) problems.push('--cycle 7 did not build cycle 7\'s pack');
+  const outFile = join(proj, 'pack.md');
+  const toFile = run(['--out', outFile]);
+  if (!/never synthesized/.test(toFile.stderr) || !/CHECK THE CYCLE/.test((() => { try { return read(outFile, 'utf8'); } catch { return ''; } })())) problems.push('--out loses the warning');
+  rmSync(join(proj, '..'), { recursive: true, force: true });
+  if (!problems.length) ok('a pack built without --cycle names an earlier reflected-but-unsynthesized cycle, on stderr and in the pack; --cycle is silent (Cycle-8 F4)');
+  else bad('Cycle-8 F4: ' + problems.join('; '));
 }
 
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');

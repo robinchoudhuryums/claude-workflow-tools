@@ -120,15 +120,19 @@ export function sameCycle(a, b) {
 // file with a reordered or extra column. A file with no header falls back to
 // the canonical order.
 const METRICS_COLUMNS = ['date', 'cycle', 'subsystem', 'phase', 'net_score', 'prod_fixes', 'new_failure_modes', 'category_d_ratio', 'axis_b_lowest', 'notes', 'defensive_count'];
-export function cycleTotals(metricsCsv, cycle) {
+function metricsRows(metricsCsv) {
   const all = parseCSV(metricsCsv || '');
   const head = (all[0] || []).map(h => h.trim());
   const hasHeader = head.includes('cycle') && head.includes('phase');
   const idx = name => (hasHeader ? head : METRICS_COLUMNS).indexOf(name);
   const at = (c, name) => { const i = idx(name); return i === -1 ? '' : String(c[i] == null ? '' : c[i]).trim(); };
+  return { rows: hasHeader ? all.slice(1) : all, at };
+}
+export function cycleTotals(metricsCsv, cycle) {
+  const { rows, at } = metricsRows(metricsCsv);
   let net = 0, fixes = 0, nfm = 0, defensive = 0, n = 0;
   const corrections = [];
-  for (const c of (hasHeader ? all.slice(1) : all)) {
+  for (const c of rows) {
     // F03: a quote-aware parse — a comma-bearing SUBSYSTEM no longer shifts columns.
     if (!sameCycle(at(c, 'cycle'), cycle) || at(c, 'phase') !== 'reflect') continue;
     n++;
@@ -140,6 +144,33 @@ export function cycleTotals(metricsCsv, cycle) {
   return { rows: n, net, fixes, nfm, defensive, corrections };
 }
 
+// Cycle-8 F4: the cycle this pack was NOT built for. Without --cycle the pack
+// takes STATE.md's Cycle field — and the next audit's CYCLE OPEN step moves that
+// field on the moment it starts. Run after it, the documented command quietly
+// assembled a pack for the NEW cycle (no reflect rows, perhaps no blocks) while
+// the cycle that was actually waiting for §4v went unmentioned: this repo's
+// Cycle 7 sat reflected and unverified behind exactly that. Returns the newest
+// EARLIER cycle when it has a phase=reflect row and no phase=synthesis row, else
+// null. Only the newest is considered — an older gap is history, not a pack
+// someone is about to build by mistake. A file with no synthesis row at all
+// belongs to a project that does not synthesize: it owes none, and a warning
+// that fired on every pack there would only teach its reader to skip it.
+export function pendingCloseOut(metricsCsv, cycle) {
+  const cur = Number(String(cycle).trim());
+  if (!/^\d+$/.test(String(cycle).trim())) return null;
+  const { rows, at } = metricsRows(metricsCsv);
+  const phases = new Map();
+  for (const c of rows) {
+    const raw = at(c, 'cycle');
+    if (!/^\d+$/.test(raw) || Number(raw) >= cur) continue;
+    if (!phases.has(Number(raw))) phases.set(Number(raw), new Set());
+    phases.get(Number(raw)).add(at(c, 'phase'));
+  }
+  if (!phases.size || !rows.some(c => at(c, 'phase') === 'synthesis')) return null;
+  const last = Math.max(...phases.keys());
+  return phases.get(last).has('reflect') && !phases.get(last).has('synthesis') ? last : null;
+}
+
 // INV-70 (Cycle 6 remediation): the probes are derived HERE, from the same `seed`
 // string the header prints, so the pack cannot disclose one seed and select with
 // another. It used to take `probes` as a parameter while main() passed
@@ -147,7 +178,7 @@ export function cycleTotals(metricsCsv, cycle) {
 // reproduce command returned a different five, and §4v's "do NOT substitute your
 // own picks" was unauditable. A `probes` override is deliberately NOT accepted:
 // an override reopens exactly that divergence.
-export function buildPack({ body, invariants, blocks, totals, cycle, seed, project, selector = 'sha' }) {
+export function buildPack({ body, invariants, blocks, totals, cycle, seed, project, selector = 'sha', owed = null }) {
   if (!SELECTORS[selector]) throw new Error(`unknown selector "${selector}" — use sha or console`);
   const probes = SELECTORS[selector](invariants, seed);
   const header = [
@@ -161,6 +192,15 @@ export function buildPack({ body, invariants, blocks, totals, cycle, seed, proje
     `  node scripts/verification-pack.mjs --cycle ${cycle} --seed ${seed}${selector === 'console' ? ' --selector console' : ''}`,
     '',
   ];
+  if (owed != null) {
+    header.push(
+      `⚠ CHECK THE CYCLE: cycle ${owed} was reflected and has no synthesis row — it was never`,
+      `verified or closed out. This pack is for cycle ${cycle}, read from .cycle/STATE.md because no`,
+      `--cycle was given, and an audit moves that field on as soon as it opens the next cycle.`,
+      `If cycle ${owed} is the one to verify, rebuild this pack with:`,
+      `  node scripts/verification-pack.mjs --cycle ${owed}`,
+      '');
+  }
   if (totals.rows) {
     header.push(
       `SELF-REPORTED TOTALS for cycle ${cycle} (${totals.rows} reflect row(s)) — treat as CLAIMS to re-derive:`,
@@ -186,12 +226,20 @@ export function buildPack({ body, invariants, blocks, totals, cycle, seed, proje
     + ' .cycle/ directory present so they persist automatically)')
     + (excluded.length ? `\n\n(${excluded.length} block(s) from OTHER cycles present in .cycle/blocks/ and excluded: ${excluded.join(', ')})` : '');
 
+  // F3 (Cycle 8): FUNCTION replacements. With a string, String.replace reads
+  // $&, $`, $' and $$ in the REPLACEMENT as patterns — so an invariant whose
+  // text ends a quoted regex with $' pasted the rest of the prompt into the
+  // middle of the library, and "$$" lost a dollar. The verifier would have been
+  // handed a corrupted rule with nothing to say so. (The console fixed this
+  // same class for fill values in Cycle 5; this copy of it was never looked at.)
+  const blocksNote = '(the cycle\'s blocks are reproduced above, under INPUT BLOCKS)';
+  const library = `INVARIANT LIBRARY (${project} — ${invariants.length} invariants):\n${invariants.join('\n')}`;
+  const probeText = probes.join('\n');
   const filled = body
-    .replace('[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]', '(the cycle\'s blocks are reproduced above, under INPUT BLOCKS)')
-    .replace('[PASTE CYCLE SUMMARY BLOCK FROM /REFLECT HERE]', '(the cycle\'s blocks are reproduced above, under INPUT BLOCKS)')
-    .replace('[INVARIANT LIBRARY — the current library is injected here per project]',
-      `INVARIANT LIBRARY (${project} — ${invariants.length} invariants):\n${invariants.join('\n')}`)
-    .replace('[5 mandatory rotation probes — pre-selected from the library at render time]', probes.join('\n'));
+    .replace('[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]', () => blocksNote)
+    .replace('[PASTE CYCLE SUMMARY BLOCK FROM /REFLECT HERE]', () => blocksNote)
+    .replace('[INVARIANT LIBRARY — the current library is injected here per project]', () => library)
+    .replace('[5 mandatory rotation probes — pre-selected from the library at render time]', () => probeText);
 
   return [
     ...header,
@@ -232,6 +280,7 @@ function main(argv) {
   if (!invariants.length) { console.error(`No invariants found in ${cfgPath}.`); return 1; }
 
   let cycle = arg('cycle');
+  const explicitCycle = !!cycle;
   if (!cycle) {
     try { cycle = (readFileSync(at('.cycle/STATE.md'), 'utf8').match(/^Cycle:\s*(\d+)/m) || [])[1]; } catch {}
   }
@@ -255,11 +304,15 @@ function main(argv) {
   let metrics = '';
   try { metrics = readFileSync(at('.cycle/metrics.csv'), 'utf8'); } catch {}
 
+  // Cycle-8 F4: said on stderr as well as in the pack, so it is seen with --out.
+  const owed = explicitCycle ? null : pendingCloseOut(metrics, cycle);
+  if (owed != null) console.error(`! Cycle ${owed} was reflected but never synthesized. Building the pack for cycle ${cycle} (STATE.md's Cycle field) — to verify cycle ${owed}, pass --cycle ${owed}.`);
+
   const pack = buildPack({
     body, invariants,
     blocks: readBlocks(at('.cycle/blocks'), { cycle }),
     totals: cycleTotals(metrics, cycle),
-    cycle, seed, project: arg('project') || basename(rootDir), selector,
+    cycle, seed, project: arg('project') || basename(rootDir), selector, owed,
   });
 
   const out = arg('out');
@@ -273,6 +326,10 @@ function main(argv) {
 // directory the check was false and the script did NOTHING and exited 0 —
 // a guard that passes silently.
 const isMain = (() => { try { return !!process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; } })();
+// exitCode, not exit(): process.exit() drops whatever a PIPE has not flushed
+// yet, so a pack printed to stdout and piped onward (`| pbcopy`, `| less`) was
+// cut at 65,536 bytes while --out and a file redirect were whole (Cycle-8
+// follow-on A; the same fix invariant-check got as F41).
 if (isMain) {
-  process.exit(main(process.argv.slice(2)));
+  process.exitCode = main(process.argv.slice(2));
 }

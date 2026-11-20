@@ -5,8 +5,8 @@
 // in-progress, net-score trend, seams-DUE, ranking, and graceful "—" for a
 // project that has no .cycle/ directory.
 
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -106,6 +106,76 @@ if (/average overall: \*\*6\.8\/10\*\* across 3 scored/.test(out)) ok('averages 
   if (dRow.includes('↓')) ok('a legacy synthesis row carrying net is excluded from the trend, and a multi-line note keeps its row (F32/F39)'); else bad(`F32/F39: trend wrong: ${dRow}`);
   if (/\| implement \\\| batch 2 \|/.test(dRow) && dRow.split(/(?<!\\)\|/).length === 9) ok('a pipe in a field cannot open an extra column (F40)'); else bad(`F40: pipe not contained: ${dRow}`);
   if (!/Seams audit cadence|Overall/.test(dRow)) ok('an empty Updated: does not capture the next line (F40)'); else bad(`F40: empty field captured another line: ${dRow}`);
+}
+
+// Cycle-8 F1: "in progress" is implementation to resume — not "any phase but idle". The phase
+// list is DERIVED from the STATE template in CLAUDE.md, so a phase added there with no decision
+// here fails instead of silently reading "yes — run /cycle-resume" (which is what audit and
+// reflect did until v1.47.0).
+{
+  const claude = readFileSync(fileURLToPath(new URL('../CLAUDE.md', import.meta.url)), 'utf8');
+  const tm = claude.match(/^Phase: \[([^\]\n]+)\]/m);
+  const offered = tm ? tm[1].split('—')[0].split('|').map(v => v.trim()).filter(Boolean) : [];
+  const EXPECT = {
+    idle:      { col: 'no',  read: null },
+    audit:     { col: 'no',  read: 'Audit open, nothing implemented yet:' },
+    implement: { col: 'yes', read: 'In progress (resume):' },
+    reflect:   { col: 'no',  read: 'Reflected, not synthesized:' },
+  };
+  if (offered.length >= 3) ok(`the STATE template's Phase values are read from CLAUDE.md (${offered.join(', ')})`);
+  else bad(`Cycle-8 F1: could not read the Phase values from the STATE template in CLAUDE.md (got: ${offered.join(', ') || 'none'})`);
+  const unknown = offered.filter(v => !EXPECT[v]);
+  if (unknown.length) bad(`Cycle-8 F1: the STATE template offers a phase this board has no decision for: ${unknown.join(', ')}`);
+  const known = offered.filter(v => EXPECT[v]);
+  const files = known.map(v => project('p-' + v, 'Last synthesis: 2026-08-01\nOverall (weighted avg): 7.0/10\nOne-line summary: phase ' + v,
+    { state: `# Cycle State\n## Current\nCycle: 4\nPhase: ${v}\nSubsystem cycles since last Seams audit: 0\nUpdated: 2026-08-01\n` }));
+  let pOut = '';
+  try { pOut = execFileSync('node', [script, ...files], { encoding: 'utf8' }); } catch (e) { bad('renderer threw on the phase fixtures: ' + (e.message || e)); }
+  const READS = Object.values(EXPECT).map(e => e.read).filter(Boolean);
+  const wrong = [];
+  for (const v of known) {
+    const r = row(pOut, 'p-' + v);
+    if (!new RegExp('\\|\\s*' + v + '\\s*\\|\\s*' + EXPECT[v].col + '\\s*\\|').test(r)) wrong.push(`${v}: In-progress column is not "${EXPECT[v].col}"`);
+    // each phase is named by its own Read line and by no other
+    for (const label of READS) {
+      const line = pOut.split('\n').find(l => l.includes(label)) || '';
+      const named = new RegExp('\\bp-' + v + '\\b').test(line);
+      if (named !== (label === EXPECT[v].read)) wrong.push(`${v}: ${named ? 'named by' : 'missing from'} the Read line "${label}"`);
+    }
+  }
+  if (known.length && !wrong.length) ok(`each phase gets its own next action — only implement reads "in progress" (${known.join(', ')}; Cycle-8 F1)`);
+  else if (wrong.length) bad(`Cycle-8 F1: phase misclassified — ${wrong.join('; ')}`);
+
+  // a legacy or free-text phase is still resumable work, never dropped
+  const legacy = project('p-legacy', 'Last synthesis: 2026-08-01\nOverall (weighted avg): 7.0/10\nOne-line summary: legacy',
+    { state: '# Cycle State\n## Current\nCycle: 4\nPhase: regression\nUpdated: 2026-08-01\n' });
+  let lOut = '';
+  try { lOut = execFileSync('node', [script, legacy], { encoding: 'utf8' }); } catch (e) { bad('renderer threw on the legacy-phase fixture: ' + (e.message || e)); }
+  if (/\|\s*regression\s*\|\s*yes\s*\|/.test(row(lOut, 'p-legacy'))) ok('a phase the template no longer offers still reads in progress (Cycle-8 F1)');
+  else bad('Cycle-8 F1: an unrecognised phase was not treated as work in progress');
+}
+
+// A project that keeps .cycle/ state but has no PROJECT_HEALTH.md still lists, and a project can
+// be named by its directory. Two of the first seven real projects the board was pointed at had
+// state and no health file — and were skipped with a line on stderr.
+{
+  const dir = join(root, 'epsilon');
+  mkdirSync(join(dir, '.cycle'), { recursive: true });
+  writeFileSync(join(dir, '.cycle', 'STATE.md'), '# Cycle State\n## Current\nCycle: 3\nPhase: implement\nSubsystem cycles since last Seams audit: 1\nUpdated: 2026-08-02\n');
+  const empty = join(root, 'zeta'); mkdirSync(empty, { recursive: true });
+  let r = { stdout: '', stderr: '', status: 1 };
+  try { r = spawnSync('node', [script, join(root, 'alpha'), join(dir, 'PROJECT_HEALTH.md'), dir, empty], { encoding: 'utf8' }); } catch (e) { bad('renderer threw on the no-health fixture: ' + (e.message || e)); }
+  const eRows = r.stdout.split('\n').filter(l => l.startsWith('| epsilon |'));
+  const problems = [];
+  if (r.status !== 0) problems.push(`exit ${r.status}`);
+  if (!/\| alpha \| 8\.5\/10 \|/.test(r.stdout)) problems.push('a project named by its directory was not read');
+  if (eRows.length !== 2) problems.push(`a project with state and no PROJECT_HEALTH.md listed ${eRows.length} time(s) for 2 mentions`);
+  else if (!/\| epsilon \| — \| implement \| yes \|/.test(eRows[0]) || !/1\/4/.test(eRows[0])) problems.push('its row lost the phase, in-progress or seams columns: ' + eRows[0]);
+  if (!/No PROJECT_HEALTH\.md: epsilon/.test(r.stdout)) problems.push('the Read section does not say it has no PROJECT_HEALTH.md');
+  if (/No synthesis score yet: [^\n]*epsilon/.test(r.stdout)) problems.push('it is also told to run a synthesis it has no file for');
+  if (/\| zeta \|/.test(r.stdout) || !/skipped [^\n]*zeta/.test(r.stderr)) problems.push('a directory with neither file was not skipped with a reason');
+  if (!problems.length) ok('a project with .cycle/ state and no PROJECT_HEALTH.md still lists, by file path or by directory; one with neither is skipped with a reason');
+  else bad('no-health project: ' + problems.join('; '));
 }
 
 rmSync(root, { recursive: true, force: true });

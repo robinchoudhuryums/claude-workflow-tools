@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parseInvariants, toCommand } from '../scripts/invariant-check.mjs';
 const script = fileURLToPath(new URL('../scripts/invariant-check.mjs', import.meta.url));
 const dir = mkdtempSync(join(tmpdir(), 'cwt-inv-'));
 const src = join(dir, 'config.md');
@@ -126,6 +127,55 @@ else bad(`loud failure output wrong (exit ${rl.code}, longest line ${longest}, s
   if (!/CYCLE UNDER VERIFICATION/.test(vp.out)) problems.push('verification-pack via symlink printed no pack');
   if (!problems.length) ok('all four main-checked scripts run when invoked through a symlinked scripts/ directory (F33)');
   else bad('F33: ' + problems.join('; '));
+}
+
+// Cycle-8 F2: a Verify command with a pipe in it is kept WHOLE. The parser
+// used to split the line on every "|", so `a | b` ran as `a` and reported PASS
+// whenever `a` exited 0 — a pipeline whose last stage decides the result could
+// never fail. Fields are now found by label; these cases pin both halves:
+// what must now be kept (pipes, ||) and what must still end the command (a
+// labelled field after Verify, the " (annotation)" convention).
+{
+  const psrc = join(dir, 'pipes.md');
+  const y = `node -e "console.log('x')"`;
+  writeFileSync(psrc, [
+    `INV-30 | last stage fails | Subsystem: X | Verify: ${y} | node -e "process.exit(3)"`,
+    `INV-31 | last stage passes | Subsystem: X | Verify: ${y} | node -e "process.stdin.resume(); process.stdin.on('data', d => process.exit(String(d).trim() === 'x' ? 0 : 4))"`,
+    `INV-32 | or-fallback passes | Subsystem: X | Verify: node -e "process.exit(1)" || node -e "process.exit(0)"`,
+    `INV-33 | labelled field after Verify | Subsystem: X | Verify: node -e "process.exit(0)" | Source: gotcha 3`,
+    `INV-34 | Verify before Subsystem | Verify: node -e "process.exit(0)" | Subsystem: X`,
+    `INV-35 | piped and annotated | Subsystem: X | Verify: ${y} | node -e "process.exit(0)" (two stages)`,
+    ''].join('\n'));
+  let out = '', code = 0;
+  try { out = execFileSync('node', [script, '--source', psrc], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
+  const problems = [];
+  if (!/INV-30 FAIL/.test(out)) problems.push('a pipeline whose LAST stage exits non-zero is not FAIL — the command was cut at the pipe');
+  if (!/INV-31 PASS/.test(out)) problems.push('a passing two-stage pipeline is not PASS');
+  if (!/INV-32 PASS/.test(out)) problems.push('`a || b` did not run its fallback — the command was cut at the first pipe');
+  if (!/INV-33 PASS/.test(out)) problems.push('a labelled field after Verify ("| Source: …") was run as part of the command');
+  if (!/INV-34 PASS/.test(out)) problems.push('Verify written before Subsystem is no longer found');
+  if (!/INV-35 PASS/.test(out)) problems.push('a piped command with a trailing "(annotation)" did not run');
+  if (code !== 1 || !/Passed 5 \| Failed 1/.test(out)) problems.push(`summary wrong (exit ${code})`);
+  // The parse itself, without a shell in the way.
+  const parsed = parseInvariants([
+    'INV-40 | renders no "| Verify:" suffix when empty | Subsystem: Console | Verify: node check.mjs | grep -c ok',
+    'INV-41 | a rule | with | pipes | Subsystem: Core',
+    `INV-42 | BRE alternation stays as written | Subsystem: X | Verify: sh -c "grep -q 'a\\|b' f.txt"`,
+    ''].join('\n'));
+  const [p40, p41, p42] = parsed;
+  if (p40.verify !== 'node check.mjs | grep -c ok') problems.push(`a rule that quotes "| Verify:" confused the parse: ${JSON.stringify(p40.verify)}`);
+  if (p40.rule !== 'renders no "| Verify:" suffix when empty') problems.push(`rule text cut: ${JSON.stringify(p40.rule)}`);
+  if (p41.rule !== 'a rule | with | pipes' || p41.verify !== '') problems.push(`a rule with pipes and no Verify mis-parsed: ${JSON.stringify(p41)}`);
+  if (toCommand(p42.verify) !== `sh -c "grep -q 'a\\|b' f.txt"`) problems.push(`"\\|" was rewritten — it must reach the shell as written: ${JSON.stringify(p42.verify)}`);
+  // The one line that used to pass and now cannot: an UNLABELLED note after the
+  // command is a pipeline stage. It must fail loudly and say what to write.
+  const nsrc = join(dir, 'note.md');
+  writeFileSync(nsrc, 'INV-50 | trailing note | Subsystem: X | Verify: node -e "process.exit(0)" | cwt-not-a-command see ticket\n');
+  let nout = '';
+  try { nout = execFileSync('node', [script, '--source', nsrc], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { nout = (e.stdout || '') + (e.stderr || ''); }
+  if (!/INV-50 FAIL/.test(nout) || !/is a shell pipe; write a trailing note as/.test(nout)) problems.push('an unlabelled note after the command does not fail with the explanation: ' + JSON.stringify(nout.split('\n').find(l => /INV-50/.test(l)) || ''));
+  if (!problems.length) ok('a Verify command keeps its pipes (|, ||), still ends at a labelled field or an "(annotation)", and reaches the shell as written (Cycle-8 F2)');
+  else bad('Cycle-8 F2: ' + problems.join('; '));
 }
 
 rmSync(dir, { recursive: true, force: true });

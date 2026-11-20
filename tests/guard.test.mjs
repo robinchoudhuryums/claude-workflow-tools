@@ -23,7 +23,8 @@ function setup() {
   mkdirSync(join(dir, 'scripts'), { recursive: true });
   // check-output-blocks.mjs is copied because check-template-sync now imports
   // BLOCKS from it (F17) — the guard cannot run in the temp dir without it.
-  for (const s of ['gen-commands.mjs', 'check-template-sync.mjs', 'check-output-blocks.mjs', 'health-fields.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
+  // gen-html-prompts.mjs: gen-commands imports sectionBody from it to expand include lines (v1.48.0).
+  for (const s of ['gen-commands.mjs', 'gen-html-prompts.mjs', 'check-template-sync.mjs', 'check-output-blocks.mjs', 'health-fields.mjs']) copyFileSync(join(repo, 'scripts', s), join(dir, 'scripts', s));
   cpSync(join(repo, '.claude'), join(dir, '.claude'), { recursive: true });
   // The guard now asserts the CI workflow's permissions block (F15), so the
   // temp copy needs it — without this the baseline case fails for a reason
@@ -180,6 +181,14 @@ expectFail('detects an inline filter on the push trigger (F31)',
 expectFail('detects `contents: read` surviving only as a comment (F31)',
   d => ciEdit(d, 'permissions:\n  contents: read\n', 'permissions:\n  # contents: read\n  actions: read\n', false),
   /do not grant read-only contents: actions: read$/m);
+// Cycle-8 F46: a job-level permissions block replaces the workflow-level one for that job, and
+// only the top-level block was read — so both of these passed.
+expectFail('detects a job-level permissions block asking for write (Cycle-8 F46)',
+  d => ciEdit(d, '  sync-check:\n    runs-on: ubuntu-latest\n', '  sync-check:\n    permissions:\n      contents: write\n    runs-on: ubuntu-latest\n', false),
+  /requests write permission below the workflow level \(Cycle-8 F46\): job-level[^\n]*contents: write/);
+expectFail('detects an inline job-level `permissions: write-all` (Cycle-8 F46)',
+  d => ciEdit(d, '  sync-check:\n    runs-on: ubuntu-latest\n', '  sync-check:\n    permissions: write-all\n    runs-on: ubuntu-latest\n', false),
+  /requests write permission below the workflow level \(Cycle-8 F46\): job-level[^\n]*write-all/);
 // 17) CSV header parity (F49): a header that drops a MIDDLE column, and a file
 // whose headers were all rewritten away, were both invisible to the old
 // prefix-only scan.
@@ -211,6 +220,93 @@ expectFail('detects a command delegating to another command\'s step (F11)',
 expectFail('detects a command naming a helper script unconditionally (F11)',
   d => { const f = join(d, '.claude', 'commands', 'regression.md'); writeFileSync(f, readFileSync(f, 'utf8') + '\nRun scripts/invariant-check.mjs first.\n'); },
   /names scripts\/invariant-check\.mjs unconditionally/);
+// Cycle-8 F43: the metrics-ownership rule was one literal phrase, looked for in the HTML only.
+// The scan's own example — rewrite the sentence in BOTH copies — passed every stage.
+expectFail('detects both §6a copies telling the synthesis row to fill net_score (Cycle-8 F43)',
+  d => { for (const n of ['CLAUDE.md', 'claude-code-guide-v2.html']) { const f = join(d, n); const s = readFileSync(f, 'utf8'); const find = 'Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK'; if (!s.includes(find)) throw new Error('fixture rotted: ' + n); writeFileSync(f, s.split(find).join('Also fill net_score, prod_fixes, new_failure_modes, and defensive_count')); } },
+  /metrics-row ownership \(Cycle-8 F43\) — CLAUDE\.md §6a: [^\n]*\n[^\n]*metrics-row ownership \(Cycle-8 F43\) — console §6a builder/);
+// Cycle-8 F44: a write with no step heading around it — a bullet under "Rules:" — was not read.
+expectFail('detects an ungated cycle-state write that is not shaped like a step (Cycle-8 F44)',
+  d => { const f = join(d, '.claude', 'commands', 'implement.md'); const s = readFileSync(f, 'utf8'); const find = '- Check Common Gotchas before each action'; if (!s.includes(find)) throw new Error('fixture rotted: implement.md'); writeFileSync(f, s.replace(find, '- Save your progress to STATE.md after each action\n' + find)); },
+  /writes cycle state outside a gated step \(Cycle-8 F44\): implement\.md/);
+// Cycle-8 F45: one spelling of a hardcoded floor was matched, in one section of one file.
+expectFail('detects a hardcoded policy floor in other words (Cycle-8 F45)',
+  d => { const f = join(d, 'CLAUDE.md'); const s = readFileSync(f, 'utf8'); const find = '(d) ABSOLUTE FLOOR — it is at or below `Policy threshold`, regardless of trend.'; if (!s.includes(find)) throw new Error('fixture rotted: ABSOLUTE FLOOR clause'); writeFileSync(f, s.replace(find, '(d) ABSOLUTE FLOOR — it is at or below 5/10 for two cycles running, regardless of trend.')); },
+  /a hardcoded policy floor is written into the prose \(Cycle-8 F45\)/);
+// Cycle-8 F8: command files had no frontmatter, so the picker listed each by its first body line.
+// gen --check compares a file with the generator's own output; these fail the SEPARATE reading.
+{
+  const edit = (d, rel, fn) => { const f = join(d, ...rel.split('/')); const s = readFileSync(f, 'utf8'); const t = fn(s); if (t === s) throw new Error('fixture rotted: ' + rel); writeFileSync(f, t); };
+  expectFail('detects a command file with no frontmatter description (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/audit.md', s => s.replace(/^---\n[\s\S]*?\n---\n+/, '')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*audit\.md has no frontmatter description/);
+  expectFail('detects a command described differently from its Command Index row (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/reflect.md', s => s.replace('description: "Post-cycle honest assessment"', 'description: "Reflect"')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*reflect\.md is described as "Reflect" but its Command Index row says/);
+  expectFail('detects a README command row that says something else (Cycle-8 F8)',
+    d => edit(d, 'README.md', s => s.replace('| Post-cycle honest assessment |', '| Look back at the cycle |')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*the README lists \/reflect as "Look back at the cycle"/);
+  expectFail('detects a command that reads $ARGUMENTS with no argument hint (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/audit.md', s => s.replace('argument-hint: "<subsystem-name>"\n', '')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*audit\.md reads \$ARGUMENTS and carries no argument hint/);
+  expectFail('detects a command with no Command Index row (Cycle-8 F8)',
+    d => edit(d, 'CLAUDE.md', s => s.replace(/^\| `\/regression` \|.*\n/m, '')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*regression\.md has no Command Index row/);
+  expectFail('detects a frontmatter key nobody decided on (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/reflect.md', s => s.replace('description: "Post-cycle honest assessment"\n', 'description: "Post-cycle honest assessment"\nallowed-tools: Bash\n')),
+    /command descriptions \(Cycle-8 F8\): [^\n]*reflect\.md frontmatter carries a line this check does not know/);
+  // A description is a label, not an instruction: the prose scans read the body. The family-parity
+  // check must still see a marker missing from the BODY when the description happens to say it.
+  expectFail('does not let a description satisfy a body check (Cycle-8 F8)',
+    d => edit(d, '.claude/commands/implement.md', s => s.replace(/^description: ".*"$/m, 'description: "Execute the plan, updating test doubles"').replace(/test doubles/g, (m, off) => (off < 120 ? m : 'test stand-ins'))),
+    /implement family: shared behavior "test doubles" missing from implement/);
+}
+// Cycle-8 follow-on to F8: a description is a label the prose scans skip, so the one rule of
+// theirs that fits a label is held by check 20 — it names no scripts/ helper.
+expectFail('detects a command description that names a scripts/ helper (Cycle-8 F8 follow-on)',
+  d => { const f = join(d, 'CLAUDE.md'); const s = readFileSync(f, 'utf8'); const find = '| `/regression` | Post-implementation regression check | — |'; if (!s.includes(find)) throw new Error('fixture rotted: /regression row'); writeFileSync(f, s.replace(find, '| `/regression` | Post-implementation regression check (runs scripts/regress.mjs) | — |')); },
+  /command descriptions \(Cycle-8 F8\): [^\n]*the Command Index describes \/regression with a scripts\/ path \(scripts\/regress\.mjs\)/);
+// Cycle-8 follow-on to F9: the roadmap said "queued for Cycle 7" through Cycle 8 and named two
+// finished items as its bet. Read against the LIVE ROADMAP.md and STATE.md, so a stale roadmap
+// in this repo fails here as well as in the guard's own stage.
+{
+  const withRoadmap = fn => {
+    const d = setup();
+    try {
+      mkdirSync(join(d, '.cycle'), { recursive: true });
+      copyFileSync(join(repo, '.cycle', 'STATE.md'), join(d, '.cycle', 'STATE.md'));
+      const live = readFileSync(join(repo, 'ROADMAP.md'), 'utf8');
+      const text = fn ? fn(live) : live;
+      if (fn && text === live) throw new Error('fixture rotted: ROADMAP.md');
+      if (text != null) writeFileSync(join(d, 'ROADMAP.md'), text);
+      return runGuard(d);
+    } finally { rmSync(d, { recursive: true, force: true }); }
+  };
+  const line = r => (r.out.split('\n').find(l => /roadmap currency|the roadmap does not contradict/.test(l)) || '(no roadmap line)').trim();
+  const cycle = Number((readFileSync(join(repo, '.cycle', 'STATE.md'), 'utf8').match(/^Cycle:\s*(\d+)/m) || [])[1]);
+  const openItem = /^(- \*\*R24 — [^\n]*)$/m, bet = /^\*\*Current bet:\*\*[^\n]*$/m;
+  const problems = [];
+  try {
+    const live = withRoadmap(null);
+    if (live.code !== 0 || !/✓ the roadmap does not contradict the cycle/.test(live.out)) problems.push(`the live ROADMAP.md fails — ${line(live)}`);
+    const stale = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle - 1})`));
+    if (stale.code === 0 || !new RegExp(`R24 is still "queued for Cycle ${cycle - 1}" and the project is on Cycle ${cycle}`).test(stale.out)) problems.push(`an open item queued for a cycle that has run is not flagged — ${line(stale)}`);
+    const current = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle})`));
+    if (current.code !== 0) problems.push(`an item queued for the CURRENT cycle is rejected — ${line(current)}`);
+    const history = withRoadmap(t => t.replace(openItem, `$1 (it was queued for Cycle ${cycle - 1} and slipped)`));
+    if (history.code !== 0) problems.push(`a past-tense "was queued for" is read as a live status — ${line(history)}`);
+    const spent = withRoadmap(t => t.replace(bet, '**Current bet:** R1, then R6.'));
+    if (spent.code === 0 || !/the strategic bet names R1, which is marked done or dropped/.test(spent.out)) problems.push(`a bet naming a finished item is not flagged — ${line(spent)}`);
+    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R22 (its derived half).'));
+    if (open.code !== 0) problems.push(`a bet naming an open item is rejected — ${line(open)}`);
+    const unstated = withRoadmap(t => t.replace(bet, 'The bet is discussed below.'));
+    if (unstated.code === 0 || !/has no "\*\*Current bet:\*\*" line/.test(unstated.out)) problems.push(`a roadmap that states no bet is not flagged — ${line(unstated)}`);
+    const unknown = withRoadmap(t => t.replace(bet, '**Current bet:** R999.'));
+    if (unknown.code === 0 || !/the strategic bet names R999, which is not an item in the roadmap/.test(unknown.out)) problems.push(`a bet naming an unknown item is not flagged — ${line(unknown)}`);
+  } catch (e) { problems.push(e.message); }
+  if (!problems.length) ok('the roadmap is read against the cycle: stale "queued for" on an open item, and a bet that names finished work (Cycle-8 F9 follow-on)');
+  else bad('Cycle-8 F9 follow-on: ' + problems.join('; '));
+}
 // 20) Cycle-7 follow-on to F05: the re-pull list classifies every release
 // since v1.19.0. v1.33.0 sat in neither list for nine releases.
 expectFail('detects a release missing from the Operator State Checklist re-pull list (F05 class)',
@@ -225,6 +321,43 @@ expectFail('detects a release missing from the Operator State Checklist re-pull 
     if (r.code === 0) ok('a block-scalar run: holding the bare command still counts as the stage (F31)');
     else bad('block-scalar bare stage rejected: ' + r.out.split('\n').filter(l => l.includes('✗')).join(' | '));
   } catch (e) { bad('block-scalar case — ' + e.message); } finally { rmSync(d, { recursive: true, force: true }); }
+}
+
+// Cycle-8 F7: the FIRST release of a cycle needs a block too (INV-72). The
+// floor used to come from the current cycle's own blocks, so a cycle with no
+// block yet was skipped and a block-less first release could never be flagged.
+// This needs several files to disagree at once (STATE's cycle, the blocks
+// directory, the CHANGELOG), which is why it lives here and not in a
+// single-file mutation. Versions are taken from the real CHANGELOG, so the case
+// follows the repo instead of pinning a release number.
+{
+  const versions = [...readFileSync(join(repo, 'CHANGELOG.md'), 'utf8').matchAll(/^##\s+(\d+\.\d+\.\d+)\b/gm)].map(m => m[1]);   // newest first
+  const [newest, prev, prev2] = versions;
+  const state = readFileSync(join(repo, '.cycle', 'STATE.md'), 'utf8').replace(/^Cycle:\s*\d+.*$/m, 'Cycle: 99');
+  const withBlocks = names => {
+    const d = setup();
+    mkdirSync(join(d, '.cycle', 'blocks'), { recursive: true });
+    writeFileSync(join(d, '.cycle', 'STATE.md'), state);
+    for (const n of names) writeFileSync(join(d, '.cycle', 'blocks', n), 'x\n');
+    try { return runGuard(d); } finally { rmSync(d, { recursive: true, force: true }); }
+  };
+  const line = r => (r.out.split('\n').find(l => /INV-72|release-block coverage/.test(l)) || '(no INV-72 line)').trim();
+  const problems = [];
+  if (!newest || !prev || !prev2 || !/^Cycle: 99$/m.test(state)) problems.push('fixture could not be derived from CHANGELOG.md / .cycle/STATE.md');
+  else {
+    const first = withBlocks([`98-${prev}-broad-implement.md`]);
+    if (first.code === 0 || !new RegExp('release with no block \\(INV-72\\): cycle 99 shipped ' + newest.replace(/\./g, '\\.')).test(first.out)) problems.push(`the first release of a cycle with no block is not flagged — ${line(first)}`);
+    const gap = withBlocks([`98-${prev2}-broad-implement.md`, `99-${newest}-broad-implement.md`]);
+    if (gap.code === 0 || !new RegExp('cycle 99 shipped ' + prev.replace(/\./g, '\\.') + ' with nothing').test(gap.out)) problems.push(`an unblocked first release hides once a LATER release of the cycle has a block — ${line(gap)}`);
+    const covered = withBlocks([`98-${prev}-broad-implement.md`, `99-${newest}-broad-implement.md`]);
+    if (covered.code !== 0 || !/✓ every cycle-99 release from /.test(covered.out)) problems.push(`a fully blocked cycle is rejected — ${line(covered)}`);
+    const none = withBlocks([`98-${newest}-broad-implement.md`]);
+    if (none.code !== 0 || !/cycle 99 has shipped no release yet/.test(none.out)) problems.push(`a cycle that has shipped nothing is not accepted — ${line(none)}`);
+    const empty = withBlocks([]);
+    if (empty.code !== 0 || !/release-block coverage skipped/.test(empty.out)) problems.push(`a project with no versioned blocks at all is not skipped — ${line(empty)}`);
+  }
+  if (!problems.length) ok('the first release of a cycle needs a block: the floor is the first release after the previous cycle\'s last block (Cycle-8 F7)');
+  else bad('Cycle-8 F7: ' + problems.join('; '));
 }
 
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');

@@ -15,9 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Node 22 (LTS). Node 20 reached end of life in April 2026; 22 is also the
+      # line the Test Command is run on locally, so CI and a contributor's run
+      # exercise the same runtime.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Check generated command files are current
         run: node scripts/gen-commands.mjs --check
       - name: Check HTML console JS (syntax, builders, behavior)
