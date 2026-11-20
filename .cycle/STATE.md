@@ -9,8 +9,8 @@ Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it
 Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1 and 2 of 9 and their actionable follow-ons are complete (v1.44.0, v1.45.0, v1.46.0; one block
-  each in .cycle/blocks/). Batches 3–9 and the expansion plan are not started.
+- Batches 1, 2 and 3 of 9 and the actionable follow-ons of the first two are complete (v1.44.0–v1.47.0; one
+  block each in .cycle/blocks/). Batches 4–9 and the expansion plan are not started.
 - The scan's full output (48 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. The batch definitions under Pending are the record of what each batch contains.
 - Cycle 7 was reflected (21 − 0) and merged (PRs #26, #27) but its §4v and §6a never ran; Cycle 8 opened on
@@ -45,12 +45,16 @@ Updated: 2026-11-20
   D the inline-handler scan reads handlers from tags only. E the systems-map field saves as typed. F docs:
   Verify-with-pipes in README and CLAUDE.md, two gotchas added and one extended, a correction under CHANGELOG
   1.43.0. Mutation cases 116 → 120; library unchanged at 73 (three rules widened).
+- v1.47.0 | Batch 3 | F1 Phase is a closed lifecycle — audit, implement, reflect, idle; Health Synthesis
+  step 8 sets idle; /cycle-status and portfolio-status pick the next action from it (only implement is "in
+  progress"). F4 CYCLE OPEN reports a previous cycle reflected but never synthesized, and the pack warns when
+  built without --cycle over one. F5 the same-audit-round exemption is "Phase: audit within 7 days"; the first
+  implement CHECKPOINT of a cycle rolls the old sections into HISTORY.md. F6 /reflect numbers candidates above
+  unpromoted ones and /sync-docs (check 5) proposes their promotion. F12 a block is never overwritten.
+  Structural check 19 guards all of it. Mutation cases 120 → 128; library unchanged at 73 (three rules widened).
+  Ten command bodies changed — consuming projects re-pull.
 
 ## Pending / not yet done
-- Batch 3 — cycle lifecycle (command bodies change → re-pull): F4 CYCLE OPEN ignores a pending §4v/§6a and the
-  pack defaults to STATE's Cycle; F5 nothing rolls STATE, and Phase: audit sticks; F6 invariant candidates have
-  no owner (INV-76…82 from 07-a-reflect.md are not in the library); F1 portfolio-status calls every non-idle
-  phase "in progress"; F12 /implement block names collide per scope.
 - Batch 4 — console data: F20 config-format invariant lines double their labels; F22 Dashboard not re-rendered
   on switch/add/delete/import; F23 Dashboard cache keyed by id only; F24 parseHealth/parseState unscoped;
   F25 refresh races; F26 Save → repo creates .cycle/; F27 project-form edge cases; F28 import shapes.
@@ -70,7 +74,10 @@ Updated: 2026-11-20
   persistence + G5 interface lens in /pr-review + ST1 allowed-tools; E4 ST3 mechanical mutation sweep;
   E5 G4 console import from config. Not batched: ST2 (event delegation + CSP).
 - Cycle 7 still owes §4v in a FRESH session — `node scripts/verification-pack.mjs --cycle 7 --out pack.md`
-  (without --cycle the pack now builds Cycle 8) — then §6a. Carried from Cycle 7: F43 (hook framing/size cap).
+  (without --cycle the pack builds Cycle 8 and now says Cycle 7 is owed) — then §6a. Carried from Cycle 7: F43
+  (hook framing/size cap).
+- Cycle 7's invariant candidates INV-76…82 (07-a-reflect.md) are not in the library: /sync-docs check 5 now
+  proposes them; the operator approves or declines each.
 - OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
   independence vs the SessionStart hook; R21's /audit vs /targeted-audit dead-code asymmetry.
 
@@ -92,6 +99,16 @@ What is left is deliberate, needs a capability that does not exist yet, or is th
 - guard.test's F7 case reads this repo's .cycle/STATE.md and CHANGELOG.md to build its sandbox.
 - check-html, check-template-sync and the mutation audit still call process.exit() after printing; their
   output is far below a pipe's 64 KiB buffer today, so nothing is cut. verification-pack was the one that was.
+- The lifecycle is instruction text plus a text-derived guard (check 19): nothing mechanical checks a live
+  STATE.md transition. A cycle-close command (E2 / ST4) is where that would live.
+- Check 19 recognises a phase writer by the phrase "set Phase: <value>" — derived, but one wording (the same
+  class as Batch 8's F43/F45). A step that sets a phase in other words reads as no writer: loud, not silent.
+- A project that never synthesizes rests at Phase: reflect between cycles; the portfolio board lists it under
+  "Reflected, not synthesized (or open the next audit)" until its next audit.
+- The same-audit-round window is 7 days: a second audit of one round started later than that, with nothing
+  implemented between, opens a new cycle.
+- .cycle/HISTORY.md is now written by the first CHECKPOINT of a cycle and still read by nothing.
+- PROJECT_HEALTH.md's "Open live defect" line still lists F2 (fixed in v1.45.0) — a /sync-docs item.
 - Strategic, carried: no LICENSE file (the licence is the owner's choice).
 
 ## Decisions made (so the next session doesn't re-litigate)
@@ -124,9 +141,20 @@ What is left is deliberate, needs a capability that does not exist yet, or is th
   shell exactly as written — no escape processing. A trailing note is `(a parenthesis)` or a labelled field.
 - A guard whose violation needs several files to disagree is proven in guard.test's sandbox, and the
   invariant's Verify names guard.test as well (INV-72) — a single-file mutation of the live tree cannot.
+- Phase has four values and each has one kind of writer: CYCLE OPEN → audit, CHECKPOINT → implement,
+  /reflect → reflect, Health Synthesis → idle. plan / regression / verify were dropped because the sessions
+  that would write them are read-only. Adding a value means adding its writer (check 19 fails otherwise).
+- "Same audit round" is Phase: audit updated within 7 days, ANY scope. A same-day-or-same-scope rule was
+  drafted and dropped: it split a Tier 3 round whose subsystem audits fall on consecutive days.
+- The "reflected, never synthesized" notices (CYCLE OPEN, the pack) fire only where metrics.csv has a
+  synthesis row for some cycle. A project that does not synthesize owes none, and a notice that fires every
+  cycle teaches its reader to skip it.
+- Candidates are promoted by /sync-docs with the operator's approval, never by /reflect or an implement
+  session — which is why Batch 3 widened INV-35/52/65 and left INV-76…82 where they are.
 
 ## Where I left off
-Cycle 8, Batches 1 and 2 and their follow-ons shipped as v1.44.0–v1.46.0 on branch claude/stoic-goldberg-gg0oz5
+Cycle 8, Batches 1–3 and the follow-ons shipped as v1.44.0–v1.47.0 on branch claude/stoic-goldberg-gg0oz5
 (not merged — the hosted console still serves v1.43.0 with the dead Fill buttons until it is). Next: merge,
-then /broad-implement Batch 3 (cycle lifecycle — command bodies change, so a re-pull follows).
-Cycle 7's §4v and §6a are still owed (pass --cycle 7). A person still needs to walk S5–S17.
+have consuming projects run /sync-commands (v1.47.0 changed ten command bodies), then /broad-implement
+Batch 4 (console data). Cycle 7's §4v and §6a are still owed (pass --cycle 7), and /sync-docs should now
+propose INV-76…82. A person still needs to walk S5–S17.

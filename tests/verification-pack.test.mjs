@@ -9,7 +9,7 @@
 //
 // Usage: node tests/verification-pack.test.mjs
 
-import { selectProbes, selectProbesConsole, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack } from '../scripts/verification-pack.mjs';
+import { selectProbes, selectProbesConsole, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack, pendingCloseOut } from '../scripts/verification-pack.mjs';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 
@@ -318,6 +318,54 @@ else bad('readBlocks threw on a missing directory');
   if (!problems.length) ok(`a piped pack is complete — ${Buffer.byteLength(whole)} bytes through a pipe, identical to --out (Cycle-8 follow-on A)`);
   else bad('Cycle-8 follow-on A: ' + problems.join('; '));
   rmSync(join(proj, '..'), { recursive: true, force: true });
+}
+
+// Cycle-8 F4: the pack defaults to STATE.md's Cycle, and the next audit's CYCLE
+// OPEN moves that field on. Built after it without --cycle, the pack was for the
+// NEW cycle and said nothing about the one still waiting for §4v.
+{
+  const H = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count';
+  const csv = [H,
+    '2026-01-01,5,X,reflect,2,2,0,,,"old gap — never synthesized",0',
+    '2026-02-01,6,X,reflect,3,3,0,,,"n",0', '2026-02-02,6,all,synthesis,,,,10%,Drift,"n",',
+    '2026-03-01,7,"A, B",reflect,21,21,0,,,"n",4'].join('\n') + '\n';
+  const problems = [];
+  if (pendingCloseOut(csv, 8) !== 7) problems.push(`cycle 8 after an unsynthesized cycle 7 → ${pendingCloseOut(csv, 8)}, expected 7`);
+  if (pendingCloseOut(csv, '08') !== 7) problems.push('a zero-padded cycle is not compared numerically');
+  if (pendingCloseOut(csv, 7) !== null) problems.push('cycle 7 after a synthesized cycle 6 was reported (an older gap, cycle 5, is history)');
+  if (pendingCloseOut(csv + '2026-03-02,7,all,synthesis,,,,5%,Drift,"n",\n', 8) !== null) problems.push('a synthesized cycle 7 was still reported');
+  if (pendingCloseOut('', 8) !== null || pendingCloseOut(csv, 'broad') !== null) problems.push('an empty file or a non-numeric cycle did not return null');
+  const neverSynth = csv.split('\n').filter(l => !/,synthesis,/.test(l)).join('\n');
+  if (pendingCloseOut(neverSynth, 8) !== null) problems.push('a project with no synthesis row at all (it does not synthesize) was told it owes one');
+
+  const { mkdtempSync, mkdirSync, writeFileSync, readFileSync: read, rmSync } = await import('node:fs');
+  const { spawnSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repo = fileURLToPath(new URL('..', import.meta.url));
+  const proj = join(mkdtempSync(join(tmpdir(), 'cwt-vp-owed-')), 'owed-app');
+  mkdirSync(join(proj, '.cycle', 'blocks'), { recursive: true });
+  writeFileSync(join(proj, 'CLAUDE.md'), '# Owed\n\n### Invariant Library\nINV-01 | a rule | Subsystem: Core\n');
+  writeFileSync(join(proj, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 8\nPhase: audit\n');
+  writeFileSync(join(proj, '.cycle', 'metrics.csv'), csv);
+  writeFileSync(join(proj, '.cycle', 'blocks', '07-a-reflect.md'), '---CYCLE SUMMARY BLOCK---\ncycle seven\n---END CYCLE SUMMARY BLOCK---\n');
+  const script = join(repo, 'scripts', 'verification-pack.mjs');
+  const run = extra => spawnSync('node', [script, '--seed', 's', '--template', join(repo, 'CLAUDE.md'), ...extra], { cwd: proj, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const dflt = run([]);
+  if (dflt.status !== 0) problems.push(`default run exited ${dflt.status}`);
+  if (!/Cycle 7 was reflected but never synthesized[^\n]*--cycle 7/.test(dflt.stderr)) problems.push('stderr does not name the cycle that is owed and how to build its pack');
+  if (!/CHECK THE CYCLE: cycle 7 was reflected/.test(dflt.stdout) || !/verification-pack\.mjs --cycle 7\n/.test(dflt.stdout)) problems.push('the pack itself does not say it may be for the wrong cycle');
+  if (!/owed-app — Cycle 8/.test(dflt.stdout)) problems.push('the default cycle is no longer STATE.md\'s');
+  const named = run(['--cycle', '7']);
+  if (named.status !== 0 || /CHECK THE CYCLE/.test(named.stdout) || /never synthesized/.test(named.stderr)) problems.push('an explicit --cycle still carries the warning');
+  if (!/owed-app — Cycle 7/.test(named.stdout) || !/cycle seven/.test(named.stdout)) problems.push('--cycle 7 did not build cycle 7\'s pack');
+  const outFile = join(proj, 'pack.md');
+  const toFile = run(['--out', outFile]);
+  if (!/never synthesized/.test(toFile.stderr) || !/CHECK THE CYCLE/.test((() => { try { return read(outFile, 'utf8'); } catch { return ''; } })())) problems.push('--out loses the warning');
+  rmSync(join(proj, '..'), { recursive: true, force: true });
+  if (!problems.length) ok('a pack built without --cycle names an earlier reflected-but-unsynthesized cycle, on stderr and in the pack; --cycle is silent (Cycle-8 F4)');
+  else bad('Cycle-8 F4: ' + problems.join('; '));
 }
 
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');

@@ -773,6 +773,82 @@ try {
   }
 }
 
+// ── Structural check 19 (Cycle-8 F1/F4/F5/F12; INV-65): the cycle LIFECYCLE is
+// closed. STATE.md's Phase field is read by /cycle-status, /cycle-resume and the
+// portfolio board to pick the next action, so it has to be a state machine and
+// not a suggestion. Until v1.47.0 the template offered seven values, commands
+// set three of them, and nothing ever returned the field to "idle" — a finished
+// cycle read "in progress" until someone edited it by hand. Three properties,
+// all derived from the text:
+//   (a) every Phase value the template offers is SET by some step, and no step
+//       sets a value the template does not offer (/cycle-init only seeds it);
+//   (b) the step that opens a cycle is the same text in every audit that has
+//       one — it decides whether the number moves, so two wordings are two
+//       numbering rules;
+//   (c) every implement CHECKPOINT that writes a block also rolls the previous
+//       cycle's STATE sections and refuses to overwrite a block;
+//   (d) invariant candidates have an OWNER (F6): the command /reflect names as
+//       proposing their promotion exists and has a step that does it. /reflect
+//       minted INV-76…82 in Cycle 7 and no command was responsible for what
+//       happened to them next.
+{
+  const tmpl = claudeRaw.match(/`\.cycle\/STATE\.md` template:\s*\n+```\n([\s\S]*?)\n```/);
+  const phaseLine = tmpl ? tmpl[1].match(/^Phase: \[([^\]\n]+)\]/m) : null;
+  const offered = phaseLine ? phaseLine[1].split('—')[0].split('|').map(v => v.trim().toLowerCase()).filter(Boolean) : [];
+  const fenced = h => { const i = claudeRaw.indexOf('### ' + h + '\n'); if (i === -1) return null; const a = claudeRaw.indexOf('```\n', i); return a === -1 ? null : claudeRaw.slice(a + 4, claudeRaw.indexOf('\n```', a + 4)); };
+  const sources = [];
+  try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) sources.push([f.replace(/\.md$/, ''), readFileSync(new URL('.claude/commands/' + f, root), 'utf8')]); } catch (e) {}
+  const commandCount = sources.length;
+  sources.push(['§6a', fenced('Health Synthesis (Section 6a in HTML tool)') || ''], ['§1s', fenced('Seams & Invariants Audit (Section 1s in HTML tool)') || '']);
+  const problems = [];
+  if (!offered.length) problems.push('could not read the Phase values from the STATE.md template — the lifecycle check would be vacuous');
+  if (!commandCount) problems.push('no command files found — the lifecycle check would be vacuous');
+
+  // (a) who sets what
+  const setters = new Map();
+  for (const [name, txt] of sources) {
+    if (name === 'cycle-init') continue;
+    for (const m of txt.replace(/\s+/g, ' ').matchAll(/\bsets? Phase: ([a-z]+)/gi)) {
+      const v = m[1].toLowerCase();
+      if (!setters.has(v)) setters.set(v, new Set());
+      setters.get(v).add(name);
+    }
+  }
+  const unset = offered.filter(v => !setters.has(v));
+  const unoffered = [...setters.keys()].filter(v => !offered.includes(v));
+  if (unset.length) problems.push(`the STATE template offers Phase value(s) no step sets: ${unset.join(', ')} — a phase nothing writes is never reached, and one nothing leaves sticks`);
+  if (unoffered.length) problems.push(`a step sets a Phase value the STATE template does not offer: ${unoffered.map(v => `${v} (${[...setters.get(v)].join(', ')})`).join('; ')}`);
+
+  // (b) one CYCLE OPEN text
+  const openStep = txt => { const m = txt.match(/^CYCLE OPEN \([\s\S]*?^Skip if \.cycle\/STATE\.md does not exist\.$/m); return m ? m[0].replace(/\s+/g, ' ') : null; };
+  const openers = sources.filter(([, txt]) => /^CYCLE OPEN \(/m.test(txt)).map(([name, txt]) => [name, openStep(txt)]);
+  const AUDITS = ['broad-scan', 'audit', 'targeted-audit'];
+  const noOpen = AUDITS.filter(a => !openers.some(([n]) => n === a));
+  if (commandCount && noOpen.length) problems.push(`audit command(s) with no CYCLE OPEN step: ${noOpen.join(', ')} — that audit cannot open a cycle`);
+  const unreadable = openers.filter(([, t]) => t == null).map(([n]) => n);
+  if (unreadable.length) problems.push(`CYCLE OPEN step has no closing "Skip if .cycle/STATE.md does not exist." line in: ${unreadable.join(', ')}`);
+  const texts = [...new Set(openers.map(([, t]) => t).filter(Boolean))];
+  if (texts.length > 1) problems.push(`the CYCLE OPEN step differs between ${openers.map(([n]) => n).join(', ')} — one cycle-numbering rule, one text`);
+
+  // (c) every block-writing CHECKPOINT rolls and never overwrites
+  const checkpointers = sources.filter(([, txt]) => /CHECKPOINT \(optional/.test(txt) && /\.cycle\/blocks\/<cycle>-/.test(txt));
+  const noRoll = checkpointers.filter(([, txt]) => !/\.cycle\/HISTORY\.md/.test(txt)).map(([n]) => n);
+  const clobber = checkpointers.filter(([, txt]) => !/Never overwrite a block/.test(txt)).map(([n]) => n);
+  if (commandCount && checkpointers.length < 3) problems.push(`only ${checkpointers.length} block-writing CHECKPOINT step(s) found — expected the three implement commands`);
+  if (noRoll.length) problems.push(`CHECKPOINT does not roll the previous cycle's STATE sections into .cycle/HISTORY.md: ${noRoll.join(', ')}`);
+  if (clobber.length) problems.push(`CHECKPOINT may overwrite an existing block: ${clobber.join(', ')}`);
+
+  // (d) candidates are handed to a command that takes them
+  const reflectTxt = (sources.find(([n]) => n === 'reflect') || [, ''])[1].replace(/\s+/g, ' ');
+  const owner = (reflectTxt.match(/\/([a-z-]+) proposes their promotion/) || [])[1];
+  const ownerTxt = owner ? (sources.find(([n]) => n === owner) || [, null])[1] : null;
+  if (commandCount && !owner) problems.push('/reflect assigns invariant candidate IDs and names no command that proposes their promotion — candidates have no owner');
+  else if (owner && (ownerTxt == null || !/Invariant candidates/.test(ownerTxt) || !/Invariant Library/.test(ownerTxt))) problems.push(`/reflect hands invariant candidates to /${owner}, which has no step that proposes adding them to the Invariant Library`);
+
+  if (problems.length) { failures++; console.log(`  ✗ cycle lifecycle (Cycle-8 F1): ${problems.join('; ')}`); }
+  else console.log(`  ✓ the cycle lifecycle is closed — ${offered.length} Phase values, each set by a step (${offered.map(v => `${v}: ${[...setters.get(v)].join('/')}`).join('; ')}); one CYCLE OPEN text across ${openers.length} audits; ${checkpointers.length} CHECKPOINTs roll STATE and never overwrite a block; invariant candidates go to /${owner} (Cycle-8 F1)`);
+}
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

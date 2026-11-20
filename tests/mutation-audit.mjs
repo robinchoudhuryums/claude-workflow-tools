@@ -139,7 +139,20 @@ const CASES = {
              // Cycle-7 Batch 8 (F19): the exact-match systems-map test back — §1 and §4 lose the bank.
              [HTML, "const isSysMap=n=>n.startsWith('PASTE SYSTEMS MAP SUMMARY HERE');", "const isSysMap=n=>n==='PASTE SYSTEMS MAP SUMMARY HERE';", /F19/]],
   'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
-  'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
+  'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/],
+             // Cycle-8 Batch 3 — the lifecycle half of the rule (structural check 19).
+             // F1: the template offers a phase no step sets.
+             ['CLAUDE.md', 'Phase: [audit | implement | reflect | idle —', 'Phase: [audit | plan | implement | reflect | idle —', /cycle lifecycle \(Cycle-8 F1\): [^\n]*no step sets: plan/],
+             // F1: nothing returns the phase to idle (the §6a write removed).
+             ['CLAUDE.md', 'When you append that row, also set Phase: idle and Updated in', 'When you append that row, also refresh Updated in', /cycle lifecycle \(Cycle-8 F1\): [^\n]*no step sets: idle/],
+             // F4/F5: one audit's CYCLE OPEN step drifts from the others — two numbering rules.
+             ['.claude/commands/audit.md', 'is the SAME audit round: Phase is already "audit" and Updated is within\nthe last 7 days', 'is the SAME audit round: Phase is already "audit" and Updated is within\nthe last 30 days', /the CYCLE OPEN step differs between/],
+             // F5: an implement CHECKPOINT that no longer rolls the previous cycle's sections.
+             ['.claude/commands/implement.md', 'progress" and "Completed this cycle" entries to .cycle/HISTORY.md under a', 'progress" and "Completed this cycle" entries to the end of the file under a', /does not roll the previous cycle's STATE sections into \.cycle\/HISTORY\.md: implement/],
+             // F12: an implement CHECKPOINT that may overwrite a block.
+             ['.claude/commands/targeted-implement.md', 'Never overwrite a block: if that name is taken', 'If that name is taken', /CHECKPOINT may overwrite an existing block: targeted-implement/],
+             // F6: the command /reflect hands candidates to loses the step that takes them.
+             ['.claude/commands/sync-docs.md', '5. Invariant candidates — has /reflect', '5. New rules — has /reflect', /hands invariant candidates to \/sync-docs, which has no step/]],
   'INV-66': [
     ['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i],
     // Cycle-7 Batch 6 (F48): a new static prompt whose id is not the FIRST attribute.
@@ -256,13 +269,17 @@ const CASES = {
   'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],
   'INV-32': [['scripts/check-output-blocks.mjs', 'export function validate', 'export function validate_renamed', /✗|error/i]],
-  'INV-35': [['scripts/portfolio-status.mjs', 'function seamsCadence(cycleDir, root) {', 'function seamsCadence(cycleDir, root) { return \'\';', /✗|error/i]],
+  'INV-35': [['scripts/portfolio-status.mjs', 'function seamsCadence(cycleDir, root) {', 'function seamsCadence(cycleDir, root) { return \'\';', /✗|error/i],
+             // Cycle-8 Batch 3 (F1): every non-idle phase reads "in progress — run /cycle-resume" again.
+             ['scripts/portfolio-status.mjs', "const phaseKind = phase => PHASE_KIND[String(phase).toLowerCase().split(/\\s+/)[0]] || 'wip';", "const phaseKind = phase => (String(phase).toLowerCase() === 'idle' ? 'idle' : 'wip');", /Cycle-8 F1: phase misclassified/]],
   'INV-51': [['scripts/render-metrics.mjs', "that cycle's net ${synthNet}", "that cycle's net ${lastSynth.net_score}", /✗/]],
   'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i],
              // Cycle-8 Batch 2 (F3): the library injected as a replacement STRING again ($& $' $$ read as patterns).
              ['scripts/verification-pack.mjs', '() => library)', 'library)', /Cycle-8 F3: /],
              // Cycle-8 follow-on A: process.exit() after writing stdout — a piped pack is cut short.
-             ['scripts/verification-pack.mjs', 'process.exitCode = main(process.argv.slice(2));', 'process.exit(main(process.argv.slice(2)));', /Cycle-8 follow-on A: /]],
+             ['scripts/verification-pack.mjs', 'process.exitCode = main(process.argv.slice(2));', 'process.exit(main(process.argv.slice(2)));', /Cycle-8 follow-on A: /],
+             // Cycle-8 Batch 3 (F4): a pack built without --cycle says nothing about the earlier cycle still owed §4v.
+             ['scripts/verification-pack.mjs', 'const owed = explicitCycle ? null : pendingCloseOut(metrics, cycle);', 'const owed = null;', /Cycle-8 F4: /]],
   // INV-70 — reintroduce the disclosure/use split: select with a truncated
   // seed while the header still prints the full one.
   // Re-targeted in Cycle-7 Batch 8: buildPack now dispatches through SELECTORS (F21).

@@ -61,6 +61,17 @@ function seamsCadence(cycleDir, root) {
   return 4;
 }
 
+// Cycle-8 F1: "in progress" means there is implementation to RESUME. Until v1.47.0 every
+// non-idle phase read "yes — run /cycle-resume", so a project whose audit had only just
+// opened, or whose cycle was reflected and waiting on verification, was sent to a command
+// with nothing to resume. The four values are the ones the STATE template offers
+// (tests/portfolio-status.test.mjs derives that list from CLAUDE.md and fails on a value it
+// cannot place); "verify" is a pre-v1.47.0 template value that meant the same wait. Anything
+// else — a legacy "plan" or "regression", free text — stays work in progress: an unrecognised
+// phase is more safely resumed than ignored.
+const PHASE_KIND = { idle: 'idle', audit: 'audit', implement: 'wip', reflect: 'closeout', verify: 'closeout' };
+const phaseKind = phase => PHASE_KIND[String(phase).toLowerCase().split(/\s+/)[0]] || 'wip';
+
 // Net-score trend from metrics.csv: sum net_score per cycle, compare the last
 // two cycles that carry data. F03: rows are parsed quote-aware — the previous
 // bare split assumed only `notes` could hold a comma, and a subsystem such as
@@ -114,7 +125,8 @@ for (const p of paths) {
     const km = state.match(/Subsystem cycles since last Seams audit:\s*(\d+)/i);
     if (km) seamsK = parseInt(km[1], 10);
   }
-  const inProgress = !hasState ? '—' : (phase && phase.toLowerCase() !== 'idle' ? 'yes' : 'no');
+  const kind = hasState ? phaseKind(phase) : null;
+  const inProgress = !hasState ? '—' : (kind === 'wip' ? 'yes' : 'no');
   const cadence = hasState ? seamsCadence(cycleDir, root) : null;
   const seamsDue = seamsK !== null && cadence !== null && seamsK >= cadence;
   const seamsCell = seamsK === null ? '—' : `${seamsK}/${cadence}${seamsDue ? ' DUE' : ''}`;
@@ -124,7 +136,7 @@ for (const p of paths) {
     label: basename(root) || p,
     overall: Number.isFinite(overall) ? overall : null,
     overallStr: field(standing, HEALTH_FIELDS.overall) || '—',
-    phase, inProgress, trend, seamsCell, seamsDue,
+    phase, kind, inProgress, trend, seamsCell, seamsDue,
     updated: updated || field(standing, HEALTH_FIELDS.lastSynthesis) || '—',
   });
 }
@@ -149,6 +161,10 @@ if (scored.length) {
 }
 const wip = ranked.filter(p => p.inProgress === 'yes');
 if (wip.length) out.push(`- **In progress (resume): ${wip.map(p => `${p.label} (${p.phase})`).join(', ')}** — run /cycle-resume.`);
+const opened = ranked.filter(p => p.kind === 'audit');
+if (opened.length) out.push(`- **Audit open, nothing implemented yet: ${opened.map(p => p.label).join(', ')}** — choose findings and run the implement command for that tier.`);
+const closing = ranked.filter(p => p.kind === 'closeout');
+if (closing.length) out.push(`- **Reflected, not synthesized: ${closing.map(p => p.label).join(', ')}** — run the Verification Pass in a fresh session, then Health Synthesis (or open the next audit).`);
 const due = ranked.filter(p => p.seamsDue);
 if (due.length) out.push(`- **Seams audit DUE: ${due.map(p => p.label).join(', ')}** — run a Seams & Invariants audit.`);
 const unscored = ranked.filter(p => p.overall === null);

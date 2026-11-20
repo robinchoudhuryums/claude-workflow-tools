@@ -5,6 +5,69 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.47.0 — 2026-11-20
+
+Cycle-8 Batch 3: the cycle lifecycle (F4, F5, F6, F1, F12). **Command bodies
+changed — run `/sync-commands` in consuming projects.** Ten commands are
+affected: `/broad-scan`, `/audit`, `/targeted-audit`, the three implement
+commands, `/reflect`, `/sync-docs`, `/cycle-status` and `/cycle-resume`. No
+config-schema change.
+
+- **`Phase` is a closed lifecycle now** (F1, F5). The STATE template offered
+  seven values, commands wrote three, and nothing ever wrote `idle` — so a
+  finished cycle read "in progress" until someone edited the file. The values
+  are `audit` (CYCLE OPEN), `implement` (the CHECKPOINTs), `reflect`
+  (`/reflect`) and `idle`, which **Health Synthesis step 8 now sets** when it
+  appends its metrics row. If your `.cycle/STATE.md` holds `plan`,
+  `regression` or `verify`, nothing breaks: they read as work in progress
+  (`verify` as awaiting close-out).
+- **`/cycle-status` and the portfolio board follow the phase** (F1). Both
+  sent every non-idle project to `/cycle-resume`, which has nothing to resume
+  when an audit has only just opened or a cycle is waiting on verification.
+  `/cycle-status` now chooses between RESUME, IMPLEMENT, CLOSE OUT and FRESH
+  AUDIT; `portfolio-status.mjs` reports "in progress" for implementation only
+  and gives the other two their own line. `/cycle-resume` asks before
+  continuing when the phase is `audit`, because the pending items it would
+  pick up belong to the previous cycle.
+- **CYCLE OPEN no longer sticks on `Phase: audit`, and reports a cycle it is
+  leaving unverified** (F4, F5). "Leave the number alone if Phase is already
+  audit" meant an audit that led to no implementation held the cycle number
+  for every audit after it. The exemption is now the same audit round only —
+  `Phase: audit` updated within the last seven days — and that audit adds its
+  scope to the Scope line. When the step increments, it
+  marks the Scope line if STATE's sections still describe the previous cycle,
+  and says at the top of the audit if that cycle was reflected but never
+  synthesized.
+- **The first implement CHECKPOINT of a cycle rolls STATE** (F5): the previous
+  cycle's "In progress" and "Completed this cycle" entries move to
+  `.cycle/HISTORY.md`; pending items, follow-ons and decisions that are still
+  live stay.
+- **Implement blocks are never overwritten** (F12). A second batch under the
+  same version or scope wrote the same file name. It now takes a batch number
+  before the command name (`<cycle>-<scope>-2-implement.md`).
+- **Invariant candidates have an owner** (F6). `/reflect` numbered candidates
+  from the library's maximum alone, so two reflections before a promotion
+  issued the same IDs, and no command was responsible for promoting them.
+  `/reflect` now counts unpromoted candidates under `.cycle/blocks/` and says
+  it does not edit the library; `/sync-docs` gains a fifth check that proposes
+  each candidate for the library under the ID it was given.
+- **`verification-pack.mjs` warns when it is probably building the wrong
+  cycle** (F4). Without `--cycle` it uses STATE.md's Cycle field, which the
+  next audit moves on. If the newest earlier cycle has a reflect row and no
+  synthesis row, the pack says so on stderr and in its header and names the
+  `--cycle` to pass. An explicit `--cycle` is unaffected. Neither this nor
+  CYCLE OPEN's notice fires in a project whose `metrics.csv` has no synthesis
+  row at all — a project that does not synthesize owes none.
+- **Guard:** structural check 19 derives the lifecycle from the text — every
+  Phase value has a step that sets it, the CYCLE OPEN step is one text across
+  the audits, every block-writing CHECKPOINT rolls and never overwrites, and
+  the command `/reflect` hands candidates to has a step that takes them.
+  INV-35, INV-52 and INV-65 are widened to cover the above; the library stays
+  at 73 rules. Mutation cases 120 → 128.
+
+Not done here: this repo's own candidates INV-76…82 are still unpromoted —
+that is `/sync-docs`'s new check, run with the operator's approval.
+
 ## 1.46.0 — 2026-11-20
 
 Cycle-8 follow-on items: the actionable follow-ons that Batches 1 and 2
