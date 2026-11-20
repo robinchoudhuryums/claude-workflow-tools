@@ -220,9 +220,26 @@ for (const [f, raw, mFloor, eFloor] of headerSources) {
   if (bad.length) { metricsFail++; console.log(`  ✗ ${f}: ${bad.length} CSV header(s) not matching the canonical column list (P11/F49): ${[...new Set(bad)].map(diff).join(', ')}`); }
   if (nM < mFloor || nE < eFloor) { metricsFail++; console.log(`  ✗ ${f}: only ${nM} metrics / ${nE} estimates header(s) found, expected at least ${mFloor} / ${eFloor} — a header was deleted or rewritten out of recognition (F49)`); }
 }
-if (/phase=synthesis with the overall net_score/i.test(htmlRaw)) {
-  metricsFail++;
-  console.log('  ✗ HTML §6a tells the phase=synthesis row to write net_score — owned only by phase=reflect (P1 double-count footgun)');
+// Cycle-8 F43: this used to be one literal — "phase=synthesis with the overall net_score",
+// looked for in the HTML only. Rewriting both copies to "Also fill net_score…" passed the
+// sync guard, the --assert lock and the block checks. The rule is now read out of step 8
+// itself, in the canonical body AND the console builder: the step must tell the synthesis row
+// to leave the three reflect-owned columns blank, say who owns them, and mention net_score
+// nowhere else (the CSV header and that one sentence).
+{
+  const step8 = raw => { const i = raw.indexOf('8. METRICS (optional'); if (i === -1) return null; const ends = [raw.indexOf('\n```', i), raw.indexOf('`;', i)].filter(n => n !== -1); return raw.slice(i, ends.length ? Math.min(...ends) : undefined).replace(/\s+/g, ' '); };
+  for (const [label, raw] of [['CLAUDE.md §6a', claudeRaw], ['console §6a builder', htmlRaw]]) {
+    const s = step8(raw);
+    const problems = [];
+    if (s == null) problems.push('step 8 (METRICS) not found — the ownership check would be vacuous');
+    else {
+      if (!/Leave net_score, prod_fixes, new_failure_modes(?:,? and defensive_count)? BLANK/.test(s)) problems.push('step 8 no longer tells the synthesis row to leave net_score, prod_fixes and new_failure_modes BLANK');
+      if (!/owned ONLY by the phase=reflect rows/.test(s)) problems.push('step 8 no longer says those columns are owned only by the phase=reflect rows');
+      const mentions = (s.match(/net_score/g) || []).length;
+      if (mentions > 2) problems.push(`step 8 mentions net_score ${mentions} times — beyond the CSV header and the leave-blank sentence, something tells the synthesis row what to do with it`);
+    }
+    if (problems.length) { metricsFail++; console.log(`  ✗ metrics-row ownership (Cycle-8 F43) — ${label}: ${problems.join('; ')}. net_score/prod_fixes/new_failure_modes belong to the phase=reflect row alone (P1 double-count footgun)`); }
+  }
 }
 if (metricsFail) failures += metricsFail;
 else console.log(`  ✓ Metrics-row ownership + exact CSV header parity across ${headerSources.length} source(s) (P1 + P11 + F49)`);
@@ -267,6 +284,23 @@ else console.log(`  ✓ Dynamic console builder parity — ${DYNAMIC_BUILDERS.le
 // stage counts only when its run: value is the BARE command.
 function stripYamlComments(s) { return s.split(/\r?\n/).map(l => l.replace(/(^|\s)#.*$/, '')).join('\n'); }
 const indentOf = l => l.match(/^ */)[0].length;
+// Every `permissions:` in the workflow — block or inline — with where it sits (Cycle-8 F46).
+function ciPermissionBlocks(wf) {
+  const lines = stripYamlComments(wf).split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(\s*)permissions:[ \t]*(.*)$/);
+    if (!m) continue;
+    const ind = m[1].length, body = [m[2].trim()];
+    for (let j = i + 1; j < lines.length; j++) {
+      if (!lines[j].trim()) continue;
+      if (indentOf(lines[j]) <= ind) break;
+      body.push(lines[j].trim());
+    }
+    out.push({ level: ind === 0 ? 'workflow' : 'job-level (indent ' + ind + ')', text: body.filter(Boolean).join(', ') });
+  }
+  return out;
+}
 function ciSteps(wf) {
   const lines = stripYamlComments(wf).split('\n');
   const raw = [];
@@ -342,7 +376,14 @@ try {
   if (!perms) { failures++; console.log('  ✗ CI workflow declares no permissions: block — the job inherits the repo default (F15)'); }
   else if (!/contents:\s*read/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow permissions do not grant read-only contents: ${perms[1].trim().replace(/\n/g, ', ')}`); }
   else if (/write/.test(perms[1])) { failures++; console.log(`  ✗ CI workflow requests write permission it does not need: ${perms[1].trim().replace(/\n/g, ', ')}`); }
-  else console.log('  ✓ CI workflow declares least-privilege permissions (contents: read)');
+  else {
+    // Cycle-8 F46: a JOB may carry its own permissions block, and a job-level block REPLACES
+    // the workflow-level one for that job. Only the top-level block was read, so
+    // `jobs.check.permissions: { contents: write }` (or `permissions: write-all`) passed.
+    const write = ciPermissionBlocks(wf).filter(b => b.level !== 'workflow' && /write/.test(b.text));
+    if (write.length) { failures++; console.log(`  ✗ CI workflow requests write permission below the workflow level (Cycle-8 F46): ${write.map(b => `${b.level} — ${b.text}`).join(' | ')}`); }
+    else console.log('  ✓ CI workflow declares least-privilege permissions (contents: read) — no permissions block at any level asks for write');
+  }
 
   // INV-14 — the workflow must actually RUN the guard, on both triggers. The
   // invariant said "CI runs check-template-sync.mjs on push and PR" and its
@@ -449,13 +490,41 @@ try {
       if (!GATE.test(L.slice(h, h + 3).join(' '))) ungated.push(`${label}: "${name}"`);
     });
   }
+  // Cycle-8 F44: the pass above only sees a write shaped like a step — an ALL-CAPS heading whose
+  // body uses one of seven verbs. A bullet under "Rules:" saying "update .cycle/STATE.md after
+  // each action" has no heading at all, and passed. So every SENTENCE is read as well: one that
+  // writes cycle state (a write verb, then .cycle/ or one of its file names) must sit inside a
+  // gated step or carry the condition itself. The read-only declaration that opens a command
+  // ("Do not make any changes …, other than the optional … in step 8") grants nothing by itself.
+  const TARGET = String.raw`(?:\.cycle\/|\bSTATE\.md|\bHISTORY\.md|\bmetrics\.csv|\bestimates\.csv)`;
+  const VERB = String.raw`\b(?:creat(?:e|es|ed|ing)|updat(?:e|es|ed|ing)|append(?:s|ed|ing)?|writ(?:e|es|ing|ten)|wrote|increment(?:s|ed|ing)?|reset(?:s|ting)?|sav(?:e|es|ed|ing)|mov(?:e|es|ed|ing)|add(?:s|ed|ing)?|delet(?:e|es|ed|ing)|remov(?:e|es|ed|ing)|record(?:s|ed|ing)?|stor(?:e|es|ed|ing)|persist(?:s|ed|ing)?|roll(?:s|ed|ing)?|rewrit(?:e|es|ing|ten)|stamp(?:s|ed|ing)?|edit(?:s|ed|ing)?|modif(?:y|ies|ied|ying)|set(?:s|ting)?|put(?:s|ting)?|mark(?:s|ed|ing)?)\b`;
+  const WRITE_SENTENCE = new RegExp(`${VERB}[^.;]{0,140}?${TARGET}`, 'i');
+  const strays = [];
+  let writeSentences = 0;
+  for (const [label, txt, cmd] of sources) {
+    if (txt == null || (cmd && EXEMPT[cmd])) continue;
+    const L = txt.split('\n'), bounds = [0];
+    L.forEach((l, i) => { if (i && HEAD.test(l)) bounds.push(i); });
+    bounds.forEach((b, k) => {
+      const gated = GATE.test(L.slice(b, b + 3).join(' '));
+      const region = L.slice(b, k + 1 < bounds.length ? bounds[k + 1] : L.length).join('\n');
+      for (const s of region.split(/(?<=[.;])\s+|\n\s*\n|\n\s*[-•]\s+/)) {
+        const flat = s.replace(/\s+/g, ' ').trim();
+        if (!WRITE_SENTENCE.test(flat) || /^do not make any changes\b/i.test(flat)) continue;
+        writeSentences++;
+        if (!gated && !GATE.test(flat)) strays.push(`${label}: "${flat.slice(0, 90)}${flat.length > 90 ? '…' : ''}"`);
+      }
+    });
+  }
   const problems = [];
   if (missingSections.length) problems.push(`could not locate ${missingSections.join(', ')} — part of the scan would be vacuous`);
   if (!stepCount) problems.push('no .cycle/-writing steps found anywhere — the gating check is vacuous');
+  if (!writeSentences) problems.push('no sentence that writes cycle state found anywhere — the sentence scan is vacuous');
+  if (strays.length) problems.push(`an instruction writes cycle state outside a gated step (Cycle-8 F44): ${strays.join(' | ')}`);
   if (ungated.length) problems.push(`.cycle/-writing step(s) not gated on the directory existing: ${ungated.join(', ')}`);
   if (unrecognised.length) problems.push(`known .cycle/-writing step(s) no longer read as writing — the derivation lost them: ${unrecognised.join(', ')}`);
   if (problems.length) { failures++; console.log(`  ✗ ${problems.join('; ')} (INV-12/INV-18)`); }
-  else console.log(`  ✓ all ${stepCount} .cycle/-writing steps — derived across the commands and the §1s/§6a bodies (${[...kinds].join(', ')}) — are gated on .cycle/ existing; exempt by design: ${Object.keys(EXEMPT).join(', ')} (INV-12/INV-18)`);
+  else console.log(`  ✓ all ${stepCount} .cycle/-writing steps — derived across the commands and the §1s/§6a bodies (${[...kinds].join(', ')}) — are gated on .cycle/ existing, and all ${writeSentences} sentences that write cycle state sit inside one; exempt by design: ${Object.keys(EXEMPT).join(', ')} (INV-12/INV-18)`);
 }
 
 // ── Structural check 11 (F15): .cycle/STATE.md must keep the SHAPE its own
@@ -693,14 +762,39 @@ try {
       if (!body.includes(clause)) problems.push(`the §6a policy rule no longer names the ${JSON.stringify(clause.replace(' —', ''))} clause`);
     for (const field of ['`Policy threshold`', '`Consecutive cycles`'])
       if (!body.includes(field)) problems.push(`the §6a policy rule does not read ${field} from the Cycle Workflow Config`);
-    // The regression to guard against: a literal score back in the canonical body.
-    const hard = body.match(/≤\s*\d+\s*\/\s*10\s+for\s+\d+\s+consecutive/i);
-    if (hard) problems.push(`a hardcoded policy floor is back in the canonical body (${JSON.stringify(hard[0])}) — the config field would be decorative again`);
+    // Cycle-8 F45: "both fields appear somewhere in the section" let a clause stop reading its
+    // field while another kept the name alive. Each clause is tied to the field it turns on.
+    // (SHARP DROP is the one fixed magnitude, by design.)
+    const clauseText = letter => { const m = body.match(new RegExp('^\\(' + letter + '\\) [\\s\\S]*?(?=^\\([a-z]\\) |^\\s*$)', 'm')); return m ? m[0] : ''; };
+    for (const [letter, name, field] of [['a', 'DECLINE', '`Consecutive cycles`'], ['c', 'PERSISTENT LAGGARD', '`Consecutive cycles`'], ['d', 'ABSOLUTE FLOOR', '`Policy threshold`']])
+      if (body.includes('(' + letter + ') ' + name) && !clauseText(letter).includes(field)) problems.push(`the ${name} clause no longer reads ${field} — its number would be a literal in the prompt`);
+  }
+  // The regression to guard against: a literal floor back in the prose. One spelling was
+  // matched ("≤N/10 for N consecutive"), in the canonical body only — "at or below 5/10 for
+  // two cycles running" passed (F45). Now: any sentence, in CLAUDE.md, the README or a command
+  // file, that carries a literal N/10 score AND a count of cycles. The config's own
+  // `Policy threshold: N/10` line is where the number belongs and is left out. The console is
+  // not scanned: it is a frozen subsystem and its Best Practices tip still states the retired
+  // floor (Cycle-8 F39, dropped with the freeze).
+  {
+    const SCORE = /(?<![\w[X.])\d+(?:\.\d+)?\s*\/\s*10\b/;
+    const COUNT = /\b(?:\d+|two|three|four|five)\s+(?:consecutive\s+|straight\s+|successive\s+)?(?:synthesis\s+)?cycles?\b(?!\s+since)|\bcycles?\s+(?:running|in a row|straight)\b|\bconsecutive(?:ly)?\b/i;
+    const prose = [['CLAUDE.md', claudeRaw], ['README.md', readmeRaw]];
+    try { for (const f of readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md'))) prose.push([f, readFileSync(new URL('.claude/commands/' + f, root), 'utf8')]); } catch (e) {}
+    const floors = [];
+    for (const [label, raw] of prose) {
+      const text = raw.split('\n').filter(l => !/^\s*Policy threshold:/.test(l)).join('\n');
+      for (const s of text.split(/(?<=[.;])\s+|\n\s*\n|\n\s*[-•*]\s+/)) {
+        const flat = s.replace(/\s+/g, ' ').trim();
+        if (SCORE.test(flat) && COUNT.test(flat)) floors.push(`${label}: "${flat.slice(0, 100)}${flat.length > 100 ? '…' : ''}"`);
+      }
+    }
+    if (floors.length) problems.push(`a hardcoded policy floor is written into the prose (Cycle-8 F45) — ${[...new Set(floors)].join(' | ')} — the config field would be decorative again`);
   }
   if (problems.length) {
     failures++;
     console.log(`  ✗ relative policy trigger (INV-75): ${problems.join('; ')}. A fixed floor never fires on a healthy project — the primary trigger must be relative.`);
-  } else console.log('  ✓ the §6a policy trigger is relative and parameterised — four clauses, both config fields read by name, no hardcoded floor (INV-75)');
+  } else console.log('  ✓ the §6a policy trigger is relative and parameterised — four clauses, each tied to its config field, no hardcoded floor in CLAUDE.md, the README or any command (INV-75)');
 }
 
 // ── Structural check 17 (Cycle-7 F11): every command file STANDS ALONE. A

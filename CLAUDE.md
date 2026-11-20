@@ -246,8 +246,12 @@ And two helpers operate on the invariant library:
   counted as proof. Coverage is DERIVED from the live library (a runnable
   invariant with no mutation case is a failure, not a smaller proven set)
   and a case whose find string has rotted away fails rather than
-  reporting a neutral skip. `--only INV-05,INV-20` narrows it;
-  `--jobs N` sets concurrency. Prerequisite for trusting any
+  reporting a neutral skip. A signal counts only on output the mutation
+  ADDED: each Verify command is first run on an unmodified copy, and a line
+  that run also prints is not evidence; a signal that matches any failure
+  line at all is rejected. `--only INV-05,INV-20` narrows it (an id that is
+  not a runnable invariant is an error, not "0/0 proven");
+  `--jobs N` runs N cases at once (default: the core count, at most 8). Prerequisite for trusting any
   "invariants: N/N PASS" line, including the §4v probe's.
 
 And one assembles the independent-verification input:

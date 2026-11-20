@@ -5,6 +5,42 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.49.0 — 2026-11-20
+
+Cycle-8 Batch 8: five guards that could pass over a violation of their own rule
+(F41, F43, F44, F45, F46). Tooling and tests only. **No command-body or
+config-schema change, so no `/sync-commands` re-pull.**
+
+- **The mutation audit credited the wrong check** (F41). A case's signal was
+  matched against everything its Verify command printed, and 37 of 104 signals
+  also matched a passing run — the ✓ line of a check names its invariant too.
+  Each command is now run once on an unmodified copy and a signal counts only
+  on a line that run did not print. A signal that matches any failure line is
+  rejected; ten were, four of them "proofs" that were a test file dying on a
+  renamed import, and each now breaks the behaviour instead. `--only` with an
+  unknown id fails (it reported "0/0 proven ✓"). `--jobs` works: cases ran one
+  at a time whatever it said, and the audit took about eight minutes; it takes
+  about two and a half on four cores.
+- **The metrics-ownership rule was one literal phrase** (F43), looked for in
+  the console only. Rewriting both copies to "Also fill net_score…" passed
+  every stage. The rule is now read out of step 8 in both copies.
+- **The `.cycle/` gating check only saw writes shaped like a step** (F44). An
+  instruction with no ALL-CAPS heading — a bullet under "Rules:" — was not
+  read. Every sentence that writes cycle state must now sit inside a gated
+  step, with a wider verb list and the state files' own names as targets.
+- **The hardcoded-floor check knew one spelling, in one section** (F45). A
+  literal floor in other words, or in the README or a command file, passed.
+  Each policy clause is also tied to the config field it reads.
+- **A job-level `permissions:` block was invisible** (F46) to the
+  least-privilege check, which read the workflow-level block only.
+- The piped-pack test is deterministic: its reader waits before reading, so
+  the cut it guards against happens every time, not only on an idle machine.
+- INV-12, INV-33, INV-57, INV-58 and INV-75 widened; mutation cases 138 → 151;
+  library unchanged at 78.
+
+Not scanned: the console. It is a frozen subsystem and its Best Practices tip
+still states the retired floor ("≤4/10 for two consecutive cycles").
+
 ## 1.48.0 — 2026-11-20
 
 The whole cycle runs from a chat session (Cycle-8 expansion E2: G1, ST4), and

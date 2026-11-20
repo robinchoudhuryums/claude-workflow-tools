@@ -9,8 +9,8 @@ Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it
 Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1–3, their follow-ons and expansion E2 are complete (v1.44.0–v1.48.0; one block each in
-  .cycle/blocks/). What is left of the plan is Batches 8 and 9 and expansions E3 and E4.
+- Batches 1–3 and 8, the follow-ons and expansion E2 are complete (v1.44.0–v1.49.0; one block each in
+  .cycle/blocks/). What is left of the plan is Batch 9 and expansions E3 and E4.
 - The four commands added in v1.48.0 have been checked structurally only — none has been run end to end.
   Cycle 7's owed verification (/verify 7 in a fresh session, then /health-synthesis 7) is their first real use.
 - A scheduled task, "Weekly cross-project board", runs Mondays 7:36 America/Chicago over seven repositories.
@@ -67,10 +67,16 @@ Updated: 2026-11-20
   Fix: §6a step 8 idles only the cycle STATE is in (v1.47.0's wording would have idled Cycle 8 when Cycle 7's
   synthesis ran). Fix: portfolio-status lists a project with .cycle/ state and no PROJECT_HEALTH.md. The
   console is a Frozen Subsystem. Mutation cases 135 → 138; library 78 (INV-11, 35, 76 widened).
+- v1.49.0 | Batch 8 | F41 the mutation audit counts a signal only on output the mutation added (each Verify
+  command is first run on an unmodified copy), rejects signals that match any failure line, fails on an
+  unknown --only id, and really runs --jobs cases at once (about 2.5 min, was 8); ten weak cases replaced,
+  three of them import-crash "proofs". F43 the metrics-ownership rule is read out of step 8 in both §6a
+  copies. F44 every sentence that writes cycle state must sit inside a gated step. F45 each policy clause is
+  tied to its config field and a literal floor is refused in any wording, in CLAUDE.md, the README and the
+  commands. F46 every permissions block in the workflow is read. Mutation cases 138 → 149; library 78 (five
+  rules widened). No command body changed.
 
 ## Pending / not yet done
-- Batch 8 — sync and mutation audit: F41 mutation signals matched against passing output; F43 INV-33 one
-  literal phrase; F44 INV-12 step-shaped writes only; F45 INV-75 one spelling; F46 job-level permissions.
 - Batch 9 — docs and adoption: F8 command frontmatter; F9 ROADMAP stale. (F10 closed by /sync-docs.)
 - Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
   E4 ST3 mechanical mutation sweep.
@@ -116,8 +122,14 @@ follow-ons went with the freeze):
   which are known before implementation — no weaker than the console's date seed, weaker than the pack's sha.
 - Batch 3's block reported one new failure mode; the unconditional Phase: idle in §6a was a second, fixed in
   v1.48.0 before any merge. /reflect should record that correction in its metrics notes.
-- Check 19 recognises a phase writer by the phrase "set Phase: <value>" — derived, but one wording (the same
-  class as Batch 8's F43/F45). A step that sets a phase in other words reads as no writer: loud, not silent.
+- Check 19 recognises a phase writer by the phrase "set Phase: <value>" — derived, but one wording (the class
+  Batch 8 closed for F43/F45). A step that sets a phase in other words reads as no writer: loud, not silent.
+- The mutation audit runs cases in parallel since v1.49.0: a Verify command that depends on timing can pass
+  over its own defect under load. One was found and fixed (the piped-pack test); another would show up as an
+  intermittent FALSE GREEN, not a steady one.
+- The audit's generic-signal check is four probe strings — /failed/ is rejected, /wrong/ would not be.
+- Check 10's sentence scan and check 16's floor scan read prose; a legitimate sentence shaped like a write
+  or like a floor would be flagged. The failure line quotes the sentence.
 - A project that never synthesizes rests at Phase: reflect between cycles; the portfolio board lists it under
   "Reflected, not synthesized (or open the next audit)" until its next audit.
 - The same-audit-round window is 7 days: a second audit of one round started later than that, with nothing
@@ -175,9 +187,12 @@ follow-ons went with the freeze):
   rule; it does not restate the body.
 - /cycle-close is optional by design: Health Synthesis still sets idle, and the next cycle's first CHECKPOINT
   still rolls a STATE that was never closed.
+- A mutation signal is the phrase the failing assertion prints, and it must match a line the mutation ADDED.
+  Never "✗" or "error"; never a renamed export (that proves a crash, not the rule).
+- The console is not scanned for a hardcoded policy floor: it is frozen and its tip still states one (F39).
 
 ## Where I left off
-Cycle 8. v1.44.0–v1.48.0 are on branch claude/stoic-goldberg-gg0oz5 (not merged). The console is frozen; the
-whole cycle now has commands (/verify, /seams-audit, /health-synthesis, /cycle-close). Next: merge; run
-/verify 7 in a fresh session and then /health-synthesis 7 (Cycle 7 is still owed both); have consuming
-projects run /sync-commands. After that /reflect for Cycle 8, or Batch 8 / Batch 9 first.
+Cycle 8. v1.44.0–v1.49.0 are on branch claude/stoic-goldberg-gg0oz5 (not merged). Batches 1–3 and 8, the
+follow-ons and E2 are done; the console is frozen. Left from the scan: Batch 9 (F8 command descriptions, F9
+ROADMAP) and the optional E3 / E4. Then /reflect for Cycle 8. Cycle 7 still owes /verify 7 (fresh session)
+and /health-synthesis 7. Consuming projects need /sync-commands for v1.47.0–v1.48.0.

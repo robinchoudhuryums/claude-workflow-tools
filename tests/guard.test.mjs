@@ -181,6 +181,14 @@ expectFail('detects an inline filter on the push trigger (F31)',
 expectFail('detects `contents: read` surviving only as a comment (F31)',
   d => ciEdit(d, 'permissions:\n  contents: read\n', 'permissions:\n  # contents: read\n  actions: read\n', false),
   /do not grant read-only contents: actions: read$/m);
+// Cycle-8 F46: a job-level permissions block replaces the workflow-level one for that job, and
+// only the top-level block was read — so both of these passed.
+expectFail('detects a job-level permissions block asking for write (Cycle-8 F46)',
+  d => ciEdit(d, '  sync-check:\n    runs-on: ubuntu-latest\n', '  sync-check:\n    permissions:\n      contents: write\n    runs-on: ubuntu-latest\n', false),
+  /requests write permission below the workflow level \(Cycle-8 F46\): job-level[^\n]*contents: write/);
+expectFail('detects an inline job-level `permissions: write-all` (Cycle-8 F46)',
+  d => ciEdit(d, '  sync-check:\n    runs-on: ubuntu-latest\n', '  sync-check:\n    permissions: write-all\n    runs-on: ubuntu-latest\n', false),
+  /requests write permission below the workflow level \(Cycle-8 F46\): job-level[^\n]*write-all/);
 // 17) CSV header parity (F49): a header that drops a MIDDLE column, and a file
 // whose headers were all rewritten away, were both invisible to the old
 // prefix-only scan.
@@ -212,6 +220,19 @@ expectFail('detects a command delegating to another command\'s step (F11)',
 expectFail('detects a command naming a helper script unconditionally (F11)',
   d => { const f = join(d, '.claude', 'commands', 'regression.md'); writeFileSync(f, readFileSync(f, 'utf8') + '\nRun scripts/invariant-check.mjs first.\n'); },
   /names scripts\/invariant-check\.mjs unconditionally/);
+// Cycle-8 F43: the metrics-ownership rule was one literal phrase, looked for in the HTML only.
+// The scan's own example — rewrite the sentence in BOTH copies — passed every stage.
+expectFail('detects both §6a copies telling the synthesis row to fill net_score (Cycle-8 F43)',
+  d => { for (const n of ['CLAUDE.md', 'claude-code-guide-v2.html']) { const f = join(d, n); const s = readFileSync(f, 'utf8'); const find = 'Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK'; if (!s.includes(find)) throw new Error('fixture rotted: ' + n); writeFileSync(f, s.split(find).join('Also fill net_score, prod_fixes, new_failure_modes, and defensive_count')); } },
+  /metrics-row ownership \(Cycle-8 F43\) — CLAUDE\.md §6a: [^\n]*\n[^\n]*metrics-row ownership \(Cycle-8 F43\) — console §6a builder/);
+// Cycle-8 F44: a write with no step heading around it — a bullet under "Rules:" — was not read.
+expectFail('detects an ungated cycle-state write that is not shaped like a step (Cycle-8 F44)',
+  d => { const f = join(d, '.claude', 'commands', 'implement.md'); const s = readFileSync(f, 'utf8'); const find = '- Check Common Gotchas before each action'; if (!s.includes(find)) throw new Error('fixture rotted: implement.md'); writeFileSync(f, s.replace(find, '- Save your progress to STATE.md after each action\n' + find)); },
+  /writes cycle state outside a gated step \(Cycle-8 F44\): implement\.md/);
+// Cycle-8 F45: one spelling of a hardcoded floor was matched, in one section of one file.
+expectFail('detects a hardcoded policy floor in other words (Cycle-8 F45)',
+  d => { const f = join(d, 'CLAUDE.md'); const s = readFileSync(f, 'utf8'); const find = '(d) ABSOLUTE FLOOR — it is at or below `Policy threshold`, regardless of trend.'; if (!s.includes(find)) throw new Error('fixture rotted: ABSOLUTE FLOOR clause'); writeFileSync(f, s.replace(find, '(d) ABSOLUTE FLOOR — it is at or below 5/10 for two cycles running, regardless of trend.')); },
+  /a hardcoded policy floor is written into the prose \(Cycle-8 F45\)/);
 // 20) Cycle-7 follow-on to F05: the re-pull list classifies every release
 // since v1.19.0. v1.33.0 sat in neither list for nine releases.
 expectFail('detects a release missing from the Operator State Checklist re-pull list (F05 class)',

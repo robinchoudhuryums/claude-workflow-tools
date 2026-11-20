@@ -27,13 +27,20 @@
 //      still read as CAUGHT. Each case names the message its OWN assertion
 //      emits, so the audit proves the right check fired — not merely that
 //      something did.
+//   4. ONLY OUTPUT THE MUTATION ADDED COUNTS (Cycle-8 F41). A signal used to be
+//      tested against everything the command printed, and 37 of 104 also
+//      matched a PASSING run — the ✓ line of a check names its invariant too.
+//      Each Verify command is now run once on an unmodified copy; a signal has
+//      to match a line that run did not print. A signal that matches any
+//      failure line at all is rejected before the case runs.
 //
 // Usage:  node tests/mutation-audit.mjs [--only INV-05,INV-20] [--jobs N]
 // Exit 0 = every runnable invariant is proven fail-closed.
 
-import { mkdtempSync, cpSync, readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { readFileSync, existsSync } from 'node:fs';
+import { mkdtemp, cp, readFile, writeFile, rm } from 'node:fs/promises';
+import { exec } from 'node:child_process';
+import { tmpdir, availableParallelism } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseInvariants, toCommand, defaultSource } from '../scripts/invariant-check.mjs';
@@ -43,7 +50,9 @@ const args = process.argv.slice(2);
 const onlyIdx = args.indexOf('--only');
 const ONLY = onlyIdx !== -1 ? new Set(args[onlyIdx + 1].split(',').map(s => s.trim())) : null;
 const jobsIdx = args.indexOf('--jobs');
-const JOBS = jobsIdx !== -1 ? Math.max(1, +args[jobsIdx + 1]) : 8;
+// --jobs N cases at once; the default is the machine's core count, capped at 8.
+const JOBS = jobsIdx !== -1 ? Math.max(1, Math.floor(+args[jobsIdx + 1]) || 1) : Math.min(8, availableParallelism());
+const CASE_TIMEOUT_MS = 10 * 60 * 1000;
 
 const HTML = 'claude-code-guide-v2.html';
 const CFG = 'CLAUDE.md';
@@ -175,14 +184,22 @@ const CASES = {
              // v1.35.0: the audits' CYCLE OPEN write must be inside the gating check's step set.
              ['.claude/commands/broad-scan.md', 'CYCLE OPEN (optional — only if .cycle/STATE.md exists)', 'CYCLE OPEN', /not gated on the directory existing|no longer read as writing/i],
              // Cycle-7 follow-on: the §1s body's own write is inside the derived step set now.
-             [CFG, 'SEAM COUNTER (optional — only if .cycle/ exists): reset', 'SEAM COUNTER: reset', /not gated on the directory existing/i]],
+             [CFG, 'SEAM COUNTER (optional — only if .cycle/ exists): reset', 'SEAM COUNTER: reset', /not gated on the directory existing/i],
+             // Cycle-8 Batch 8 (F44): a write that is not shaped like a step — a bullet under "Rules:".
+             ['.claude/commands/implement.md', '- Check Common Gotchas before each action', '- Update .cycle/STATE.md after each action\n- Check Common Gotchas before each action', /writes cycle state outside a gated step \(Cycle-8 F44\): implement\.md/],
+             // F44: a verb the old seven-verb list did not hold, and a file name with no ".cycle/" in front.
+             ['.claude/commands/targeted-implement.md', '- Check Common Gotchas before each action', '- Save your progress to STATE.md as you go\n- Check Common Gotchas before each action', /writes cycle state outside a gated step \(Cycle-8 F44\): targeted-implement\.md/]],
   'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i]],
   'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/],
              ['.github/workflows/sync-check.yml', '  pull_request:\n', '  pull_request:\n    branches: [never-a-real-branch]\n', /filters its pull_request trigger/]],
   'INV-16': [[HTML, '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery [N] subsystem cycles\n\n', '', /INV-16/]],
   'INV-18': [['.claude/commands/implement.md', '3. CHECKPOINT (optional — only if .cycle/ exists): create/update', '3. CHECKPOINT: create/update', /not gated on the directory existing/i]],
   'INV-19': [[HTML, '---CYCLE SUMMARY BLOCK---', '---GONE-SUMMARY---', /workflow blocks missing|cycle summary block/i]],
-  'INV-33': [[HTML, 'Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score', /double-count|net_score/i],
+  'INV-33': [[HTML, 'Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score', /metrics-row ownership \(Cycle-8 F43\) — console §6a builder: [^\n]*mentions net_score 3 times/],
+             // Cycle-8 Batch 8 (F43): the canonical copy tells the synthesis row to FILL the reflect-owned columns.
+             [CFG, 'Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK', 'Also fill net_score, prod_fixes, new_failure_modes, and defensive_count', /metrics-row ownership \(Cycle-8 F43\) — CLAUDE\.md §6a: [^\n]*leave net_score, prod_fixes and new_failure_modes BLANK/],
+             // F43: the console copy stops saying who owns them.
+             [HTML, 'owned ONLY by the phase=reflect rows', 'described in the reflect step', /metrics-row ownership \(Cycle-8 F43\) — console §6a builder: [^\n]*owned only by the phase=reflect rows/],
              // Cycle-7 Batch 6 (F49): a header missing a MIDDLE column matched no prefix and went unchecked.
              ['CLAUDE.md', 'axis_b_lowest,notes,defensive_count', 'axis_b_lowest,defensive_count', /canonical column list/]],
   'INV-34': [[HTML, 'TWO-AXIS GRID', 'TWO-PLANE GRID', /contract marker/i]],
@@ -202,11 +219,19 @@ const CASES = {
   'INV-43': [['scripts/check-template-sync.mjs', 'const WORKFLOW_BLOCKS = BLOCKS.map(b => b.name.toLowerCase());', "const WORKFLOW_BLOCKS = ['session handoff block'];", /registry block with no console representation/i]],
   'INV-57': [['.github/workflows/sync-check.yml', 'permissions:\n  contents: read\n', '', /least-privilege permissions|baseline/i],
              // Cycle-7 Batch 7 (F44): the permissions block unbounded again — it reads to end of file.
+             // Cycle-8 Batch 8 (F46): only the workflow-level permissions block is read again.
+             ['scripts/check-template-sync.mjs', "const write = ciPermissionBlocks(wf).filter(b => b.level !== 'workflow' && /write/.test(b.text));", 'const write = [];', /detects a job-level permissions block asking for write \(Cycle-8 F46\) — guard did not fail as expected/],
              ['scripts/check-template-sync.mjs', "const perms = stripYamlComments(wf).split('\\n').filter(l => l.trim()).join('\\n').concat('\\n').match(/^permissions:[ \\t]*\\n((?:[ \\t]+\\S.*\\n)+)/m);", "const perms = wf.match(/^permissions:\\s*\\n((?:\\s+\\S.*\\n)+)/m);", /read past its block \(F44\)|comment/]],
   // INV-58 verifies THIS harness, so its case runs the meta-test (which runs
   // the audit with --only) rather than the audit itself — an invariant whose
   // Verify command is the audit would recurse into its own coverage set.
-  'INV-58': [['tests/mutation-audit.mjs', 'if (uncovered.length) bad(', 'if (false && uncovered.length) bad(', /no mutation case|\u2717/]],
+  'INV-58': [['tests/mutation-audit.mjs', 'if (uncovered.length) bad(', 'if (false && uncovered.length) bad(', /a runnable invariant with no mutation case fails the audit — audit did not fail as expected/],
+             // Cycle-8 Batch 8 (F41): the audit credits a signal found anywhere in the output again.
+             ['tests/mutation-audit.mjs', 'const added = linesOf(r.out, dir).filter(l => !base.lines.has(l));', 'const added = linesOf(r.out, dir);', /a signal that only matches lines a passing run prints too fails the audit — audit did not fail as expected/],
+             // F41: a signal that matches any failure line is accepted again.
+             ['tests/mutation-audit.mjs', 'if (genericSignal(signal)) return', 'if (false && genericSignal(signal)) return', /a signal that matches any failure line fails the audit — audit did not fail as expected/],
+             // F41: an unknown --only id is not an error again ("0/0 proven ✓").
+             ['tests/mutation-audit.mjs', "if (unknown.length) bad(", "if (false && unknown.length) bad(", /--only with an unknown invariant id fails the audit — audit did not fail as expected/]],
   // INV-68 — the proven vector: ONE leading space made a rule invisible to
   // invariant-check and to this audit's own derived set, while the §4v pack
   // still listed it.
@@ -242,7 +267,13 @@ const CASES = {
              [HTML, '&&!longer.some(o=>k.indexOf(`ccg:${o}:`)===0)) doomed.push(k);', ') doomed.push(k);', /project delete: [^\n]*was wrongly removed/]],
   // INV-72 — ship a release into the current cycle with no block for it.
   // INV-75 — drop one of the three clause labels from the canonical rule.
-  'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger/i]],
+  'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger \(INV-75\): [^\n]*no longer names the "DECLINE" clause/],
+             // Cycle-8 Batch 8 (F45): the floor is back as a literal, in words the old regex did not know.
+             ['CLAUDE.md', '(d) ABSOLUTE FLOOR — it is at or below `Policy threshold`, regardless of trend.', '(d) ABSOLUTE FLOOR — it is at or below 5/10 for two cycles running, regardless of trend.', /a hardcoded policy floor is written into the prose \(Cycle-8 F45\)/],
+             // F45: a clause stops reading its field while the section still names it elsewhere.
+             ['CLAUDE.md', '(a) DECLINE — its score fell in `Consecutive cycles` consecutive cycles, at any magnitude.', '(a) DECLINE — its score fell in 2 consecutive cycles, at any magnitude.', /the DECLINE clause no longer reads `Consecutive cycles`/],
+             // F45: the floor written into a command file, outside the canonical section.
+             ['.claude/commands/health-pulse.md', 'Close with:', 'A category at or below 4/10 for two consecutive cycles needs a policy response.\n\nClose with:', /a hardcoded policy floor is written into the prose \(Cycle-8 F45\) — health-pulse\.md/]],
   // Pin STATE.md back to Cycle 6: every release after Cycle 6's (v1.35.0 on) then
   // sits in range with no 06- block. The first version of this case inserted a
   // fake 1.30.2 release, which only fell inside the floor while the cycle WAS 6 —
@@ -272,31 +303,34 @@ const CASES = {
   'INV-55': [[HTML, '---PR REVIEW BLOCK---\nPR:', '---PR REVIEW BLOCK---\nPR-NUMBER:', /pr review block|missing field/i]],
 
   // ── the remaining test-backed scripts ───────────────────────────────────────
-  'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i],
+  'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /no context block emitted/],
              // Cycle-7 Batch 7 (F37): the Current Standing and Pending outputs had no fixture.
              ['scripts/cycle-context.mjs', "  if (standing) out.push(", "  if (false) out.push(", /Current Standing missing/],
              ['scripts/cycle-context.mjs', "for (const h of ['Current', 'Where I left off', 'Pending / not yet done'])", "for (const h of ['Current', 'Where I left off'])", /Pending section missing/],
              // Cycle-8 Batch 2 (F11): the hook back on the working directory — the script, then the command.
              ['scripts/cycle-context.mjs', 'process.env.CLAUDE_PROJECT_DIR || process.cwd()', 'process.cwd()', /Cycle-8 F11: /],
              ['.claude/settings.json', '${CLAUDE_PROJECT_DIR:-.}/', '', /Cycle-8 F11: /]],
-  'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
-  'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/],
+  'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /cumulative net score wrong/]],
+  'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /summary counts wrong/],
              // Cycle-7 Batch 7 (F38): dedupe removed — each invariant gets its own key, so a shared command runs per rule.
              ['scripts/invariant-check.mjs', 'if (cmd) { if (!byCmd.has(cmd)) byCmd.set(cmd, []); byCmd.get(cmd).push(inv); }', "if (cmd) { byCmd.set(cmd + ' #' + inv.id, [inv]); }", /identical commands must run once/],
              // Cycle-7 Batch 8 (F42): Verify commands back in the caller's directory.
              ['scripts/invariant-check.mjs', 'execSync(cmd, { cwd, stdio:', 'execSync(cmd, { stdio:', /did not run in the project root/],
              // Cycle-8 Batch 2 (F2): the Verify command cut at its first pipe again.
              ['scripts/invariant-check.mjs', '      let cmd = body.slice(v.end);', "      let cmd = body.slice(v.end).split('|')[0];", /the command was cut at the pipe/]],
-  'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
-  'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],
-  'INV-32': [['scripts/check-output-blocks.mjs', 'export function validate', 'export function validate_renamed', /✗|error/i]],
-  'INV-35': [['scripts/portfolio-status.mjs', 'function seamsCadence(cycleDir, root) {', 'function seamsCadence(cycleDir, root) { return \'\';', /✗|error/i],
+  'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /missing project alpha/]],
+  // The extractors run past the closing fence, so a body swallows the next command's section.
+  'INV-28': [['scripts/gen-html-prompts.mjs', "j < lines.length && lines[j].trim() !== '```'; j++) body.push", 'j < lines.length; j++) body.push', /commandBody extraction wrong/]],
+  // The harness stops noticing a required field missing from a block.
+  'INV-32': [['scripts/check-output-blocks.mjs', 'const missing = b.fields.filter(f => !s.body.includes(f));', 'const missing = [];', /did not detect a dropped field/]],
+  'INV-35': [['scripts/portfolio-status.mjs', 'function seamsCadence(cycleDir, root) {', 'function seamsCadence(cycleDir, root) { return \'\';', /beta seams-DUE wrong/],
              // v1.48.0: a project with .cycle/ state and no PROJECT_HEALTH.md is skipped again.
              ['scripts/portfolio-status.mjs', "    md = ''; noHealth = true;", "    console.error('skipped'); continue;", /no-health project: /],
              // Cycle-8 Batch 3 (F1): every non-idle phase reads "in progress — run /cycle-resume" again.
              ['scripts/portfolio-status.mjs', "const phaseKind = phase => PHASE_KIND[String(phase).toLowerCase().split(/\\s+/)[0]] || 'wip';", "const phaseKind = phase => (String(phase).toLowerCase() === 'idle' ? 'idle' : 'wip');", /Cycle-8 F1: phase misclassified/]],
-  'INV-51': [['scripts/render-metrics.mjs', "that cycle's net ${synthNet}", "that cycle's net ${lastSynth.net_score}", /✗/]],
-  'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i],
+  'INV-51': [['scripts/render-metrics.mjs', "that cycle's net ${synthNet}", "that cycle's net ${lastSynth.net_score}", /F12: synthesis line did not sum the cycle net/]],
+  // The probe selection stops depending on its seed — every pack would name the same five.
+  'INV-52': [['scripts/verification-pack.mjs', "line.split('|')[0].trim() + String(seed)", "line.split('|')[0].trim()", /selectProbes ignored the seed/],
              // Cycle-8 Batch 2 (F3): the library injected as a replacement STRING again ($& $' $$ read as patterns).
              ['scripts/verification-pack.mjs', '() => library)', 'library)', /Cycle-8 F3: /],
              // Cycle-8 follow-on A: process.exit() after writing stdout — a piped pack is cut short.
@@ -324,25 +358,77 @@ const orphaned = Object.keys(CASES).filter(id => !runnable.some(i => i.id === id
 if (uncovered.length) bad(`runnable invariant(s) with no mutation case — unproven, add one to CASES: ${uncovered.map(i => i.id).join(', ')}`);
 if (orphaned.length) bad(`mutation case(s) for an invariant that is no longer runnable: ${orphaned.join(', ')}`);
 
+// Cycle-8 F41: `--only INV-999` matched nothing and the audit reported
+// "0/0 runnable invariants proven … ✓" with exit 0 — a typo in a CI step or a
+// §4v probe read as proof. An id the library does not hold as runnable is an
+// error, and so is a run that proves nothing.
+if (ONLY) {
+  const unknown = [...ONLY].filter(id => !runnable.some(i => i.id === id));
+  if (unknown.length) bad(`--only names id(s) that are not runnable invariants in the library: ${unknown.join(', ')}`);
+}
+
+// A signal has to name ITS assertion. One that matches any failure line at all
+// ("✗", "error") credits whatever happened to fail — including a script that
+// simply crashed on a broken import (F41: four proofs were exactly that).
+const GENERIC_FAILURE_LINES = ['  ✗ some other check failed', 'Error: boom', 'error', 'something failed'];
+const genericSignal = signal => GENERIC_FAILURE_LINES.some(l => signal.test(l));
+
 // ── Run ───────────────────────────────────────────────────────────────────────
 const targets = runnable.filter(i => CASES[i.id] && (!ONLY || ONLY.has(i.id)));
+if (!targets.length) bad('no invariant selected — the audit ran nothing, which proves nothing');
 
-function runCase(inv, [file, find, replace, signal], n) {
-  const dir = mkdtempSync(join(tmpdir(), 'mut-'));
+const copyRepo = async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'mut-'));
+  await cp(REPO, dir, { recursive: true, filter: s => !s.includes('/.git/') && !s.endsWith('/.git') });
+  return dir;
+};
+// exec, not execSync: a synchronous child blocks the event loop, so the worker
+// pool below ran one case at a time whatever --jobs said (F41).
+const run = (cmd, cwd) => new Promise(resolve => {
+  exec(cmd, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: CASE_TIMEOUT_MS }, (err, stdout, stderr) => {
+    const out = (stdout || '') + (stderr || '');
+    if (!err) return resolve({ code: 0, out });
+    resolve({ code: typeof err.code === 'number' ? err.code : 1, out, timedOut: !!err.killed });
+  });
+});
+// Lines are compared with the copy's own path removed, so the same line from
+// two different temp directories is the same line.
+const linesOf = (out, dir) => out.split(dir).join('<ROOT>').split('\n').map(l => l.trimEnd()).filter(Boolean);
+
+// What each Verify command prints when NOTHING is wrong. Only output the
+// mutation ADDS can be evidence (F41: 37 of 104 signals also matched a passing
+// run — "/INV-07/" is printed by the ✓ line too — so a mutation that failed some
+// OTHER assertion in the same command was credited to this invariant).
+const baselines = new Map();
+async function baselineFor(cmd) {
+  if (!baselines.has(cmd)) baselines.set(cmd, (async () => {
+    const dir = await copyRepo();
+    try { const r = await run(cmd, dir); return { code: r.code, lines: new Set(linesOf(r.out, dir)) }; }
+    finally { await rm(dir, { recursive: true, force: true }); }
+  })());
+  return baselines.get(cmd);
+}
+
+async function runCase(inv, [file, find, replace, signal], n) {
+  if (genericSignal(signal)) return { verdict: 'WEAK SIGNAL', detail: `mutation ${n}: ${signal} matches any failure line — name the phrase this invariant's own assertion prints` };
+  const base = await baselineFor(inv.cmd);
+  if (base.code) return { verdict: 'BROKEN BASELINE', detail: `${inv.cmd} fails on an unmodified copy (exit ${base.code}) — nothing can be proven against it` };
+  const dir = await copyRepo();
   try {
-    cpSync(REPO, dir, { recursive: true, filter: s => !s.includes('/.git/') && !s.endsWith('/.git') });
     const path = join(dir, file);
     if (!existsSync(path)) return { verdict: 'NO-TARGET', detail: `${file} does not exist` };
-    const before = readFileSync(path, 'utf8');
+    const before = await readFile(path, 'utf8');
     if (!before.includes(find)) return { verdict: 'NO-TARGET', detail: `${file} no longer contains ${JSON.stringify(find.slice(0, 50))}` };
-    writeFileSync(path, before.split(find).join(replace));
-    let out = '', code = 0;
-    try { out = execSync(inv.cmd, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
-    catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
-    if (!code) return { verdict: 'FALSE GREEN', detail: `${inv.cmd} still passed` };
-    if (!signal.test(out)) return { verdict: 'WRONG CHECK', detail: `failed, but not via this invariant's assertion (no ${signal})` };
-    return { verdict: 'CAUGHT', detail: `mutation ${n}` };
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+    await writeFile(path, before.split(find).join(replace));
+    const r = await run(inv.cmd, dir);
+    if (r.timedOut) return { verdict: 'TIMEOUT', detail: `mutation ${n}: ${inv.cmd} did not finish in ${CASE_TIMEOUT_MS / 1000}s` };
+    if (!r.code) return { verdict: 'FALSE GREEN', detail: `mutation ${n}: ${inv.cmd} still passed` };
+    const added = linesOf(r.out, dir).filter(l => !base.lines.has(l));
+    if (signal.test(added.join('\n'))) return { verdict: 'CAUGHT', detail: `mutation ${n}` };
+    return { verdict: 'WRONG CHECK', detail: signal.test(r.out)
+      ? `mutation ${n}: failed, but ${signal} only matches lines a PASSING run prints too — not this invariant's assertion`
+      : `mutation ${n}: failed, but not via this invariant's assertion (no ${signal})` };
+  } finally { await rm(dir, { recursive: true, force: true }); }
 }
 
 // Flatten to a work queue so multi-mutation invariants parallelise too.
@@ -352,10 +438,11 @@ let cursor = 0;
 async function worker() {
   while (cursor < queue.length) {
     const { inv, c, n } = queue[cursor++];
-    const r = runCase(inv, c, n);
+    let r;
+    try { r = await runCase(inv, c, n); }
+    catch (e) { r = { verdict: 'AUDIT ERROR', detail: `mutation ${n}: ${e.message}` }; }
     if (!results.has(inv.id)) results.set(inv.id, []);
     results.get(inv.id).push(r);
-    await Promise.resolve();
   }
 }
 await Promise.all(Array.from({ length: Math.min(JOBS, queue.length) }, worker));
@@ -370,7 +457,8 @@ for (const inv of targets) {
 
 console.log('Invariant mutation audit — violate each rule, run its own Verify command:\n');
 console.log(log.join('\n'));
-const proven = targets.filter(i => (results.get(i.id) || []).every(r => r.verdict === 'CAUGHT')).length;
-console.log(`\n${proven}/${targets.length} runnable invariants proven fail-closed (${queue.length} mutations); library: ${invariants.length} total, ${runnable.length} runnable.`);
-if (failures) { console.error(`\n${failures} invariant(s) are not proven fail-closed.`); process.exit(1); }
-console.log('Every runnable invariant fails closed when violated. ✓');
+const proven = targets.filter(i => (results.get(i.id) || []).length && results.get(i.id).every(r => r.verdict === 'CAUGHT')).length;
+console.log(`\n${proven}/${targets.length} runnable invariants proven fail-closed (${queue.length} mutations, ${JOBS} at a time); library: ${invariants.length} total, ${runnable.length} runnable.`);
+// exitCode, not exit(): a piped report is not cut short (the class verification-pack had).
+if (failures) { console.error(`\n${failures} problem(s): not every selected invariant is proven fail-closed.`); process.exitCode = 1; }
+else console.log('Every runnable invariant fails closed when violated. ✓');

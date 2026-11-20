@@ -307,7 +307,12 @@ else bad('readBlocks threw on a missing directory');
   const args = ['--seed', 's', '--template', join(repo, 'CLAUDE.md')];
   const outFile = join(proj, 'pack.md');
   const toFile = spawnSync('node', [script, ...args, '--out', outFile], { cwd: proj, encoding: 'utf8' });
-  const piped = spawnSync('node', [script, ...args], { cwd: proj, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });   // stdout is a pipe
+  // The reader waits before it reads, so the writer finds the pipe FULL: whatever process.exit()
+  // would drop is dropped every time. With a reader that drains at once the cut depended on
+  // timing — under a loaded machine the whole pack sometimes got through, and the mutation audit,
+  // which now really runs cases in parallel (Cycle-8 F41), saw this guard pass over the defect.
+  const piped = spawnSync('bash', ['-c', 'set -o pipefail; node "$PACK_SCRIPT" --seed s --template "$PACK_TEMPLATE" | { sleep 0.4; cat; }'],
+    { cwd: proj, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, PACK_SCRIPT: script, PACK_TEMPLATE: join(repo, 'CLAUDE.md') } });
   const whole = (() => { try { return read(outFile, 'utf8'); } catch { return ''; } })();
   const problems = [];
   if (toFile.status !== 0 || whole.length < 150000) problems.push(`fixture pack too small to cross the pipe buffer (${whole.length} chars, exit ${toFile.status})`);
