@@ -721,9 +721,31 @@ try {
       if (!/if the project has|where the project uses/i.test(before)) problems.push(`${f} names ${m[0]} unconditionally — a project that copied only .claude/commands/ may not have it`);
     }
   }
+  // Cycle-8 E2: a command that INCLUDES a canonical section must carry that section's whole body.
+  // gen-commands --check compares a file with the generator's own output, so a generator that left
+  // the marker in place, or expanded it to nothing, would agree with itself. Measured here against
+  // CLAUDE.md directly, with a separate extraction.
+  let included = 0;
+  for (const m of claudeRaw.matchAll(/^### \/([a-z0-9-]+)\n+```\n([\s\S]*?)\n```/gm)) {
+    for (const inc of m[2].matchAll(/^\{\{include: (.+)\}\}$/gm)) {
+      included++;
+      const heading = inc[1].trim();
+      const at = claudeRaw.indexOf('### ' + heading + '\n');
+      const open = at === -1 ? -1 : claudeRaw.indexOf('```\n', at);
+      const body = open === -1 ? null : claudeRaw.slice(open + 4, claudeRaw.indexOf('\n```', open + 4)).trim();
+      let file = null;
+      try { file = readFileSync(new URL('.claude/commands/' + m[1] + '.md', root), 'utf8'); } catch (e) {}
+      if (body == null || !body) problems.push(`/${m[1]} includes "${heading}", which has no fenced body in CLAUDE.md`);
+      else if (file == null) problems.push(`/${m[1]} includes "${heading}" but has no command file`);
+      else if (!file.includes(body)) problems.push(`${m[1]}.md does not carry the body of "${heading}" — a command that includes a section must hold its full text`);
+    }
+  }
+  for (const f of files) {
+    if (/^\{\{include: /m.test(readFileSync(new URL('.claude/commands/' + f, root), 'utf8'))) problems.push(`${f} still contains an unexpanded include marker`);
+  }
   if (!files.length) { failures++; console.log('  ✗ standalone commands (F11): no .claude/commands/*.md found — the check would be vacuous'); }
   else if (problems.length) { failures++; console.log(`  ✗ standalone commands (F11): ${problems.join('; ')}`); }
-  else console.log(`  ✓ every command file stands alone — no cross-command step delegation, every scripts/ mention conditional (${files.length} files, F11)`);
+  else console.log(`  ✓ every command file stands alone — no cross-command step delegation, every scripts/ mention conditional, ${included} included section bod${included === 1 ? 'y' : 'ies'} carried in full (${files.length} files, F11)`);
 }
 
 // ── Structural check 18 (Cycle-7 follow-on to F05): the Operator State

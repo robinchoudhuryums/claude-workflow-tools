@@ -28,7 +28,12 @@ If $ARGUMENTS is a URL: fetch the raw CLAUDE.md from the repository
 If neither works, stop and report the error.
 Step 2: Read all command files in this project's .claude/commands/
 Step 3: For each command file, compare against the corresponding
-template in the workflow tools CLAUDE.md.
+template in the workflow tools CLAUDE.md. Where a template's body has a
+line that is only an include marker — two opening braces, "include:", a
+section heading, two closing braces — the command's text is that line
+replaced by the fenced block under that heading in the same CLAUDE.md;
+compare and copy the expanded text (the template repo's own
+.claude/commands/ file is exactly that).
 
 For each command, report:
 - CURRENT: matches template (no action needed)

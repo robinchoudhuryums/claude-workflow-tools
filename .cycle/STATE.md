@@ -9,8 +9,12 @@ Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it
 Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batches 1, 2 and 3 of 9 and the actionable follow-ons of the first two are complete (v1.44.0–v1.47.0; one
-  block each in .cycle/blocks/). Batches 4–9 and the expansion plan are not started.
+- Batches 1–3, their follow-ons and expansion E2 are complete (v1.44.0–v1.48.0; one block each in
+  .cycle/blocks/). What is left of the plan is Batches 8 and 9 and expansions E3 and E4.
+- The four commands added in v1.48.0 have been checked structurally only — none has been run end to end.
+  Cycle 7's owed verification (/verify 7 in a fresh session, then /health-synthesis 7) is their first real use.
+- A scheduled task, "Weekly cross-project board", runs Mondays 7:36 America/Chicago over seven repositories.
+  It clones the default branch, so it uses the older portfolio-status until this branch merges.
 - The scan's full output (48 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. The batch definitions under Pending are the record of what each batch contains.
 - Cycle 7 was reflected (21 − 0) and merged (PRs #26, #27) but its §4v and §6a never ran; Cycle 8 opened on
@@ -57,10 +61,14 @@ Updated: 2026-11-20
   unpromoted ones and /sync-docs (check 5) proposes their promotion. F12 a block is never overwritten.
   Structural check 19 guards all of it. Mutation cases 120 → 128; library unchanged at 73 (three rules widened).
   Ten command bodies changed — consuming projects re-pull.
+- v1.48.0 | E2 + freeze | G1 /verify, /seams-audit and /health-synthesis run the §4v / §1s / §6a prompts from
+  chat: an input-gathering preamble plus an include that gen-commands expands from the canonical section (one
+  source for each body). ST4 /cycle-close checks what a cycle owes, rolls STATE into HISTORY, sets Phase: idle.
+  Fix: §6a step 8 idles only the cycle STATE is in (v1.47.0's wording would have idled Cycle 8 when Cycle 7's
+  synthesis ran). Fix: portfolio-status lists a project with .cycle/ state and no PROJECT_HEALTH.md. The
+  console is a Frozen Subsystem. Mutation cases 135 → 138; library 78 (INV-11, 35, 76 widened).
 
 ## Pending / not yet done
-- E2 (next, operator-approved 2026-11-20) — ST4 cycle-close + G1 commands for §4v, §1s and §6a, so the whole
-  cycle runs from chat.
 - Batch 8 — sync and mutation audit: F41 mutation signals matched against passing output; F43 INV-33 one
   literal phrase; F44 INV-12 step-shaped writes only; F45 INV-75 one spelling; F46 job-level permissions.
 - Batch 9 — docs and adoption: F8 command frontmatter; F9 ROADMAP stale. (F10 closed by /sync-docs.)
@@ -102,7 +110,12 @@ follow-ons went with the freeze):
 - check-html, check-template-sync and the mutation audit still call process.exit() after printing; their
   output is far below a pipe's 64 KiB buffer today, so nothing is cut. verification-pack was the one that was.
 - The lifecycle is instruction text plus a text-derived guard (check 19): nothing mechanical checks a live
-  STATE.md transition. A cycle-close command (E2 / ST4) is where that would live.
+  STATE.md transition. /cycle-close (v1.48.0) is still instruction text; team-tools has a scripted close-out
+  (scripts/cycle-closeout.mjs — dry run, --check for CI, --close) that could be upstreamed here.
+- Without verification-pack.mjs, /verify derives its rotation probes from the cycle number and library size,
+  which are known before implementation — no weaker than the console's date seed, weaker than the pack's sha.
+- Batch 3's block reported one new failure mode; the unconditional Phase: idle in §6a was a second, fixed in
+  v1.48.0 before any merge. /reflect should record that correction in its metrics notes.
 - Check 19 recognises a phase writer by the phrase "set Phase: <value>" — derived, but one wording (the same
   class as Batch 8's F43/F45). A step that sets a phase in other words reads as no writer: loud, not silent.
 - A project that never synthesizes rests at Phase: reflect between cycles; the portfolio board lists it under
@@ -157,9 +170,14 @@ follow-ons went with the freeze):
 - The Interactive Console is FROZEN (operator, 2026-11-20): the workflow runs through the slash commands, the
   .cycle/ files, portfolio-status and a weekly scheduled cross-project board. Console-only findings and
   expansion items were dropped, not deferred. The lock stays, so the hosted page keeps matching the commands.
+- A command that runs a canonical section INCLUDES it ({{include: <heading>}}, expanded by gen-commands) and
+  never copies it. Its preamble gathers inputs and may add a stated exception to the body's no-file-changes
+  rule; it does not restate the body.
+- /cycle-close is optional by design: Health Synthesis still sets idle, and the next cycle's first CHECKPOINT
+  still rolls a STATE that was never closed.
 
 ## Where I left off
-Cycle 8. Batches 1–3 and the follow-ons shipped as v1.44.0–v1.47.0 on branch claude/stoic-goldberg-gg0oz5 (not
-merged). The console is frozen and its batches dropped; a weekly cross-project board is scheduled (Mondays
-7:36 CT). Next: E2 (cycle-close + commands for §4v/§1s/§6a), then merge and have consuming projects run
-/sync-commands. Cycle 7's §4v and §6a are still owed (pass --cycle 7).
+Cycle 8. v1.44.0–v1.48.0 are on branch claude/stoic-goldberg-gg0oz5 (not merged). The console is frozen; the
+whole cycle now has commands (/verify, /seams-audit, /health-synthesis, /cycle-close). Next: merge; run
+/verify 7 in a fresh session and then /health-synthesis 7 (Cycle 7 is still owed both); have consuming
+projects run /sync-commands. After that /reflect for Cycle 8, or Batch 8 / Batch 9 first.

@@ -143,8 +143,9 @@ const CASES = {
              // Cycle-8 Batch 3 — the lifecycle half of the rule (structural check 19).
              // F1: the template offers a phase no step sets.
              ['CLAUDE.md', 'Phase: [audit | implement | reflect | idle —', 'Phase: [audit | plan | implement | reflect | idle —', /cycle lifecycle \(Cycle-8 F1\): [^\n]*no step sets: plan/],
-             // F1: nothing returns the phase to idle (the §6a write removed).
-             ['CLAUDE.md', 'When you append that row, also set Phase: idle and Updated in', 'When you append that row, also refresh Updated in', /cycle lifecycle \(Cycle-8 F1\): [^\n]*no step sets: idle/],
+             // F1: a phase loses its only writer. (Until v1.48.0 this case removed §6a's idle write;
+             // idle has three writers now, so removing one no longer violates the rule — reflect has one.)
+             ['.claude/commands/reflect.md', 'set Phase: reflect and Updated', 'refresh Updated', /cycle lifecycle \(Cycle-8 F1\): [^\n]*no step sets: reflect/],
              // F4/F5: one audit's CYCLE OPEN step drifts from the others — two numbering rules.
              ['.claude/commands/audit.md', 'is the SAME audit round: Phase is already "audit" and Updated is within\nthe last 7 days', 'is the SAME audit round: Phase is already "audit" and Updated is within\nthe last 30 days', /the CYCLE OPEN step differs between/],
              // F5: an implement CHECKPOINT that no longer rolls the previous cycle's sections.
@@ -189,7 +190,10 @@ const CASES = {
 
   // ── node scripts/gen-commands.mjs --check ───────────────────────────────────
   'INV-01': [['.claude/commands/audit.md', 'Read CLAUDE.md', 'TAMPERED\nRead CLAUDE.md', /stale or missing/i]],
-  'INV-11': [[CFG, '### /roadmap\n\n```', '### /roadmap\n\nunfenced prose instead of a template', /orphan command files|stale or missing/i]],
+  'INV-11': [[CFG, '### /roadmap\n\n```', '### /roadmap\n\nunfenced prose instead of a template', /orphan command files|stale or missing/i],
+             // Cycle-8 E2: an include that names no section must fail generation, never expand to nothing —
+             // a truncated heading included (it must not resolve to a longer section by prefix).
+             [CFG, '{{include: Seams & Invariants Audit (Section 1s in HTML tool)}}', '{{include: Seams & Invariants Audit}}', /include names no section with a fenced body/]],
   'INV-17': [[CFG, 'Produce a systems map in five phases:', 'Produce a systems map in six phases:', /stale or missing/i]],
 
   // ── node tests/guard.test.mjs ───────────────────────────────────────────────
@@ -222,7 +226,9 @@ const CASES = {
   // ── Cycle-7 candidates promoted by /sync-docs on 2026-11-20 (INV-76, 77, 78, 80, 81) ──
   // INV-76 — a command that names a helper script unconditionally; one that delegates a step.
   'INV-76': [['.claude/commands/pr-review.md', 'if the project has scripts/invariant-check.mjs', 'the helper scripts/invariant-check.mjs', /standalone commands \(F11\): [^\n]*names scripts\/invariant-check\.mjs unconditionally/],
-             ['.claude/commands/audit.md', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit) before', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit step 2) before', /standalone commands \(F11\): [^\n]*delegates to another command/]],
+             ['.claude/commands/audit.md', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit) before', 'print the FROZEN SUBSYSTEM banner (see /targeted-audit step 2) before', /standalone commands \(F11\): [^\n]*delegates to another command/],
+             // Cycle-8 E2: a command that includes a canonical section but does not hold its text.
+             ['.claude/commands/verify.md', 'PART 2 — REGRESSION COUNT', 'PART 2 — REGRESSIONS', /verify\.md does not carry the body of "Verification Pass/]],
   // INV-77 — the script's port of the console hash drifts from the console's own.
   'INV-77': [['scripts/verification-pack.mjs', 'h = Math.imul(h, 16777619) >>> 0; }', 'h = Math.imul(h, 16777621) >>> 0; }', /F21: --selector console picks differ/]],
   // INV-78 — a stage that is listed but cannot fail the job. (The first case proved this under
@@ -285,6 +291,8 @@ const CASES = {
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],
   'INV-32': [['scripts/check-output-blocks.mjs', 'export function validate', 'export function validate_renamed', /✗|error/i]],
   'INV-35': [['scripts/portfolio-status.mjs', 'function seamsCadence(cycleDir, root) {', 'function seamsCadence(cycleDir, root) { return \'\';', /✗|error/i],
+             // v1.48.0: a project with .cycle/ state and no PROJECT_HEALTH.md is skipped again.
+             ['scripts/portfolio-status.mjs', "    md = ''; noHealth = true;", "    console.error('skipped'); continue;", /no-health project: /],
              // Cycle-8 Batch 3 (F1): every non-idle phase reads "in progress — run /cycle-resume" again.
              ['scripts/portfolio-status.mjs', "const phaseKind = phase => PHASE_KIND[String(phase).toLowerCase().split(/\\s+/)[0]] || 'wip';", "const phaseKind = phase => (String(phase).toLowerCase() === 'idle' ? 'idle' : 'wip');", /Cycle-8 F1: phase misclassified/]],
   'INV-51': [['scripts/render-metrics.mjs', "that cycle's net ${synthNet}", "that cycle's net ${lastSynth.net_score}", /✗/]],

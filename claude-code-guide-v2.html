@@ -2739,8 +2739,9 @@ Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK
 their sole writer), so a synthesis row must not repeat them or the
 cumulative trend double-counts. If .cycle/ does not exist, skip this step.
 When you append that row, also set Phase: idle and Updated in
-.cycle/STATE.md — a synthesized cycle is closed, and nothing else returns
-the phase to idle.`;
+.cycle/STATE.md — a synthesized cycle is closed — but only if STATE.md's
+Cycle is the cycle you synthesized. If an audit has already opened a later
+cycle, leave Phase alone and say so.`;
 }
 
 function renderP6a(){

@@ -26,10 +26,9 @@ Produce a CYCLE STATUS report:
   → IMPLEMENT — Phase is audit: an audit has opened this cycle and
     nothing is implemented yet → choose findings and run the implement
     command for that tier
-  → CLOSE OUT — Phase is reflect and metrics.csv has no phase=synthesis
-    row for this cycle: reflected, but not verified or synthesized → run
-    the Verification Pass in a fresh session, then Health Synthesis (a
-    project that does not synthesize can start a fresh audit instead)
+  → CLOSE OUT — Phase is reflect: reflected, not yet closed → run
+    /cycle-close. In a project that verifies and synthesizes, first run
+    /verify in a fresh session and then /health-synthesis
   → FRESH AUDIT — the last cycle is complete (Phase is idle, or none is
     in progress) → start /broad-scan or /targeted-audit <subsystem>
   State which and why in one sentence. A fresh audit must use fresh

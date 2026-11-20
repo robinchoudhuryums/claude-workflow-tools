@@ -5,6 +5,53 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.48.0 — 2026-11-20
+
+The whole cycle runs from a chat session (Cycle-8 expansion E2: G1, ST4), and
+the console is frozen. **Command bodies changed — run `/sync-commands` in
+consuming projects:** four commands are NEW (`/verify`, `/seams-audit`,
+`/health-synthesis`, `/cycle-close`) and two changed (`/cycle-status`,
+`/sync-commands`). No config-schema change.
+
+- **`/verify`, `/seams-audit` and `/health-synthesis`** run the Verification
+  Pass, the Seams & Invariants Audit and Health Synthesis without the console.
+  Each gathers its own inputs — the cycle's blocks from `.cycle/blocks/`, the
+  invariant library, the project's dimensions and Axis B categories, the prior
+  scores — and then follows the canonical prompt unchanged. `/verify` takes
+  its rotation probes from `verification-pack.mjs` where the project has it
+  and from a stated arithmetic rule where it does not, so they are never the
+  session's choice. `/verify` and `/seams-audit` save the block they produce;
+  `/health-synthesis` applies its `PROJECT_HEALTH.md` update on approval.
+- **The prompt bodies are not copied.** A command body may carry a line
+  `{{include: <section heading>}}`; `gen-commands.mjs` expands it from that
+  section, so the command file holds the full text and the body still has one
+  source. An include that names no section fails generation.
+- **`/seams-audit` reports on the project's own Axis B categories** where the
+  canonical body names the five defaults — the gap recorded as INV-73, closed
+  for the command path (the body itself is unchanged).
+- **`/cycle-close`** (ST4) checks what a cycle still owes — reflection,
+  verification, synthesis, unpromoted invariant candidates, blocking operator
+  actions, a due Seams audit — then moves the cycle's record into
+  `.cycle/HISTORY.md` and sets `Phase: idle`. It is the way a project that
+  does not synthesize returns to idle. `/cycle-status` points at it.
+- **Fix: Health Synthesis could idle the wrong cycle.** v1.47.0 had step 8 set
+  `Phase: idle` unconditionally. Synthesizing an EARLIER cycle after an audit
+  had opened the next one would have marked the cycle in progress as idle.
+  Step 8 now does it only when STATE.md's Cycle is the cycle synthesized.
+- **`portfolio-status.mjs` lists a project that has `.cycle/` state and no
+  `PROJECT_HEALTH.md`,** and accepts a project directory. Such a project was
+  skipped with a line on stderr — two of seven real projects never appeared.
+- **The console is frozen** (this repo's own `.cycle/config.md`, Frozen
+  Subsystems). It stays hosted and locked to the commands, so it keeps
+  matching them, but it is no longer audited or extended. The new commands
+  have no console entry; the §4v / §1s / §6a prompts there are the same
+  bodies with the inputs pasted by hand. The Cycle-8 scan's console-only
+  findings were dropped and are listed as known defects in the Operator State
+  Checklist; none was rated High.
+- Output-block registry: the Verification, Seams and Policy Response blocks
+  now name their producing command. INV-11 and INV-35 widened; mutation cases
+  135 → 138; library unchanged at 78.
+
 ## 1.47.0 — 2026-11-20
 
 Cycle-8 Batch 3: the cycle lifecycle (F4, F5, F6, F1, F12). **Command bodies

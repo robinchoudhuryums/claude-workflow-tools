@@ -33,6 +33,8 @@ Complete audit → plan → implement → regression check → independent verif
 
 **Session flow:** `Systems Map (once)` → `Layered Audit` → `Planning` → `Implementation` → `Regression Check + Reflect` → `Verification Pass (fresh session)` → `Health Synthesis`
 
+**Command chain:** `/audit <subsystem>` → `/plan` → `/implement` → `/regression` → `/reflect` → `/verify` (fresh session) → `/health-synthesis` → `/cycle-close` — with `/seams-audit` on its cadence. Every step runs from a chat session; nothing needs the console.
+
 **When to use:** Quarterly, before releases, when accumulated Tier 1/2 sessions need verification, or when you want benchmarkable progress tracking.
 
 ### Tier Graduation
@@ -207,6 +209,10 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | `/cycle-init` | any | 1 | Scaffold the optional `.cycle/` state dir + `PROJECT_HEALTH.md` (idempotent) |
 | `/cycle-status` | any | 1 | Read-only: report standing + the next action for the current phase |
 | `/cycle-resume` | any | 1 | Continue an in-progress implementation thread from `.cycle/STATE.md` |
+| `/verify` | 3 (any) | 1, fresh | Independent Verification Pass: gathers the cycle's blocks, the library and seeded rotation probes itself, saves the Verification Block |
+| `/seams-audit` | 3 | 1 | Seams & Invariants Audit on its cadence: seam inventory, every invariant validated, candidates proposed |
+| `/health-synthesis` | 3 | 1, fresh | Two-axis Health Synthesis from the cycle's blocks; updates `PROJECT_HEALTH.md` on approval and closes the cycle |
+| `/cycle-close` | any | 1 | Confirm what the cycle still owes, roll its record into `.cycle/HISTORY.md`, return the phase to idle |
 | `/pr-review` | any | 1 | Apply the cycle's audit rubrics to a single PR (health per-change); runs by hand or off a PR webhook |
 | `/sync-commands` | maintenance | 1 | Sync command files with latest templates from this repo |
 
@@ -220,11 +226,11 @@ Treat Dynamic Workflows as a **delivery mechanism for these prompts**, not a rep
 | TIER 2 HANDOFF BLOCK | `/targeted-audit` | `/targeted-implement` |
 | BROAD SCAN IMPLEMENTATION SUMMARY | `/broad-implement` | `/regression`, `/reflect`, `/test-sync`, `/sync-docs`, Verification Pass |
 | TARGETED IMPLEMENTATION SUMMARY | `/targeted-implement` | `/regression`, `/reflect`, `/test-sync`, `/sync-docs`, Verification Pass |
-| VERIFICATION BLOCK | Verification Pass | Health Synthesis |
-| SEAMS & INVARIANTS AUDIT BLOCK | Seams Audit | Next subsystem audit, Synthesis |
+| VERIFICATION BLOCK | `/verify` (Verification Pass) | `/health-synthesis` |
+| SEAMS & INVARIANTS AUDIT BLOCK | `/seams-audit` | Next subsystem audit, `/health-synthesis`, `/sync-docs` |
 | CYCLE SUMMARY BLOCK | `/reflect` | Health Synthesis |
 | FOLLOW-ON AUDIT ITEMS | `/regression` | The next audit of that scope (pasted as follow-on items) |
-| POLICY RESPONSE | Health Synthesis (when a trigger fires) | The next cycle's audit and plan — mandatory scope |
+| POLICY RESPONSE | `/health-synthesis` (when a trigger fires) | The next cycle's audit and plan — mandatory scope |
 | PR REVIEW BLOCK | `/pr-review` | Operator (merge decision); optionally posted to the PR |
 
 ## Maintaining this repo
