@@ -227,6 +227,43 @@ expectFail('detects a release missing from the Operator State Checklist re-pull 
   } catch (e) { bad('block-scalar case — ' + e.message); } finally { rmSync(d, { recursive: true, force: true }); }
 }
 
+// Cycle-8 F7: the FIRST release of a cycle needs a block too (INV-72). The
+// floor used to come from the current cycle's own blocks, so a cycle with no
+// block yet was skipped and a block-less first release could never be flagged.
+// This needs several files to disagree at once (STATE's cycle, the blocks
+// directory, the CHANGELOG), which is why it lives here and not in a
+// single-file mutation. Versions are taken from the real CHANGELOG, so the case
+// follows the repo instead of pinning a release number.
+{
+  const versions = [...readFileSync(join(repo, 'CHANGELOG.md'), 'utf8').matchAll(/^##\s+(\d+\.\d+\.\d+)\b/gm)].map(m => m[1]);   // newest first
+  const [newest, prev, prev2] = versions;
+  const state = readFileSync(join(repo, '.cycle', 'STATE.md'), 'utf8').replace(/^Cycle:\s*\d+.*$/m, 'Cycle: 99');
+  const withBlocks = names => {
+    const d = setup();
+    mkdirSync(join(d, '.cycle', 'blocks'), { recursive: true });
+    writeFileSync(join(d, '.cycle', 'STATE.md'), state);
+    for (const n of names) writeFileSync(join(d, '.cycle', 'blocks', n), 'x\n');
+    try { return runGuard(d); } finally { rmSync(d, { recursive: true, force: true }); }
+  };
+  const line = r => (r.out.split('\n').find(l => /INV-72|release-block coverage/.test(l)) || '(no INV-72 line)').trim();
+  const problems = [];
+  if (!newest || !prev || !prev2 || !/^Cycle: 99$/m.test(state)) problems.push('fixture could not be derived from CHANGELOG.md / .cycle/STATE.md');
+  else {
+    const first = withBlocks([`98-${prev}-broad-implement.md`]);
+    if (first.code === 0 || !new RegExp('release with no block \\(INV-72\\): cycle 99 shipped ' + newest.replace(/\./g, '\\.')).test(first.out)) problems.push(`the first release of a cycle with no block is not flagged — ${line(first)}`);
+    const gap = withBlocks([`98-${prev2}-broad-implement.md`, `99-${newest}-broad-implement.md`]);
+    if (gap.code === 0 || !new RegExp('cycle 99 shipped ' + prev.replace(/\./g, '\\.') + ' with nothing').test(gap.out)) problems.push(`an unblocked first release hides once a LATER release of the cycle has a block — ${line(gap)}`);
+    const covered = withBlocks([`98-${prev}-broad-implement.md`, `99-${newest}-broad-implement.md`]);
+    if (covered.code !== 0 || !/✓ every cycle-99 release from /.test(covered.out)) problems.push(`a fully blocked cycle is rejected — ${line(covered)}`);
+    const none = withBlocks([`98-${newest}-broad-implement.md`]);
+    if (none.code !== 0 || !/cycle 99 has shipped no release yet/.test(none.out)) problems.push(`a cycle that has shipped nothing is not accepted — ${line(none)}`);
+    const empty = withBlocks([]);
+    if (empty.code !== 0 || !/release-block coverage skipped/.test(empty.out)) problems.push(`a project with no versioned blocks at all is not skipped — ${line(empty)}`);
+  }
+  if (!problems.length) ok('the first release of a cycle needs a block: the floor is the first release after the previous cycle\'s last block (Cycle-8 F7)');
+  else bad('Cycle-8 F7: ' + problems.join('; '));
+}
+
 console.log('Guard regression test (scripts/check-template-sync.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} guard test case(s) failed.`); process.exit(1); }

@@ -208,7 +208,11 @@ const CASES = {
   // fake 1.30.2 release, which only fell inside the floor while the cycle WAS 6 —
   // it went FALSE GREEN the moment Cycle 7 opened. Blocks accumulate and are
   // never deleted, so this form stays violating in every later cycle.
-  'INV-72': [['.cycle/STATE.md', '\nCycle: ', '\nCycle: 6\nPinned-by-mutation: ', /release with no block/i]],
+  'INV-72': [['.cycle/STATE.md', '\nCycle: ', '\nCycle: 6\nPinned-by-mutation: ', /release with no block/i],
+             // Cycle-8 Batch 2 (F7): the floor comes from EARLIER cycles' blocks. Without that a cycle's first
+             // release is unguarded — but the live tree cannot show it (this cycle already has a block), so the
+             // proof is guard.test's sandbox, which INV-72's Verify now also runs.
+             ['scripts/check-template-sync.mjs', 'const earlier = versioned.filter(x => x.cycle < Number(cycle))', 'const earlier = versioned.filter(x => false)', /Cycle-8 F7: /]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────
   'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i],
@@ -231,19 +235,26 @@ const CASES = {
   'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /cycle-context|✗/i],
              // Cycle-7 Batch 7 (F37): the Current Standing and Pending outputs had no fixture.
              ['scripts/cycle-context.mjs', "  if (standing) out.push(", "  if (false) out.push(", /Current Standing missing/],
-             ['scripts/cycle-context.mjs', "for (const h of ['Current', 'Where I left off', 'Pending / not yet done'])", "for (const h of ['Current', 'Where I left off'])", /Pending section missing/]],
+             ['scripts/cycle-context.mjs', "for (const h of ['Current', 'Where I left off', 'Pending / not yet done'])", "for (const h of ['Current', 'Where I left off'])", /Pending section missing/],
+             // Cycle-8 Batch 2 (F11): the hook back on the working directory — the script, then the command.
+             ['scripts/cycle-context.mjs', 'process.env.CLAUDE_PROJECT_DIR || process.cwd()', 'process.cwd()', /Cycle-8 F11: /],
+             ['.claude/settings.json', '${CLAUDE_PROJECT_DIR:-.}/', '', /Cycle-8 F11: /]],
   'INV-25': [['scripts/csv.mjs', 'export function parseCSV(text) {', 'export function parseCSV(text) { text = text.split(\'\\n\').slice(0, 2).join(\'\\n\');', /✗|error/i]],
   'INV-26': [['scripts/invariant-check.mjs', 'const cmd = verify.split(/\\s+\\(|\\s+\\+\\s+|\\s+then\\s+/i)[0].trim();', 'const cmd = verify.trim();', /✗/],
              // Cycle-7 Batch 7 (F38): dedupe removed — each invariant gets its own key, so a shared command runs per rule.
              ['scripts/invariant-check.mjs', 'if (cmd) { if (!byCmd.has(cmd)) byCmd.set(cmd, []); byCmd.get(cmd).push(inv); }', "if (cmd) { byCmd.set(cmd + ' #' + inv.id, [inv]); }", /identical commands must run once/],
              // Cycle-7 Batch 8 (F42): Verify commands back in the caller's directory.
-             ['scripts/invariant-check.mjs', 'execSync(cmd, { cwd, stdio:', 'execSync(cmd, { stdio:', /did not run in the project root/]],
+             ['scripts/invariant-check.mjs', 'execSync(cmd, { cwd, stdio:', 'execSync(cmd, { stdio:', /did not run in the project root/],
+             // Cycle-8 Batch 2 (F2): the Verify command cut at its first pipe again.
+             ['scripts/invariant-check.mjs', '      let cmd = body.slice(v.end);', "      let cmd = body.slice(v.end).split('|')[0];", /the command was cut at the pipe/]],
   'INV-27': [['scripts/portfolio.mjs', 'function section(md, heading) {', 'function section(md, heading) { return \'\';', /✗|error/i]],
   'INV-28': [['scripts/gen-html-prompts.mjs', 'export function commandBody', 'export function commandBody_renamed', /✗|error/i]],
   'INV-32': [['scripts/check-output-blocks.mjs', 'export function validate', 'export function validate_renamed', /✗|error/i]],
   'INV-35': [['scripts/portfolio-status.mjs', 'function seamsCadence(cycleDir, root) {', 'function seamsCadence(cycleDir, root) { return \'\';', /✗|error/i]],
   'INV-51': [['scripts/render-metrics.mjs', "that cycle's net ${synthNet}", "that cycle's net ${lastSynth.net_score}", /✗/]],
-  'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i]],
+  'INV-52': [['scripts/verification-pack.mjs', 'export function selectProbes', 'export function selectProbes_renamed', /✗|error/i],
+             // Cycle-8 Batch 2 (F3): the library injected as a replacement STRING again ($& $' $$ read as patterns).
+             ['scripts/verification-pack.mjs', '() => library)', 'library)', /Cycle-8 F3: /]],
   // INV-70 — reintroduce the disclosure/use split: select with a truncated
   // seed while the header still prints the full one.
   // Re-targeted in Cycle-7 Batch 8: buildPack now dispatches through SELECTORS (F21).

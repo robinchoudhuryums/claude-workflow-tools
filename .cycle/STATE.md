@@ -9,8 +9,8 @@ Subsystem cycles since last Seams audit: 1 (cadence 3 — /reflect increments it
 Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
-- Batch 1 of 9 is complete (v1.44.0, block 08-1.44.0-broad-implement.md). Batches 2–9 and the expansion plan
-  are not started.
+- Batches 1 and 2 of 9 are complete (v1.44.0, v1.45.0; blocks 08-1.44.0-… and 08-1.45.0-broad-implement.md).
+  Batches 3–9 and the expansion plan are not started.
 - The scan's full output (48 findings, ratings, batch + expansion plans) exists only in the session chat — the
   scan writes no file. The batch definitions under Pending are the record of what each batch contains.
 - Cycle 7 was reflected (21 − 0) and merged (PRs #26, #27) but its §4v and §6a never ran; Cycle 8 opened on
@@ -32,11 +32,15 @@ Updated: 2026-11-20
   /reflect prompt has a fill form, and the guard derives which prompts need one (INV-63 widened; also covers
   F19 and F21). F30 the regex lookbehind in the invariant form is replaced by splitUnescapedPipes and guarded.
   Mutation cases 104 → 111; library unchanged at 73.
+- v1.45.0 | Batch 2 | F2 invariant-check finds fields by label, so a Verify command keeps its pipes (it was cut
+  at the first one and the first stage's exit code reported as PASS); all 73 live commands parse unchanged.
+  F3 buildPack injects the library and probes by function replacement (`$'`, `$&`, `$$` in a rule corrupted
+  the pack). F7 INV-72's floor is the first release after the newest block of any EARLIER cycle, so a cycle's
+  first release needs a block; proven by a guard.test sandbox case, which INV-72's Verify now also runs.
+  F11 the SessionStart hook command and script are rooted at CLAUDE_PROJECT_DIR (fallback: cwd); the CLAUDE.md
+  snippet follows. F15 CI on Node 22. Mutation cases 111 → 116; library unchanged at 73 (four rules widened).
 
 ## Pending / not yet done
-- Batch 2 — runner and pack: F2 Verify cut at the first `|` (invariant-check.mjs:54); F3 `$'`/`$&`/`$$` in an
-  invariant corrupts the §4v pack (verification-pack.mjs:192-194); F7 INV-72 skipped until a cycle's first
-  block; F11 hook command is cwd-relative; F15 CI pins Node 20.
 - Batch 3 — cycle lifecycle (command bodies change → re-pull): F4 CYCLE OPEN ignores a pending §4v/§6a and the
   pack defaults to STATE's Cycle; F5 nothing rolls STATE, and Phase: audit sticks; F6 invariant candidates have
   no owner (INV-76…82 from 07-a-reflect.md are not in the library); F1 portfolio-status calls every non-idle
@@ -74,6 +78,14 @@ Updated: 2026-11-20
   (beyond alert/confirm/setTimeout) fails the callee check until the stub is added.
 - Generic paste textareas now save per keystroke (oninput) rather than on blur; the systems-map textarea
   still saves on blur (onchange), as before.
+- invariant-check passes a Verify to the shell as written, so `\|` is NOT a pipe there (it is what
+  `grep 'a\|b'` needs). The console's project form writes `\|` in its textarea only; nothing emits it into
+  a config. CHANGELOG 1.43.0 still calls it "the escape the config readers already use" — no reader does.
+- F15 has no guard: nothing can tell an end-of-life Node line from a supported one without a date.
+- The hook snippet is POSIX shell syntax; a Windows setup whose hooks run under PowerShell needs
+  `$env:CLAUDE_PROJECT_DIR`. The exec form (`"args"`) the Claude Code docs prefer would avoid the shell, but
+  was not adopted: it could not be exercised here and older Claude Code versions may not read it.
+- guard.test's F7 case reads this repo's .cycle/STATE.md and CHANGELOG.md to build its sandbox.
 - Strategic, carried: no LICENSE file (the licence is the owner's choice).
 
 ## Decisions made (so the next session doesn't re-litigate)
@@ -102,8 +114,13 @@ Updated: 2026-11-20
   command yet (F6), and both defects were holes in what those two rules already claimed.
 - Any fill field that opens with a directive prefix (OPTIONAL: / IF …:) is multi-line. Single-line inputs
   are what is left: short identifiers such as [PR NUMBER OR URL] and [FINDING IDS TO IMPLEMENT].
+- A Verify field is the text from its label to the end of the line or the next LABELLED field, run by the
+  shell exactly as written — no escape processing. A trailing note is `(a parenthesis)` or a labelled field.
+- A guard whose violation needs several files to disagree is proven in guard.test's sandbox, and the
+  invariant's Verify names guard.test as well (INV-72) — a single-file mutation of the live tree cannot.
 
 ## Where I left off
-Cycle 8, Batch 1 shipped as v1.44.0 on branch claude/stoic-goldberg-gg0oz5 (not merged — the hosted console
-still serves v1.43.0 with the dead Fill buttons until it is). Next: merge, then /broad-implement Batch 2.
+Cycle 8, Batches 1 and 2 shipped as v1.44.0 and v1.45.0 on branch claude/stoic-goldberg-gg0oz5 (not merged —
+the hosted console still serves v1.43.0 with the dead Fill buttons until it is). Next: merge, then
+/broad-implement Batch 3 (cycle lifecycle — command bodies change, so a re-pull follows).
 Cycle 7's §4v and §6a are still owed (pass --cycle 7). A person still needs to walk S5–S17.

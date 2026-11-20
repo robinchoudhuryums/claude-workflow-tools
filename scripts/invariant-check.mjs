@@ -45,16 +45,41 @@ import { fileURLToPath } from 'node:url';
 // hook counted one number and the §4v pack another — three readers, three
 // counts. The INV-68 floor's ground truth (`^[ \t]*INV-\d+\s*\|`) is what this
 // now agrees with.
+// F2 (Cycle 8): fields are found by their LABELS, not by splitting on every
+// pipe. The old parse split the line on "|" and took the part that began with
+// "Verify:", so a command with a pipe in it — `node x.mjs | grep -q ok` — was cut
+// at the pipe and the truncated command RAN and reported PASS: a pipeline whose
+// last stage decides the result passed whenever its first stage exited 0. The
+// Verify field now runs from its label to the end of the line, or to the next
+// labelled field ("| Source: …"), so a pipeline is kept whole; a rule that
+// quotes "| Verify:" in its own text (this repo's INV-08 does) no longer
+// confuses it, because the LAST Verify label wins. The text goes to the shell
+// exactly as written: "\|" is not an escape here (grep 'a\|b' needs it as is).
+const FIELD_LABEL = /\s*\|\s*[A-Z][A-Za-z]*(?: [A-Za-z]+){0,2}:(?=\s|$)/;
+function lastLabel(body, label) {
+  const g = new RegExp('\\|\\s*' + label + ':\\s*', 'gi');
+  let hit = null, x;
+  while ((x = g.exec(body))) hit = { at: x.index, end: x.index + x[0].length };
+  return hit;
+}
 export function parseInvariants(text) {
   const invs = [];
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     const m = line.match(/^(INV-\d+)\s*\|(.+)$/);
     if (!m) continue;
-    const parts = m[2].split('|').map(s => s.trim());
+    const body = m[2];
+    const v = lastLabel(body, 'Verify'), s = lastLabel(body, 'Subsystem');
     let verify = '';
-    for (const p of parts.slice(1)) { const v = p.match(/^Verify:\s*(.+)$/i); if (v) verify = v[1].trim(); }
-    invs.push({ id: m[1], rule: parts[0] || '', verify });
+    if (v) {
+      let cmd = body.slice(v.end);
+      const next = cmd.search(FIELD_LABEL);   // a labelled field after Verify ends it
+      if (next !== -1) cmd = cmd.slice(0, next);
+      verify = cmd.trim();
+    }
+    const ends = [v, s].filter(Boolean).map(h => h.at);
+    const rule = (ends.length ? body.slice(0, Math.min(...ends)) : body).trim();
+    invs.push({ id: m[1], rule, verify });
   }
   return invs;
 }
@@ -145,6 +170,11 @@ function main() {
       // The reason is ONE line for a human: a command whose last output line is
       // megabytes long used to be echoed whole (F41).
       if (err.length > 300) err = err.slice(0, 300) + ' …';
+      // F2: a "|" after Verify is a shell pipe now, where it used to end the
+      // field. A library line with an unlabelled note after the command
+      // ("| Verify: npm test | some note") therefore fails with "command not
+      // found" (exit 127) — say why, since that line used to pass.
+      if (e.status === 127 && cmd.includes('|')) err += ' — a "|" in a Verify field is a shell pipe; write a trailing note as "(…)" or as a labelled field ("| Source: …")';
     }
     for (const inv of list) { results.push({ inv, ok: okRun, cmd, err }); okRun ? passed++ : failed++; }
   }

@@ -633,9 +633,15 @@ try {
 // else — not the CHANGELOG, not the commit log — so a release that ships without
 // a block is invisible to verification and synthesis BY CONSTRUCTION. v1.30.1
 // changed the console and had no block; §4v found it only by fetching origin.
-// The floor is DERIVED (the lowest version this cycle already has a block for)
-// rather than hard-coded, so the rule never reaches back into cycles that
-// predate the convention, and the ceiling is VERSION.
+// The ceiling is VERSION. The FLOOR is derived, never hard-coded, so the rule
+// does not reach back into cycles that predate the convention:
+//   F7 (Cycle 8): it is the first release AFTER the newest version any EARLIER
+//   cycle has a block for. It used to be "the lowest version this cycle already
+//   has a block for" — so a cycle with no block yet had no floor and the check
+//   was skipped, and a floor taken from the cycle's own blocks can never sit
+//   below its first block. The first release(s) of every cycle were unguarded:
+//   exactly the v1.30.1 case, whenever it opened a cycle. This cycle's own
+//   lowest block is kept only as a fallback for a project's first blocked cycle.
 {
   const semver = v => v.split('.').map(Number);
   const cmp = (a, b) => { const x = semver(a), y = semver(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
@@ -643,20 +649,28 @@ try {
   try { stateRaw = readFileSync(new URL('.cycle/STATE.md', root), 'utf8'); } catch (e) {}
   try { blockNames = readdirSync(new URL('.cycle/blocks', root)); } catch (e) {}
   const cycle = stateRaw && (stateRaw.match(/^Cycle:\s*(\d+)/m) || [])[1];
-  const blocked = blockNames
-    .map(n => (n.match(new RegExp('^0?' + cycle + '-(\\d+\\.\\d+\\.\\d+)-')) || [])[1])
-    .filter(Boolean).sort(cmp);
+  const versioned = blockNames
+    .map(n => n.match(/^0*(\d+)-(\d+\.\d+\.\d+)-/)).filter(Boolean)
+    .map(m => ({ cycle: Number(m[1]), v: m[2] }));
+  const blocked = versioned.filter(x => x.cycle === Number(cycle)).map(x => x.v).sort(cmp);
+  const earlier = versioned.filter(x => x.cycle < Number(cycle)).map(x => x.v).sort(cmp);
+  const released = [...changelogRaw.matchAll(/^##\s+(\d+\.\d+\.\d+)\b/gm)].map(m => m[1]).sort(cmp);
+  const upTo = v => !versionRaw || cmp(v, versionRaw) <= 0;
   if (!stateRaw || !cycle) console.log('  · no .cycle/STATE.md cycle number — release-block coverage skipped (optional per project)');
-  else if (!blocked.length) console.log(`  · no versioned blocks for cycle ${cycle} yet — release-block coverage skipped (nothing to derive a floor from)`);
+  else if (!earlier.length && !blocked.length) console.log('  · no versioned blocks in .cycle/blocks/ yet — release-block coverage skipped (nothing to derive a floor from)');
   else {
-    const floor = blocked[0];
-    const released = [...changelogRaw.matchAll(/^##\s+(\d+\.\d+\.\d+)\b/gm)].map(m => m[1]);
-    const inCycle = released.filter(v => cmp(v, floor) >= 0 && (!versionRaw || cmp(v, versionRaw) <= 0));
-    const orphans = inCycle.filter(v => !blocked.includes(v));
-    if (orphans.length) {
-      failures++;
-      console.log(`  ✗ release with no block (INV-72): cycle ${cycle} shipped ${orphans.join(', ')} with nothing in .cycle/blocks/. §4v and §6a read that directory and nothing else, so those releases are invisible to verification and synthesis.`);
-    } else console.log(`  ✓ every cycle-${cycle} release from ${floor} to ${versionRaw || blocked[blocked.length - 1]} has a block in .cycle/blocks/ — ${inCycle.length} release(s) (INV-72)`);
+    const prevMax = earlier.length ? earlier[earlier.length - 1] : null;
+    const afterPrev = prevMax ? released.find(v => cmp(v, prevMax) > 0 && upTo(v)) : null;
+    const floor = [afterPrev, blocked[0]].filter(Boolean).sort(cmp)[0] || null;
+    if (!floor) console.log(`  ✓ cycle ${cycle} has shipped no release yet — nothing after ${prevMax}, the last release an earlier cycle has a block for (INV-72)`);
+    else {
+      const inCycle = released.filter(v => cmp(v, floor) >= 0 && upTo(v));
+      const orphans = inCycle.filter(v => !blocked.includes(v));
+      if (orphans.length) {
+        failures++;
+        console.log(`  ✗ release with no block (INV-72): cycle ${cycle} shipped ${orphans.join(', ')} with nothing in .cycle/blocks/${prevMax ? ` (every release after ${prevMax}, the last one an earlier cycle has a block for, belongs to this cycle)` : ''}. §4v and §6a read that directory and nothing else, so those releases are invisible to verification and synthesis. Write the summary block to .cycle/blocks/${String(cycle).padStart(2, '0')}-<version>-<command>.md.`);
+      } else console.log(`  ✓ every cycle-${cycle} release from ${floor} to ${versionRaw || blocked[blocked.length - 1]} has a block in .cycle/blocks/ — ${inCycle.length} release(s) (INV-72)`);
+    }
   }
 }
 

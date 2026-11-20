@@ -194,7 +194,14 @@ Two optional helpers operate on this state (both fail-safe and additive):
   new session, retiring the "paste the systems map every session"
   friction. Enable it by copying the script and adding to
   `.claude/settings.json`:
-  `{ "hooks": { "SessionStart": [ { "hooks": [ { "type": "command", "command": "node scripts/cycle-context.mjs" } ] } ] } }`
+  `{ "hooks": { "SessionStart": [ { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR:-.}/scripts/cycle-context.mjs\"" } ] } ] } }`
+  The command and the script are both rooted at the project directory
+  (`CLAUDE_PROJECT_DIR`, falling back to the working directory), so the hook
+  still works when it runs with a working directory other than the project
+  root — a hook runs in the session's current directory, which moves when
+  the session changes directory. The command is POSIX
+  shell syntax — `sh` on macOS/Linux, Git Bash on Windows; where hooks run
+  under PowerShell, write `$env:CLAUDE_PROJECT_DIR` instead.
   With no `.cycle/` it prints nothing and never fails the session.
 - `scripts/render-metrics.mjs` — renders `.cycle/metrics.csv` into a
   markdown trend report (per-row table + net-score / Category-D

@@ -5,6 +5,45 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.45.0 — 2026-11-20
+
+Cycle-8 Batch 2: runner and pack correctness. Tooling only. **No command-body
+or config-schema change, so no `/sync-commands` re-pull** — but two things a
+consuming project may have copied did change: `invariant-check.mjs` and the
+SessionStart hook snippet (see the Operator State Checklist).
+
+- **The invariant runner passed commands it had cut in half (F2).** The parser
+  split each library line on every `|`, so `Verify: node x.mjs | grep -q ok`
+  ran as `node x.mjs` and reported PASS whenever that exited 0 — a pipeline
+  whose last stage decides the result could never fail, and `a || b` never
+  reached `b`. Fields are now found by their labels: the Verify command runs
+  from its label to the end of the line, or to the next labelled field, and
+  reaches the shell as written. No command in this repo's library changes (all
+  73 parse to the same command as before); four rules that contain a pipe are
+  no longer truncated. Behaviour change to know about: an unlabelled trailing
+  field after Verify is now part of the command.
+- **`$'`, `$&` or `$$` in an invariant corrupted the §4v pack (F3).**
+  `buildPack` injected the library and the probes as replacement strings, where
+  those sequences are patterns: one rule ending a quoted regex with `$'`
+  tripled the pack. Function replacements now; the text is injected verbatim.
+- **The first release of a cycle was unguarded (F7, INV-72).** The floor of the
+  "every release has a block" check was the current cycle's own lowest block,
+  so the check was skipped until a cycle had one and could never flag a release
+  below it. The floor is now the first release after the newest version any
+  earlier cycle has a block for. Proven by a sandbox case in `guard.test.mjs`
+  (it needs STATE, the blocks directory and the CHANGELOG to disagree at once),
+  which INV-72's `Verify:` now also runs.
+- **The SessionStart hook assumed the working directory (F11).** The command
+  was `node scripts/cycle-context.mjs` and the script read `process.cwd()`. A
+  hook runs in the session's current directory, so once that was a
+  subdirectory the hook exited 1.
+  Both are rooted at `CLAUDE_PROJECT_DIR` now, falling back to the working
+  directory. The snippet in CLAUDE.md is updated; it is POSIX shell syntax.
+- **CI runs on Node 22 (F15).** Node 20 reached end of life in April 2026, and
+  22 is the line the Test Command is run on locally.
+
+Mutation cases 111 → 116; library unchanged at 73 (four rules widened).
+
 ## 1.44.0 — 2026-11-19
 
 Cycle-8 Batch 1: the console is usable again. Console and guards only. **No

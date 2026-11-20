@@ -3,7 +3,7 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "node scripts/cycle-context.mjs" }
+          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR:-.}/scripts/cycle-context.mjs\"" }
         ]
       }
     ]

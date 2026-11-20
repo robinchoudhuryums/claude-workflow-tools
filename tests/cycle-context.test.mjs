@@ -3,14 +3,18 @@
 // Asserts it surfaces the right substrate when .cycle/ exists and stays
 // silent (and exits 0) when it does not.
 
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const script = fileURLToPath(new URL('../scripts/cycle-context.mjs', import.meta.url));
-const run = cwd => { try { return execFileSync('node', [script], { cwd, encoding: 'utf8' }); } catch (e) { return '__THREW__:' + e.message; } };
+// The hook reads CLAUDE_PROJECT_DIR (F11). Every case sets or clears it
+// explicitly: run inside a Claude Code session the variable is already in the
+// environment, and an inherited value would point every fixture at this repo.
+const BASE_ENV = { ...process.env }; delete BASE_ENV.CLAUDE_PROJECT_DIR;
+const run = (cwd, extra = {}) => { try { return execFileSync('node', [script], { cwd, encoding: 'utf8', env: { ...BASE_ENV, ...extra } }); } catch (e) { return '__THREW__:' + e.message; } };
 
 let failures = 0;
 const log = [];
@@ -56,6 +60,39 @@ const b = mkdtempSync(join(tmpdir(), 'cwt-ctx-b-'));
 const outB = run(b);
 if (outB === '') ok('stays silent (and exits 0) when .cycle/ is absent'); else bad('expected empty output without .cycle/, got: ' + JSON.stringify(outB.slice(0, 60)));
 rmSync(b, { recursive: true, force: true });
+
+// Cycle-8 F11: the hook is rooted at the PROJECT directory, not the working
+// directory. The settings.json command was `node scripts/cycle-context.mjs`
+// and the script read process.cwd(): from a session started in a subdirectory
+// the command could not find the script (exit 1) and, had it run, would have
+// looked for .cycle/ in the wrong place and printed nothing.
+{
+  const proj = mkdtempSync(join(tmpdir(), 'cwt-ctx-root-'));
+  mkdirSync(join(proj, '.cycle'));
+  mkdirSync(join(proj, 'packages', 'web'), { recursive: true });
+  mkdirSync(join(proj, 'scripts'));
+  writeFileSync(join(proj, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 4\nPhase: implement\n');
+  writeFileSync(join(proj, 'scripts', 'cycle-context.mjs'), readFileSync(script, 'utf8'));
+  const sub = join(proj, 'packages', 'web');
+  const problems = [];
+  // (a) the script itself: cwd is a subdirectory, the project comes from the hook's env.
+  const fromSub = run(sub, { CLAUDE_PROJECT_DIR: proj });
+  if (!/Cycle: 4/.test(fromSub)) problems.push('the script ignores CLAUDE_PROJECT_DIR — run from a subdirectory it finds no .cycle/ and prints nothing');
+  // (b) the command this repo ships in .claude/settings.json, through a shell, as a hook runs it.
+  let cmd = '';
+  try { cmd = JSON.parse(readFileSync(new URL('../.claude/settings.json', import.meta.url), 'utf8')).hooks.SessionStart[0].hooks[0].command; } catch (e) { problems.push('could not read the SessionStart command from .claude/settings.json'); }
+  const viaShell = (cwd, extra) => { try { return execFileSync('sh', ['-c', cmd], { cwd, encoding: 'utf8', env: { ...BASE_ENV, ...extra }, stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { return '__FAILED__ exit ' + e.status + ': ' + String(e.stderr || '').split('\n')[0]; } };
+  if (cmd) {
+    const hookSub = viaShell(sub, { CLAUDE_PROJECT_DIR: proj });
+    if (!/Cycle: 4/.test(hookSub)) problems.push(`the settings.json command fails from a subdirectory — ${hookSub.slice(0, 90)}`);
+    const hookRoot = viaShell(proj, {});
+    if (!/Cycle: 4/.test(hookRoot)) problems.push(`the settings.json command fails from the project root when CLAUDE_PROJECT_DIR is unset — ${hookRoot.slice(0, 90)}`);
+    if (!cmd.includes('CLAUDE_PROJECT_DIR')) problems.push('the settings.json command is not rooted at CLAUDE_PROJECT_DIR');
+  }
+  if (!problems.length) ok('the hook is rooted at the project directory: it works from a subdirectory, and still from the root with no CLAUDE_PROJECT_DIR (Cycle-8 F11)');
+  else bad('Cycle-8 F11: ' + problems.join('; '));
+  rmSync(proj, { recursive: true, force: true });
+}
 
 console.log('SessionStart hook regression test (scripts/cycle-context.mjs):\n');
 console.log(log.join('\n'));

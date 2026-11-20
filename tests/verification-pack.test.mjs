@@ -257,6 +257,32 @@ else bad('readBlocks threw on a missing directory');
   }
 }
 
+// Cycle-8 F3: invariant text is injected VERBATIM. buildPack passed the library
+// and the probes to String.replace as replacement STRINGS, where $&, $`, $' and
+// $$ are patterns — a rule that ends a quoted regex with $' pulled the rest of
+// the prompt into the middle of the library, and nothing in the pack said so.
+{
+  const hostile = [
+    "INV-01 | slugs match '^[a-z0-9-]+$' and nothing else | Subsystem: A",
+    'INV-02 | prices render as $& never raw | Subsystem: A',
+    'INV-03 | the shell prompt is $$ in the fixture | Subsystem: A',
+    'INV-04 | a backtick then dollar `$` stays put, as does $` | Subsystem: A',
+  ];
+  const clean = hostile.map(l => l.replace(/\$/g, 'S'));
+  const mk = invs => buildPack({ body: BODY, invariants: invs, blocks: [], totals: { rows: 0, corrections: [] }, cycle: 8, seed: 's', project: 'p' });
+  const got = mk(hostile), ref = mk(clean);
+  const problems = [];
+  for (const l of hostile) {
+    const n = got.split(l).length - 1;
+    if (n !== 2) problems.push(`${l.slice(0, 6)} appears ${n}× verbatim (want 2: the library and the probes)`);
+  }
+  if (got.length !== ref.length) problems.push(`pack length changed by ${got.length - ref.length} chars against the same library without "$" — text was duplicated or dropped`);
+  if (got.split('---VERIFICATION BLOCK---').length - 1 !== 1) problems.push('the prompt text after the library appears more than once');
+  if (/\[INVARIANT LIBRARY — |\[5 mandatory rotation probes/.test(got)) problems.push('a placeholder leaked back into the pack');
+  if (!problems.length) ok("invariant text containing $', $&, $$ or $` is injected verbatim into the library and the probes (Cycle-8 F3)");
+  else bad('Cycle-8 F3: ' + problems.join('; '));
+}
+
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');
 console.log(log.join('\n'));
 if (failures) { console.error(`\n${failures} verification-pack test(s) failed.`); process.exit(1); }

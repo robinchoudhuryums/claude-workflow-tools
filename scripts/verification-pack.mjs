@@ -186,12 +186,20 @@ export function buildPack({ body, invariants, blocks, totals, cycle, seed, proje
     + ' .cycle/ directory present so they persist automatically)')
     + (excluded.length ? `\n\n(${excluded.length} block(s) from OTHER cycles present in .cycle/blocks/ and excluded: ${excluded.join(', ')})` : '');
 
+  // F3 (Cycle 8): FUNCTION replacements. With a string, String.replace reads
+  // $&, $`, $' and $$ in the REPLACEMENT as patterns — so an invariant whose
+  // text ends a quoted regex with $' pasted the rest of the prompt into the
+  // middle of the library, and "$$" lost a dollar. The verifier would have been
+  // handed a corrupted rule with nothing to say so. (The console fixed this
+  // same class for fill values in Cycle 5; this copy of it was never looked at.)
+  const blocksNote = '(the cycle\'s blocks are reproduced above, under INPUT BLOCKS)';
+  const library = `INVARIANT LIBRARY (${project} — ${invariants.length} invariants):\n${invariants.join('\n')}`;
+  const probeText = probes.join('\n');
   const filled = body
-    .replace('[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]', '(the cycle\'s blocks are reproduced above, under INPUT BLOCKS)')
-    .replace('[PASTE CYCLE SUMMARY BLOCK FROM /REFLECT HERE]', '(the cycle\'s blocks are reproduced above, under INPUT BLOCKS)')
-    .replace('[INVARIANT LIBRARY — the current library is injected here per project]',
-      `INVARIANT LIBRARY (${project} — ${invariants.length} invariants):\n${invariants.join('\n')}`)
-    .replace('[5 mandatory rotation probes — pre-selected from the library at render time]', probes.join('\n'));
+    .replace('[PASTE IMPLEMENTATION SUMMARY BLOCK HERE]', () => blocksNote)
+    .replace('[PASTE CYCLE SUMMARY BLOCK FROM /REFLECT HERE]', () => blocksNote)
+    .replace('[INVARIANT LIBRARY — the current library is injected here per project]', () => library)
+    .replace('[5 mandatory rotation probes — pre-selected from the library at render time]', () => probeText);
 
   return [
     ...header,
