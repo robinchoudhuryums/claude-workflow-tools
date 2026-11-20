@@ -1097,6 +1097,106 @@ try {
   }
 }
 
+// ── Structural check 22 (v1.52.0; INV-90): every follow-on item is TRACKED to a
+// disposition. Until v1.52.0 a follow-on was a free-text bullet: the implement
+// commands printed it, the CHECKPOINT copied it into STATE.md, /cycle-close kept
+// whatever was "still live", and no command ever acted on one. This repo's
+// STATE.md held 22 — one already done, one a regression no count included. The
+// rule is now one FOLLOW-ON IDS text in every command that reports follow-ons,
+// and one FOLLOW-ON REVIEW text in every audit. Each copy's CONTENT is asserted,
+// not only that the copies agree: Cycle-8 §4v found three fixes whose rule could
+// be deleted from every copy at once because a check proved identity alone.
+//   (a) the reporters are DERIVED — a body with a FOLLOW-ON ITEMS field, a
+//       FOLLOW-ON AUDIT ITEMS block, or "record it as a follow-on item" — and
+//       each carries the FOLLOW-ON IDS rule, one text;
+//   (b) that rule names the ID shape, all five dispositions, refuses "noted",
+//       and records open items in STATE.md and removes finished ones;
+//   (c) each reporter's item placeholder is an FO ID plus the disposition list;
+//   (d) every audit with a CYCLE OPEN step carries the FOLLOW-ON REVIEW step,
+//       one text, with its three outcomes and the lead-not-finding rule;
+//   (e) /broad-implement takes FO items by ID; /cycle-close owes a new
+//       disposition for any left "this cycle"; the STATE template shows the line;
+//   (f) the LIVE .cycle/STATE.md: every item under "Open follow-on items" has a
+//       unique FO ID and an open disposition (skipped with no .cycle/STATE.md).
+{
+  const problems = [];
+  const flat = t => t.replace(/\s+/g, ' ').trim();
+  const DISPOSITIONS = ['this cycle —', 'next audit —', 'roadmap —', 'decision —', "won't do (reason) —"];
+  const ITEM_DISP = "→ [this cycle | next audit | roadmap | decision | won't do (reason)]";
+  let files = [];
+  try { files = readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md')); } catch (e) {}
+  const bodies = new Map(files.map(f => [f.replace(/\.md$/, ''), commandBodyOf(f)]));
+  const idsRule = t => { const m = t.match(/^FOLLOW-ON IDS \([\s\S]*?finding this session implemented\.$/m); return m ? flat(m[0]) : null; };
+  const reviewStep = t => { const m = t.match(/^FOLLOW-ON REVIEW \([\s\S]*?^to close\. Skip this step if \.cycle\/STATE\.md does not exist\.$/m) || t.match(/^FOLLOW-ON REVIEW \([\s\S]*?Skip this step if \.cycle\/STATE\.md does not exist\./m); return m ? flat(m[0]) : null; };
+  // (a)
+  const reporters = [...bodies].filter(([, b]) => /^FOLLOW-ON ITEMS/m.test(b) || /^---FOLLOW-ON AUDIT ITEMS---$/m.test(b) || /record it as a follow-on item/.test(b)).map(([n]) => n);
+  if (reporters.length < 4) problems.push(`only ${reporters.length} command(s) read as reporting follow-on items (${reporters.join(', ') || 'none'}) — the derivation would be vacuous`);
+  const rules = reporters.map(n => [n, idsRule(bodies.get(n))]);
+  const noRule = rules.filter(([, r]) => !r).map(([n]) => n);
+  if (noRule.length) problems.push(`reports follow-on items with no FOLLOW-ON IDS rule: ${noRule.join(', ')} — its items get no ID and no disposition`);
+  if (new Set(rules.map(([, r]) => r).filter(Boolean)).size > 1) problems.push(`the FOLLOW-ON IDS rule differs between ${rules.filter(([, r]) => r).map(([n]) => n).join(', ')} — one numbering and disposition rule, one text`);
+  // (b)
+  for (const [n, r] of rules) {
+    if (!r) continue;
+    const lacks = [];
+    if (!r.includes('FO-<cycle>-<n>')) lacks.push('the FO-<cycle>-<n> ID');
+    for (const d of DISPOSITIONS) if (!r.includes(d)) lacks.push(`the "${d.replace(' —', '')}" disposition`);
+    if (!/"Noted" is not a disposition/.test(r)) lacks.push('the refusal of "noted"');
+    if (!/to the "Open follow-on items" in \.cycle\/STATE\.md/.test(r)) lacks.push('the STATE.md record');
+    if (!/remove each open item this session finished or closed/.test(r)) lacks.push('removing finished items');
+    if (lacks.length) problems.push(`${n}'s FOLLOW-ON IDS rule lacks ${lacks.join(', ')}`);
+  }
+  // (c)
+  for (const n of reporters) {
+    const b = bodies.get(n);
+    if (!/^FOLLOW-ON ITEMS|^---FOLLOW-ON AUDIT ITEMS---$/m.test(b)) continue;   // /cycle-resume emits the implement command's block
+    const line = (b.match(/^(?:FOLLOW-ON ITEMS[^\n]*|---FOLLOW-ON AUDIT ITEMS---)\n(- [^\n]*)/m) || [])[1] || '';
+    if (!line.startsWith('- FO-[cycle]-[n] | ') || !line.endsWith(ITEM_DISP)) problems.push(`${n}'s follow-on item line is not an FO ID plus the disposition list (${JSON.stringify(line.slice(0, 60))})`);
+  }
+  // (d)
+  const auditors = [...bodies].filter(([, b]) => /^CYCLE OPEN \(/m.test(b)).map(([n]) => n);
+  const reviews = auditors.map(n => [n, reviewStep(bodies.get(n))]);
+  const noReview = reviews.filter(([, r]) => !r).map(([n]) => n);
+  if (noReview.length) problems.push(`audit(s) with a CYCLE OPEN step and no FOLLOW-ON REVIEW step: ${noReview.join(', ')} — "next audit" items would never be re-checked`);
+  if (new Set(reviews.map(([, r]) => r).filter(Boolean)).size > 1) problems.push(`the FOLLOW-ON REVIEW step differs between ${reviews.filter(([, r]) => r).map(([n]) => n).join(', ')}`);
+  for (const [n, r] of reviews) {
+    if (!r) continue;
+    const lacks = ['marked "next audit"', 'is a LEAD, not a finding', '- confirmed:', '- already fixed:', '- still open:', 'confirmed as <finding ID>', 'to .cycle/HISTORY.md with what you checked'].filter(p => !r.includes(p));
+    if (lacks.length) problems.push(`${n}'s FOLLOW-ON REVIEW lacks ${lacks.map(p => JSON.stringify(p)).join(', ')}`);
+  }
+  // (e)
+  if (!/^- FO-<cycle>-<n> items \(follow-on items/m.test(bodies.get('broad-implement') || '')) problems.push('/broad-implement does not take FO items by ID — a "this cycle" disposition would have no command');
+  const close = flat(bodies.get('cycle-close') || '');
+  if (!close.includes('Follow-on items — every line under "Open follow-on items"') || !close.includes('marked "this cycle" is OWED')) problems.push('/cycle-close does not check follow-on dispositions — an item marked "this cycle" would outlive its cycle');
+  const tmpl = (claudeRaw.match(/`\.cycle\/STATE\.md` template:\s*\n+```\n([\s\S]*?)\n```/) || [])[1] || '';
+  if (!/^## Open follow-on items\n- FO-\[cycle\]-\[n\] \| .* \| → \[this cycle \| next audit \| roadmap \| decision \| confirmed as /m.test(tmpl)) problems.push('the STATE.md template\'s follow-on line does not show an FO ID and the open dispositions');
+  // (f)
+  let state = null, open = [];
+  try { state = readFileSync(new URL('.cycle/STATE.md', root), 'utf8'); } catch (e) {}
+  if (state != null) {
+    const sec = state.match(/\n## Open follow-on items\n([\s\S]*?)(?=\n## |$)/);
+    if (!sec) problems.push('.cycle/STATE.md has no "## Open follow-on items" section');
+    else {
+      const items = [];
+      for (const l of sec[1].split('\n')) {
+        if (!l.trim()) continue;
+        if (l.startsWith('- ')) items.push(l);
+        else if (/^\s+\S/.test(l) && items.length) items[items.length - 1] += ' ' + l.trim();
+        else if (!/^\(?none\)?\.?$/i.test(l.trim())) problems.push(`.cycle/STATE.md: a line under "Open follow-on items" that is not an item: ${JSON.stringify(l.slice(0, 60))}`);
+      }
+      const seen = new Set();
+      for (const it of items) {
+        const m = it.match(/^- (FO-\d+-\d+) \| .+ \| → (this cycle|next audit|roadmap|decision|confirmed as \S.*)$/);
+        if (!m) { problems.push(`.cycle/STATE.md: follow-on item with no FO ID or no open disposition: ${JSON.stringify(it.slice(0, 70))}`); continue; }
+        if (seen.has(m[1])) problems.push(`.cycle/STATE.md: ${m[1]} is used twice`);
+        seen.add(m[1]); open.push(m[2].split(' ')[0]);
+      }
+    }
+  }
+  if (problems.length) { failures++; console.log(`  ✗ follow-on tracking (v1.52.0): ${problems.join('; ')}`); }
+  else console.log(`  ✓ every follow-on item is tracked to a disposition — ${reporters.length} reporting commands share one FOLLOW-ON IDS rule, ${auditors.length} audits one FOLLOW-ON REVIEW step${state != null ? `, and ${open.length} open item(s) in .cycle/STATE.md each carry an FO ID and an open disposition` : ' (live STATE not checked: no .cycle/STATE.md)'} (INV-90)`);
+}
+
 if (failures) {
   console.error(`\n${failures} issue(s) detected. Add the missing capability/template to the listed file(s),`);
   console.error('regenerate command files, or update CHECKS in scripts/check-template-sync.mjs if a marker was intentionally renamed.');

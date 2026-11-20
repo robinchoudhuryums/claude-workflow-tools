@@ -5,6 +5,48 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.52.0 — 2026-11-20
+
+Follow-on items are tracked to a disposition (operator request after Cycle 8).
+**Command bodies changed — run `/sync-commands` in consuming projects
+(`/broad-scan`, `/audit`, `/targeted-audit`, `/broad-implement`,
+`/targeted-implement`, `/implement`, `/regression`, `/cycle-resume`,
+`/cycle-status`, `/cycle-close`, `/sync-docs`; `/broad-implement`'s argument
+hint).**
+
+- **Every follow-on item gets an ID and one disposition.** The implement
+  commands, `/regression` and `/cycle-resume` share one FOLLOW-ON IDS rule:
+  `FO-<cycle>-<n>`, and exactly one of *this cycle*, *next audit*, *roadmap*,
+  *decision* or *won't do (reason)* — "noted" is not one. With `.cycle/`, open
+  items are recorded in `STATE.md`'s "Open follow-on items" and removed by the
+  session that finishes them. Until now a follow-on was a free-text bullet:
+  the CHECKPOINT copied it into `STATE.md`, `/cycle-close` kept whatever was
+  "still live", and no command ever acted on one. This repo's `STATE.md` held
+  22 — one already done, one a regression that no count included.
+- **Each disposition has an owner.** `/broad-implement` takes *this cycle*
+  items by ID (`/broad-implement FO-8-3`). `/broad-scan`, `/audit` and
+  `/targeted-audit` gain a FOLLOW-ON REVIEW step: each *next audit* item in
+  scope is re-checked with fresh eyes, as a lead and never as a finding, and
+  closed as confirmed (it becomes a finding; marked "confirmed as" it until
+  that finding is implemented), already fixed (moved to `HISTORY.md` with
+  what was checked), or still open. It is the audits' second permitted
+  write, beside CYCLE OPEN. `/sync-docs` proposes a
+  roadmap item for each *roadmap* follow-on. `/cycle-close` asks for a new
+  disposition for any still marked *this cycle*. `/cycle-status` counts open
+  items by disposition. `/regression` may now write `STATE.md` (its follow-on
+  items, only).
+- **Structural check 22 (INV-90)** holds it: the reporting commands are
+  derived from the text and share one rule, the audits one review step, and
+  each copy's CONTENT is asserted (five dispositions, the refusal of "noted",
+  the record and the removal; the three review outcomes) — not only that the
+  copies agree, the gap Cycle-8 §4v found behind F4–F6. It also reads the live
+  `STATE.md`: every open item has a unique FO ID and an open disposition. 15
+  mutation cases; library 78 → 79.
+- **One-time pass in this repo:** the 22 items became FO-8-1 … FO-8-22. Seven
+  stay open (two decisions, four for the next audit, one for the roadmap) plus
+  FO-8-23 from Cycle 8's verification; fifteen were closed and moved to
+  `.cycle/HISTORY.md` with their reasons.
+
 ## 1.51.0 — 2026-11-20
 
 Cycle-8 follow-ons to Batch 9 — the four items its summary left open.

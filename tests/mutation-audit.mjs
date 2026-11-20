@@ -282,6 +282,25 @@ const CASES = {
   // INV-81 — delete stops purging; delete takes a longer id's keys with it.
   'INV-81': [[HTML, '  purgeProjectData(id);\n  if(activeProjectId===id)', '  if(activeProjectId===id)', /project delete: [^\n]*survived the delete/],
              [HTML, '&&!longer.some(o=>k.indexOf(`ccg:${o}:`)===0)) doomed.push(k);', ') doomed.push(k);', /project delete: [^\n]*was wrongly removed/]],
+  // INV-90 (v1.52.0) — follow-on items tracked to a disposition (structural check 22).
+  // Every case breaks ONE copy and is caught by that copy's CONTENT, not only by
+  // the copies disagreeing — the property Cycle-8 §4v found missing for F4–F6.
+  'INV-90': [['.claude/commands/targeted-implement.md', '- roadmap — too large for one session; /sync-docs proposes a roadmap item\n', '', /follow-on tracking \(v1\.52\.0\): [^\n]*targeted-implement's FOLLOW-ON IDS rule lacks the "roadmap" disposition/],
+             ['.claude/commands/regression.md', 'FOLLOW-ON IDS (every follow-on item this session reports)', 'FOLLOW-ON NOTES (every follow-on item this session reports)', /follow-on tracking \(v1\.52\.0\): [^\n]*reports follow-on items with no FOLLOW-ON IDS rule: regression/],
+             ['.claude/commands/implement.md', "- FO-[cycle]-[n] | [File: area] — [out-of-scope item for the backlog] | → [this cycle | next audit | roadmap | decision | won't do (reason)]", '- [out-of-scope items to add to the backlog]', /follow-on tracking \(v1\.52\.0\): [^\n]*implement's follow-on item line is not an FO ID/],
+             ['.claude/commands/broad-implement.md', '"Noted" is not a disposition. ', '', /follow-on tracking \(v1\.52\.0\): [^\n]*broad-implement's FOLLOW-ON IDS rule lacks the refusal of "noted"/],
+             ['.claude/commands/implement.md', '- this cycle — a later implement session takes it by its ID', '- this cycle — a later session may take it', /follow-on tracking \(v1\.52\.0\): [^\n]*the FOLLOW-ON IDS rule differs between/],
+             ['.claude/commands/cycle-resume.md', 'remove each open item this\nsession finished or closed', 'leave the open items as they\nare', /follow-on tracking \(v1\.52\.0\): [^\n]*cycle-resume's FOLLOW-ON IDS rule lacks removing finished items/],
+             ['.claude/commands/audit.md', '- already fixed: say what you checked;\n', '', /follow-on tracking \(v1\.52\.0\): [^\n]*audit's FOLLOW-ON REVIEW lacks "- already fixed:"/],
+             ['.claude/commands/targeted-audit.md', 'already fixed from\n.cycle/STATE.md to .cycle/HISTORY.md with what you checked, and', 'already fixed from\n.cycle/STATE.md, and', /follow-on tracking \(v1\.52\.0\): [^\n]*targeted-audit's FOLLOW-ON REVIEW lacks "to \.cycle\/HISTORY\.md with what you checked"/],
+             ['.claude/commands/broad-scan.md', 'FOLLOW-ON REVIEW (optional', 'FOLLOW-UP NOTE (optional', /follow-on tracking \(v1\.52\.0\): [^\n]*no FOLLOW-ON REVIEW step: broad-scan/],
+             ['.claude/commands/targeted-audit.md', 'is a LEAD, not a finding', 'is a finding', /follow-on tracking \(v1\.52\.0\): [^\n]*targeted-audit's FOLLOW-ON REVIEW lacks "is a LEAD, not a finding"/],
+             ['.claude/commands/broad-implement.md', '- FO-<cycle>-<n> items (follow-on items', '- Follow-on items (items', /follow-on tracking \(v1\.52\.0\): [^\n]*\/broad-implement does not take FO items by ID/],
+             ['.claude/commands/cycle-close.md', 'marked "this cycle" is OWED', 'marked "this cycle" is carried', /follow-on tracking \(v1\.52\.0\): [^\n]*\/cycle-close does not check follow-on dispositions/],
+             ['CLAUDE.md', '## Open follow-on items\n- FO-[cycle]-[n] | [File: area]', '## Open follow-on items\n- [File: area]', /follow-on tracking \(v1\.52\.0\): [^\n]*STATE\.md template's follow-on line does not show/],
+             ['.cycle/STATE.md', 'guarded ONLY by that lock | → decision', 'guarded ONLY by that lock', /follow-on tracking \(v1\.52\.0\): [^\n]*no FO ID or no open disposition: "- FO-8-1 /],
+             ['.cycle/STATE.md', 'never been run end to end | → next audit', 'never been run end to end | → noted', /follow-on tracking \(v1\.52\.0\): [^\n]*no FO ID or no open disposition: "- FO-8-20 /],
+             ['.cycle/STATE.md', '- FO-8-13 |', '- FO-8-11 |', /follow-on tracking \(v1\.52\.0\): [^\n]*FO-8-11 is used twice/]],
   // INV-72 — ship a release into the current cycle with no block for it.
   // INV-75 — drop one of the three clause labels from the canonical rule.
   'INV-75': [['CLAUDE.md', '(a) DECLINE —', '(a) DROP —', /relative policy trigger \(INV-75\): [^\n]*no longer names the "DECLINE" clause/],

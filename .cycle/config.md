@@ -123,6 +123,7 @@ INV-77 | The console's §4v rotation probes are reproducible by a tool: verifica
 INV-78 | A CI stage counts only when its step's run: is the BARE stage command and nothing can skip or swallow it — no if:, no continue-on-error, no chained, piped or `|| true` command. The workflow is read as structure, not text: INV-74 proves every stage is listed in order, this proves a listed stage can actually fail the job (Cycle-7 F31; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 14, via ciStages)
 INV-80 | The Operator State Checklist's re-pull paragraph classifies EVERY release since v1.19.0 exactly once — "vX changed /cmd" or inside the "changed none" list — and the newest release's classification agrees with its own CHANGELOG entry. The v1.33.0 change to /setup-cycle sat in neither list for nine releases, so consuming projects were never told to re-pull it (Cycle-7 follow-on to F05; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 18)
 INV-81 | Deleting a project removes every ccg:<id>:* key and its Dashboard entries, and nothing else: the keys of a surviving project whose id extends the deleted one (ccg:<id>:two:*) and every ccg:secret:* key are kept — so a project re-created under the same derived id starts clean and no other project loses data (Cycle-7 follow-on A; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-90 | Every follow-on item is TRACKED to a disposition. Each command that reports follow-on items (derived: a FOLLOW-ON ITEMS field, a FOLLOW-ON AUDIT ITEMS block, or "record it as a follow-on item") carries ONE FOLLOW-ON IDS text — an FO-<cycle>-<n> ID, exactly one of this cycle / next audit / roadmap / decision / won't do (reason), "noted" refused, open items recorded in STATE.md and removed once finished — and an item line of that shape; every audit with a CYCLE OPEN step carries ONE FOLLOW-ON REVIEW text that re-checks "next audit" items as leads, never as findings (confirmed / already fixed / still open); /broad-implement takes FO items by ID; /cycle-close owes a new disposition for any left "this cycle"; and every item under "Open follow-on items" in the live .cycle/STATE.md has a unique FO ID and an open disposition. Each copy's CONTENT is asserted, not only that the copies agree (the Cycle-8 §4v lesson). Until v1.52.0 follow-ons were free-text bullets every command carried forward and none acted on: STATE.md held 22, one already done and one a regression no count included (operator request, 2026-11-20; numbered above the unpromoted candidates INV-83..89) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 22)
 
 ### Policy Configuration
 Policy threshold: 4/10
@@ -474,6 +475,13 @@ Cycle Workflow Config.
   so at the top of the audit and the pack warns when it is built without
   `--cycle` — but both only REPORT it: the number still moves, so the owed
   §4v must be asked for by number (`--cycle N`).
+- **A list every command carries forward and none acts on is not tracking.**
+  Follow-on items were printed by every implement session, copied into
+  STATE.md by the CHECKPOINT and kept by /cycle-close as "still live" — and no
+  command ever took one as scope. By Cycle 8 STATE.md held 22 free-text items:
+  one already done, one a regression no count included. An item needs an ID
+  and a disposition whose owner is a command (v1.52.0, INV-90), and a check
+  of the live list, not only of the templates that write it.
 - **A state field needs a writer for every value it offers.** STATE.md's
   `Phase` template listed seven values; commands wrote three, and nothing ever
   wrote `idle` — so every finished cycle read "in progress" to `/cycle-status`
@@ -602,6 +610,19 @@ so treat these as settled unless the reasoning below is what changed.
   never the command. The preamble may add an exception to the body's
   no-file-changes rule (saving the block it produces) but must not restate
   or override the body's instructions.
+- **A follow-on is a lead, never a finding.** Every follow-on gets an ID and
+  one disposition — this cycle, next audit, roadmap, decision, won't do — and
+  each disposition has an owner (/broad-implement by ID; the audits'
+  FOLLOW-ON REVIEW; /sync-docs; the operator; closed at once). The audits
+  re-check "next audit" items with fresh eyes and close them as confirmed,
+  already fixed or still open, so the fresh-eyes rule holds: an implementer's
+  note never enters a new audit as a conclusion. Assigning a follow-on to a
+  named batch was considered and rejected: the scan's batch plan exists only
+  in the scan's chat (ROADMAP R24), so "Batch 6" would point at nothing a
+  later session can read. FOLLOW-ON REVIEW is the audits' second permitted
+  write: it edits STATE.md's follow-on lines and moves an item it finds
+  already fixed to HISTORY.md with what it checked, so a closure the audit
+  decided never lives only in chat.
 - **Closing a cycle has one command, and it is optional.** `/cycle-close`
   checks what the cycle owes, rolls STATE into HISTORY and sets
   `Phase: idle`. Health Synthesis still sets idle on its own, and the first
@@ -682,7 +703,12 @@ machine or after a release.
   EVERY command file** (each gains a frontmatter description — re-pull the
   whole directory) **and the bodies of `/sync-docs`** (sixth check: roadmap
   currency) **and `/sync-commands`** (frontmatter is part of the file); **v1.51.0 changed `/roadmap`** (reads
-  the project's roadmap file and proposes its update, applied on approval).
+  the project's roadmap file and proposes its update, applied on approval);
+  **v1.52.0 changed `/broad-scan`, `/audit`, `/targeted-audit`** (FOLLOW-ON
+  REVIEW), **the three implement commands, `/regression` and `/cycle-resume`**
+  (FOLLOW-ON IDS: an ID and a disposition per follow-on), **`/cycle-status`,
+  `/cycle-close` and `/sync-docs`** (follow-on dispositions), and
+  `/broad-implement`'s argument hint.
   v1.19.1,
   v1.20.0–v1.22.0, v1.24.0, v1.25.0, v1.28.0, v1.30.0–v1.30.1,
   v1.31.0–v1.32.0, v1.36.0–v1.41.0, v1.43.0–v1.46.0 and v1.49.0 changed none.
@@ -744,6 +770,12 @@ machine or after a release.
   later cycle is already open.** Its step 8 now closes (`Phase: idle`) only
   the cycle STATE.md is in; synthesizing an earlier cycle leaves the phase
   alone. v1.47.0's wording would have idled a cycle that was mid-implement.
+- **Projects with a `.cycle/` directory, after re-pulling v1.52.0:** their
+  existing "Open follow-on items" are free text with no ID. Nothing breaks —
+  check 22 runs only in this repo — but no command acts on an item with no
+  disposition. Give each line an FO-<cycle>-<n> ID and one disposition once
+  (this repo's pass is in .cycle/HISTORY.md as an example), or let
+  /cycle-close ask for them at the next close.
 - **Projects with a `.cycle/` directory, after re-pulling v1.47.0:** nothing to
   migrate. A `Phase` of `plan`, `regression` or `verify` keeps working (it
   reads as work in progress; `verify` as awaiting close-out). Health Synthesis

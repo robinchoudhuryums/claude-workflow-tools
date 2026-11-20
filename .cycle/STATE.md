@@ -2,13 +2,16 @@
 
 ## Current
 Cycle: 8
-Phase: idle
+Phase: implement
 Scope: broad (Cycle-8 /broad-scan, 2026-11-19 — 48 findings F1–F48, 9 fix batches, expansion plan E1–E5)
 Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 2 (cadence 3 — /reflect increments it, a Seams audit resets it)
 Updated: 2026-11-20
 
 ## In progress (facts to carry forward — NOT judgments)
+- Cycle 8 was reflected (08-a), verified (08-b) and synthesized (PROJECT_HEALTH, 8.9/10) on 2026-11-20; the
+  operator adopted the 10-fix reading (net 10 − 3 = 7). v1.52.0 (follow-on tracking) shipped AFTER that
+  synthesis, so no §4v covers it; its block is 08-1.52.0-broad-implement.md.
 - Every fix batch of the plan is complete or dropped: Batches 1–3, 8 and 9, two rounds of follow-ons and
   expansion E2 (v1.44.0–v1.51.0; one block each in .cycle/blocks/). What is left is optional: expansions E3
   and E4, now also listed in ROADMAP.md as R24–R27.
@@ -97,6 +100,13 @@ Updated: 2026-11-20
   ROADMAP.md lists the scan's open expansion items as R24–R27 and states its bet on one line (none chosen).
   Mutation cases 154 → 158; library 78 (INV-23, INV-76 widened). /roadmap's body changed.
 
+- v1.52.0 | follow-on tracking (FT-1…FT-7, operator request) | every follow-on gets an FO-<cycle>-<n> ID and
+  one disposition (this cycle / next audit / roadmap / decision / won't do) under one FOLLOW-ON IDS rule in the
+  three implement commands, /regression and /cycle-resume; /broad-implement takes FO items by ID; the three
+  audits' FOLLOW-ON REVIEW re-checks "next audit" items as leads; /cycle-status counts, /cycle-close re-asks,
+  /sync-docs proposes roadmap items. Structural check 22 / INV-90 (library 78 → 79, 15 mutation cases) asserts
+  each copy's content and the live list. One-time pass: 22 items → FO-8-1…22; 7 open, 15 closed to HISTORY.md.
+
 ## Pending / not yet done
 - Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
   E4 ST3 mechanical mutation sweep. (ROADMAP R24, R25, R26, R27.)
@@ -120,50 +130,30 @@ Updated: 2026-11-20
   the next "one strategic bet" in ROADMAP.md (R1 then R6 are finished; R22's derived half is proposed, not chosen).
 
 ## Open follow-on items
-What is left is deliberate, needs a capability that does not exist yet, or is the owner's call (console-only
-follow-ons went with the freeze):
-- The console is frozen but still locked: check-html and gen-html-prompts --assert stay in the Test Command,
-  and a command-body edit still has to be mirrored into its builders.
-- S5–S17 (visual scenarios) have never been walked by a person and are not owed while the console is frozen;
-  S1–S4 are still walked by automation whenever the HTML changes.
-- F15 has no guard: nothing can tell an end-of-life Node line from a supported one without a date.
-- invariant-check passes a Verify to the shell as written: `\|` is NOT a pipe there (`grep 'a\|b'` needs
-  it), and toCommand still ends a command at " (", " + " or " then ", so a Verify cannot contain a subshell
-  or `if … then`. Both documented.
-- The hook snippet is POSIX shell syntax; a Windows setup whose hooks run under PowerShell needs
-  `$env:CLAUDE_PROJECT_DIR`. The exec form (`"args"`) the Claude Code docs prefer would avoid the shell, but
-  was not adopted: it could not be exercised here and older Claude Code versions may not read it.
-- guard.test's F7 case reads this repo's .cycle/STATE.md and CHANGELOG.md to build its sandbox.
-- check-html, check-template-sync and the mutation audit still call process.exit() after printing; their
-  output is far below a pipe's 64 KiB buffer today, so nothing is cut. verification-pack was the one that was.
-- The lifecycle is instruction text plus a text-derived guard (check 19): nothing mechanical checks a live
-  STATE.md transition. /cycle-close (v1.48.0) is still instruction text; team-tools has a scripted close-out
-  (scripts/cycle-closeout.mjs — dry run, --check for CI, --close) that could be upstreamed here.
-- Without verification-pack.mjs, /verify derives its rotation probes from the cycle number and library size,
-  which are known before implementation — no weaker than the console's date seed, weaker than the pack's sha.
-- Batch 3's block reported one new failure mode; the unconditional Phase: idle in §6a was a second, fixed in
-  v1.48.0 before any merge. /reflect should record that correction in its metrics notes.
-- Check 19 recognises a phase writer by the phrase "set Phase: <value>" — derived, but one wording (the class
-  Batch 8 closed for F43/F45). A step that sets a phase in other words reads as no writer: loud, not silent.
-- The mutation audit runs cases in parallel since v1.49.0: a Verify command that depends on timing can pass
-  over its own defect under load. One was found and fixed (the piped-pack test); another would show up as an
-  intermittent FALSE GREEN, not a steady one.
-- The audit's generic-signal check is four probe strings — /failed/ is rejected, /wrong/ would not be.
-- Check 10's sentence scan and check 16's floor scan read prose; a legitimate sentence shaped like a write
-  or like a floor would be flagged. The failure line quotes the sentence.
-- A project that never synthesizes rests at Phase: reflect between cycles; the portfolio board lists it under
-  "Reflected, not synthesized (or open the next audit)" until its next audit.
-- The same-audit-round window is 7 days: a second audit of one round started later than that, with nothing
-  implemented between, opens a new cycle.
-- .cycle/HISTORY.md is now written by the first CHECKPOINT of a cycle and still read by nothing.
-- The roadmap guard (check 21) reads two things: "queued for Cycle N" on an open item, and the Current bet
-  line. An item that shipped and is not marked done, or one stale in other words, is still /sync-docs' to find.
-- Check 21 is written for this repo's ROADMAP.md shape ("- **R<n> — …" items, ✅ DONE / ✗ DROPPED on the
-  heading line, a "**Current bet:**" line). A consuming project does not run this guard.
-- /roadmap's new closing step has not been run end to end.
-- A project on a /sync-commands older than v1.50.0 needs two runs to pick up the frontmatter (the first
-  updates /sync-commands itself), or a copy of the whole directory.
-- Strategic, carried: no LICENSE file (the licence is the owner's choice).
+- FO-8-1 | console lock — the console is frozen but still locked: check-html and gen-html-prompts --assert
+  stay in the Test Command, and every command-body edit is mirrored into its builders. 08-b-verification
+  found three Cycle-8 fixes guarded ONLY by that lock | → decision
+- FO-8-5 | .claude/settings.json, CLAUDE.md hook snippet — the hook command is POSIX shell syntax and fails
+  where hooks run under PowerShell; counted as regression R3 by 08-b-verification. The exec form
+  ("args") would avoid the shell but could not be exercised here | → next audit
+- FO-8-8 | /cycle-close — the lifecycle is instruction text plus a text-derived guard; team-tools has a
+  scripted close-out (scripts/cycle-closeout.mjs: dry run, --check for CI, --close) that could be
+  upstreamed here | → roadmap
+- FO-8-11 | check-template-sync check 19(a) — recognises a phase writer by the one phrase "set Phase:
+  <value>"; a step that sets a phase in other words reads as no writer (loud, not silent) | → next audit
+- FO-8-13 | tests/mutation-audit.mjs — the generic-signal check is four probe strings: /failed/ is
+  rejected, /wrong/ would not be; could be derived instead of listed | → next audit
+- FO-8-20 | /roadmap — its v1.51.0 closing step (propose the roadmap-file update, apply on approval) has
+  never been run end to end | → next audit
+- FO-8-22 | repository — no LICENSE file; the licence is the owner's choice | → decision
+- FO-8-23 | check-template-sync check 21 — ties CI to STATE.md's Cycle field: an open roadmap item that says
+  "queued for Cycle N" turns CI red as soon as the next audit's CYCLE OPEN moves Cycle past N, in a
+  session whose only cycle writes are STATE.md. None does today (08-b-verification) | → next audit
+- FO-8-25 | /targeted-audit, /plan — FOLLOW-ON REVIEW marks a confirmed item "confirmed as <finding ID>",
+  but /targeted-audit's findings carry no IDs (only its actions do) and /plan's handoff renumbers; the link
+  from an FO item to the action that fixes it is the implementer's to make | → next audit
+- FO-8-26 | /test-sync, /pr-review — both defer items (a Category D bug, a PR nit) with no FO ID, so what they
+  defer is still untracked; they are not reporters under check 22 | → next audit
 
 ## Decisions made (so the next session doesn't re-litigate)
 - The console's prompts are GENERATED/LOCKED from CLAUDE.md. As of v1.29.0 this covers EVERY static
@@ -223,12 +213,13 @@ follow-ons went with the freeze):
 - An argument hint goes on every command whose body reads $ARGUMENTS, including the three that read it only
   to detect an empty call (/plan, /implement, /targeted-implement).
 - A description is a label: it may describe a write to .cycle/ (two do) and may not name a scripts/ helper.
+- A follow-on is a lead, never a finding: it gets an ID and one disposition, and each disposition has an owner
+  (v1.52.0). Assigning it to a named batch was rejected — the scan's batch plan lives only in chat (R24).
 - /roadmap writes the roadmap file only on approval; its bet is a proposal. No "last reviewed N cycles ago"
   guard: it would go red when an audit's CYCLE OPEN moved the cycle on, in a session that may write nothing else.
 
 ## Where I left off
-Cycle 8. v1.44.0–v1.51.0 are on branch claude/stoic-goldberg-gg0oz5 (not merged). Every fix batch of the
-scan is done or dropped (1–3, 8, 9 and their follow-ons; 4–7 went with the console freeze); the optional
-expansions E3 and E4 (ROADMAP R24–R27) are all that is left of it. Next: /reflect for Cycle 8. Cycle 7 still
-owes /verify 7 (fresh session) and /health-synthesis 7. Consuming projects need /sync-commands for
-v1.47.0–v1.51.0 (v1.50.0 changes every file).
+Cycle 8, after its synthesis. v1.52.0 (follow-on tracking) is on branch claude/fervent-edison-tdej8d. Next:
+merge it, then /cycle-close to return Phase to idle — or let the next audit's CYCLE OPEN open Cycle 9; its
+FOLLOW-ON REVIEW takes FO-8-5, 11, 13, 20 and 23, and Cycle 8's two policy responses are mandatory scope.
+Cycle 7 still owes /verify 7 (fresh session) and /health-synthesis 7. Consuming projects re-pull v1.47.0–v1.52.0.

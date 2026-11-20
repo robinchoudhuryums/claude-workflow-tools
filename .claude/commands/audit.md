@@ -13,7 +13,8 @@ Workflow Config.
 
 Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
 Cycle Workflow Config) before starting. Do not make any changes to any
-files during this session, other than the optional CYCLE OPEN step below.
+files during this session, other than the optional CYCLE OPEN and
+FOLLOW-ON REVIEW steps below.
 
 This session's scope: $ARGUMENTS
 
@@ -28,7 +29,8 @@ Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is the ONLY file write the session may make.
+a new cycle, and this is one of the session's two permitted file writes
+(the other is FOLLOW-ON REVIEW, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -50,6 +52,22 @@ increments it. When you increment:
   verification inputs must now be requested for cycle N by number,
   because the Cycle field has moved on.
 Skip if .cycle/STATE.md does not exist.
+
+FOLLOW-ON REVIEW (optional — only if .cycle/STATE.md exists): read the
+"Open follow-on items" in .cycle/STATE.md. Each item marked "next audit"
+whose area falls in this audit's scope is a LEAD, not a finding: re-check
+it with fresh eyes and close it as exactly one of —
+- confirmed: it becomes a finding; give the finding its own ID and cite
+  the FO ID beside it;
+- already fixed: say what you checked;
+- still open: keep it, and say why it is not a finding yet.
+List every reviewed item under a FOLLOW-ON REVIEW heading at the end of
+your output. Then move the items closed as already fixed from
+.cycle/STATE.md to .cycle/HISTORY.md with what you checked, and in STATE.md
+change a confirmed item's disposition to "confirmed as <finding
+ID> (Cycle <N>)" — it stays open until the session that implements that
+finding removes it. Items with any other disposition are not this audit's
+to close. Skip this step if .cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from

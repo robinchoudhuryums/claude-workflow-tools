@@ -835,7 +835,8 @@ audit/plan/implement sessions, plus the inter-module dependency map.</pre>
       <div class="fill-form" id="fill-p1"></div>
       <pre id="p1">Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
 Cycle Workflow Config) before starting. Do not make any changes to any
-files during this session, other than the optional CYCLE OPEN step below.
+files during this session, other than the optional CYCLE OPEN and
+FOLLOW-ON REVIEW steps below.
 
 This session's scope: [SUBSYSTEM GROUP NAME]
 
@@ -850,7 +851,8 @@ Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is the ONLY file write the session may make.
+a new cycle, and this is one of the session's two permitted file writes
+(the other is FOLLOW-ON REVIEW, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -872,6 +874,22 @@ increments it. When you increment:
   verification inputs must now be requested for cycle N by number,
   because the Cycle field has moved on.
 Skip if .cycle/STATE.md does not exist.
+
+FOLLOW-ON REVIEW (optional — only if .cycle/STATE.md exists): read the
+"Open follow-on items" in .cycle/STATE.md. Each item marked "next audit"
+whose area falls in this audit's scope is a LEAD, not a finding: re-check
+it with fresh eyes and close it as exactly one of —
+- confirmed: it becomes a finding; give the finding its own ID and cite
+  the FO ID beside it;
+- already fixed: say what you checked;
+- still open: keep it, and say why it is not a finding yet.
+List every reviewed item under a FOLLOW-ON REVIEW heading at the end of
+your output. Then move the items closed as already fixed from
+.cycle/STATE.md to .cycle/HISTORY.md with what you checked, and in STATE.md
+change a confirmed item's disposition to "confirmed as &lt;finding
+ID&gt; (Cycle &lt;N&gt;)" — it stays open until the session that implements that
+finding removes it. Items with any other disposition are not this audit's
+to close. Skip this step if .cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from
@@ -1162,11 +1180,29 @@ Deploy: [Deploy Command for any touched subsystem if configured, else "N/A — n
 (Not complete in production until blocking operator actions are done AND the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
-- [out-of-scope items to add to the backlog] (or "None")
+- FO-[cycle]-[n] | [File: area] — [out-of-scope item for the backlog] | → [this cycle | next audit | roadmap | decision | won't do (reason)]
+(or "None")
 
 DOCUMENTATION UPDATES NEEDED:
 - [CLAUDE.md / README / inline] (or "None")
 ---END IMPLEMENTATION SUMMARY BLOCK---
+
+FOLLOW-ON IDS (every follow-on item this session reports): number each
+FO-&lt;cycle&gt;-&lt;n&gt;, with &lt;cycle&gt; from .cycle/STATE.md's Cycle field and &lt;n&gt; one
+above the highest FO number already used for that cycle in STATE.md and
+.cycle/blocks/ (FO-&lt;n&gt; if the project keeps no .cycle/). Give each exactly
+one disposition:
+- this cycle — a later implement session takes it by its ID
+- next audit — the next audit whose scope covers it re-checks it, as a
+  lead and not as a finding
+- roadmap — too large for one session; /sync-docs proposes a roadmap item
+- decision — only the operator can settle it; name the choice
+- won't do (reason) — closed now, and the reason is the record
+"Noted" is not a disposition. Only if a .cycle/ directory exists: add
+every item that is not "won't do" to the "Open follow-on items" in .cycle/STATE.md, one
+line each with its ID and disposition, and remove each open item this
+session finished or closed — including one marked "confirmed as" a
+finding this session implemented.
 
 3. CHECKPOINT (optional — only if .cycle/ exists): create/update
    .cycle/STATE.md (completed/pending actions, follow-ons, decisions,
@@ -1251,7 +1287,8 @@ Do not begin implementation until this check is complete.</pre>
       </div>
       <div class="fill-form" id="fill-p4post"></div>
       <pre id="p4post">Read CLAUDE.md before starting. Do not make any changes to any files
-during this session.
+during this session, other than the optional STATE.md write in FOLLOW-ON
+IDS at the end.
 
 [PASTE SYSTEMS MAP SUMMARY HERE, INCLUDING THE INTER-MODULE DEPENDENCY MAP]
 [PASTE IMPLEMENTATION SUMMARY BLOCK FROM THE IMPLEMENTATION SESSION]
@@ -1276,9 +1313,26 @@ Based on the systems map and the changes made:
 Prioritize the verification list by likelihood of breakage. Then:
 
 ---FOLLOW-ON AUDIT ITEMS---
-- [File: function/area] — [what to check, why flagged, which change surfaced it]
+- FO-[cycle]-[n] | [File: function/area] — [what to check, why flagged, which change surfaced it] | → [this cycle | next audit | roadmap | decision | won't do (reason)]
 (repeat for each item, or "None")
----END FOLLOW-ON AUDIT ITEMS---</pre>
+---END FOLLOW-ON AUDIT ITEMS---
+
+FOLLOW-ON IDS (every follow-on item this session reports): number each
+FO-&lt;cycle&gt;-&lt;n&gt;, with &lt;cycle&gt; from .cycle/STATE.md's Cycle field and &lt;n&gt; one
+above the highest FO number already used for that cycle in STATE.md and
+.cycle/blocks/ (FO-&lt;n&gt; if the project keeps no .cycle/). Give each exactly
+one disposition:
+- this cycle — a later implement session takes it by its ID
+- next audit — the next audit whose scope covers it re-checks it, as a
+  lead and not as a finding
+- roadmap — too large for one session; /sync-docs proposes a roadmap item
+- decision — only the operator can settle it; name the choice
+- won't do (reason) — closed now, and the reason is the record
+"Noted" is not a disposition. Only if a .cycle/ directory exists: add
+every item that is not "won't do" to the "Open follow-on items" in .cycle/STATE.md, one
+line each with its ID and disposition, and remove each open item this
+session finished or closed — including one marked "confirmed as" a
+finding this session implemented.</pre>
     </div>
 
     <div class="vt" role="button" tabindex="0" aria-expanded="false" aria-controls="v-reflect" onclick="toggleVariant('v-reflect',this)" onkeydown="kbdActivate(event)"><div class="vt-label"><em>Add-on</em> Post-Cycle Reflection — run in same session after regression check</div><div class="ch">▼</div></div>
@@ -3386,13 +3440,14 @@ function deleteArchiveEntry(id){
 function buildTier1Text(project){
   const dimList=project.healthDimensions.split(',').map(d=>`- ${d.trim()}`).join('\n');
   return `Do not make any changes to any files during the audit phase, other than
-the optional CYCLE OPEN step below.
+the optional CYCLE OPEN and FOLLOW-ON REVIEW steps below.
 
 Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
 README, and the roadmap carefully before doing anything else.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is the ONLY file write the session may make.
+a new cycle, and this is one of the session's two permitted file writes
+(the other is FOLLOW-ON REVIEW, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -3414,6 +3469,22 @@ increments it. When you increment:
   verification inputs must now be requested for cycle N by number,
   because the Cycle field has moved on.
 Skip if .cycle/STATE.md does not exist.
+
+FOLLOW-ON REVIEW (optional — only if .cycle/STATE.md exists): read the
+"Open follow-on items" in .cycle/STATE.md. Each item marked "next audit"
+whose area falls in this audit's scope is a LEAD, not a finding: re-check
+it with fresh eyes and close it as exactly one of —
+- confirmed: it becomes a finding; give the finding its own ID and cite
+  the FO ID beside it;
+- already fixed: say what you checked;
+- still open: keep it, and say why it is not a finding yet.
+List every reviewed item under a FOLLOW-ON REVIEW heading at the end of
+your output. Then move the items closed as already fixed from
+.cycle/STATE.md to .cycle/HISTORY.md with what you checked, and in STATE.md
+change a confirmed item's disposition to "confirmed as <finding
+ID> (Cycle <N>)" — it stays open until the session that implements that
+finding removes it. Items with any other disposition are not this audit's
+to close. Skip this step if .cycle/STATE.md does not exist.
 
 This audit runs in three stages within this session. Complete each stage fully before starting the next.
 
@@ -3641,7 +3712,7 @@ function buildTier2AuditText(project){
   return `Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
 the Cycle Workflow Config) before starting. Do not make any changes
 to any files during this session, other than the optional CYCLE OPEN
-step below.
+and FOLLOW-ON REVIEW steps below.
 
 [PASTE SYSTEMS MAP SUMMARY HERE]
 
@@ -3650,7 +3721,8 @@ Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is the ONLY file write the session may make.
+a new cycle, and this is one of the session's two permitted file writes
+(the other is FOLLOW-ON REVIEW, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -3672,6 +3744,22 @@ increments it. When you increment:
   verification inputs must now be requested for cycle N by number,
   because the Cycle field has moved on.
 Skip if .cycle/STATE.md does not exist.
+
+FOLLOW-ON REVIEW (optional — only if .cycle/STATE.md exists): read the
+"Open follow-on items" in .cycle/STATE.md. Each item marked "next audit"
+whose area falls in this audit's scope is a LEAD, not a finding: re-check
+it with fresh eyes and close it as exactly one of —
+- confirmed: it becomes a finding; give the finding its own ID and cite
+  the FO ID beside it;
+- already fixed: say what you checked;
+- still open: keep it, and say why it is not a finding yet.
+List every reviewed item under a FOLLOW-ON REVIEW heading at the end of
+your output. Then move the items closed as already fixed from
+.cycle/STATE.md to .cycle/HISTORY.md with what you checked, and in STATE.md
+change a confirmed item's disposition to "confirmed as <finding
+ID> (Cycle <N>)" — it stays open until the session that implements that
+finding removes it. Items with any other disposition are not this audit's
+to close. Skip this step if .cycle/STATE.md does not exist.
 
 If [SUBSYSTEM GROUP NAME] names a subsystem listed in \`Frozen Subsystems\`:
 print this banner at the top of your output before continuing, then
@@ -3808,12 +3896,29 @@ Deploy: [Deploy Command for the touched subsystem if configured, else
 the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
-- [File: area] — [what to check and why]
+- FO-[cycle]-[n] | [File: area] — [what to check and why] | → [this cycle | next audit | roadmap | decision | won't do (reason)]
 (or "None")
 
 DOCUMENTATION UPDATES NEEDED:
 - [updates or "None"]
 ---END TARGETED IMPLEMENTATION SUMMARY---
+
+FOLLOW-ON IDS (every follow-on item this session reports): number each
+FO-<cycle>-<n>, with <cycle> from .cycle/STATE.md's Cycle field and <n> one
+above the highest FO number already used for that cycle in STATE.md and
+.cycle/blocks/ (FO-<n> if the project keeps no .cycle/). Give each exactly
+one disposition:
+- this cycle — a later implement session takes it by its ID
+- next audit — the next audit whose scope covers it re-checks it, as a
+  lead and not as a finding
+- roadmap — too large for one session; /sync-docs proposes a roadmap item
+- decision — only the operator can settle it; name the choice
+- won't do (reason) — closed now, and the reason is the record
+"Noted" is not a disposition. Only if a .cycle/ directory exists: add
+every item that is not "won't do" to the "Open follow-on items" in .cycle/STATE.md, one
+line each with its ID and disposition, and remove each open item this
+session finished or closed — including one marked "confirmed as" a
+finding this session implemented.
 
 7. CHECKPOINT (optional — only if the project uses .cycle/ state)
 If a .cycle/ directory exists at the project root, create or update
@@ -3870,6 +3975,11 @@ Rules:
 - G (completeness gap) and ST (strategic suggestion) items from the
   scan's EXPANSION PLAN are in scope only when named above, by ID or by
   their E-batch. They are new capability, not fixes — see REFLECT
+- FO-<cycle>-<n> items (follow-on items an earlier session recorded) are
+  in scope only when named above by ID. Read each from the "Open follow-on
+  items" in .cycle/STATE.md, or from the summary block that reported it; if
+  neither is in this session, ask for it. List it under Findings
+  implemented by its FO ID
 - Do not fix, refactor, or improve anything outside this scope even if
   you notice other issues — note them at the end
 - If a fix is more complex than expected, stop and describe what you
@@ -3952,13 +4062,30 @@ subsystem, the command(s) to run, one line per subsystem; else
 the deploy step is confirmed.)
 
 FOLLOW-ON ITEMS:
-- [anything noticed but not fixed, out of scope]
+- FO-[cycle]-[n] | [File: area] — [anything noticed but not fixed, out of scope] | → [this cycle | next audit | roadmap | decision | won't do (reason)]
 (or "None")
 
 DOCUMENTATION UPDATES NEEDED:
 - [any CLAUDE.md, README, or inline doc changes needed]
 (or "None")
 ---END BROAD SCAN IMPLEMENTATION SUMMARY---
+
+FOLLOW-ON IDS (every follow-on item this session reports): number each
+FO-<cycle>-<n>, with <cycle> from .cycle/STATE.md's Cycle field and <n> one
+above the highest FO number already used for that cycle in STATE.md and
+.cycle/blocks/ (FO-<n> if the project keeps no .cycle/). Give each exactly
+one disposition:
+- this cycle — a later implement session takes it by its ID
+- next audit — the next audit whose scope covers it re-checks it, as a
+  lead and not as a finding
+- roadmap — too large for one session; /sync-docs proposes a roadmap item
+- decision — only the operator can settle it; name the choice
+- won't do (reason) — closed now, and the reason is the record
+"Noted" is not a disposition. Only if a .cycle/ directory exists: add
+every item that is not "won't do" to the "Open follow-on items" in .cycle/STATE.md, one
+line each with its ID and disposition, and remove each open item this
+session finished or closed — including one marked "confirmed as" a
+finding this session implemented.
 
 6. CHECKPOINT (optional — only if the project uses .cycle/ state)
 If a .cycle/ directory exists at the project root, create or update

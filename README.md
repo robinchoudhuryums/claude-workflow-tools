@@ -109,6 +109,7 @@ If context fills mid-implementation (work unfinished), the optional `.cycle/` st
 ### Cycle State & Resuming
 For session-to-session continuity without manual copy-paste, projects can keep an optional `.cycle/` directory at the repo root:
 - `.cycle/STATE.md` — a rolling "where I left off" file. The audit that opens a cycle writes its `Cycle`/`Phase`/`Scope` (CYCLE OPEN), the implement commands' CHECKPOINT step writes the rest (the first one of a cycle also moves the previous cycle's entries to `HISTORY.md`), `/reflect` sets the phase and the seams counter, and Health Synthesis returns the phase to `idle`, which closes the cycle. `Phase` is one of `audit`, `implement`, `reflect`, `idle`; `/cycle-status` and `/cycle-resume` read it. It keeps the shape of the template in `CLAUDE.md` and carries the *current* cycle only — `check-template-sync` fails if it grows a section the template doesn't define, because unchecked it accumulates per-release narrative until the substrate a new session loads is buried in it.
+- **Follow-on items** — every follow-on an implement session, `/regression` or `/cycle-resume` reports gets an ID (`FO-<cycle>-<n>`) and one disposition: *this cycle* (run it with `/broad-implement FO-8-3`), *next audit* (the next audit re-checks it as a lead in its FOLLOW-ON REVIEW step — never as a finding), *roadmap* (`/sync-docs` proposes the item), *decision* (yours to make) or *won't do* with a reason (closed at once, kept in the block). Open items live in `STATE.md`'s "Open follow-on items"; `/cycle-status` counts them by disposition and `/cycle-close` asks for a new disposition for any still marked *this cycle*. Until v1.52.0 a follow-on was a free-text bullet that was carried forward and never acted on.
 - `.cycle/HISTORY.md` — optional: the narrative record of completed cycles, moved out of `STATE.md` so that file stays rolling. The first implement CHECKPOINT of a new cycle moves the previous cycle's entries here. Reference prose; nothing reads it.
 - `.cycle/metrics.csv` — per-cycle metrics (net score, Category D ratio, …).
 - `.cycle/estimates.csv` — estimate-vs-actual effort log that `/reflect` appends, surfacing your personal calibration over time.
@@ -234,7 +235,7 @@ wording below is the same text: it comes from the Command Index table in
 | VERIFICATION BLOCK | `/verify` (Verification Pass) | `/health-synthesis` |
 | SEAMS & INVARIANTS AUDIT BLOCK | `/seams-audit` | Next subsystem audit, `/health-synthesis`, `/sync-docs` |
 | CYCLE SUMMARY BLOCK | `/reflect` | Health Synthesis |
-| FOLLOW-ON AUDIT ITEMS | `/regression` | The next audit of that scope (pasted as follow-on items) |
+| FOLLOW-ON AUDIT ITEMS | `/regression` | The next audit of that scope — FO-numbered and dispositioned; with `.cycle/` they are recorded in `STATE.md` and the audit's FOLLOW-ON REVIEW reads them, without it you paste them |
 | POLICY RESPONSE | `/health-synthesis` (when a trigger fires) | The next cycle's audit and plan — mandatory scope |
 | PR REVIEW BLOCK | `/pr-review` | Operator (merge decision); optionally posted to the PR |
 
