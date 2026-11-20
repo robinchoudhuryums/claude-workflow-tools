@@ -78,6 +78,9 @@ Updated: 2026-11-20
   (beyond alert/confirm/setTimeout) fails the callee check until the stub is added.
 - Generic paste textareas now save per keystroke (oninput) rather than on blur; the systems-map textarea
   still saves on blur (onchange), as before.
+- NEW (found in Batch 2, not fixed): piping verification-pack.mjs truncates the pack at 65,536 bytes — Cycle 7's
+  is 119,689. main() calls process.exit() after writing stdout (the F41 class, fixed only in invariant-check).
+  `--out FILE` and a `>` redirect are complete; use those for the Cycle-7 pack.
 - invariant-check passes a Verify to the shell as written, so `\|` is NOT a pipe there (it is what
   `grep 'a\|b'` needs). The console's project form writes `\|` in its textarea only; nothing emits it into
   a config. CHANGELOG 1.43.0 still calls it "the escape the config readers already use" — no reader does.
