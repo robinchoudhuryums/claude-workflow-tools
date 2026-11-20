@@ -6,7 +6,7 @@
 // project that has no .cycle/ directory.
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -153,6 +153,29 @@ if (/average overall: \*\*6\.8\/10\*\* across 3 scored/.test(out)) ok('averages 
   try { lOut = execFileSync('node', [script, legacy], { encoding: 'utf8' }); } catch (e) { bad('renderer threw on the legacy-phase fixture: ' + (e.message || e)); }
   if (/\|\s*regression\s*\|\s*yes\s*\|/.test(row(lOut, 'p-legacy'))) ok('a phase the template no longer offers still reads in progress (Cycle-8 F1)');
   else bad('Cycle-8 F1: an unrecognised phase was not treated as work in progress');
+}
+
+// A project that keeps .cycle/ state but has no PROJECT_HEALTH.md still lists, and a project can
+// be named by its directory. Two of the first seven real projects the board was pointed at had
+// state and no health file — and were skipped with a line on stderr.
+{
+  const dir = join(root, 'epsilon');
+  mkdirSync(join(dir, '.cycle'), { recursive: true });
+  writeFileSync(join(dir, '.cycle', 'STATE.md'), '# Cycle State\n## Current\nCycle: 3\nPhase: implement\nSubsystem cycles since last Seams audit: 1\nUpdated: 2026-08-02\n');
+  const empty = join(root, 'zeta'); mkdirSync(empty, { recursive: true });
+  let r = { stdout: '', stderr: '', status: 1 };
+  try { r = spawnSync('node', [script, join(root, 'alpha'), join(dir, 'PROJECT_HEALTH.md'), dir, empty], { encoding: 'utf8' }); } catch (e) { bad('renderer threw on the no-health fixture: ' + (e.message || e)); }
+  const eRows = r.stdout.split('\n').filter(l => l.startsWith('| epsilon |'));
+  const problems = [];
+  if (r.status !== 0) problems.push(`exit ${r.status}`);
+  if (!/\| alpha \| 8\.5\/10 \|/.test(r.stdout)) problems.push('a project named by its directory was not read');
+  if (eRows.length !== 2) problems.push(`a project with state and no PROJECT_HEALTH.md listed ${eRows.length} time(s) for 2 mentions`);
+  else if (!/\| epsilon \| — \| implement \| yes \|/.test(eRows[0]) || !/1\/4/.test(eRows[0])) problems.push('its row lost the phase, in-progress or seams columns: ' + eRows[0]);
+  if (!/No PROJECT_HEALTH\.md: epsilon/.test(r.stdout)) problems.push('the Read section does not say it has no PROJECT_HEALTH.md');
+  if (/No synthesis score yet: [^\n]*epsilon/.test(r.stdout)) problems.push('it is also told to run a synthesis it has no file for');
+  if (/\| zeta \|/.test(r.stdout) || !/skipped [^\n]*zeta/.test(r.stderr)) problems.push('a directory with neither file was not skipped with a reason');
+  if (!problems.length) ok('a project with .cycle/ state and no PROJECT_HEALTH.md still lists, by file path or by directory; one with neither is skipped with a reason');
+  else bad('no-health project: ' + problems.join('; '));
 }
 
 rmSync(root, { recursive: true, force: true });

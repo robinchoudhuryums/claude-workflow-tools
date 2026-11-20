@@ -10,6 +10,7 @@
 // unhealthiest."
 //
 //   node scripts/portfolio-status.mjs ../obs/PROJECT_HEALTH.md ../cla/PROJECT_HEALTH.md
+//   node scripts/portfolio-status.mjs ../obs ../cla # a project DIRECTORY works too
 //   node scripts/portfolio-status.mjs              # defaults to ./PROJECT_HEALTH.md
 //   ... [--out FILE]                               # write instead of printing
 //
@@ -17,7 +18,7 @@
 // looked for next to the PROJECT_HEALTH.md. Projects with no `.cycle/` (pure
 // copy-paste workflow) still list, with status columns shown as "—".
 
-import { readFileSync, existsSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, statSync } from 'node:fs';
 import { dirname, basename, resolve, join } from 'node:path';
 import { parseCSV } from './csv.mjs';
 import { HEALTH_FIELDS, HEALTH_SECTION } from './health-fields.mjs';   // INV-71
@@ -104,10 +105,19 @@ function netTrend(metricsFile) {
 }
 
 const projects = [];
-for (const p of paths) {
-  let md;
+for (const given of paths) {
+  // A project is named by its PROJECT_HEALTH.md or by its directory. A project that keeps
+  // .cycle/ state but has no PROJECT_HEALTH.md yet still LISTS — it has a phase and a next
+  // action, which is what this board is for. Until v1.48.0 it was skipped with a stderr
+  // line, so two of the first seven projects this board was pointed at never appeared.
+  let p = given;
+  try { if (statSync(p).isDirectory()) p = join(p, 'PROJECT_HEALTH.md'); } catch {}
+  let md, noHealth = false;
   try { md = readFileSync(p, 'utf8'); }
-  catch { console.error(`! skipped ${p} (cannot read)`); continue; }
+  catch {
+    if (!existsSync(join(dirname(resolve(p)), '.cycle', 'STATE.md'))) { console.error(`! skipped ${given} (no PROJECT_HEALTH.md and no .cycle/STATE.md)`); continue; }
+    md = ''; noHealth = true;
+  }
   const standing = section(md, HEALTH_SECTION);
   const overall = parseFloat(field(standing, HEALTH_FIELDS.overall));
   const root = dirname(resolve(p));
@@ -136,12 +146,12 @@ for (const p of paths) {
     label: basename(root) || p,
     overall: Number.isFinite(overall) ? overall : null,
     overallStr: field(standing, HEALTH_FIELDS.overall) || '—',
-    phase, kind, inProgress, trend, seamsCell, seamsDue,
+    phase, kind, inProgress, trend, seamsCell, seamsDue, noHealth,
     updated: updated || field(standing, HEALTH_FIELDS.lastSynthesis) || '—',
   });
 }
 
-if (!projects.length) { console.error('No readable PROJECT_HEALTH.md files.'); process.exit(1); }
+if (!projects.length) { console.error('No readable PROJECT_HEALTH.md files and no .cycle/STATE.md beside any of them.'); process.exit(1); }
 
 // Lowest overall first = most in need of attention (nulls last).
 const ranked = [...projects].sort((a, b) => (a.overall ?? 99) - (b.overall ?? 99));
@@ -167,7 +177,9 @@ const closing = ranked.filter(p => p.kind === 'closeout');
 if (closing.length) out.push(`- **Reflected, not synthesized: ${closing.map(p => p.label).join(', ')}** — run the Verification Pass in a fresh session, then Health Synthesis (or open the next audit).`);
 const due = ranked.filter(p => p.seamsDue);
 if (due.length) out.push(`- **Seams audit DUE: ${due.map(p => p.label).join(', ')}** — run a Seams & Invariants audit.`);
-const unscored = ranked.filter(p => p.overall === null);
+const bare = ranked.filter(p => p.noHealth);
+if (bare.length) out.push(`- No PROJECT_HEALTH.md: ${bare.map(p => p.label).join(', ')} — /cycle-init creates the skeleton.`);
+const unscored = ranked.filter(p => p.overall === null && !p.noHealth);
 if (unscored.length) out.push(`- No synthesis score yet: ${unscored.map(p => p.label).join(', ')} — run a Health Synthesis.`);
 out.push('', '_Net Δ = direction of summed net_score between the last two recorded cycles (volume of fixes, not a health delta)._');
 

@@ -236,6 +236,9 @@ S17 | VISUAL — density at 200% zoom | Subsystem: Interactive Console (HTML)
     - At 1280px set zoom to 200%; walk Dashboard, §1 with a fill form open, Projects with the form open
   Expected: single column, nothing overlapping, labels sit with their fields
 
+### Frozen Subsystems
+- Interactive Console (HTML) — frozen by the operator on 2026-11-20. The workflow is run through the slash commands and the `.cycle/` files; the console is not used day to day. It stays hosted as a prompt reference and its prompts stay generated/locked from CLAUDE.md, so the lock (`gen-html-prompts --assert`) and `check-html` keep running and a command-body change still mirrors into it — but it is not audited, extended or polished. What replaces it: the commands, `.cycle/` state, `portfolio-status.mjs` and the weekly cross-project board. Unfreeze if it becomes a working surface again, for the operator or for someone who adopts it.
+
 ### Deploy Command
 Interactive Console (HTML): merge to `main` — GitHub Pages republishes
   https://robinchoudhuryums.github.io/claude-workflow-tools/ from `index.html`
@@ -650,16 +653,24 @@ machine or after a release.
   now writes `.cycle/STATE.md` (`Phase: idle`) as well as its metrics row. A
   project that never synthesizes rests at `Phase: reflect` between cycles —
   the next audit opens the next cycle from there.
+- **The hosted console is frozen with known defects (2026-11-20).** The
+  Cycle-8 scan's console findings were dropped, not fixed: the Dashboard can
+  show a stale or wrong repo's score (F22–F25), pasted config-format invariant
+  lines double their labels (F20), keyboard focus is lost after eight actions
+  (F32), 18 panels have no heading (F33), `--accent` text is faint in light
+  mode (F31), and its GitHub-token note understates who can read the token on
+  a shared `github.io` origin (F14) — do not store a token there. Nothing
+  rated High. If someone else relies on the page, unfreeze it or say so on it.
 - **`§4v` must run in a fresh session** with no implementation context.
 
 ## Cycle Rotation Plan (operator reference)
 
-Recommended first audit: Interactive Console (HTML) — largest logic
-surface, only file with branching JS, least covered by the Test Command.
-
-Cycle order: (1) Interactive Console (HTML) → (2) Canonical Templates &
-Docs → (3) Tooling & Sync Infrastructure → Seams & Invariants audit
-(CLAUDE.md ↔ HTML behavioral parity is the defining risk).
+Cycle order: (1) Canonical Templates & Docs → (2) Tooling & Sync
+Infrastructure → Seams & Invariants audit. Interactive Console (HTML) is
+FROZEN since 2026-11-20 (see Frozen Subsystems) and skipped unless named;
+before that it was the recommended first audit — largest logic surface, only
+file with branching JS. CLAUDE.md ↔ HTML parity is held by the lock, not by
+audits.
 
 Seams audit frequency: every 3 subsystem cycles.
 

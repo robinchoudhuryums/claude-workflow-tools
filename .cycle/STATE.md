@@ -59,49 +59,45 @@ Updated: 2026-11-20
   Ten command bodies changed — consuming projects re-pull.
 
 ## Pending / not yet done
-- Batch 4 — console data: F20 config-format invariant lines double their labels; F22 Dashboard not re-rendered
-  on switch/add/delete/import; F23 Dashboard cache keyed by id only; F24 parseHealth/parseState unscoped;
-  F25 refresh races; F26 Save → repo creates .cycle/; F27 project-form edge cases; F28 import shapes.
-  Closing F28 makes candidate INV-82 true — promote it then (/sync-docs).
-- Batch 5 — console focus and structure: F32 focus lost after eight actions; F33 no headings on 18 panels;
-  F36 silent save failures after the first; F34 drawer trap above 768px; F35 aria-expanded drift, 16px dots.
-- Batch 6 — console theme and prose: F31 --accent as text in light mode; F37 no reduced-motion /
-  forced-colors / color-scheme / print; F38 six small items; F39 stale tips and cadence text.
-- Batch 7 — check-html false greens: F40 hostile fixture blind to five sinks; F47 ten single-instance proofs;
-  F48 four false reds. (After Batches 5 and 6.) Closing F40 makes candidate INV-79 true — promote it then.
-- Batch 8 — sync, lock, mutation audit: F41 mutation signals matched against passing output; F42 --assert
-  drops 23 lines and hand-lists builders; F43 INV-33 one literal phrase; F44 INV-12 step-shaped writes only;
-  F45 INV-75 one spelling (after F39); F46 job-level permissions.
-- Batch 9 — docs and adoption: F8 command frontmatter; F9 ROADMAP stale; F14 token note omits the shared
-  github.io origin. (F10 was closed by /sync-docs on 2026-11-20.)
+- E2 (next, operator-approved 2026-11-20) — ST4 cycle-close + G1 commands for §4v, §1s and §6a, so the whole
+  cycle runs from chat.
+- Batch 8 — sync and mutation audit: F41 mutation signals matched against passing output; F43 INV-33 one
+  literal phrase; F44 INV-12 step-shaped writes only; F45 INV-75 one spelling; F46 job-level permissions.
+- Batch 9 — docs and adoption: F8 command frontmatter; F9 ROADMAP stale. (F10 closed by /sync-docs.)
+- Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
+  E4 ST3 mechanical mutation sweep.
+- DROPPED with the console freeze (2026-11-20, operator decision — known defects on the hosted page, none
+  rated High; the scan's wording survives only in the session transcript):
+  Batch 4 F20 F22 F23 F24 F25 F26 F27 F28 · Batch 5 F32 F33 F34 F35 F36 · Batch 6 F31 F37 F38 F39 ·
+  Batch 7 F40 F47 F48 · from Batch 8: F42 (the --assert lock's holes) · from Batch 9: F14 (token note) ·
+  expansion E1 (G2 browser CI stage), E5 (G4 console import), ST2 (event delegation + CSP).
 - Deferred: F13 — operator question: is CallAnalyzer's file layout and invariant list meant to be public?
-- Expansion (optional): E1 G2 real-browser CI stage; E2 ST4 cycle-close + G1 §1s/§6a commands; E3 G3 scan
-  persistence + G5 interface lens in /pr-review + ST1 allowed-tools; E4 ST3 mechanical mutation sweep;
-  E5 G4 console import from config. Not batched: ST2 (event delegation + CSP).
+  (More pointed now: the frozen console that carries them stays hosted.)
 - Cycle 7 still owes §4v in a FRESH session — `node scripts/verification-pack.mjs --cycle 7 --out pack.md`
   (without --cycle the pack builds Cycle 8 and now says Cycle 7 is owed) — then §6a. Carried from Cycle 7: F43
   (hook framing/size cap).
 - Two Cycle-7 candidates are HELD, not declined — numbers reserved, text in 07-a-reflect.md: INV-79 (hostile
-  fixture seeds every stored and fetched input; contradicted by F40) and INV-82 (active id names a project,
-  ccg:* keys shape-validated on import; contradicted by F28). The next new candidate is INV-83.
+  fixture; contradicted by F40) and INV-82 (import shape validation; contradicted by F28). Both findings were
+  dropped with the freeze, so both stay held until the console is unfrozen — or the operator declines them.
+  The next new candidate is INV-83.
 - OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
-  independence vs the SessionStart hook; R21's /audit vs /targeted-audit dead-code asymmetry.
+  independence vs the SessionStart hook; R21's /audit vs /targeted-audit dead-code asymmetry; whether the
+  console lock should keep costing a builder mirror on every command-body change now that the console is frozen.
 
 ## Open follow-on items
-What is left is deliberate, needs a capability that does not exist yet, or is the owner's call:
-- Layout has no CI guard (F18's header wrap, the 320px button rows): clipping is geometry and no stage drives
-  a browser (E1 / ROADMAP R20). Both were measured in Chromium, 15 widths from 320 to 1280px.
+What is left is deliberate, needs a capability that does not exist yet, or is the owner's call (console-only
+follow-ons went with the freeze):
+- The console is frozen but still locked: check-html and gen-html-prompts --assert stay in the Test Command,
+  and a command-body edit still has to be mirrored into its builders.
+- S5–S17 (visual scenarios) have never been walked by a person and are not owed while the console is frozen;
+  S1–S4 are still walked by automation whenever the HTML changes.
 - F15 has no guard: nothing can tell an end-of-life Node line from a supported one without a date.
-- A static inline handler that calls a browser global the vm context does not stub (beyond alert, confirm,
-  setTimeout) fails check-html's callee check until the stub is added — loud by design.
 - invariant-check passes a Verify to the shell as written: `\|` is NOT a pipe there (`grep 'a\|b'` needs
   it), and toCommand still ends a command at " (", " + " or " then ", so a Verify cannot contain a subshell
   or `if … then`. Both documented.
 - The hook snippet is POSIX shell syntax; a Windows setup whose hooks run under PowerShell needs
   `$env:CLAUDE_PROJECT_DIR`. The exec form (`"args"`) the Claude Code docs prefer would avoid the shell, but
   was not adopted: it could not be exercised here and older Claude Code versions may not read it.
-- The Setup prompt's `[N]` is classified as a fill field by getPlaceholders; it has no form, and the F11
-  check's NEVER list would reject a form that offered it.
 - guard.test's F7 case reads this repo's .cycle/STATE.md and CHANGELOG.md to build its sandbox.
 - check-html, check-template-sync and the mutation audit still call process.exit() after printing; their
   output is far below a pipe's 64 KiB buffer today, so nothing is cut. verification-pack was the one that was.
@@ -158,10 +154,12 @@ What is left is deliberate, needs a capability that does not exist yet, or is th
   session — which is why Batch 3 widened INV-35/52/65 and left INV-76…82 where they were.
 - A candidate the newest audit contradicts is HELD until the contradicting finding closes — promoting it
   would add a rule whose Verify passes over a known violation (INV-79 / F40, INV-82 / F28).
+- The Interactive Console is FROZEN (operator, 2026-11-20): the workflow runs through the slash commands, the
+  .cycle/ files, portfolio-status and a weekly scheduled cross-project board. Console-only findings and
+  expansion items were dropped, not deferred. The lock stays, so the hosted page keeps matching the commands.
 
 ## Where I left off
-Cycle 8, Batches 1–3 and the follow-ons shipped as v1.44.0–v1.47.0 on branch claude/stoic-goldberg-gg0oz5
-(not merged — the hosted console still serves v1.43.0 with the dead Fill buttons until it is). /sync-docs has
-run on top (library 78; INV-79 and INV-82 held). Next: merge, have consuming projects run /sync-commands
-(v1.47.0 changed ten command bodies), then /broad-implement Batch 4 (console data). Cycle 7's §4v and §6a
-are still owed (pass --cycle 7). A person still needs to walk S5–S17.
+Cycle 8. Batches 1–3 and the follow-ons shipped as v1.44.0–v1.47.0 on branch claude/stoic-goldberg-gg0oz5 (not
+merged). The console is frozen and its batches dropped; a weekly cross-project board is scheduled (Mondays
+7:36 CT). Next: E2 (cycle-close + commands for §4v/§1s/§6a), then merge and have consuming projects run
+/sync-commands. Cycle 7's §4v and §6a are still owed (pass --cycle 7).
