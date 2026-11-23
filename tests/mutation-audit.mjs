@@ -215,7 +215,7 @@ const CASES = {
   'INV-22': [['scripts/check-template-sync.mjs', 'const cmdMissing = tableCmds.filter', 'const cmdMissing = [] || tableCmds.filter', /README command lacking/i]],
   'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i],
              // Cycle-8 follow-on to F9: the roadmap contradicts the cycle. guard.test reads the LIVE ROADMAP.md.
-             ['ROADMAP.md', '**Current bet:** R22, then R24, R27, and R25 / R26, in that order (operator, 2026-11-23).', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
+             ['ROADMAP.md', '**Current bet:** R24, then R27, and R25 / R26, in that order (operator, 2026-11-23; the first item of the order shipped in v1.55.0).', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
              ['ROADMAP.md', '- **R24 — Persist the scan report.** `effort: S (~1.5h)`', '- **R24 — Persist the scan report.** `effort: S (~1.5h)` — queued for Cycle 7', /the live ROADMAP\.md fails — [^\n]*R24 is still "queued for Cycle 7"/],
              // the check stops telling a finished item from an open one
              ['scripts/check-template-sync.mjs', 'closed: /✅ DONE|✗ DROPPED/.test(l) });', 'closed: false });', /a bet naming a finished item is not flagged/]],
@@ -289,6 +289,19 @@ const CASES = {
   'INV-92': [['.claude/commands/verify.md', "NO REFLECT BLOCK — if none of that cycle's files is a …-reflect.md", 'If there is no …-reflect.md', /verification inputs \(v1\.54\.0, INV-92\): [^\n]*\/verify does not check for the cycle's reflect block/],
              ['.claude/commands/health-synthesis.md', 'first. Do not go on until they answer.', 'first, or carry on.', /verification inputs \(v1\.54\.0, INV-92\): [^\n]*\/health-synthesis does not stop and ask/],
              ['.claude/commands/verify.md', '.cycle/blocks/<cycle>-verification.md — a fixed name, taking no letter', '.cycle/blocks/<cycle>-<letter>-verification.md — the next unused letter', /verification inputs \(v1\.54\.0, INV-92\): [^\n]*\/verify does not write its block under the fixed name/]],
+  // INV-93/94/95 (v1.55.0, ROADMAP R22) — the synthesis pack reconciles, recomputes and cross-checks.
+  'INV-93': [['scripts/synthesis-pack.mjs', 'nfm: s.nfm + r.score.nfm', 'nfm: s.nfm', /R22-1 reconciliation sum wrong/],
+             ['scripts/synthesis-pack.mjs', 'if (afterReflect.length) findings.push(', 'if (false && afterReflect.length) findings.push(', /R22-1 reconciliation did not name the releases shipped after the reflection/],
+             ['scripts/synthesis-pack.mjs', "if (!verif) findings.push({ kind: 'no-verification'", "if (!verif) findings.push({ kind: 'info'", /R22-1 reconciliation did not flag a cycle with no Verification Block/],
+             ['scripts/synthesis-pack.mjs', 'totals.corrections.length ? `the reflect row records a CORRECTION', 'false ? `the reflect row records a CORRECTION', /R22-1 reconciliation did not report the reflect row disagreeing with its recorded CORRECTION/]],
+  'INV-94': [['scripts/synthesis-pack.mjs', "if (lowestRun >= consecutive && t > 0 && s[t - 1] != null && s[t] <= s[t - 1]) clauses.push('persistent laggard');", '', /R22-2 triggers did not reproduce Cycle 8/],
+             ['scripts/synthesis-pack.mjs', "&& s[t] <= s[t - 1]) clauses.push('persistent laggard')", ") clauses.push('persistent laggard')", /R22-2 persistent laggard fired on a recovering category/],
+             ['scripts/synthesis-pack.mjs', "if (declines >= consecutive) clauses.push('decline');", "if (declines >= consecutive - 1) clauses.push('decline');", /R22-2 decline fired on a single fall/],
+             ['scripts/synthesis-pack.mjs', "line.split(' | ').map(seg =>", "[line].map(seg =>", /R22-2 parseHistory misread the Score History/]],
+  'INV-95': [['PROJECT_HEALTH.md', 'Top horizontal priority: Guard / Test Coverage Quality (7.5,', 'Top horizontal priority: Guard / Test Coverage Quality (7.0,', /synthesis consistency \(R22-3, INV-95\): Current Standing's top horizontal priority/],
+             ['.cycle/metrics.csv', ',40%,Guard', ',30%,Guard', /synthesis consistency \(R22-3, INV-95\): Category D: the metrics row says 30%/],
+             ['PROJECT_HEALTH.md', 'Policy responses triggered: Guard / Test Coverage Quality (persistent laggard); Silent Prompt Degradation (decline)', 'Policy responses triggered: Guard / Test Coverage Quality (persistent laggard)', /synthesis consistency \(R22-3, INV-95\): recomputed from the Score History, Silent Prompt Degradation fires \(decline\)/],
+             ['PROJECT_HEALTH.md', 'Overall (weighted avg): 8.9/10\nOne-line', 'Overall (weighted avg): 9.1/10\nOne-line', /synthesis consistency \(R22-3, INV-95\): Overall: Current Standing says 9\.1/]],
   // INV-90 (v1.52.0) — follow-on items tracked to a disposition (structural check 22).
   // Every case breaks ONE copy and is caught by that copy's CONTENT, not only by
   // the copies disagreeing — the property Cycle-8 §4v found missing for F4–F6.

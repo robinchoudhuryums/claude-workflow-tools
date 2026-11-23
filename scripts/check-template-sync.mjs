@@ -58,6 +58,7 @@ const CHECKS = [
   { feature: 'SessionStart context hook',  marker: 'sessionstart',                files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Metrics report renderer',    marker: 'render-metrics',              files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Executable invariant runner', marker: 'invariant-check',            files: ['CLAUDE.md', 'README.md'] },
+  { feature: 'Synthesis pack (R22)',       marker: 'synthesis-pack',              files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Invariant mutation audit',    marker: 'mutation-audit',              files: ['CLAUDE.md', 'README.md'] },
   { feature: 'Portfolio dashboard',        marker: 'portfolio',                   files: ['CLAUDE.md', 'README.md'] },
   { feature: 'File System Access draft (R3)', marker: 'file system access',        files: ['README.md', 'claude-code-guide-v2.html'] },

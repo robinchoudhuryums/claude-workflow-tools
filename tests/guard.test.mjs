@@ -298,7 +298,7 @@ expectFail('detects a command description that names a scripts/ helper (Cycle-8 
     if (history.code !== 0) problems.push(`a past-tense "was queued for" is read as a live status — ${line(history)}`);
     const spent = withRoadmap(t => t.replace(bet, '**Current bet:** R1, then R6.'));
     if (spent.code === 0 || !/the strategic bet names R1, which is marked done or dropped/.test(spent.out)) problems.push(`a bet naming a finished item is not flagged — ${line(spent)}`);
-    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R22 (its derived half).'));
+    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R24 (persist the scan report).'));
     if (open.code !== 0) problems.push(`a bet naming an open item is rejected — ${line(open)}`);
     const unstated = withRoadmap(t => t.replace(bet, 'The bet is discussed below.'));
     if (unstated.code === 0 || !/has no "\*\*Current bet:\*\*" line/.test(unstated.out)) problems.push(`a roadmap that states no bet is not flagged — ${line(unstated)}`);

@@ -4,7 +4,7 @@
 Cycle: 8
 Phase: implement
 Scope: broad (Cycle-8 /broad-scan, 2026-11-19 — 48 findings F1–F48, 9 fix batches, expansion plan E1–E5)
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/synthesis-pack.test.mjs && node scripts/synthesis-pack.mjs --check && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 2 (cadence 3 — /reflect increments it, a Seams audit resets it)
 Updated: 2026-11-23
 
@@ -117,6 +117,11 @@ Updated: 2026-11-23
 - v1.54.0 | FO-8-28 | /verify and /health-synthesis stop and ask when the cycle has no reflect block; /verify
   writes its block as <cycle>-verification.md, taking no letter. Check 23 / INV-92. Library 80 → 81.
 
+- v1.55.0 | R22-1 to R22-3 (ROADMAP R22) | scripts/synthesis-pack.mjs reconciles a cycle's net scores against the
+  reflect row and verification (reported, not failed), computes the Score History series and where each policy
+  clause fires, and --check holds the newest synthesis to itself in value (INV-93, 94, 95; Test Command 15 → 17
+  stages). /health-synthesis step 6 uses it and runs --check after writing. Roadmap bet now R24 → R27 → R25/R26.
+
 ## Pending / not yet done
 - Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
   E4 ST3 mechanical mutation sweep. (ROADMAP R24, R25, R26, R27.)
@@ -156,6 +161,12 @@ Updated: 2026-11-23
   session whose only cycle writes are STATE.md. None does today (08-b-verification) | → next audit
 - FO-8-29 | /seams-audit BLOCKS step — the Seams block still takes "the next unused lowercase letter", the same
   collision class FO-8-28 closed for the verification block | → next audit
+- FO-8-30 | /cycle-close, the implement CHECKPOINTs — a release shipped after a cycle's synthesis sets Phase:
+  implement, and /cycle-close then refuses to close (Phase implement → STOP): Cycle 8 is synthesized and cannot
+  be closed. Choose: /cycle-close accepts Phase implement when the cycle has a synthesis row (and reports the
+  later releases as uncovered), or a post-synthesis release belongs to the next cycle | → decision
+- FO-8-31 | scripts/synthesis-pack.mjs — "covered by the reflection / verification" is the newest version each
+  block MENTIONS; a block naming a later version for another reason would cover releases it never saw | → next audit
 - FO-8-25 | /targeted-audit, /plan — FOLLOW-ON REVIEW marks a confirmed item "confirmed as <finding ID>",
   but /targeted-audit's findings carry no IDs (only its actions do) and /plan's handoff renumbers; the link
   from an FO item to the action that fixes it is the implementer's to make | → next audit
@@ -228,7 +239,6 @@ Updated: 2026-11-23
   guard: it would go red when an audit's CYCLE OPEN moved the cycle on, in a session that may write nothing else.
 
 ## Where I left off
-Cycle 8, after its synthesis; v1.52.0–v1.54.0 are on branch claude/fervent-edison-tdej8d (not merged). Both of
-Cycle 8's policy responses are built. Next: merge, then start the roadmap bet with R22 — or /cycle-close and
-open Cycle 9 with an audit. Cycle 7 still owes /verify 7 and /health-synthesis 7. Consuming projects re-pull
-v1.47.0–v1.54.0 and re-copy the hook script.
+Cycle 8, after its synthesis; v1.52.0–v1.55.0 are on branch claude/fervent-edison-tdej8d (not merged). R22 is done;
+the roadmap bet is now R24, then R27, then R25/R26. FO-8-30 asks how a synthesized cycle with later releases
+closes. Cycle 7 still owes /verify 7 and /health-synthesis 7. Consuming projects re-pull v1.47.0–v1.55.0.

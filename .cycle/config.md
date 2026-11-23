@@ -8,7 +8,7 @@ are the template/schema for consuming projects, not this repo's config.
 ## Cycle Workflow Config
 
 ### Test Command
-node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
+node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/synthesis-pack.test.mjs && node scripts/synthesis-pack.mjs --check && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 
 ### Health Dimensions
 Overall, Prompt Quality & Efficacy, Cross-Artifact Consistency, HTML Console Correctness, Console UI/UX & Accessibility, Command Completeness & Coverage, Documentation Accuracy, Config-Schema Robustness, Guard & Tooling Coverage, Adaptability / Project-Agnosticism, Onboarding & Adoption Friction, Backward Compatibility, State & Memory Integrity
@@ -35,8 +35,8 @@ Tooling & Sync Infrastructure:
   scripts/gen-commands.mjs, scripts/gen-html-prompts.mjs, scripts/check-template-sync.mjs,
   scripts/check-html.mjs, scripts/check-output-blocks.mjs, scripts/cycle-context.mjs,
   scripts/render-metrics.mjs, scripts/invariant-check.mjs, scripts/portfolio.mjs,
-  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/csv.mjs,
-  scripts/health-fields.mjs, tests/ (10 regression tests + mutation-audit.mjs),
+  scripts/portfolio-status.mjs, scripts/verification-pack.mjs, scripts/synthesis-pack.mjs, scripts/csv.mjs,
+  scripts/health-fields.mjs, tests/ (11 regression tests + mutation-audit.mjs),
   .github/workflows/sync-check.yml, .claude/commands/ (generated), .claude/settings.json, .gitignore
 Cycle state (not audited as source, but read/written by the tooling above):
   .cycle/STATE.md, .cycle/config.md, .cycle/metrics.csv, .cycle/estimates.csv, .cycle/blocks/,
@@ -126,6 +126,9 @@ INV-88 | New invariant candidates are numbered above the highest INV-N in the li
 INV-90 | Every follow-on item is TRACKED to a disposition. Each command that reports follow-on items (derived: a FOLLOW-ON ITEMS field, a FOLLOW-ON AUDIT ITEMS block, or "record it as a follow-on item") carries ONE FOLLOW-ON IDS text — an FO-<cycle>-<n> ID, exactly one of this cycle / next audit / roadmap / decision / won't do (reason), "noted" refused, open items recorded in STATE.md and removed once finished — and an item line of that shape; every audit with a CYCLE OPEN step carries ONE FOLLOW-ON REVIEW text that re-checks "next audit" items as leads, never as findings (confirmed / already fixed / still open); /broad-implement takes FO items by ID; /cycle-close owes a new disposition for any left "this cycle"; and every item under "Open follow-on items" in the live .cycle/STATE.md has a unique FO ID and an open disposition. Each copy's CONTENT is asserted, not only that the copies agree (the Cycle-8 §4v lesson). Until v1.52.0 follow-ons were free-text bullets every command carried forward and none acted on: STATE.md held 22, one already done and one a regression no count included (operator request, 2026-11-20; numbered above the unpromoted candidates INV-83..89) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 22)
 INV-91 | Every audit with a CYCLE OPEN step (/broad-scan, /audit, /targeted-audit) carries ONE dead/superseded-artifact lens — flag dead code, exports, styles, markup, config, flags or exemptions only where they actively mislead (volume is not a finding; concealment is), mark each SAFE (mechanically verified unreferenced) or PROPOSE (dynamic references cannot be ruled out), PROPOSE items being questions and never removals — and the rule that a removal needs a fix's evidence. Until v1.53.0 only /broad-scan had it: /audit had a one-line "dead code (only if it creates confusion)" and /targeted-audit nothing (R21's asymmetry, decided by the operator 2026-11-23) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 23)
 INV-92 | /verify and /health-synthesis STOP and ask the operator when the cycle has no …-reflect.md block — without it there is no Cycle Summary Block and no reflect row, and a verification or synthesis would grade only the implementer's own counts — and /verify writes its block under the FIXED name <cycle>-verification.md (then -2, -3), taking no letter. In Cycle 8, /verify ran without the reflect block and did not stop, and its letter (08-a) was taken by a /reflect running in another session, so the block had to be renamed after the fact (the rest of Cycle 8's Silent Prompt Degradation policy response, FO-8-28) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 23)
+INV-93 | The synthesis pack RECONCILES a cycle's numbers instead of leaving them to be added by eye: it sums the NET SCORE lines of the cycle's release blocks, sets them beside the phase=reflect row and the newest Verification Block, and names every disagreement with its cause — a recorded CORRECTION, a release shipped after the reflection or the verification (judged by the newest version each mentions), a block with no NET SCORE line or with wrong arithmetic, a verification that counted more regressions than the self-reports, a cycle with no reflect row or no verification. Disagreements are REPORTED, not failed: reflection and verification may legitimately differ, and the operator settles it (decision 2026-11-23). Cycle 8 needed it: 10 − 2 in the blocks, 6 − 2 in the reflect row, 10 − 3 in the verification, 4 left in the metrics row after the operator adopted 10, and three releases after the synthesis that nothing covered (ROADMAP R22-1) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/synthesis-pack.test.mjs
+INV-94 | The synthesis pack COMPUTES the prior scores and the policy triggers rather than leaving them to be eyeballed: it reads every Score History entry format into a series per Axis B category, names the cycles with no synthesis (so a delta and "consecutive" run across synthesized cycles only), and evaluates the four §6a clauses — decline over `Consecutive cycles`, a sharp drop of 1.5, a persistent laggard that did not improve (a recovering one does not fire), the absolute floor — from the config's Policy Configuration; on Cycle 8's series it fires exactly Silent Prompt Degradation (decline) and Guard / Test Coverage Quality (persistent laggard). For the cycle being synthesized it states the score at which each clause would fire (ROADMAP R22-2) | Subsystem: Tooling & Sync Infrastructure | Verify: node tests/synthesis-pack.test.mjs
+INV-95 | A synthesis AGREES WITH ITSELF in value, not only in labels (INV-71): for the newest synthesis, the metrics phase=synthesis row, PROJECT_HEALTH.md's Current Standing and the newest Score History entry carry one cycle number, one lowest Axis B category and score (axis_b_lowest = Top horizontal priority = the entry's minimum), one Category D ratio and one Overall, and the entry's "Policy responses triggered" line names exactly the categories and clauses recomputed from the Score History. A project that has never synthesized is skipped (ROADMAP R22-3) | Subsystem: Canonical Templates & Docs | Verify: node scripts/synthesis-pack.mjs --check
 
 ### Policy Configuration
 Policy threshold: 4/10
@@ -719,7 +722,9 @@ machine or after a release.
   `/targeted-audit`** (one dead-code lens), **`/seams-audit`** (the body reads
   the project's Axis B categories) and **`/verify`** (hook output is the
   implementer's record); **v1.54.0 changed `/verify` and `/health-synthesis`**
-  (stop and ask with no reflect block; a fixed verification block name).
+  (stop and ask with no reflect block; a fixed verification block name);
+  **v1.55.0 changed `/health-synthesis`** (step 6 uses the synthesis pack;
+  `--check` after writing).
   v1.19.1,
   v1.20.0–v1.22.0, v1.24.0, v1.25.0, v1.28.0, v1.30.0–v1.30.1,
   v1.31.0–v1.32.0, v1.36.0–v1.41.0, v1.43.0–v1.46.0 and v1.49.0 changed none.
@@ -781,6 +786,12 @@ machine or after a release.
   later cycle is already open.** Its step 8 now closes (`Phase: idle`) only
   the cycle STATE.md is in; synthesizing an earlier cycle leaves the phase
   alone. v1.47.0's wording would have idled a cycle that was mid-implement.
+- **Projects that want the synthesis pack (v1.55.0):** copy
+  `scripts/synthesis-pack.mjs` with `verification-pack.mjs`,
+  `gen-html-prompts.mjs`, `csv.mjs` and `health-fields.mjs`. Without it
+  `/health-synthesis` derives the same figures by hand, as before. With it,
+  add `node scripts/synthesis-pack.mjs --check` to the Test Command so a
+  synthesis that disagrees with itself turns CI red.
 - **Projects that copied the SessionStart hook, after v1.53.0:** re-copy
   `scripts/cycle-context.mjs`. The old script keeps loading "Where I left
   off", Pending and the standing's prose into every session, a verification

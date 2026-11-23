@@ -47,6 +47,10 @@ jobs:
         run: node tests/check-output-blocks.test.mjs
       - name: R19 verification-pack assembler regression test
         run: node tests/verification-pack.test.mjs
+      - name: Synthesis pack regression test (R22)
+        run: node tests/synthesis-pack.test.mjs
+      - name: Synthesis consistency — metrics row, Current Standing, Score History agree (R22-3)
+        run: node scripts/synthesis-pack.mjs --check
       - name: Mutation-audit harness regression test
         run: node tests/mutation-audit.test.mjs
       - name: Invariant mutation audit (every Verify command must fail closed)

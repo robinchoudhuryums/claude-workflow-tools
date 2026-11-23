@@ -5,6 +5,39 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.55.0 — 2026-11-23
+
+ROADMAP R22 — the Health Synthesis inputs are derived, not added up by eye
+(batches R22-1 to R22-3). **Command body changed — run `/sync-commands` in
+consuming projects (`/health-synthesis`); copy `scripts/synthesis-pack.mjs`
+to use it.**
+
+- **`scripts/synthesis-pack.mjs` reconciles a cycle's numbers** (R22-1,
+  INV-93). It sums the release blocks' NET SCORE lines and sets them beside
+  the reflect row and the newest Verification Block, naming each disagreement
+  with its cause: a recorded correction, releases shipped after the
+  reflection or the verification, a block with no score line or wrong
+  arithmetic, regressions the self-reports missed, a missing reflect row or
+  verification. Reported, not failed — the operator settles a disagreement.
+  On Cycle 8 it shows 10 − 2 in the blocks, 6 − 2 in the reflect row (with
+  its CORRECTION), 10 − 3 in the verification, and v1.52.0–v1.54.0 covered by
+  neither.
+- **It computes the prior scores and the policy triggers** (R22-2, INV-94):
+  the Score History as a series per Axis B category (every entry format back
+  to Cycle 1), the cycles never synthesized, and for the cycle being
+  synthesized the score at which each of the four clauses would fire. On
+  Cycle 8's series it fires exactly the two responses that synthesis found.
+- **`--check` holds a synthesis to itself** (R22-3, INV-95), in the Test
+  Command and CI: the metrics row, Current Standing and the newest Score
+  History entry must carry one cycle, one lowest Axis B category and score,
+  one Category D, one Overall, and a "Policy responses triggered" line equal
+  to the recomputed clauses. INV-71 checked the labels; this checks the
+  values. A project that has never synthesized is skipped.
+- **`/health-synthesis` uses it** where the project has the script: a new
+  step 6 takes the derived figures instead of eyeballing them, and the
+  PROJECT HEALTH step runs `--check` after writing.
+- 12 mutation cases; library 81 → 84; Test Command 15 → 17 stages.
+
 ## 1.54.0 — 2026-11-23
 
 The rest of Cycle 8's Silent Prompt Degradation policy response (FO-8-28).

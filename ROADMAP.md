@@ -22,7 +22,7 @@ the console are closed as dropped, not left open.
 
 ## Tier 1 — Short-term (days–weeks)
 
-- **R22 — `scripts/synthesis-pack.mjs`, the §6a sibling of the §4v pack.** `effort: M (~½ day)` — ◐ PARTLY SUPERSEDED (v1.48.0); the derived half is open.
+- **R22 — `scripts/synthesis-pack.mjs`, the §6a sibling of the §4v pack.** `effort: M (~½ day)` — ✅ DONE (v1.55.0: the derived half — reconciliation, computed triggers and the consistency guard, in three batches R22-1 to R22-3, about 10h against the ½-day estimate made before checks carried mutation proof).
   *Status, 2026-11-20:* this was queued for Cycle 7 and not picked up there.
   `/health-synthesis` (v1.48.0) then removed the paste step: the command reads
   the cycle's blocks, the prior scores and the config itself, so §6a is no
@@ -426,7 +426,7 @@ the console are closed as dropped, not left open.
 
 ## The one strategic bet
 
-**Current bet:** R22, then R24, R27, and R25 / R26, in that order (operator, 2026-11-23).
+**Current bet:** R24, then R27, and R25 / R26, in that order (operator, 2026-11-23; the first item of the order shipped in v1.55.0).
 
 This is the operator's decision; the order above was chosen on 2026-11-23,
 starting with R22's derived half (the cycle's numbers checked rather than

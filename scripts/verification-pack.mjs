@@ -120,7 +120,7 @@ export function sameCycle(a, b) {
 // file with a reordered or extra column. A file with no header falls back to
 // the canonical order.
 const METRICS_COLUMNS = ['date', 'cycle', 'subsystem', 'phase', 'net_score', 'prod_fixes', 'new_failure_modes', 'category_d_ratio', 'axis_b_lowest', 'notes', 'defensive_count'];
-function metricsRows(metricsCsv) {
+export function metricsRows(metricsCsv) {
   const all = parseCSV(metricsCsv || '');
   const head = (all[0] || []).map(h => h.trim());
   const hasHeader = head.includes('cycle') && head.includes('phase');
