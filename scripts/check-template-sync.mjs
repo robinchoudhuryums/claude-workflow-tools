@@ -1211,8 +1211,8 @@ try {
   try { files = readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md')); } catch (e) {}
   const bodies = new Map(files.map(f => [f.replace(/\.md$/, ''), flat(commandBodyOf(f))]));
   const fenced = h => { const i = claudeRaw.indexOf('### ' + h + '\n'); if (i === -1) return null; const a = claudeRaw.indexOf('```\n', i); return a === -1 ? null : claudeRaw.slice(a + 4, claudeRaw.indexOf('\n```', a + 4)); };
-  const report = (label, inv, problems, okText) => {
-    if (problems.length) { failures++; console.log(`  ✗ ${label} (v1.53.0, ${inv}): ${problems.join('; ')}`); }
+  const report = (label, inv, problems, okText, ver = 'v1.53.0') => {
+    if (problems.length) { failures++; console.log(`  ✗ ${label} (${ver}, ${inv}): ${problems.join('; ')}`); }
     else console.log(`  ✓ ${okText} (${inv})`);
   };
   // INV-86 — CYCLE OPEN content, in every audit that has the step
@@ -1279,7 +1279,21 @@ try {
     for (const [n, l] of lenses) if (l) { const lacks = PARTS.filter(p => !l.includes(p)); if (lacks.length) problems.push(`${n}'s dead-code lens lacks ${lacks.map(p => JSON.stringify(p)).join(', ')}`); }
     for (const n of audits) if (!bodies.get(n).includes('Removing something is a change like any other and needs the same evidence a fix needs. If you cannot name the check that proves nothing references it, it is a PROPOSE, not a finding.')) problems.push(`${n} lacks the rule that a removal needs a fix's evidence`);
     report('dead-code lens', 'INV-91', problems, `the three audits share one dead/superseded-artifact lens (SAFE / PROPOSE, never a removal on a guess) and the removal-needs-evidence rule — ${audits.length} audits`);
+  }  // INV-92 — /verify and /health-synthesis stop on a cycle with no reflect block; the verification block has a fixed name
+  {
+    const problems = [];
+    for (const n of ['verify', 'health-synthesis']) {
+      const b = bodies.get(n) || '';
+      if (!b) { problems.push(`${n}.md not found`); continue; }
+      if (!b.includes("NO REFLECT BLOCK — if none of that cycle's files is a …-reflect.md block")) problems.push(`/${n} does not check for the cycle's reflect block`);
+      if (!b.includes('ask the operator whether to') || !b.includes('Do not go on until they answer.')) problems.push(`/${n} does not stop and ask when the reflect block is missing`);
+    }
+    const v = bodies.get('verify') || '';
+    if (!v.includes('.cycle/blocks/<cycle>-verification.md — a fixed name, taking no letter')) problems.push('/verify does not write its block under the fixed name <cycle>-verification.md');
+    if (/<cycle>-<letter>-verification\.md/.test(v)) problems.push('/verify still names its block with a letter — a parallel /reflect can take the same one');
+    report('verification inputs', 'INV-92', problems, '/verify and /health-synthesis stop and ask when the cycle has no reflect block, and /verify writes <cycle>-verification.md under a fixed name', 'v1.54.0');
   }
+
 }
 
 if (failures) {

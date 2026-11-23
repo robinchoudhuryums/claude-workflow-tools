@@ -285,6 +285,10 @@ const CASES = {
   'INV-91': [['.claude/commands/targeted-audit.md', 'never removals.', 'or removals.', /dead-code lens \(v1\.53\.0, INV-91\): [^\n]*audit\(s\) with no dead\/superseded-artifact lens: targeted-audit/],
              ['.claude/commands/audit.md', 'Volume is not a\n   finding; concealment is. ', '', /dead-code lens \(v1\.53\.0, INV-91\): [^\n]*audit's dead-code lens lacks "Volume is not a finding; concealment is\."/],
              ['.claude/commands/broad-scan.md', 'it, it is a PROPOSE, not a finding.', 'it, remove it.', /dead-code lens \(v1\.53\.0, INV-91\): [^\n]*broad-scan lacks the rule that a removal needs a fix's evidence/]],
+  // INV-92 (v1.54.0) — /verify and /health-synthesis stop with no reflect block; a fixed verification block name.
+  'INV-92': [['.claude/commands/verify.md', "NO REFLECT BLOCK — if none of that cycle's files is a …-reflect.md", 'If there is no …-reflect.md', /verification inputs \(v1\.54\.0, INV-92\): [^\n]*\/verify does not check for the cycle's reflect block/],
+             ['.claude/commands/health-synthesis.md', 'first. Do not go on until they answer.', 'first, or carry on.', /verification inputs \(v1\.54\.0, INV-92\): [^\n]*\/health-synthesis does not stop and ask/],
+             ['.claude/commands/verify.md', '.cycle/blocks/<cycle>-verification.md — a fixed name, taking no letter', '.cycle/blocks/<cycle>-<letter>-verification.md — the next unused letter', /verification inputs \(v1\.54\.0, INV-92\): [^\n]*\/verify does not write its block under the fixed name/]],
   // INV-90 (v1.52.0) — follow-on items tracked to a disposition (structural check 22).
   // Every case breaks ONE copy and is caught by that copy's CONTENT, not only by
   // the copies disagreeing — the property Cycle-8 §4v found missing for F4–F6.

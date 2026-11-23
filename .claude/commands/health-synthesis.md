@@ -22,7 +22,14 @@ before reading on.
    (…-verification.md), a Seams block (…-seams.md) if one ran, and the
    audit's handoff if one was saved. If there is no Verification Block,
    say so at the top and follow the prompt's rule for a missing one — do
-   not verify the cycle yourself in this session.
+   not verify the cycle yourself in this session. If there are several
+   (…-verification.md, …-verification-2.md), the newest is the input and
+   the others are named as superseded.
+   NO REFLECT BLOCK — if none of that cycle's files is a …-reflect.md
+   block, /reflect has not run, so the cycle has no Cycle Summary Block
+   and no reflect row for its net score: say so at the top of your output
+   and ask the operator whether to synthesize anyway or to run /reflect
+   first. Do not go on until they answer.
 3. PRIOR SCORES — read PROJECT_HEALTH.md: Current Standing and the newest
    Score History entry are the prior synthesis, for the delta and for the
    policy triggers.

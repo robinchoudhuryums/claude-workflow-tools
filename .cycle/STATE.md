@@ -114,6 +114,9 @@ Updated: 2026-11-23
   three audits (INV-91); the SessionStart hook carries facts only and /verify treats its output as the
   implementer's record. Roadmap bet R22 → R24 → R27 → R25/R26. Library 79 → 80.
 
+- v1.54.0 | FO-8-28 | /verify and /health-synthesis stop and ask when the cycle has no reflect block; /verify
+  writes its block as <cycle>-verification.md, taking no letter. Check 23 / INV-92. Library 80 → 81.
+
 ## Pending / not yet done
 - Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
   E4 ST3 mechanical mutation sweep. (ROADMAP R24, R25, R26, R27.)
@@ -132,8 +135,8 @@ Updated: 2026-11-23
   dropped with the freeze, so both stay held until the console is unfrozen — or the operator declines them.
   The next new candidate is INV-83.
 - Cycle 8's two policy responses are BUILT (v1.53.0): content checks INV-86–88 (Guard / Test Coverage) and INV-73
-  (Silent Prompt Degradation). The rest of the latter — /verify and /health-synthesis asking before running with
-  no reflect block, and a fixed verification block name — is open as FO-8-28. No operator decisions are open.
+  (Silent Prompt Degradation); the rest of the latter — /verify and /health-synthesis stop with no reflect block,
+  and a fixed verification block name — shipped in v1.54.0 (FO-8-28). No operator decisions are open.
 
 ## Open follow-on items
 - FO-8-5 | .claude/settings.json, CLAUDE.md hook snippet — the hook command is POSIX shell syntax and fails
@@ -151,9 +154,8 @@ Updated: 2026-11-23
 - FO-8-23 | check-template-sync check 21 — ties CI to STATE.md's Cycle field: an open roadmap item that says
   "queued for Cycle N" turns CI red as soon as the next audit's CYCLE OPEN moves Cycle past N, in a
   session whose only cycle writes are STATE.md. None does today (08-b-verification) | → next audit
-- FO-8-28 | /verify, /health-synthesis — Cycle 8's Silent Prompt Degradation policy response also prescribed:
-  stop and ask when the cycle has no …-reflect.md block, and a fixed verification block name so a parallel
-  /reflect cannot take its letter. v1.53.0 built the INV-73 half only | → this cycle
+- FO-8-29 | /seams-audit BLOCKS step — the Seams block still takes "the next unused lowercase letter", the same
+  collision class FO-8-28 closed for the verification block | → next audit
 - FO-8-25 | /targeted-audit, /plan — FOLLOW-ON REVIEW marks a confirmed item "confirmed as <finding ID>",
   but /targeted-audit's findings carry no IDs (only its actions do) and /plan's handoff renumbers; the link
   from an FO item to the action that fixes it is the implementer's to make | → next audit
@@ -226,7 +228,7 @@ Updated: 2026-11-23
   guard: it would go red when an audit's CYCLE OPEN moved the cycle on, in a session that may write nothing else.
 
 ## Where I left off
-Cycle 8, after its synthesis; v1.52.0 and v1.53.0 are on branch claude/fervent-edison-tdej8d (not merged). Next:
-merge, then /broad-implement FO-8-28 (the rest of a policy response) or start the roadmap bet with R22; then
-/cycle-close, or let the next audit open Cycle 9. Cycle 7 still owes /verify 7 and /health-synthesis 7.
-Consuming projects re-pull v1.47.0–v1.53.0 and re-copy the hook script.
+Cycle 8, after its synthesis; v1.52.0–v1.54.0 are on branch claude/fervent-edison-tdej8d (not merged). Both of
+Cycle 8's policy responses are built. Next: merge, then start the roadmap bet with R22 — or /cycle-close and
+open Cycle 9 with an audit. Cycle 7 still owes /verify 7 and /health-synthesis 7. Consuming projects re-pull
+v1.47.0–v1.54.0 and re-copy the hook script.

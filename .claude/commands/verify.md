@@ -31,6 +31,12 @@ before reading on.
    not read them as inputs. If metrics.csv's notes for this cycle mention
    a CORRECTION, the implementer already corrected its own counts once —
    re-derive every count from the code.
+   NO REFLECT BLOCK — if none of that cycle's files is a …-reflect.md
+   block, /reflect has not run and there is no Cycle Summary Block: say so
+   at the top of your output and ask the operator whether to verify
+   without it or to run /reflect first. Do not go on until they answer. A
+   verification with no reflection checks only the implementer's own
+   counts, and its block must say that it ran without one.
 3. LIBRARY — read the Invariant Library from the Cycle Workflow Config.
 4. ROTATION PROBES — they must be neither your choice nor the
    implementer's. If the project has scripts/verification-pack.mjs, run
@@ -52,10 +58,12 @@ The prompt's opening rule (no file changes) stands, with one exception:
 
 BLOCKS (optional — only if .cycle/ exists): after producing the
 VERIFICATION BLOCK, write it verbatim to
-.cycle/blocks/<cycle>-<letter>-verification.md, where <letter> is the next
-unused lowercase letter among that cycle's non-release blocks. Health
-Synthesis reads it from there in its own fresh session. Never overwrite a
-block. Skip if no .cycle/.
+.cycle/blocks/<cycle>-verification.md — a fixed name, taking no letter, so
+a /reflect running in another session cannot take the same file. If a
+verification of that cycle is already there, write
+<cycle>-verification-2.md (then -3, …). Health Synthesis reads it from
+there in its own fresh session. Never overwrite a block. Skip if no
+.cycle/.
 
 ═══════════════════════════════════════════
 CANONICAL PROMPT — Verification Pass

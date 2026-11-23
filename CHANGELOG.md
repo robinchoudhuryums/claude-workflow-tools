@@ -5,6 +5,27 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.54.0 — 2026-11-23
+
+The rest of Cycle 8's Silent Prompt Degradation policy response (FO-8-28).
+**Command bodies changed — run `/sync-commands` in consuming projects
+(`/verify`, `/health-synthesis`).**
+
+- **`/verify` and `/health-synthesis` stop and ask when the cycle has no
+  reflect block.** With no `…-reflect.md` there is no Cycle Summary Block and
+  no reflect row, so a verification or synthesis grades only the
+  implementer's own counts. In Cycle 8, `/verify` ran without one and did not
+  stop. Now each says so at the top and waits for the operator: verify or
+  synthesize anyway, or run `/reflect` first. A verification run without one
+  says so in its block.
+- **The verification block has a fixed name:** `<cycle>-verification.md`
+  (then `-2`, `-3`), taking no letter. A `/reflect` running in another session
+  took Cycle 8's letter `a` while `/verify` was writing, and the block had to
+  be renamed afterwards. `/health-synthesis` reads the newest verification
+  and names any earlier one as superseded. Existing lettered blocks
+  (`08-b-verification.md`) still read as verifications.
+- Structural check 23 holds both (INV-92); 3 mutation cases. Library 80 → 81.
+
 ## 1.53.0 — 2026-11-23
 
 Operator decisions of 2026-11-23, and Cycle 8's two policy responses.
