@@ -137,15 +137,16 @@ try {
   if (out.trim()) console.log('    ' + out.trim().replace(/\n/g, '\n    '));
 }
 
-// ── Structural check 3: every workflow output block appears in both the
-// canonical commands (CLAUDE.md) and the HTML console. ──
-const blockMissing = WORKFLOW_BLOCKS.filter(b =>
-  !contents['CLAUDE.md'].includes(b) || !contents['claude-code-guide-v2.html'].includes(b));
+// ── Structural check 3: every workflow output block appears in the canonical
+// commands (CLAUDE.md). Until v1.53.0 it also had to appear in the HTML console;
+// the console lock was retired then (frozen subsystem), so the console may fall
+// behind and no check holds it to CLAUDE.md. ──
+const blockMissing = WORKFLOW_BLOCKS.filter(b => !contents['CLAUDE.md'].includes(b));
 if (blockMissing.length) {
   failures++;
-  console.log(`  ✗ Workflow blocks missing from CLAUDE.md or the HTML console: ${blockMissing.join(', ')}`);
+  console.log(`  ✗ Workflow blocks missing from CLAUDE.md: ${blockMissing.join(', ')}`);
 } else {
-  console.log(`  ✓ All ${WORKFLOW_BLOCKS.length} workflow output blocks present in both CLAUDE.md and the HTML console`);
+  console.log(`  ✓ All ${WORKFLOW_BLOCKS.length} workflow output blocks present in CLAUDE.md`);
 }
 
 // ── Structural check 4: version + changelog present AND CONSISTENT (R5/F09).
@@ -212,7 +213,7 @@ const METRICS_HEADER = 'date,cycle,subsystem,phase,net_score,prod_fixes,new_fail
 const ESTIMATES_HEADER = 'date,cycle,action,estimate,estimated_hours,actual_hours,calibration_note';
 let metricsFail = 0;
 const liveCsv = f => { try { return readFileSync(new URL(f, root), 'utf8').split(/\r?\n/)[0]; } catch (e) { return null; } };
-const headerSources = [['CLAUDE.md', claudeRaw, 4, 3], ['claude-code-guide-v2.html', htmlRaw, 2, 1]];
+const headerSources = [['CLAUDE.md', claudeRaw, 4, 3]];   // the console's copies dropped with its lock (v1.53.0)
 for (const [f, floorKind] of [['.cycle/metrics.csv', 'm'], ['.cycle/estimates.csv', 'e']]) {
   const h = liveCsv(f); if (h != null) headerSources.push([f, h, floorKind === 'm' ? 1 : 0, floorKind === 'e' ? 1 : 0]);
 }
@@ -238,7 +239,7 @@ for (const [f, raw, mFloor, eFloor] of headerSources) {
 // nowhere else (the CSV header and that one sentence).
 {
   const step8 = raw => { const i = raw.indexOf('8. METRICS (optional'); if (i === -1) return null; const ends = [raw.indexOf('\n```', i), raw.indexOf('`;', i)].filter(n => n !== -1); return raw.slice(i, ends.length ? Math.min(...ends) : undefined).replace(/\s+/g, ' '); };
-  for (const [label, raw] of [['CLAUDE.md §6a', claudeRaw], ['console §6a builder', htmlRaw]]) {
+  for (const [label, raw] of [['CLAUDE.md §6a', claudeRaw]]) {   // the console builder's copy dropped with its lock (v1.53.0)
     const s = step8(raw);
     const problems = [];
     if (s == null) problems.push('step 8 (METRICS) not found — the ownership check would be vacuous');
@@ -255,7 +256,7 @@ if (metricsFail) failures += metricsFail;
 else console.log(`  ✓ Metrics-row ownership + exact CSV header parity across ${headerSources.length} source(s) (P1 + P11 + F49)`);
 
 // ── Structural check 7 (R16): per-builder parity for the DYNAMIC console
-// prompt builders. ALL NINE are now gated by gen-html-prompts --assert against
+// prompt builders. ALL NINE were gated by gen-html-prompts --assert (until v1.53.0) against
 // a canonical body in CLAUDE.md (100% line coverage; drift fails CI) — F02/F21
 // retired the last report-only builder, so no exemption tier remains. These
 // markers are therefore a cheap SECONDARY layer (defense-in-depth + a
@@ -274,16 +275,18 @@ const DYNAMIC_BUILDERS = [
   { name: 'Tier 1 Broad Implement (buildTier1ImplText)', markers: ['---broad scan implementation summary---'] },
   { name: 'PR Review (buildPrReviewText)',            markers: ['---pr review block---', 'stay inside the diff'] },
 ];
+// v1.53.0: the console lock is retired, so the markers are read from CLAUDE.md
+// only — they now pin the canonical contracts, not the console's copy of them.
 let builderFail = 0;
 for (const b of DYNAMIC_BUILDERS) {
-  const missing = b.markers.filter(m => !contents['CLAUDE.md'].includes(m) || !contents['claude-code-guide-v2.html'].includes(m));
+  const missing = b.markers.filter(m => !contents['CLAUDE.md'].includes(m));
   if (missing.length) {
     builderFail++;
-    console.log(`  ✗ ${b.name}: contract marker(s) not in both CLAUDE.md and the HTML console: ${missing.map(m => `"${m}"`).join(', ')}`);
+    console.log(`  ✗ ${b.name}: contract marker(s) missing from CLAUDE.md: ${missing.map(m => `"${m}"`).join(', ')}`);
   }
 }
 if (builderFail) failures += builderFail;
-else console.log(`  ✓ Dynamic console builder parity — ${DYNAMIC_BUILDERS.length} builders pinned to their canonical contracts (R16)`);
+else console.log(`  ✓ ${DYNAMIC_BUILDERS.length} canonical prompt contracts carry their load-bearing markers (the console's copies are no longer held to them — v1.53.0)`);
 
 // ── F31: the CI workflow is read as STRUCTURE, not text. Checks 8 and 14 used
 // to regex the raw YAML, so three mutations passed: a step turned into
@@ -409,7 +412,7 @@ try {
 } catch (e) { failures++; console.log('  ✗ could not read .github/workflows/sync-check.yml: ' + e.message); }
 
 // ── Structural check 9 (INV-16): the /setup-cycle config SCHEMA is written out
-// in three places — CLAUDE.md's "Cycle Workflow Config" template, CLAUDE.md's
+// in two places (three until v1.53.0, when the console's Setup copy left with the lock) — CLAUDE.md's "Cycle Workflow Config" template, CLAUDE.md's
 // /setup-cycle OUTPUT 1, and the console's Setup <pre>. INV-16 claimed they
 // "list the same optional sections" and its Verify field pointed at the
 // capability markers above, which only prove a phrase appears SOMEWHERE in each
@@ -431,7 +434,6 @@ try {
   const COPIES = [
     ['CLAUDE.md config template', sections(claudeRaw, /^## Cycle Workflow Config$/m, /^```/m)],
     ['CLAUDE.md /setup-cycle OUTPUT 1', sections(claudeRaw, /OUTPUT 1 — CYCLE WORKFLOW CONFIG/, /OUTPUT 2 —/)],
-    ['console Setup <pre>', sections(htmlRaw, /^## Cycle Workflow Config$/m, /OUTPUT 2 —/)],
   ];
   const unreadable = COPIES.filter(([, r]) => !r || !r.set.size).map(([n]) => n);
   if (unreadable.length) {
@@ -1195,6 +1197,89 @@ try {
   }
   if (problems.length) { failures++; console.log(`  ✗ follow-on tracking (v1.52.0): ${problems.join('; ')}`); }
   else console.log(`  ✓ every follow-on item is tracked to a disposition — ${reporters.length} reporting commands share one FOLLOW-ON IDS rule, ${auditors.length} audits one FOLLOW-ON REVIEW step${state != null ? `, and ${open.length} open item(s) in .cycle/STATE.md each carry an FO ID and an open disposition` : ' (live STATE not checked: no .cycle/STATE.md)'} (INV-90)`);
+}
+
+// ── Structural check 23 (v1.53.0; INV-86, INV-87, INV-88): the CONTENT of the
+// cycle-lifecycle rules Cycle 8 fixed. Check 19 proves the CYCLE OPEN step is
+// one text across the audits and that each Phase value has a writer — not what
+// the text says. Cycle-8 §4v deleted F4's report, F5's 7-day bound and F6's
+// numbering source from every copy at once and only the console's --assert lock
+// noticed; v1.53.0 retires that lock, so the rules are asserted here, per copy.
+{
+  const flat = t => (t || '').replace(/\s+/g, ' ');
+  let files = [];
+  try { files = readdirSync(new URL('.claude/commands/', root)).filter(f => f.endsWith('.md')); } catch (e) {}
+  const bodies = new Map(files.map(f => [f.replace(/\.md$/, ''), flat(commandBodyOf(f))]));
+  const fenced = h => { const i = claudeRaw.indexOf('### ' + h + '\n'); if (i === -1) return null; const a = claudeRaw.indexOf('```\n', i); return a === -1 ? null : claudeRaw.slice(a + 4, claudeRaw.indexOf('\n```', a + 4)); };
+  const report = (label, inv, problems, okText) => {
+    if (problems.length) { failures++; console.log(`  ✗ ${label} (v1.53.0, ${inv}): ${problems.join('; ')}`); }
+    else console.log(`  ✓ ${okText} (${inv})`);
+  };
+  // INV-86 — CYCLE OPEN content, in every audit that has the step
+  {
+    const RULES = [
+      ['the 7-day same-round bound (F5)', 'Phase is already "audit" and Updated is within the last 7 days'],
+      ['an old "Phase: audit" not holding the number (F5)', 'An older "Phase: audit" is an audit that led to no implementation; it does not hold the number — increment past it.'],
+      ['the Scope marker over another cycle\'s sections (F5)', 'end the Scope line with "(sections below still describe Cycle N)"'],
+      ['the reflected-but-unsynthesized report (F4)', 'was reflected but never verified or synthesized'],
+      ['the request by cycle number (F4)', 'its verification inputs must now be requested for cycle N by number'],
+    ];
+    const problems = [];
+    const openers = [...bodies].filter(([, b]) => /CYCLE OPEN \(optional/.test(b));
+    if (openers.length < 3) problems.push(`only ${openers.length} command(s) carry a CYCLE OPEN step — the check would be vacuous`);
+    for (const [n, b] of openers) {
+      const step = (b.match(/CYCLE OPEN \(optional[\s\S]*?Skip if \.cycle\/STATE\.md does not exist\./) || [''])[0];
+      const lacks = RULES.filter(([, p]) => !step.includes(p)).map(([l]) => l);
+      if (lacks.length) problems.push(`${n}'s CYCLE OPEN lacks ${lacks.join(', ')}`);
+    }
+    report('CYCLE OPEN content', 'INV-86', problems, `every CYCLE OPEN step carries its five rules — the 7-day round, an old audit not holding the number, the Scope marker, the unsynthesized-cycle report and the request by number — in ${openers.length} audits`);
+  }
+  // INV-87 — §6a step 8 sets idle only for the cycle it synthesized
+  {
+    const problems = [];
+    const copies = [['§6a body', fenced('Health Synthesis (Section 6a in HTML tool)')], ['health-synthesis.md', bodies.get('health-synthesis')]];
+    for (const [n, t] of copies) {
+      const f = flat(t);
+      if (!f) { problems.push(`${n} not found`); continue; }
+      if (!f.includes("set Phase: idle and Updated in .cycle/STATE.md — a synthesized cycle is closed — but only if STATE.md's Cycle is the cycle you synthesized")) problems.push(`${n}'s step 8 does not limit Phase: idle to the cycle it synthesized`);
+      if (!f.includes('If an audit has already opened a later cycle, leave Phase alone and say so.')) problems.push(`${n}'s step 8 does not leave a later cycle's Phase alone`);
+    }
+    report('conditional idle', 'INV-87', problems, 'Health Synthesis sets Phase: idle only when STATE.md\'s Cycle is the cycle it synthesized, in the §6a body and /health-synthesis');
+  }
+  // INV-88 — candidate numbers count unpromoted candidates
+  {
+    const problems = [];
+    const r = bodies.get('reflect') || '';
+    if (!r.includes('highest INV-N in the library OR in any earlier "Invariant candidates" line under .cycle/blocks/')) problems.push('/reflect numbers candidates from the library alone, not above unpromoted candidates in .cycle/blocks/');
+    const s = bodies.get('seams-audit') || '';
+    if (!s.includes('above the highest INV-N in the library or in any earlier "Invariant candidates" or "Proposed additions" line under .cycle/blocks/')) problems.push('/seams-audit numbers proposed invariants from the library alone');
+    report('candidate numbering', 'INV-88', problems, '/reflect and /seams-audit number new candidates above unpromoted ones in .cycle/blocks/, not from the library alone');
+  }
+  // INV-73 — the Seams audit asks about the project's configured Axis B categories
+  {
+    const problems = [];
+    for (const [n, t] of [['§1s body', fenced('Seams & Invariants Audit (Section 1s in HTML tool)')], ['seams-audit.md', bodies.get('seams-audit')]]) {
+      const f = flat(t);
+      if (!f) { problems.push(`${n} not found`); continue; }
+      if (!f.includes("Provide cross-cutting observations for each of the project's Axis B categories — the Horizontal (Axis B) Categories in the Cycle Workflow Config")) problems.push(`${n}'s Part 4 does not ask about the project's configured Axis B categories`);
+      if (!f.includes('HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring — one line per Axis B category in the Cycle Workflow Config')) problems.push(`${n}'s output block does not take one line per configured Axis B category`);
+      if (/relevant to the five Axis B categories/.test(f)) problems.push(`${n} still names "the five Axis B categories" as the set to report on`);
+    }
+    report('configured Axis B in the Seams audit', 'INV-73', problems, 'the Seams audit reports on the project\'s configured Axis B categories, in the §1s body and /seams-audit');
+  }
+  // INV-91 — one dead-code lens in every audit (R21, decided 2026-11-23)
+  {
+    const problems = [];
+    const audits = [...bodies].filter(([, b]) => /CYCLE OPEN \(optional/.test(b)).map(([n]) => n);
+    const lenses = audits.map(n => [n, (bodies.get(n).match(/Dead or superseded artifacts — [\s\S]*?never removals\./) || [null])[0]]);
+    const none = lenses.filter(([, l]) => !l).map(([n]) => n);
+    if (none.length) problems.push(`audit(s) with no dead/superseded-artifact lens: ${none.join(', ')}`);
+    if (new Set(lenses.map(([, l]) => l).filter(Boolean)).size > 1) problems.push(`the dead-code lens differs between ${lenses.filter(([, l]) => l).map(([n]) => n).join(', ')} — one lens, one text`);
+    const PARTS = ['ONLY where the thing is actively misleading', 'Volume is not a finding; concealment is.', 'SAFE (mechanically verified', 'PROPOSE (looks unused', 'PROPOSE items are questions for the operator, never removals.'];
+    for (const [n, l] of lenses) if (l) { const lacks = PARTS.filter(p => !l.includes(p)); if (lacks.length) problems.push(`${n}'s dead-code lens lacks ${lacks.map(p => JSON.stringify(p)).join(', ')}`); }
+    for (const n of audits) if (!bodies.get(n).includes('Removing something is a change like any other and needs the same evidence a fix needs. If you cannot name the check that proves nothing references it, it is a PROPOSE, not a finding.')) problems.push(`${n} lacks the rule that a removal needs a fix's evidence`);
+    report('dead-code lens', 'INV-91', problems, `the three audits share one dead/superseded-artifact lens (SAFE / PROPOSE, never a removal on a guess) and the removal-needs-evidence rule — ${audits.length} audits`);
+  }
 }
 
 if (failures) {

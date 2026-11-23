@@ -246,9 +246,12 @@ copy-paste, keep a `.cycle/` directory at the project root:
 
 Two optional helpers operate on this state (both fail-safe and additive):
 - `scripts/cycle-context.mjs` — a **SessionStart** hook that auto-loads
-  the substrate (STATE + current standing + invariant count) into every
-  new session, retiring the "paste the systems map every session"
-  friction. Enable it by copying the script and adding to
+  the FACTS into every new session: STATE.md's Current section, the
+  Current Standing score line and the invariant count. Since v1.53.0 it
+  carries no narrative — not "Where I left off", not Pending, not the
+  standing's prose — because it loads into a verification session too, and
+  the implementer's own account of the work anchored it; `/cycle-status`
+  shows that narrative on request. Enable it by copying the script and adding to
   `.claude/settings.json`:
   `{ "hooks": { "SessionStart": [ { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR:-.}/scripts/cycle-context.mjs\"" } ] } ] } }`
   The command and the script are both rooted at the project directory
@@ -1174,9 +1177,21 @@ Focus on:
 - Inconsistencies between CLAUDE.md and actual implementation
 - Cross-module dependencies — what would break in OTHER modules
 - Silent degradation paths
+- Dead or superseded artifacts — code, exports, styles/classes, markup,
+  config, feature flags, exemptions — but ONLY where the thing is
+  actively misleading: it hides a live defect, contradicts what the code
+  does now, or survives a change that replaced it. Volume is not a
+  finding; concealment is. For each, state how you verified it is
+  unreferenced, and mark it SAFE (mechanically verified — no reference in
+  any code path, template string, or generated markup) or PROPOSE (looks
+  unused, but dynamic or generated references cannot be ruled out).
+  PROPOSE items are questions for the operator, never removals.
 
 DO NOT flag style preferences, speculative improvements, or "could be
 cleaner" refactoring unless the current code is actively wrong.
+Removing something is a change like any other and needs the same evidence
+a fix needs. If you cannot name the check that proves nothing references
+it, it is a PROPOSE, not a finding.
 
 After the audit, produce an implementation plan:
 - Action ID (A1, A2, A3...)
@@ -1414,7 +1429,15 @@ with this audit normally.
 
 Audit this subsystem across these focus areas:
 1. Bugs and logic errors in currently-reachable code paths
-2. Dead code / unused exports (only if they create confusion)
+2. Dead or superseded artifacts — code, exports, styles/classes, markup,
+   config, feature flags, exemptions — but ONLY where the thing is
+   actively misleading: it hides a live defect, contradicts what the code
+   does now, or survives a change that replaced it. Volume is not a
+   finding; concealment is. For each, state how you verified it is
+   unreferenced, and mark it SAFE (mechanically verified — no reference in
+   any code path, template string, or generated markup) or PROPOSE (looks
+   unused, but dynamic or generated references cannot be ruled out).
+   PROPOSE items are questions for the operator, never removals.
 3. Test gaps (missing coverage on load-bearing paths)
 4. Stale artifacts (TODOs, comments, docs that mislead)
 5. Hardcoded values that should be config/env
@@ -1435,6 +1458,9 @@ For each finding:
 
 DO NOT flag style preferences or speculative "could be cleaner"
 refactoring unless the current code is actively wrong.
+Removing something is a change like any other and needs the same evidence
+a fix needs. If you cannot name the check that proves nothing references
+it, it is a PROPOSE, not a finding.
 
 Finding IDs in the handoff block are SESSION-LOCAL labels (F1, F2, …) —
 not invariant-library IDs. INV-N IDs are assigned only when a rule is
@@ -1996,9 +2022,9 @@ Independent verification in a fresh session with no implementation context — r
 - Cycle execution quality (3 yes/no facts with evidence)
 - Coverage gap report (Category D candidates — fixes without regression tests)
 
-Canonical prompt body — the §4v console builder (`buildVerificationText`) is
-locked to this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16, full
-textual lock). The per-project invariant library and the 5 rotation probes are
+Canonical prompt body — the §4v console builder (`buildVerificationText`) was
+locked to this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16) until
+v1.53.0, when the lock was retired with the frozen console. The per-project invariant library and the 5 rotation probes are
 injected at render time; bracketed lines are render-time placeholders.
 
 ```
@@ -2107,8 +2133,8 @@ Seams audit" to 0 in `.cycle/STATE.md` (if the project uses `.cycle/`). Until
 v1.35.0 that instruction sat here, outside the prompt body, so it never reached
 the agent and the counter reset only by hand.
 
-Canonical prompt body — the §1s console builder (`buildSeamsText`) is locked to
-this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16). The project
+Canonical prompt body — the §1s console builder (`buildSeamsText`) was locked to
+this verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16) until v1.53.0. The project
 subsystem list and the current invariant library are injected at render time;
 bracketed lines are render-time placeholders.
 
@@ -2167,7 +2193,7 @@ For each proposed invariant:
 Also review the Common Gotchas section of CLAUDE.md and the Operator State Checklist for any rules that should be promoted to formal invariants.
 
 PART 4 — HORIZONTAL BUG-SHAPE OBSERVATIONS
-Provide cross-cutting observations relevant to the five Axis B categories from Health Synthesis. This is not a score — it is evidence for the next synthesis:
+Provide cross-cutting observations for each of the project's Axis B categories — the Horizontal (Axis B) Categories in the Cycle Workflow Config — one per category, under its own name. This is not a score — it is evidence for the next synthesis. A project that configures no categories uses the five defaults:
 - Silent Degradation: any new silent-failure paths discovered at seams
 - Startup Ordering: any ordering dependencies between subsystems that lack validation
 - Operator-Only State Gaps: any manual steps that affect multiple subsystems but have no automated check
@@ -2199,7 +2225,8 @@ Proposed retirements:
 [INV-XX] | [reason — stale, subsumed, or no longer applicable]
 (or "None")
 
-HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring):
+HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring — one line per Axis B category in the Cycle Workflow Config, under its own name; the five below are the defaults, for a project that configures none):
+[Axis B category]: [observations]
 Silent Degradation: [observations]
 Startup Ordering: [observations]
 Operator-Only Gaps: [observations]
@@ -2225,8 +2252,8 @@ Full benchmarkable assessment after a complete cycle — run it with `/health-sy
 - Delta summary vs prior cycle
 - Policy response triggers (Axis B category at threshold for consecutive cycles)
 
-Canonical prompt body — the §6a console builder (`buildP6aText`) is locked to this
-verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16). The subsystem list,
+Canonical prompt body — the §6a console builder (`buildP6aText`) was locked to this
+verbatim by `gen-html-prompts --assert` (W1 / ROADMAP R16) until v1.53.0. The subsystem list,
 vertical dimensions, and Axis B categories/playbooks are injected at render time;
 bracketed lines are render-time placeholders. (This is the builder Cycle-4 F1
 silently broke — the metrics-ownership rule in step 8 is now locked.)
@@ -2419,6 +2446,11 @@ before reading on.
    positions (c + k·⌊L/5⌋) mod L for k = 0…4, moving forward past any
    already taken. State c and L so the selection can be reproduced.
 
+Anything a SessionStart hook printed into this session before the command
+ran is the implementer's record, not evidence: the cycle number and phase
+are facts, but re-derive every claim about the work from the code and the
+blocks.
+
 Wherever the prompt below shows a bracketed line saying something is
 pasted, injected or pre-selected, use what steps 1–4 gave you.
 
@@ -2456,10 +2488,9 @@ changing it. Do steps 1–4 before reading on.
    otherwise derive a 3–5 bullet summary from the Subsystems section and
    the entry points, and say that it is derived.
 4. AXIS B — read the project's Horizontal (Axis B) Categories from the
-   Cycle Workflow Config. Where Part 4 and the output block name five
-   default categories, report on the project's configured categories
-   instead — one line each, under its own name. A project that configures
-   none uses the five named.
+   Cycle Workflow Config; Part 4 and the output block report on each of
+   them under its own name. A project that configures none uses the five
+   defaults the body names.
 
 Wherever the prompt below shows a bracketed line saying something is
 pasted or injected, use what steps 1–4 gave you. Number each proposed
@@ -2998,9 +3029,10 @@ The console renders a few prompts that have **no slash-command counterpart** —
 add-ons, the §7 tracking blocks, and the §4v output reference. Until Cycle 6
 they existed only inside `claude-code-guide-v2.html`, which put them outside
 every lock: the fourth-copy drift class the R14/R16 work closed for commands was
-still open for these. Their canonical bodies live here now and are byte-locked
-by `gen-html-prompts --assert`, which additionally fails if any *new* static
-console prompt appears without an entry.
+still open for these. Their canonical bodies live here now. They were byte-locked
+by `gen-html-prompts --assert` until v1.53.0, when the lock was retired with the
+frozen console: the console keeps the text it had then, and these sections are
+the current one.
 
 They are deliberately NOT slash commands: each is an add-on to a command that
 already exists, so minting `/security-audit` or `/pre-check` would duplicate a
@@ -3278,7 +3310,8 @@ Proposed retirements:
 [INV-XX] | [reason — stale, subsumed, or no longer applicable]
 (or "None")
 
-HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring):
+HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring — one line per Axis B category in the Cycle Workflow Config, under its own name; the five below are the defaults, for a project that configures none):
+[Axis B category]: [observations]
 Silent Degradation: [observations]
 Startup Ordering: [observations]
 Operator-Only Gaps: [observations]

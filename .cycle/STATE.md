@@ -4,9 +4,9 @@
 Cycle: 8
 Phase: implement
 Scope: broad (Cycle-8 /broad-scan, 2026-11-19 — 48 findings F1–F48, 9 fix batches, expansion plan E1–E5)
-Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/gen-html-prompts.mjs --assert && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
+Test Command: node scripts/gen-commands.mjs --check && node scripts/check-html.mjs && node scripts/check-template-sync.mjs && node scripts/check-output-blocks.mjs && node tests/guard.test.mjs && node tests/render-metrics.test.mjs && node tests/cycle-context.test.mjs && node tests/invariant-check.test.mjs && node tests/portfolio.test.mjs && node tests/portfolio-status.test.mjs && node tests/gen-html-prompts.test.mjs && node tests/check-output-blocks.test.mjs && node tests/verification-pack.test.mjs && node tests/mutation-audit.test.mjs && node tests/mutation-audit.mjs
 Subsystem cycles since last Seams audit: 2 (cadence 3 — /reflect increments it, a Seams audit resets it)
-Updated: 2026-11-20
+Updated: 2026-11-23
 
 ## In progress (facts to carry forward — NOT judgments)
 - Cycle 8 was reflected (08-a), verified (08-b) and synthesized (PROJECT_HEALTH, 8.9/10) on 2026-11-20; the
@@ -107,6 +107,13 @@ Updated: 2026-11-20
   /sync-docs proposes roadmap items. Structural check 22 / INV-90 (library 78 → 79, 15 mutation cases) asserts
   each copy's content and the live list. One-time pass: 22 items → FO-8-1…22; 7 open, 15 closed to HISTORY.md.
 
+- v1.53.0 | operator decisions 2026-11-23 + Cycle 8's two policy responses | content checks for CYCLE OPEN, the
+  conditional idle and candidate numbering (check 23; INV-86, 87, 88); the console lock retired (--assert out of
+  the Test Command and CI, console copies out of the parity checks; INV-19, 36, 55, 66 retired, INV-16, 31, 33
+  narrowed; a notice on the page); the Seams audit reads the project's Axis B (INV-73); one dead-code lens in all
+  three audits (INV-91); the SessionStart hook carries facts only and /verify treats its output as the
+  implementer's record. Roadmap bet R22 → R24 → R27 → R25/R26. Library 79 → 80.
+
 ## Pending / not yet done
 - Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
   E4 ST3 mechanical mutation sweep. (ROADMAP R24, R25, R26, R27.)
@@ -124,17 +131,11 @@ Updated: 2026-11-20
   fixture; contradicted by F40) and INV-82 (import shape validation; contradicted by F28). Both findings were
   dropped with the freeze, so both stay held until the console is unfrozen — or the operator declines them.
   The next new candidate is INV-83.
-- DECIDED 2026-11-23, not yet built: retire the console lock (FO-8-1); the §1s body reads each project's own
-  Axis B categories (INV-73 — the Silent Prompt Degradation policy response).
-- OPEN DECISIONS (operator, not work), recommendations given 2026-11-23: §4v independence vs the SessionStart
-  hook; R21's /audit vs /targeted-audit dead-code asymmetry (operator leans: treat them the same); the next
-  "one strategic bet" in ROADMAP.md.
+- Cycle 8's two policy responses are BUILT (v1.53.0): content checks INV-86–88 (Guard / Test Coverage) and INV-73
+  (Silent Prompt Degradation). The rest of the latter — /verify and /health-synthesis asking before running with
+  no reflect block, and a fixed verification block name — is open as FO-8-28. No operator decisions are open.
 
 ## Open follow-on items
-- FO-8-1 | console lock — the console is frozen but still locked: check-html and gen-html-prompts --assert
-  stay in the Test Command, and every command-body edit is mirrored into its builders. 08-b-verification
-  found three Cycle-8 fixes guarded ONLY by that lock. DECIDED 2026-11-23: retire it — after content checks
-  replace it for F4, F5, F6 and the conditional idle (Cycle 8's Guard policy response) | → this cycle
 - FO-8-5 | .claude/settings.json, CLAUDE.md hook snippet — the hook command is POSIX shell syntax and fails
   where hooks run under PowerShell; counted as regression R3 by 08-b-verification. The exec form
   ("args") would avoid the shell but could not be exercised here | → next audit
@@ -150,6 +151,9 @@ Updated: 2026-11-20
 - FO-8-23 | check-template-sync check 21 — ties CI to STATE.md's Cycle field: an open roadmap item that says
   "queued for Cycle N" turns CI red as soon as the next audit's CYCLE OPEN moves Cycle past N, in a
   session whose only cycle writes are STATE.md. None does today (08-b-verification) | → next audit
+- FO-8-28 | /verify, /health-synthesis — Cycle 8's Silent Prompt Degradation policy response also prescribed:
+  stop and ask when the cycle has no …-reflect.md block, and a fixed verification block name so a parallel
+  /reflect cannot take its letter. v1.53.0 built the INV-73 half only | → this cycle
 - FO-8-25 | /targeted-audit, /plan — FOLLOW-ON REVIEW marks a confirmed item "confirmed as <finding ID>",
   but /targeted-audit's findings carry no IDs (only its actions do) and /plan's handoff renumbers; the link
   from an FO item to the action that fixes it is the implementer's to make | → next audit
@@ -157,9 +161,10 @@ Updated: 2026-11-20
   defer is still untracked; they are not reporters under check 22 | → next audit
 
 ## Decisions made (so the next session doesn't re-litigate)
-- The console's prompts are GENERATED/LOCKED from CLAUDE.md. As of v1.29.0 this covers EVERY static
-  <pre> as well as all nine dynamic builders, and gen-html-prompts --assert fails if a new static
-  prompt appears with no manifest entry. There is no unlocked tier left.
+- The console lock is RETIRED (operator, 2026-11-23; v1.53.0). From v1.29.0 to v1.52.0 every console prompt
+  was locked to CLAUDE.md by gen-html-prompts --assert; with the console frozen it cost a hand-copied builder
+  edit on every command change and was the only guard on F4–F6. Content checks (INV-86–88) replaced it first.
+  A console-side check that fires on a future canonical change is dropped, not satisfied by copying.
 - Prompts with no slash-command counterpart (§1 variants, §4 pre-check, §5 add-ons, §7 blocks, the
   §4v reference) are canonical SECTIONS in CLAUDE.md, not new commands — each extends a command that
   already exists, so minting one would duplicate a body rather than extend one.
@@ -200,7 +205,7 @@ Updated: 2026-11-20
   would add a rule whose Verify passes over a known violation (INV-79 / F40, INV-82 / F28).
 - The Interactive Console is FROZEN (operator, 2026-11-20): the workflow runs through the slash commands, the
   .cycle/ files, portfolio-status and a weekly scheduled cross-project board. Console-only findings and
-  expansion items were dropped, not deferred. The lock stays, so the hosted page keeps matching the commands.
+  expansion items were dropped, not deferred. Since v1.53.0 the lock is retired and the page says its prompts may be out of date.
 - A command that runs a canonical section INCLUDES it ({{include: <heading>}}, expanded by gen-commands) and
   never copies it. Its preamble gathers inputs and may add a stated exception to the body's no-file-changes
   rule; it does not restate the body.
@@ -221,7 +226,7 @@ Updated: 2026-11-20
   guard: it would go red when an audit's CYCLE OPEN moved the cycle on, in a session that may write nothing else.
 
 ## Where I left off
-Cycle 8, after its synthesis. v1.52.0 (follow-on tracking) is on branch claude/fervent-edison-tdej8d. Next:
-merge it, then /cycle-close to return Phase to idle — or let the next audit's CYCLE OPEN open Cycle 9; its
-FOLLOW-ON REVIEW takes FO-8-5, 11, 13, 20 and 23, and Cycle 8's two policy responses are mandatory scope.
-Cycle 7 still owes /verify 7 (fresh session) and /health-synthesis 7. Consuming projects re-pull v1.47.0–v1.52.0.
+Cycle 8, after its synthesis; v1.52.0 and v1.53.0 are on branch claude/fervent-edison-tdej8d (not merged). Next:
+merge, then /broad-implement FO-8-28 (the rest of a policy response) or start the roadmap bet with R22; then
+/cycle-close, or let the next audit open Cycle 9. Cycle 7 still owes /verify 7 and /health-synthesis 7.
+Consuming projects re-pull v1.47.0–v1.53.0 and re-copy the hook script.

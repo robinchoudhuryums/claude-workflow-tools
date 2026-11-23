@@ -247,15 +247,17 @@ function main() {
   try {
     const htmlText = readFileSync(new URL('claude-code-guide-v2.html', root), 'utf8');
     htmlBlocks = BLOCKS.filter(b => htmlText.includes(b.open)).length;
-    failures.push(...validateHtml(htmlText));
-    failures.push(...validateCopies(claudeMd, htmlText));
+    // v1.53.0: the console lock is retired (frozen subsystem). Its copies are no
+    // longer held to the registry or to CLAUDE.md's field lists, so a block that
+    // gains a field in CLAUDE.md does not have to be copied into the console.
+    void htmlText;
+    failures.push(...validateCopies(claudeMd, null));
   } catch (e) { failures.push('could not read the console for block-shape validation: ' + e.message); }
 
   console.log('Output-block shape check (R13 — CLAUDE.md ↔ .claude/commands/):\n');
   if (!failures.length) {
     console.log(`  ✓ ${BLOCKS.length} output blocks well-formed in CLAUDE.md + .claude/commands/ (delimiters balanced, required fields present, producers emit them)`);
-    console.log(`  ✓ ${htmlBlocks} of them are also rendered by the console, and are shape-valid there too (INV-55)`);
-    console.log(`  ✓ every copy of each block — command, Handoff Block Formats, console — carries the same field labels (F50)`);
+    console.log(`  ✓ every copy of each block in CLAUDE.md — command body, Handoff Block Formats — carries the same field labels (F50; the console's ${htmlBlocks} copies are no longer compared, v1.53.0)`);
     console.log('\nAll prompt-output blocks are shape-valid. ✓');
     return 0;
   }

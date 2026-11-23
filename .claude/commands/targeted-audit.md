@@ -91,9 +91,21 @@ Focus on:
 - Inconsistencies between CLAUDE.md and actual implementation
 - Cross-module dependencies — what would break in OTHER modules
 - Silent degradation paths
+- Dead or superseded artifacts — code, exports, styles/classes, markup,
+  config, feature flags, exemptions — but ONLY where the thing is
+  actively misleading: it hides a live defect, contradicts what the code
+  does now, or survives a change that replaced it. Volume is not a
+  finding; concealment is. For each, state how you verified it is
+  unreferenced, and mark it SAFE (mechanically verified — no reference in
+  any code path, template string, or generated markup) or PROPOSE (looks
+  unused, but dynamic or generated references cannot be ruled out).
+  PROPOSE items are questions for the operator, never removals.
 
 DO NOT flag style preferences, speculative improvements, or "could be
 cleaner" refactoring unless the current code is actively wrong.
+Removing something is a change like any other and needs the same evidence
+a fix needs. If you cannot name the check that proves nothing references
+it, it is a PROPOSE, not a finding.
 
 After the audit, produce an implementation plan:
 - Action ID (A1, A2, A3...)

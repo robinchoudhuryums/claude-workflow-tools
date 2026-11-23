@@ -28,7 +28,8 @@ writeFileSync(join(a, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle
 writeFileSync(join(a, '.cycle', 'config.md'), 'INV-01 | a | Subsystem: X\nINV-02 | b | Subsystem: Y\n');
 const outA = run(a);
 if (/WORKFLOW CONTEXT/.test(outA)) ok('emits a context block when .cycle/ exists'); else bad('no context block emitted');
-if (/Cycle: 7/.test(outA) && /Mid-wave on subsystem X/.test(outA)) ok('includes STATE.md Current + Where I left off'); else bad('STATE sections missing');
+if (/Cycle: 7/.test(outA)) ok('includes STATE.md Current'); else bad('STATE Current section missing');
+if (!/Mid-wave on subsystem X/.test(outA)) ok('does not carry Where I left off — the implementer\'s narrative (v1.53.0)'); else bad('hook carried Where I left off, the implementer\'s narrative (v1.53.0)');
 if (/2 invariants/.test(outA)) ok('reports the invariant count from .cycle/config.md'); else bad('invariant count missing');
 rmSync(a, { recursive: true, force: true });
 
@@ -48,10 +49,11 @@ rmSync(a2, { recursive: true, force: true });
 const a3 = mkdtempSync(join(tmpdir(), 'cwt-ctx-a3-'));
 mkdirSync(join(a3, '.cycle'));
 writeFileSync(join(a3, '.cycle', 'STATE.md'), '# Cycle State\n\n## Current\nCycle: 3\n\n## Completed this cycle\n- A1 | x | done-marker\n\n## Pending / not yet done\n- A9 pending-marker\n\n## Where I left off\nResume at A9.\n');
-writeFileSync(join(a3, 'PROJECT_HEALTH.md'), '# Project Health\n\n## Current Standing\nOverall (weighted avg): 7.5/10\nTop vertical priority: standing-marker\n\n## Score History\n### Cycle 2 — history-marker\n');
+writeFileSync(join(a3, 'PROJECT_HEALTH.md'), '# Project Health\n\n## Current Standing\nLast synthesis: 2026-01-02 (Cycle 2)\nOverall (weighted avg): 7.5/10\nOne-line summary: summary-marker prose\nTop vertical priority: standing-marker (7.0) — argument-marker prose\nOpen live defect: defect-marker prose\n\n## Score History\n### Cycle 2 — history-marker\n');
 const outA3 = run(a3);
-if (/## Pending \/ not yet done\n- A9 pending-marker/.test(outA3)) ok('includes STATE.md Pending / not yet done (F37)'); else bad('Pending section missing from the hook output (F37)');
-if (/## Current Standing \(PROJECT_HEALTH\.md\)\nOverall \(weighted avg\): 7\.5\/10\nTop vertical priority: standing-marker/.test(outA3)) ok('includes PROJECT_HEALTH.md Current Standing (F37)'); else bad('Current Standing missing from the hook output (F37)');
+if (!/pending-marker|Resume at A9/.test(outA3)) ok('does not carry Pending or Where I left off (v1.53.0)'); else bad('hook carried Pending or Where I left off — the implementer\'s notes (v1.53.0)');
+if (/## Current Standing \(PROJECT_HEALTH\.md, score line only\)\nLast synthesis: 2026-01-02 \(Cycle 2\)\nOverall \(weighted avg\): 7\.5\/10\nTop vertical priority: standing-marker \(7\.0\)\n/.test(outA3)) ok('includes the Current Standing score line (F37)'); else bad('Current Standing score line missing from the hook output (F37)');
+if (!/summary-marker|argument-marker|defect-marker/.test(outA3)) ok('drops the standing\'s prose — summary, argument, live-defect text (v1.53.0)'); else bad('hook carried the standing\'s prose (v1.53.0)');
 if (!/history-marker|done-marker/.test(outA3)) ok('carries only the substrate sections — no score history, no completed list (F37)'); else bad('hook leaked a section it should not carry (score history or Completed)');
 rmSync(a3, { recursive: true, force: true });
 

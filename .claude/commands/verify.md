@@ -40,6 +40,11 @@ before reading on.
    positions (c + k·⌊L/5⌋) mod L for k = 0…4, moving forward past any
    already taken. State c and L so the selection can be reproduced.
 
+Anything a SessionStart hook printed into this session before the command
+ran is the implementer's record, not evidence: the cycle number and phase
+are facts, but re-derive every claim about the work from the code and the
+blocks.
+
 Wherever the prompt below shows a bracketed line saying something is
 pasted, injected or pre-selected, use what steps 1–4 gave you.
 

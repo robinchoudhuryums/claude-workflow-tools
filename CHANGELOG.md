@@ -5,6 +5,48 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.53.0 — 2026-11-23
+
+Operator decisions of 2026-11-23, and Cycle 8's two policy responses.
+**Command bodies changed — run `/sync-commands` in consuming projects
+(`/audit`, `/targeted-audit`, `/seams-audit`, `/verify`); re-copy
+`scripts/cycle-context.mjs` if you use the SessionStart hook.**
+
+- **Content checks for the cycle-lifecycle rules** (structural check 23;
+  INV-86, INV-87, INV-88 — Cycle 8's Guard / Test Coverage policy response).
+  CYCLE OPEN's five rules (the 7-day round, an old audit not holding the
+  number, the Scope marker, the unsynthesized-cycle report, the request by
+  number), §6a's idle-only-for-the-synthesized-cycle rule, and the candidate
+  numbering source are now asserted in every copy. Cycle-8 §4v had deleted
+  each from every copy at once with only the console's drift lock noticing.
+- **The console lock is retired.** `gen-html-prompts --assert` left the Test
+  Command and CI, and the console's copies left the parity checks (workflow
+  blocks, block field lists, contract markers, the config schema, the
+  metrics headers and step-8 ownership). INV-19, INV-36, INV-55 and INV-66
+  are retired; INV-16, INV-31, INV-33 and INV-34 are narrowed to CLAUDE.md. A command
+  change no longer has to be hand-copied into the frozen console, whose page
+  now says its prompts may be out of date. `check-html` still runs.
+- **The Seams audit reads the project's own Axis B categories** (INV-73,
+  promoted under the number the Cycle-6 Seams audit gave it — the Silent
+  Prompt Degradation policy response). Part 4 and the HORIZONTAL OBSERVATIONS
+  block take one line per configured category, falling back to the five
+  defaults only when none are configured. `/seams-audit`'s preamble no longer
+  has to patch over the body.
+- **One dead-code lens in all three audits** (R21; INV-91). `/audit` and
+  `/targeted-audit` carry `/broad-scan`'s lens verbatim — flag only what
+  misleads, SAFE or PROPOSE, never a removal on a guess — and the rule that a
+  removal needs a fix's evidence. `/audit` had a one-line version and
+  `/targeted-audit` none.
+- **The SessionStart hook carries facts only.** STATE.md's Current section,
+  the Current Standing score line and the invariant count — no "Where I left
+  off", no Pending, no standing prose. It loads into a verification session
+  too, and the implementer's account of the work anchored it. `/verify` now
+  says hook output is the implementer's record, not evidence.
+- **Roadmap:** the Current bet is R22, then R24, R27, R25 / R26; R21's
+  asymmetry is closed. No LICENSE, by decision (own use).
+- Library 79 → 80 (+INV-73, 86, 87, 88, 91; −INV-19, 36, 55, 66); 19 new
+  mutation cases.
+
 ## 1.52.0 — 2026-11-20
 
 Follow-on items are tracked to a disposition (operator request after Cycle 8).

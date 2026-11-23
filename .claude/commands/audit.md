@@ -78,7 +78,15 @@ with this audit normally.
 
 Audit this subsystem across these focus areas:
 1. Bugs and logic errors in currently-reachable code paths
-2. Dead code / unused exports (only if they create confusion)
+2. Dead or superseded artifacts — code, exports, styles/classes, markup,
+   config, feature flags, exemptions — but ONLY where the thing is
+   actively misleading: it hides a live defect, contradicts what the code
+   does now, or survives a change that replaced it. Volume is not a
+   finding; concealment is. For each, state how you verified it is
+   unreferenced, and mark it SAFE (mechanically verified — no reference in
+   any code path, template string, or generated markup) or PROPOSE (looks
+   unused, but dynamic or generated references cannot be ruled out).
+   PROPOSE items are questions for the operator, never removals.
 3. Test gaps (missing coverage on load-bearing paths)
 4. Stale artifacts (TODOs, comments, docs that mislead)
 5. Hardcoded values that should be config/env
@@ -99,6 +107,9 @@ For each finding:
 
 DO NOT flag style preferences or speculative "could be cleaner"
 refactoring unless the current code is actively wrong.
+Removing something is a change like any other and needs the same evidence
+a fix needs. If you cannot name the check that proves nothing references
+it, it is a PROPOSE, not a finding.
 
 Finding IDs in the handoff block are SESSION-LOCAL labels (F1, F2, …) —
 not invariant-library IDs. INV-N IDs are assigned only when a rule is

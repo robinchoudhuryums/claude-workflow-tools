@@ -11,6 +11,19 @@ workflow itself (gotchas, design decisions, invariants) lives in
 
 Entries are newest-first.
 
+## Cycle 8 — invariants retired with the console lock (v1.53.0, 2026-11-23)
+
+The operator retired the console lock (FO-8-1). Four invariants existed only to
+hold the frozen console to CLAUDE.md and were retired with it; their numbers are
+not reused.
+
+- INV-19 — the console's prompts stay behaviorally aligned with the canonical commands (block presence, reflect / regression behaviours). Retired: the console is no longer kept in step.
+- INV-36 — every dynamic console builder contains 100% of its canonical body's lines (the R16 lock). Retired with --assert.
+- INV-55 — workflow blocks rendered by the console are shape-checked against the block registry. Retired: a block that gains a field in CLAUDE.md no longer has to be copied into the console.
+- INV-66 — every static console <pre> is locked to a canonical body, and a new one with no manifest entry fails. Retired with --assert.
+
+Narrowed, not retired: INV-16 (the config schema, now two copies in CLAUDE.md), INV-31 (block field parity across CLAUDE.md's copies), INV-33 (metrics headers and step-8 ownership, canonical only), INV-34 (contract markers, CLAUDE.md only). FO-8-1 is closed by this release.
+
 ## Cycle 8 — follow-on items closed in the v1.52.0 one-time pass (2026-11-20)
 
 v1.52.0 gave every follow-on item an ID and a disposition. STATE.md's 22

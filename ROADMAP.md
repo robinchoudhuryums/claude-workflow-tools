@@ -90,7 +90,7 @@ the console are closed as dropped, not left open.
   the sweep's first target would be the scripts' own gates. The audit runs
   cases in parallel since v1.49.0, which is what makes a sweep affordable.
 
-- **R21 — Dead/superseded-artifact lens in `/broad-scan`.** `effort: S (~30 min)` — ✅ DONE (v1.34.0, applied verbatim before the Cycle-7 scan). The `/audit` focus-area-2 / `/targeted-audit` asymmetry below is still undecided.
+- **R21 — Dead/superseded-artifact lens in `/broad-scan`.** `effort: S (~30 min)` — ✅ DONE (v1.34.0, applied verbatim before the Cycle-7 scan). The `/audit` focus-area-2 / `/targeted-audit` asymmetry below was decided on 2026-11-23 — one lens, the same text in all three audits — and closed in v1.53.0.
   The Stage 1 flag list reads *"Dead code, unused exports, stale TODOs only if
   they create confusion"* — all **code** nouns. Nothing names styles, classes,
   markup, config or exemptions, so the lens is JS-shaped and slides past the
@@ -426,9 +426,13 @@ the console are closed as dropped, not left open.
 
 ## The one strategic bet
 
-**Current bet:** none chosen.
+**Current bet:** R22, then R24, R27, and R25 / R26, in that order (operator, 2026-11-23).
 
-This is the operator's decision. The bet written
+This is the operator's decision; the order above was chosen on 2026-11-23,
+starting with R22's derived half (the cycle's numbers checked rather than
+carried by hand — Cycle 8's 10-vs-6 count and a metrics row left at 4 after
+the operator chose 10 are what it would catch), then R24 (it unblocks
+assigning follow-ons to a scan's batches), R27, R25 and R26. The bet written
 here until 2026-11-20 was *R1 (dogfood) immediately, then R6 (SessionStart
 hook)*. Both are done, and R1 did what it was chosen for: its audits reordered
 this roadmap more than any planning session did.
@@ -443,8 +447,6 @@ What is open, for whoever picks the next one:
   this workflow rather than an improvement to it.
 - **R12 multi-operator state** — only worth it if the workflow spreads to a
   team.
-- **R21's undecided asymmetry** (`/audit` focus area 2 vs `/targeted-audit`)
-  — a decision, not a build.
 - R11 stays held until Dynamic Workflows leaves preview.
 
 - **R24–R27** — what is left of the Cycle-8 scan's expansion plan: scan

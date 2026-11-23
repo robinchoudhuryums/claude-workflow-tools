@@ -163,15 +163,6 @@ const CASES = {
              ['.claude/commands/targeted-implement.md', 'Never overwrite a block: if that name is taken', 'If that name is taken', /CHECKPOINT may overwrite an existing block: targeted-implement/],
              // F6: the command /reflect hands candidates to loses the step that takes them.
              ['.claude/commands/sync-docs.md', '5. Invariant candidates — has /reflect', '5. New rules — has /reflect', /hands invariant candidates to \/sync-docs, which has no step/]],
-  'INV-66': [
-    ['scripts/gen-html-prompts.mjs', "  { id: 'p1sec', section:", "  // removed { id: 'p1sec', section:", /outside the lock manifest/i],
-    // Cycle-7 Batch 6 (F48): a new static prompt whose id is not the FIRST attribute.
-    [HTML, '</body>', '<pre class="prompt" id="zz-unlocked">A brand-new static prompt</pre></body>', /outside the lock manifest: zz-unlocked/],
-    // inherited from the retired INV-29: the DRIFT half. Retiring a rule must
-    // not retire its proof — INV-66's own case only covered the unlocked-new-
-    // prompt half, so without this the drift mutation would have been lost.
-    [HTML, '<pre id="p0">Read CLAUDE.md and README before starting.', '<pre id="p0">Read README before starting.', /drift|does not match|p0/i],
-  ],
   'INV-62': [
     [HTML, 'id="navToggle" aria-label="Open navigation" aria-expanded="false"', 'id="navToggle" aria-label="Open navigation"', /F12/],
     [HTML, '<label class="fill-label" for="pf-name">', '<label class="fill-label" data-for="pf-name">', /F12/],
@@ -200,17 +191,14 @@ const CASES = {
              ['.claude/commands/audit.md', 'argument-hint: "<subsystem-name>"\n', '', /audit\.md reads \$ARGUMENTS and carries no argument hint/]],
   'INV-14': [['.github/workflows/sync-check.yml', '  pull_request:\n', '', /INV-14/],
              ['.github/workflows/sync-check.yml', '  pull_request:\n', '  pull_request:\n    branches: [never-a-real-branch]\n', /filters its pull_request trigger/]],
-  'INV-16': [[HTML, '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery [N] subsystem cycles\n\n', '', /INV-16/]],
+  'INV-16': [[CFG, '### Seams Audit Cadence   ← optional; default: every 4 subsystem cycles\nevery [N] subsystem cycles\n\n', '', /INV-16/]],
   'INV-18': [['.claude/commands/implement.md', '3. CHECKPOINT (optional — only if .cycle/ exists): create/update', '3. CHECKPOINT: create/update', /not gated on the directory existing/i]],
-  'INV-19': [[HTML, '---CYCLE SUMMARY BLOCK---', '---GONE-SUMMARY---', /workflow blocks missing|cycle summary block/i]],
-  'INV-33': [[HTML, 'Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score', /metrics-row ownership \(Cycle-8 F43\) — console §6a builder: [^\n]*mentions net_score 3 times/],
+  'INV-33': [// (v1.53.0: the two console-builder cases left with the console lock.)
              // Cycle-8 Batch 8 (F43): the canonical copy tells the synthesis row to FILL the reflect-owned columns.
              [CFG, 'Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK', 'Also fill net_score, prod_fixes, new_failure_modes, and defensive_count', /metrics-row ownership \(Cycle-8 F43\) — CLAUDE\.md §6a: [^\n]*leave net_score, prod_fixes and new_failure_modes BLANK/],
-             // F43: the console copy stops saying who owns them.
-             [HTML, 'owned ONLY by the phase=reflect rows', 'described in the reflect step', /metrics-row ownership \(Cycle-8 F43\) — console §6a builder: [^\n]*owned only by the phase=reflect rows/],
              // Cycle-7 Batch 6 (F49): a header missing a MIDDLE column matched no prefix and went unchecked.
              ['CLAUDE.md', 'axis_b_lowest,notes,defensive_count', 'axis_b_lowest,defensive_count', /canonical column list/]],
-  'INV-34': [[HTML, 'TWO-AXIS GRID', 'TWO-PLANE GRID', /contract marker/i]],
+  'INV-34': [[CFG, 'investigate first', 'look at first', /contract marker\(s\) missing from CLAUDE\.md: "investigate first"/]],   // v1.53.0: the markers pin CLAUDE.md, not the console
   'INV-39': [[HTML, 'OPERATOR VISUAL CHECKS', 'VISUAL-GONE', /operator visual checks/i]],
 
   // ── node scripts/gen-commands.mjs --check ───────────────────────────────────
@@ -227,7 +215,7 @@ const CASES = {
   'INV-22': [['scripts/check-template-sync.mjs', 'const cmdMissing = tableCmds.filter', 'const cmdMissing = [] || tableCmds.filter', /README command lacking/i]],
   'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i],
              // Cycle-8 follow-on to F9: the roadmap contradicts the cycle. guard.test reads the LIVE ROADMAP.md.
-             ['ROADMAP.md', '**Current bet:** none chosen.', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
+             ['ROADMAP.md', '**Current bet:** R22, then R24, R27, and R25 / R26, in that order (operator, 2026-11-23).', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
              ['ROADMAP.md', '- **R24 — Persist the scan report.** `effort: S (~1.5h)`', '- **R24 — Persist the scan report.** `effort: S (~1.5h)` — queued for Cycle 7', /the live ROADMAP\.md fails — [^\n]*R24 is still "queued for Cycle 7"/],
              // the check stops telling a finished item from an open one
              ['scripts/check-template-sync.mjs', 'closed: /✅ DONE|✗ DROPPED/.test(l) });', 'closed: false });', /a bet naming a finished item is not flagged/]],
@@ -282,6 +270,21 @@ const CASES = {
   // INV-81 — delete stops purging; delete takes a longer id's keys with it.
   'INV-81': [[HTML, '  purgeProjectData(id);\n  if(activeProjectId===id)', '  if(activeProjectId===id)', /project delete: [^\n]*survived the delete/],
              [HTML, '&&!longer.some(o=>k.indexOf(`ccg:${o}:`)===0)) doomed.push(k);', ') doomed.push(k);', /project delete: [^\n]*was wrongly removed/]],
+  // INV-86/87/88 (v1.53.0) — the lifecycle rules' CONTENT (structural check 23). Each case breaks ONE copy.
+  'INV-86': [['.claude/commands/audit.md', 'the last 7 days', 'the last 70 days', /CYCLE OPEN content \(v1\.53\.0, INV-86\): [^\n]*audit's CYCLE OPEN lacks the 7-day same-round bound/],
+             ['.claude/commands/broad-scan.md', 'it does not hold the number', 'it still holds the number', /CYCLE OPEN content \(v1\.53\.0, INV-86\): [^\n]*broad-scan's CYCLE OPEN lacks an old "Phase: audit" not holding the number/],
+             ['.claude/commands/targeted-audit.md', 'was reflected but never verified or synthesized', 'was reflected', /CYCLE OPEN content \(v1\.53\.0, INV-86\): [^\n]*targeted-audit's CYCLE OPEN lacks the reflected-but-unsynthesized report/]],
+  'INV-87': [['CLAUDE.md', "— a synthesized cycle is closed — but only if STATE.md's", "— a synthesized cycle is closed — whenever STATE.md's", /conditional idle \(v1\.53\.0, INV-87\): [^\n]*§6a body's step 8 does not limit Phase: idle/],
+             ['.claude/commands/health-synthesis.md', 'leave Phase alone and say so.', 'set it to idle as well.', /conditional idle \(v1\.53\.0, INV-87\): [^\n]*health-synthesis\.md's step 8 does not leave a later cycle's Phase alone/]],
+  'INV-88': [['.claude/commands/reflect.md', 'OR in any earlier "Invariant candidates" line', 'and', /candidate numbering \(v1\.53\.0, INV-88\): [^\n]*\/reflect numbers candidates from the library alone/],
+             ['.claude/commands/seams-audit.md', '"Invariant candidates" or "Proposed additions" line under .cycle/blocks/', 'library entry', /candidate numbering \(v1\.53\.0, INV-88\): [^\n]*\/seams-audit numbers proposed invariants from the library alone/]],
+  // INV-73 (v1.53.0) — the Seams audit asks about the project's configured Axis B categories.
+  'INV-73': [['.claude/commands/seams-audit.md', "Provide cross-cutting observations for each of the project's Axis B categories — the Horizontal (Axis B) Categories in the Cycle Workflow Config", 'Provide cross-cutting observations relevant to the five Axis B categories from Health Synthesis', /configured Axis B in the Seams audit \(v1\.53\.0, INV-73\): [^\n]*seams-audit\.md's Part 4 does not ask/],
+             ['CLAUDE.md', 'HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring — one line per Axis B category in the Cycle Workflow Config', 'HORIZONTAL OBSERVATIONS (evidence for next Axis B scoring — one line per default category', /configured Axis B in the Seams audit \(v1\.53\.0, INV-73\): [^\n]*§1s body's output block does not take one line per configured/]],
+  // INV-91 (v1.53.0) — one dead-code lens in every audit. Each case breaks ONE copy.
+  'INV-91': [['.claude/commands/targeted-audit.md', 'never removals.', 'or removals.', /dead-code lens \(v1\.53\.0, INV-91\): [^\n]*audit\(s\) with no dead\/superseded-artifact lens: targeted-audit/],
+             ['.claude/commands/audit.md', 'Volume is not a\n   finding; concealment is. ', '', /dead-code lens \(v1\.53\.0, INV-91\): [^\n]*audit's dead-code lens lacks "Volume is not a finding; concealment is\."/],
+             ['.claude/commands/broad-scan.md', 'it, it is a PROPOSE, not a finding.', 'it, remove it.', /dead-code lens \(v1\.53\.0, INV-91\): [^\n]*broad-scan lacks the rule that a removal needs a fix's evidence/]],
   // INV-90 (v1.52.0) — follow-on items tracked to a disposition (structural check 22).
   // Every case breaks ONE copy and is caught by that copy's CONTENT, not only by
   // the copies disagreeing — the property Cycle-8 §4v found missing for F4–F6.
@@ -298,7 +301,7 @@ const CASES = {
              ['.claude/commands/broad-implement.md', '- FO-<cycle>-<n> items (follow-on items', '- Follow-on items (items', /follow-on tracking \(v1\.52\.0\): [^\n]*\/broad-implement does not take FO items by ID/],
              ['.claude/commands/cycle-close.md', 'marked "this cycle" is OWED', 'marked "this cycle" is carried', /follow-on tracking \(v1\.52\.0\): [^\n]*\/cycle-close does not check follow-on dispositions/],
              ['CLAUDE.md', '## Open follow-on items\n- FO-[cycle]-[n] | [File: area]', '## Open follow-on items\n- [File: area]', /follow-on tracking \(v1\.52\.0\): [^\n]*STATE\.md template's follow-on line does not show/],
-             ['.cycle/STATE.md', 'guarded ONLY by that lock | → decision', 'guarded ONLY by that lock', /follow-on tracking \(v1\.52\.0\): [^\n]*no FO ID or no open disposition: "- FO-8-1 /],
+             ['.cycle/STATE.md', 'could not be exercised here | → next audit', 'could not be exercised here', /follow-on tracking \(v1\.52\.0\): [^\n]*no FO ID or no open disposition: "- FO-8-5 /],
              ['.cycle/STATE.md', 'never been run end to end | → next audit', 'never been run end to end | → noted', /follow-on tracking \(v1\.52\.0\): [^\n]*no FO ID or no open disposition: "- FO-8-20 /],
              ['.cycle/STATE.md', '- FO-8-13 |', '- FO-8-11 |', /follow-on tracking \(v1\.52\.0\): [^\n]*FO-8-11 is used twice/]],
   // INV-72 — ship a release into the current cycle with no block for it.
@@ -322,27 +325,20 @@ const CASES = {
              ['scripts/check-template-sync.mjs', 'const earlier = versioned.filter(x => x.cycle < Number(cycle))', 'const earlier = versioned.filter(x => false)', /Cycle-8 F7: /]],
 
   // ── node scripts/gen-html-prompts.mjs --assert ──────────────────────────────
-  'INV-36': [[HTML, 'PART 1 — INVARIANT PROBE RESULTS', 'PART 1 — PROBE RESULTS', /coverage|missing line|drift/i],
-             // Cycle-7 Batch 7 (F47): order and case are part of the lock — §4v's independence guard
-             // swapped below the line it must precede, and the same guard with its NOT lowercased.
-             [HTML, 'return `Do not make any changes to any files during this session.\n\nIMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.\n',
-                    'return `IMPORTANT: This is an independent verification session. You must NOT have participated in the implementation cycle being verified. If you have any context from the implementation session, STOP — close this session and start a fresh one with no prior conversation. This prevents the implementer from grading its own work.\n\nDo not make any changes to any files during this session.\n', /OUT OF ORDER/],
-             [HTML, 'You must NOT have participated in the implementation cycle being verified. If you have any context', 'You must not have participated in the implementation cycle being verified. If you have any context', /buildVerificationText is missing/],
-             // Cycle-7 Batch 7 (F46): a multi-token row schema is a canonical line, not a placeholder.
-             [HTML, 'FINDINGS:\n[ID] | [File: function/line] | [Severity] | [Confidence] | [Fires this month: Y/N] | [Effort] | [Description]\n(or "None — no production-impacting', 'FINDINGS:\n(or "None — no production-impacting', /buildPrReviewText is missing/]],
 
   // ── node scripts/check-output-blocks.mjs ────────────────────────────────────
   'INV-31': [[CFG, 'Audit confidence: [High / Medium / Low]\n', '', /audit confidence|missing field/i],
              // Cycle-7 Batch 7 (F50): a field outside the registry's hand-listed subset, renamed in one copy.
-             [HTML, 'Production bugs (would fire this month): [count]', 'Production bugs: [count]', /lacks field\(s\) other copies carry/]],
+             [CFG, '### TIER 2 HANDOFF BLOCK\n```\n---TIER 2 HANDOFF BLOCK---\nScope: [subsystem]\nFindings: [count] total — [critical/high/medium/low breakdown]\nProduction bugs (would fire this month): [count]', '### TIER 2 HANDOFF BLOCK\n```\n---TIER 2 HANDOFF BLOCK---\nScope: [subsystem]\nFindings: [count] total — [critical/high/medium/low breakdown]\nProduction bugs: [count]', /lacks field\(s\) other copies carry/]],
   'INV-38': [[CFG, 'SEAM INVENTORY:', 'SEAM-LIST:', /seam inventory|missing field/i]],
-  'INV-55': [[HTML, '---PR REVIEW BLOCK---\nPR:', '---PR REVIEW BLOCK---\nPR-NUMBER:', /pr review block|missing field/i]],
 
   // ── the remaining test-backed scripts ───────────────────────────────────────
   'INV-24': [['scripts/cycle-context.mjs', 'existsSync', 'Boolean', /no context block emitted/],
              // Cycle-7 Batch 7 (F37): the Current Standing and Pending outputs had no fixture.
-             ['scripts/cycle-context.mjs', "  if (standing) out.push(", "  if (false) out.push(", /Current Standing missing/],
-             ['scripts/cycle-context.mjs', "for (const h of ['Current', 'Where I left off', 'Pending / not yet done'])", "for (const h of ['Current', 'Where I left off'])", /Pending section missing/],
+             ['scripts/cycle-context.mjs', "    if (lines.length) out.push(", "    if (false) out.push(", /Current Standing score line missing/],
+             // v1.53.0: the hook carries facts only — put the implementer's narrative back and it fails.
+             ['scripts/cycle-context.mjs', "  if (current) out.push(`\\n## Current\\n${current}`);", "  if (current) out.push(`\\n## Current\\n${current}`);\n  { const w = section(state, 'Where I left off'); if (w) out.push(`\\n## Where I left off\\n${w}`); }", /hook carried Where I left off/],
+             ['scripts/cycle-context.mjs', ".map(l => l.split(' — ')[0])", "", /hook carried the standing's prose/],
              // Cycle-8 Batch 2 (F11): the hook back on the working directory — the script, then the command.
              ['scripts/cycle-context.mjs', 'process.env.CLAUDE_PROJECT_DIR || process.cwd()', 'process.cwd()', /Cycle-8 F11: /],
              ['.claude/settings.json', '${CLAUDE_PROJECT_DIR:-.}/', '', /Cycle-8 F11: /]],
