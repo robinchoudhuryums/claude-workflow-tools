@@ -11,6 +11,42 @@ workflow itself (gotchas, design decisions, invariants) lives in
 
 Entries are newest-first.
 
+## Cycle 8 — invariants retired with the console lock (v1.53.0, 2026-11-23)
+
+The operator retired the console lock (FO-8-1). Four invariants existed only to
+hold the frozen console to CLAUDE.md and were retired with it; their numbers are
+not reused.
+
+- INV-19 — the console's prompts stay behaviorally aligned with the canonical commands (block presence, reflect / regression behaviours). Retired: the console is no longer kept in step.
+- INV-36 — every dynamic console builder contains 100% of its canonical body's lines (the R16 lock). Retired with --assert.
+- INV-55 — workflow blocks rendered by the console are shape-checked against the block registry. Retired: a block that gains a field in CLAUDE.md no longer has to be copied into the console.
+- INV-66 — every static console <pre> is locked to a canonical body, and a new one with no manifest entry fails. Retired with --assert.
+
+Narrowed, not retired: INV-16 (the config schema, now two copies in CLAUDE.md), INV-31 (block field parity across CLAUDE.md's copies), INV-33 (metrics headers and step-8 ownership, canonical only), INV-34 (contract markers, CLAUDE.md only). FO-8-1 is closed by this release.
+
+## Cycle 8 — follow-on items closed in the v1.52.0 one-time pass (2026-11-20)
+
+v1.52.0 gave every follow-on item an ID and a disposition. STATE.md's 22
+free-text items became FO-8-1 … FO-8-22; seven stay open there (FO-8-1, 5, 8,
+11, 13, 20, 22). These fifteen were closed, and the reason is the record:
+
+- FO-8-2 | won't do — S5–S17 (visual scenarios) never walked by a person: not owed while the console is frozen; S1–S4 are still walked by automation when the HTML changes. Revive on unfreeze.
+- FO-8-3 | won't do — no guard for an end-of-life Node line (Cycle-8 F15): nothing mechanical can tell one without a date.
+- FO-8-4 | won't do — invariant-check passes a Verify to the shell as written (`\|` is not a pipe; toCommand ends a command at " (", " + ", " then "): documented behaviour, INV-26.
+- FO-8-6 | won't do — guard.test's F7 case reads this repo's STATE.md and CHANGELOG.md: deliberate; the floor it tests needs the real release history.
+- FO-8-7 | won't do — check-html, check-template-sync and the mutation audit still call process.exit() after printing: their output is far below a pipe's 64 KiB buffer (re-measured by 08-b-verification); the class is in Common Gotchas.
+- FO-8-9 | won't do — without verification-pack.mjs, /verify derives its probes from the cycle number and library size: a stated tradeoff, documented in the command.
+- FO-8-10 | done — "Batch 3 missed a second failure mode; /reflect should record it": 08-a-reflect.md recorded it in its block and metrics notes.
+- FO-8-12 | won't do — the mutation audit's parallel cases could make a timing-dependent Verify an intermittent false green: one instance found and fixed in v1.49.0, none known since; the risk is in Common Gotchas.
+- FO-8-14 | won't do — check 10's sentence scan and check 16's floor scan can flag a legitimate sentence: loud by design, and the failure line quotes the sentence.
+- FO-8-15 | won't do — a project that never synthesizes rests at Phase: reflect: /cycle-close (v1.48.0) returns it to idle.
+- FO-8-16 | won't do — the 7-day same-round window can split a slow round: a documented tradeoff, counted as regression R2 by 08-b-verification.
+- FO-8-17 | won't do — .cycle/HISTORY.md is read by nothing: reference prose by design (.cycle/config.md, Subsystems).
+- FO-8-18 | won't do — the roadmap guard (check 21) reads two mechanical things only: its scope is a recorded design decision; /sync-docs covers the rest.
+- FO-8-19 | won't do — check 21 is written for this repo's ROADMAP.md shape: consuming projects do not run this repo's guard.
+- FO-8-22 | won't do — no LICENSE file: the operator decided on 2026-11-23 that the repo is for their own use.
+- FO-8-21 | won't do — a project on a /sync-commands older than v1.50.0 needs two runs: documented in the Operator State Checklist.
+
 ## Cycle 7 — /broad-scan (50 findings) → 8 fix batches + follow-ons, v1.35.0 → v1.43.0 — REFLECTED, NOT VERIFIED
 
 Moved out of STATE.md when Cycle 8's first implement checkpoint rolled it

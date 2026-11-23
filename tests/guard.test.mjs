@@ -86,19 +86,20 @@ expectFail('detects command-pair parity drift (shared behavior dropped from one 
 // 7) Metrics schema parity (P11): a metrics.csv header that drops the
 // trailing defensive_count column is caught.
 expectFail('detects a metrics.csv header missing defensive_count',
-  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(',axis_b_lowest,notes,defensive_count', ',axis_b_lowest,notes')); },
+  d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replace(',axis_b_lowest,notes,defensive_count', ',axis_b_lowest,notes')); },
   /defensive_count/i);
 
 // 8) Metrics-row ownership (P1): re-introducing "phase=synthesis with the
 // overall net_score" (the double-count footgun) is caught.
 expectFail('detects the §6a synthesis double-count footgun (net_score on a synthesis row)',
-  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace('Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score')); },
+  d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replace('Fill phase=synthesis with the Category D ratio', 'Fill phase=synthesis with the overall net_score')); },
   /double-count|net_score/i);
 
 // 9) Dynamic-builder parity (R16): a dropped contract marker in a dynamic
 // console builder (here §6a's "TWO-AXIS GRID") is caught.
-expectFail('detects dynamic console builder drift (a dropped contract marker)',
-  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace(/TWO-AXIS GRID/i, 'TWO-PLANE GRID')); },
+// (v1.53.0: the console lock is retired, so the contract markers pin CLAUDE.md, not the console's copy.)
+expectFail('detects a canonical prompt contract losing its marker (a dropped contract marker)',
+  d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replace(/TWO-AXIS GRID/gi, 'TWO-PLANE GRID')); },
   /two-axis grid/i);
 
 // 10) Interface/visual lens (R18): dropping the perceptual routing target from
@@ -119,8 +120,8 @@ expectFail('detects the interface lens dropped from the canonical command (R18)'
 // WORKFLOW_BLOCKS list did not cover must now fail when dropped from the
 // console. PR REVIEW BLOCK is the regression case — it was absent from the
 // console for four releases precisely because this check could not see it.
-expectFail('detects a previously-unguarded block dropped from the console (F17)',
-  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('PR REVIEW BLOCK', 'PR-REVIEW-GONE')); },
+expectFail('detects a previously-unguarded block dropped from CLAUDE.md (F17; the console half left with its lock in v1.53.0)',
+  d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('PR REVIEW BLOCK', 'PR-REVIEW-GONE')); },
   /pr review block/i);
 
 // 13) Derived block coverage (F17): the derivation itself must hold. If a block
@@ -193,10 +194,10 @@ expectFail('detects an inline job-level `permissions: write-all` (Cycle-8 F46)',
 // whose headers were all rewritten away, were both invisible to the old
 // prefix-only scan.
 expectFail('detects a metrics header missing a middle column (F49)',
-  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replace('axis_b_lowest,notes,defensive_count', 'axis_b_lowest,defensive_count')); },
+  d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replace('axis_b_lowest,notes,defensive_count', 'axis_b_lowest,defensive_count')); },
   /not matching the canonical column list/);
 expectFail('detects a file whose metrics headers all disappeared (F49 count floor)',
-  d => { const f = join(d, 'claude-code-guide-v2.html'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count', '(see CLAUDE.md)')); },
+  d => { const f = join(d, 'CLAUDE.md'); writeFileSync(f, readFileSync(f, 'utf8').replaceAll('date,cycle,subsystem,phase,net_score,prod_fixes,new_failure_modes,category_d_ratio,axis_b_lowest,notes,defensive_count', '(see CLAUDE.md)')); },
   /only 0 metrics/);
 // 18) F44 (Cycle 7): the permissions block ends where the block ends. Its
 // pattern used to match newlines, so the "block" ran to end of file and a
@@ -222,9 +223,9 @@ expectFail('detects a command naming a helper script unconditionally (F11)',
   /names scripts\/invariant-check\.mjs unconditionally/);
 // Cycle-8 F43: the metrics-ownership rule was one literal phrase, looked for in the HTML only.
 // The scan's own example — rewrite the sentence in BOTH copies — passed every stage.
-expectFail('detects both §6a copies telling the synthesis row to fill net_score (Cycle-8 F43)',
-  d => { for (const n of ['CLAUDE.md', 'claude-code-guide-v2.html']) { const f = join(d, n); const s = readFileSync(f, 'utf8'); const find = 'Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK'; if (!s.includes(find)) throw new Error('fixture rotted: ' + n); writeFileSync(f, s.split(find).join('Also fill net_score, prod_fixes, new_failure_modes, and defensive_count')); } },
-  /metrics-row ownership \(Cycle-8 F43\) — CLAUDE\.md §6a: [^\n]*\n[^\n]*metrics-row ownership \(Cycle-8 F43\) — console §6a builder/);
+expectFail('detects the §6a body telling the synthesis row to fill net_score (Cycle-8 F43; the console copy left with its lock in v1.53.0)',
+  d => { for (const n of ['CLAUDE.md']) { const f = join(d, n); const s = readFileSync(f, 'utf8'); const find = 'Leave net_score, prod_fixes, new_failure_modes, and defensive_count BLANK'; if (!s.includes(find)) throw new Error('fixture rotted: ' + n); writeFileSync(f, s.split(find).join('Also fill net_score, prod_fixes, new_failure_modes, and defensive_count')); } },
+  /metrics-row ownership \(Cycle-8 F43\) — CLAUDE\.md §6a: /);
 // Cycle-8 F44: a write with no step heading around it — a bullet under "Rules:" — was not read.
 expectFail('detects an ungated cycle-state write that is not shaped like a step (Cycle-8 F44)',
   d => { const f = join(d, '.claude', 'commands', 'implement.md'); const s = readFileSync(f, 'utf8'); const find = '- Check Common Gotchas before each action'; if (!s.includes(find)) throw new Error('fixture rotted: implement.md'); writeFileSync(f, s.replace(find, '- Save your progress to STATE.md after each action\n' + find)); },
@@ -284,20 +285,20 @@ expectFail('detects a command description that names a scripts/ helper (Cycle-8 
   };
   const line = r => (r.out.split('\n').find(l => /roadmap currency|the roadmap does not contradict/.test(l)) || '(no roadmap line)').trim();
   const cycle = Number((readFileSync(join(repo, '.cycle', 'STATE.md'), 'utf8').match(/^Cycle:\s*(\d+)/m) || [])[1]);
-  const openItem = /^(- \*\*R24 — [^\n]*)$/m, bet = /^\*\*Current bet:\*\*[^\n]*$/m;
+  const openItem = /^(- \*\*R27 — [^\n]*)$/m, bet = /^\*\*Current bet:\*\*[^\n]*$/m;
   const problems = [];
   try {
     const live = withRoadmap(null);
     if (live.code !== 0 || !/✓ the roadmap does not contradict the cycle/.test(live.out)) problems.push(`the live ROADMAP.md fails — ${line(live)}`);
     const stale = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle - 1})`));
-    if (stale.code === 0 || !new RegExp(`R24 is still "queued for Cycle ${cycle - 1}" and the project is on Cycle ${cycle}`).test(stale.out)) problems.push(`an open item queued for a cycle that has run is not flagged — ${line(stale)}`);
+    if (stale.code === 0 || !new RegExp(`R27 is still "queued for Cycle ${cycle - 1}" and the project is on Cycle ${cycle}`).test(stale.out)) problems.push(`an open item queued for a cycle that has run is not flagged — ${line(stale)}`);
     const current = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle})`));
     if (current.code !== 0) problems.push(`an item queued for the CURRENT cycle is rejected — ${line(current)}`);
     const history = withRoadmap(t => t.replace(openItem, `$1 (it was queued for Cycle ${cycle - 1} and slipped)`));
     if (history.code !== 0) problems.push(`a past-tense "was queued for" is read as a live status — ${line(history)}`);
     const spent = withRoadmap(t => t.replace(bet, '**Current bet:** R1, then R6.'));
     if (spent.code === 0 || !/the strategic bet names R1, which is marked done or dropped/.test(spent.out)) problems.push(`a bet naming a finished item is not flagged — ${line(spent)}`);
-    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R22 (its derived half).'));
+    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R27 (mechanical mutation sweep).'));
     if (open.code !== 0) problems.push(`a bet naming an open item is rejected — ${line(open)}`);
     const unstated = withRoadmap(t => t.replace(bet, 'The bet is discussed below.'));
     if (unstated.code === 0 || !/has no "\*\*Current bet:\*\*" line/.test(unstated.out)) problems.push(`a roadmap that states no bet is not flagged — ${line(unstated)}`);

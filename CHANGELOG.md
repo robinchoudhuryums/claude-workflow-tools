@@ -5,6 +5,182 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.56.0 — 2026-11-23
+
+ROADMAP R24 — the audit's report is saved, not left in chat (batches R24-1 to
+R24-3). **Command bodies changed — run `/sync-commands` in consuming projects
+(`/broad-scan`, `/audit`, `/targeted-audit`, `/broad-implement`, `/plan`,
+`/targeted-implement`, `/health-synthesis`, `/verify`).** A project with a
+public repository should decide whether `.cycle/blocks/` is committed: the
+reports are saved in full, security findings included.
+
+- **Every audit saves its report** (R24-1, INV-96). `/broad-scan`, `/audit`
+  and `/targeted-audit` carry one SAVE REPORT step, the same text in all
+  three and gated on `.cycle/STATE.md`, that writes the whole output verbatim
+  to `.cycle/blocks/` as `<cycle>-scan.md`, `<cycle>-audit-<subsystem>.md` or
+  `<cycle>-targeted-audit-<subsystem>.md` (`-2`, `-3` on a re-run, never
+  overwriting). The opening rule and CYCLE OPEN now count three permitted
+  writes.
+- **The commands that need the report read it back.** `/broad-implement
+  Batch 2` (or a finding ID) in a fresh session reads the saved scan instead
+  of asking for a paste; `/plan` and `/targeted-implement` read the handoff
+  from the saved `/audit` or `/targeted-audit` report; `/health-synthesis`
+  reads a Tier 1 cycle's FINAL REPORT and batch plan in place of the Session
+  Handoff Block. `/verify` leaves the report out: it is the audit's judgment,
+  and the verification re-derives from the code.
+- **The packs know the reports** (R24-2; INV-52 and INV-93 widened).
+  `verification-pack.mjs` keeps a saved report out of the §4v INPUT BLOCKS and
+  names it (`isAuditReport`, `splitReports`). `synthesis-pack.mjs` reads it as
+  a `report`, not a release, and names a cycle whose `/broad-implement`,
+  `/targeted-implement` or `/implement` releases have no saved audit report.
+- **The batch plan is checked against what shipped** (R24-3, INV-97). From
+  the newest saved scan, the synthesis pack reads each fix and expansion
+  batch and the IDs set aside under Deferred / Not batched, takes an item as
+  shipped when a release block's CHANGES line opens with its ID, and names
+  the batch never run, the item neither shipped nor dropped, and the item
+  shipped although set aside, twice, or outside the plan. Reported, not
+  failed. `/health-synthesis` step 6 takes it from the pack.
+- Library 84 → 86 invariants; mutation cases +13. ROADMAP R24 marked done; the
+  bet is now R27, then R25 / R26.
+
+## 1.55.0 — 2026-11-23
+
+ROADMAP R22 — the Health Synthesis inputs are derived, not added up by eye
+(batches R22-1 to R22-3). **Command body changed — run `/sync-commands` in
+consuming projects (`/health-synthesis`); copy `scripts/synthesis-pack.mjs`
+to use it.**
+
+- **`scripts/synthesis-pack.mjs` reconciles a cycle's numbers** (R22-1,
+  INV-93). It sums the release blocks' NET SCORE lines and sets them beside
+  the reflect row and the newest Verification Block, naming each disagreement
+  with its cause: a recorded correction, releases shipped after the
+  reflection or the verification, a block with no score line or wrong
+  arithmetic, regressions the self-reports missed, a missing reflect row or
+  verification. Reported, not failed — the operator settles a disagreement.
+  On Cycle 8 it shows 10 − 2 in the blocks, 6 − 2 in the reflect row (with
+  its CORRECTION), 10 − 3 in the verification, and v1.52.0–v1.54.0 covered by
+  neither.
+- **It computes the prior scores and the policy triggers** (R22-2, INV-94):
+  the Score History as a series per Axis B category (every entry format back
+  to Cycle 1), the cycles never synthesized, and for the cycle being
+  synthesized the score at which each of the four clauses would fire. On
+  Cycle 8's series it fires exactly the two responses that synthesis found.
+- **`--check` holds a synthesis to itself** (R22-3, INV-95), in the Test
+  Command and CI: the metrics row, Current Standing and the newest Score
+  History entry must carry one cycle, one lowest Axis B category and score,
+  one Category D, one Overall, and a "Policy responses triggered" line equal
+  to the recomputed clauses. INV-71 checked the labels; this checks the
+  values. A project that has never synthesized is skipped.
+- **`/health-synthesis` uses it** where the project has the script: a new
+  step 6 takes the derived figures instead of eyeballing them, and the
+  PROJECT HEALTH step runs `--check` after writing.
+- 12 mutation cases; library 81 → 84; Test Command 15 → 17 stages.
+
+## 1.54.0 — 2026-11-23
+
+The rest of Cycle 8's Silent Prompt Degradation policy response (FO-8-28).
+**Command bodies changed — run `/sync-commands` in consuming projects
+(`/verify`, `/health-synthesis`).**
+
+- **`/verify` and `/health-synthesis` stop and ask when the cycle has no
+  reflect block.** With no `…-reflect.md` there is no Cycle Summary Block and
+  no reflect row, so a verification or synthesis grades only the
+  implementer's own counts. In Cycle 8, `/verify` ran without one and did not
+  stop. Now each says so at the top and waits for the operator: verify or
+  synthesize anyway, or run `/reflect` first. A verification run without one
+  says so in its block.
+- **The verification block has a fixed name:** `<cycle>-verification.md`
+  (then `-2`, `-3`), taking no letter. A `/reflect` running in another session
+  took Cycle 8's letter `a` while `/verify` was writing, and the block had to
+  be renamed afterwards. `/health-synthesis` reads the newest verification
+  and names any earlier one as superseded. Existing lettered blocks
+  (`08-b-verification.md`) still read as verifications.
+- Structural check 23 holds both (INV-92); 3 mutation cases. Library 80 → 81.
+
+## 1.53.0 — 2026-11-23
+
+Operator decisions of 2026-11-23, and Cycle 8's two policy responses.
+**Command bodies changed — run `/sync-commands` in consuming projects
+(`/audit`, `/targeted-audit`, `/seams-audit`, `/verify`); re-copy
+`scripts/cycle-context.mjs` if you use the SessionStart hook.**
+
+- **Content checks for the cycle-lifecycle rules** (structural check 23;
+  INV-86, INV-87, INV-88 — Cycle 8's Guard / Test Coverage policy response).
+  CYCLE OPEN's five rules (the 7-day round, an old audit not holding the
+  number, the Scope marker, the unsynthesized-cycle report, the request by
+  number), §6a's idle-only-for-the-synthesized-cycle rule, and the candidate
+  numbering source are now asserted in every copy. Cycle-8 §4v had deleted
+  each from every copy at once with only the console's drift lock noticing.
+- **The console lock is retired.** `gen-html-prompts --assert` left the Test
+  Command and CI, and the console's copies left the parity checks (workflow
+  blocks, block field lists, contract markers, the config schema, the
+  metrics headers and step-8 ownership). INV-19, INV-36, INV-55 and INV-66
+  are retired; INV-16, INV-31, INV-33 and INV-34 are narrowed to CLAUDE.md. A command
+  change no longer has to be hand-copied into the frozen console, whose page
+  now says its prompts may be out of date. `check-html` still runs.
+- **The Seams audit reads the project's own Axis B categories** (INV-73,
+  promoted under the number the Cycle-6 Seams audit gave it — the Silent
+  Prompt Degradation policy response). Part 4 and the HORIZONTAL OBSERVATIONS
+  block take one line per configured category, falling back to the five
+  defaults only when none are configured. `/seams-audit`'s preamble no longer
+  has to patch over the body.
+- **One dead-code lens in all three audits** (R21; INV-91). `/audit` and
+  `/targeted-audit` carry `/broad-scan`'s lens verbatim — flag only what
+  misleads, SAFE or PROPOSE, never a removal on a guess — and the rule that a
+  removal needs a fix's evidence. `/audit` had a one-line version and
+  `/targeted-audit` none.
+- **The SessionStart hook carries facts only.** STATE.md's Current section,
+  the Current Standing score line and the invariant count — no "Where I left
+  off", no Pending, no standing prose. It loads into a verification session
+  too, and the implementer's account of the work anchored it. `/verify` now
+  says hook output is the implementer's record, not evidence.
+- **Roadmap:** the Current bet is R22, then R24, R27, R25 / R26; R21's
+  asymmetry is closed. No LICENSE, by decision (own use).
+- Library 79 → 80 (+INV-73, 86, 87, 88, 91; −INV-19, 36, 55, 66); 19 new
+  mutation cases.
+
+## 1.52.0 — 2026-11-20
+
+Follow-on items are tracked to a disposition (operator request after Cycle 8).
+**Command bodies changed — run `/sync-commands` in consuming projects
+(`/broad-scan`, `/audit`, `/targeted-audit`, `/broad-implement`,
+`/targeted-implement`, `/implement`, `/regression`, `/cycle-resume`,
+`/cycle-status`, `/cycle-close`, `/sync-docs`; `/broad-implement`'s argument
+hint).**
+
+- **Every follow-on item gets an ID and one disposition.** The implement
+  commands, `/regression` and `/cycle-resume` share one FOLLOW-ON IDS rule:
+  `FO-<cycle>-<n>`, and exactly one of *this cycle*, *next audit*, *roadmap*,
+  *decision* or *won't do (reason)* — "noted" is not one. With `.cycle/`, open
+  items are recorded in `STATE.md`'s "Open follow-on items" and removed by the
+  session that finishes them. Until now a follow-on was a free-text bullet:
+  the CHECKPOINT copied it into `STATE.md`, `/cycle-close` kept whatever was
+  "still live", and no command ever acted on one. This repo's `STATE.md` held
+  22 — one already done, one a regression that no count included.
+- **Each disposition has an owner.** `/broad-implement` takes *this cycle*
+  items by ID (`/broad-implement FO-8-3`). `/broad-scan`, `/audit` and
+  `/targeted-audit` gain a FOLLOW-ON REVIEW step: each *next audit* item in
+  scope is re-checked with fresh eyes, as a lead and never as a finding, and
+  closed as confirmed (it becomes a finding; marked "confirmed as" it until
+  that finding is implemented), already fixed (moved to `HISTORY.md` with
+  what was checked), or still open. It is the audits' second permitted
+  write, beside CYCLE OPEN. `/sync-docs` proposes a
+  roadmap item for each *roadmap* follow-on. `/cycle-close` asks for a new
+  disposition for any still marked *this cycle*. `/cycle-status` counts open
+  items by disposition. `/regression` may now write `STATE.md` (its follow-on
+  items, only).
+- **Structural check 22 (INV-90)** holds it: the reporting commands are
+  derived from the text and share one rule, the audits one review step, and
+  each copy's CONTENT is asserted (five dispositions, the refusal of "noted",
+  the record and the removal; the three review outcomes) — not only that the
+  copies agree, the gap Cycle-8 §4v found behind F4–F6. It also reads the live
+  `STATE.md`: every open item has a unique FO ID and an open disposition. 15
+  mutation cases; library 78 → 79.
+- **One-time pass in this repo:** the 22 items became FO-8-1 … FO-8-22. Seven
+  stay open (two decisions, four for the next audit, one for the roadmap) plus
+  FO-8-23 from Cycle 8's verification; fifteen were closed and moved to
+  `.cycle/HISTORY.md` with their reasons.
+
 ## 1.51.0 — 2026-11-20
 
 Cycle-8 follow-ons to Batch 9 — the four items its summary left open.

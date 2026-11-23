@@ -34,7 +34,7 @@
 // copy. Requires gen-html-prompts.mjs and csv.mjs beside it.
 //
 // Importable: exports selectProbes / readInvariants / readBlocks / blockCycle /
-// cycleTotals / buildPack for the regression test. No CLI side effects on import (INV-28).
+// isAuditReport / splitReports / cycleTotals / buildPack for the regression test. No CLI side effects on import (INV-28).
 
 import { readFileSync, readdirSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -103,6 +103,24 @@ export function readBlocks(dir, opts = {}) {
   return Object.assign(want.map(n => ({ name: n, text: read(join(dir, n)).trim() })), { excluded });
 }
 
+// R24-2 (v1.56.0): the three audits save their whole report to .cycle/blocks/
+// (<cycle>-scan.md, <cycle>-audit-<subsystem>.md, <cycle>-targeted-audit-<subsystem>.md,
+// then -2, -3 on a re-run). A report is the audit's JUDGMENT, not a §4v input —
+// the verifier re-derives from the code and the implementer's blocks, and an
+// audit's severity calls handed to it would anchor it. So the pack keeps reports
+// out of INPUT BLOCKS and names them, the same way it names other cycles' blocks.
+// A release block whose scope happens to start "audit-" still ends in its command.
+const RELEASE_SUFFIX = /-(?:broad-|targeted-)?implement\.md$|-reflect\.md$|-verification(?:-\d+)?\.md$|-seams\.md$/;
+export function isAuditReport(name) {
+  const n = String(name);
+  return !RELEASE_SUFFIX.test(n) && /^0*\d+-(?:scan|audit-[a-z0-9-]+|targeted-audit-[a-z0-9-]+)(?:-\d+)?\.md$/.test(n);
+}
+export function splitReports(blocks) {
+  const reports = blocks.filter(b => isAuditReport(b.name)).map(b => b.name);
+  const inputs = blocks.filter(b => !isAuditReport(b.name));
+  return Object.assign(inputs, { excluded: blocks.excluded || [], reports });
+}
+
 // Cycle totals from the phase=reflect rows, plus the correction signal. A
 // summary that /reflect had to correct is exactly what the verifier should not
 // take on trust, so surface it automatically instead of relying on memory.
@@ -120,7 +138,7 @@ export function sameCycle(a, b) {
 // file with a reordered or extra column. A file with no header falls back to
 // the canonical order.
 const METRICS_COLUMNS = ['date', 'cycle', 'subsystem', 'phase', 'net_score', 'prod_fixes', 'new_failure_modes', 'category_d_ratio', 'axis_b_lowest', 'notes', 'defensive_count'];
-function metricsRows(metricsCsv) {
+export function metricsRows(metricsCsv) {
   const all = parseCSV(metricsCsv || '');
   const head = (all[0] || []).map(h => h.trim());
   const hasHeader = head.includes('cycle') && head.includes('phase');
@@ -219,12 +237,14 @@ export function buildPack({ body, invariants, blocks, totals, cycle, seed, proje
       '');
   }
   const excluded = (blocks && blocks.excluded) || [];
+  const reports = (blocks && blocks.reports) || [];
   const blockSection = (blocks.length
     ? blocks.map(b => `───── ${b.name} ─────\n${b.text}`).join('\n\n')
     : `(no blocks for cycle ${cycle} found in .cycle/blocks/ — paste the Implementation Summary and\n`
     + ' Cycle Summary Blocks here by hand, or run the implement commands with a\n'
     + ' .cycle/ directory present so they persist automatically)')
-    + (excluded.length ? `\n\n(${excluded.length} block(s) from OTHER cycles present in .cycle/blocks/ and excluded: ${excluded.join(', ')})` : '');
+    + (excluded.length ? `\n\n(${excluded.length} block(s) from OTHER cycles present in .cycle/blocks/ and excluded: ${excluded.join(', ')})` : '')
+    + (reports.length ? `\n\n(${reports.length} saved audit report(s) for this cycle left out — the audit's judgment, not a verification input: ${reports.join(', ')})` : '');
 
   // F3 (Cycle 8): FUNCTION replacements. With a string, String.replace reads
   // $&, $`, $' and $$ in the REPLACEMENT as patterns — so an invariant whose
@@ -310,7 +330,7 @@ function main(argv) {
 
   const pack = buildPack({
     body, invariants,
-    blocks: readBlocks(at('.cycle/blocks'), { cycle }),
+    blocks: splitReports(readBlocks(at('.cycle/blocks'), { cycle })),
     totals: cycleTotals(metrics, cycle),
     cycle, seed, project: arg('project') || basename(rootDir), selector, owed,
   });

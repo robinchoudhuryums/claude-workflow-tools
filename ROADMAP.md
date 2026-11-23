@@ -22,7 +22,7 @@ the console are closed as dropped, not left open.
 
 ## Tier 1 — Short-term (days–weeks)
 
-- **R22 — `scripts/synthesis-pack.mjs`, the §6a sibling of the §4v pack.** `effort: M (~½ day)` — ◐ PARTLY SUPERSEDED (v1.48.0); the derived half is open.
+- **R22 — `scripts/synthesis-pack.mjs`, the §6a sibling of the §4v pack.** `effort: M (~½ day)` — ✅ DONE (v1.55.0: the derived half — reconciliation, computed triggers and the consistency guard, in three batches R22-1 to R22-3, about 10h against the ½-day estimate made before checks carried mutation proof).
   *Status, 2026-11-20:* this was queued for Cycle 7 and not picked up there.
   `/health-synthesis` (v1.48.0) then removed the paste step: the command reads
   the cycle's blocks, the prior scores and the config itself, so §6a is no
@@ -57,7 +57,7 @@ the console are closed as dropped, not left open.
   priority", and the Score History entry. INV-71 guarded those *labels* in
   v1.32.0; nothing checks the *values* match.
 
-- **R24 — Persist the scan report.** `effort: S (~1.5h)`
+- **R24 — Persist the scan report.** `effort: S (~1.5h)` — ✅ DONE (v1.56.0: all three audits save their report to `.cycle/blocks/` under a fixed name and the commands that need it read it back; the packs keep it out of §4v and check the scan's batch plan against what shipped — R24-1 to R24-3).
   *(Cycle-8 scan, G3.)* `/broad-scan` writes no file, so its report — the
   findings, the ratings, the batch and expansion plans — lives only in the
   chat it ran in. `/broad-implement Batch 2` in a fresh session needs it, and
@@ -90,7 +90,16 @@ the console are closed as dropped, not left open.
   the sweep's first target would be the scripts' own gates. The audit runs
   cases in parallel since v1.49.0, which is what makes a sweep affordable.
 
-- **R21 — Dead/superseded-artifact lens in `/broad-scan`.** `effort: S (~30 min)` — ✅ DONE (v1.34.0, applied verbatim before the Cycle-7 scan). The `/audit` focus-area-2 / `/targeted-audit` asymmetry below is still undecided.
+- **R28 — A scripted cycle close-out.** `effort: M (~½ day)`
+  *(FO-8-8.)* `/cycle-close` is instruction text with a guard derived from
+  that text. A consuming project (team-tools) wrote
+  `scripts/cycle-closeout.mjs` — a dry run, `--check` for CI and `--close` —
+  that does the same steps as code. Upstreaming it would make the close-out
+  checkable the way the packs made §4v and §6a checkable. It touches the
+  open decision FO-8-30 (how a synthesized cycle with later releases closes),
+  so that decision should come first.
+
+- **R21 — Dead/superseded-artifact lens in `/broad-scan`.** `effort: S (~30 min)` — ✅ DONE (v1.34.0, applied verbatim before the Cycle-7 scan). The `/audit` focus-area-2 / `/targeted-audit` asymmetry below was decided on 2026-11-23 — one lens, the same text in all three audits — and closed in v1.53.0.
   The Stage 1 flag list reads *"Dead code, unused exports, stale TODOs only if
   they create confusion"* — all **code** nouns. Nothing names styles, classes,
   markup, config or exemptions, so the lens is JS-shaped and slides past the
@@ -305,7 +314,9 @@ the console are closed as dropped, not left open.
   file write would contradict it. §6a still takes the handoff block by paste.
   *(Since v1.48.0 `/health-synthesis` reads the cycle's blocks from
   `.cycle/blocks/` itself; what it still cannot read is an audit handoff or
-  a scan report, because neither is saved — R24.)*
+  a scan report, because neither is saved — R24.)* *(Reversed in v1.56.0 by
+  R24: every audit now saves its whole report, and its opening rule names
+  that write among the permitted ones.)*
 
 - **R23 — The whole cycle from chat.** `effort: M` — ✅ DONE (v1.47.0–v1.48.0).
   Not on this list when it shipped; recorded because it changed the direction
@@ -426,30 +437,30 @@ the console are closed as dropped, not left open.
 
 ## The one strategic bet
 
-**Current bet:** none chosen.
+**Current bet:** R27, then R25 / R26, in that order (operator, 2026-11-23; the first two items of the order shipped in v1.55.0 and v1.56.0).
 
-This is the operator's decision. The bet written
+This is the operator's decision; the order above was chosen on 2026-11-23,
+starting with R22's derived half (the cycle's numbers checked rather than
+carried by hand — Cycle 8's 10-vs-6 count and a metrics row left at 4 after
+the operator chose 10 are what it would catch), then R24 (it unblocks
+assigning follow-ons to a scan's batches), R27, R25 and R26. The bet written
 here until 2026-11-20 was *R1 (dogfood) immediately, then R6 (SessionStart
 hook)*. Both are done, and R1 did what it was chosen for: its audits reordered
 this roadmap more than any planning session did.
 
 What is open, for whoever picks the next one:
 
-- **R22's derived half** — sum the cycle's net-score lines against the reflect
-  row and check that a synthesis's three artifacts agree. Small, and it closes
-  the last place the cycle's numbers are carried by hand. *(Proposed as the
-  next bet by the Cycle-8 implementer; a proposal, not a decision.)*
 - **R9's standalone library** — the one item here that is a product beyond
   this workflow rather than an improvement to it.
 - **R12 multi-operator state** — only worth it if the workflow spreads to a
   team.
-- **R21's undecided asymmetry** (`/audit` focus area 2 vs `/targeted-audit`)
-  — a decision, not a build.
 - R11 stays held until Dynamic Workflows leaves preview.
 
-- **R24–R27** — what is left of the Cycle-8 scan's expansion plan: scan
-  persistence, the interface lens in `/pr-review`, `allowed-tools`, a
-  mechanical mutation sweep. Each fits one session.
+- **R25–R27** — what is left of the Cycle-8 scan's expansion plan: the
+  interface lens in `/pr-review`, `allowed-tools`, a mechanical mutation
+  sweep. Each fits one session.
+- **R28** — a scripted `/cycle-close`, upstreamed from a consuming project
+  (FO-8-8); waits on the FO-8-30 decision.
 
 The guard reads the **Current bet:** line above. Name an item there by its ID
 (`R22`), or leave it as "none chosen"; an item marked done or dropped is

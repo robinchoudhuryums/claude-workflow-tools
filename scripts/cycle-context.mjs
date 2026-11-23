@@ -39,14 +39,25 @@ function section(md, heading) {
 try {
   if (!existsSync(join(root, '.cycle'))) process.exit(0); // not adopted — stay quiet
 
-  const out = ['=== WORKFLOW CONTEXT (auto-loaded by SessionStart hook) ==='];
+  // v1.53.0: FACTS ONLY. The hook loads into every session — a verification
+  // session too — so it carries what is objectively so (the cycle, its phase,
+  // the score line) and not the implementer's narrative (Where I left off,
+  // Pending, the standing's prose), which anchored a §4v session on the
+  // implementer's own account of the work. Commands that need those read
+  // STATE.md themselves; /cycle-status shows them on request.
+  const out = ['=== WORKFLOW CONTEXT (auto-loaded by SessionStart hook — facts only) ==='];
   const state = read(join(root, '.cycle', 'STATE.md'));
-  for (const h of ['Current', 'Where I left off', 'Pending / not yet done']) {
-    const s = section(state, h);
-    if (s) out.push(`\n## ${h}\n${s}`);
-  }
+  const current = section(state, 'Current');
+  if (current) out.push(`\n## Current\n${current}`);
   const standing = section(read(join(root, 'PROJECT_HEALTH.md')), 'Current Standing');
-  if (standing) out.push(`\n## Current Standing (PROJECT_HEALTH.md)\n${standing}`);
+  if (standing) {
+    // The score line only: each field up to its first " — " (a priority's name and
+    // score, not the paragraph that argues for it). The summary and live-status
+    // prose are the synthesis's judgment, not a fact a new session should start from.
+    const FIELDS = ['Last synthesis:', 'Overall (weighted avg):', 'Top vertical priority:', 'Top horizontal priority:'];
+    const lines = standing.split('\n').filter(l => FIELDS.some(f => l.startsWith(f))).map(l => l.split(' — ')[0]);
+    if (lines.length) out.push(`\n## Current Standing (PROJECT_HEALTH.md, score line only)\n${lines.join('\n')}`);
+  }
 
   const hasCfg = existsSync(join(root, '.cycle', 'config.md'));
   const cfg = (hasCfg && read(join(root, '.cycle', 'config.md'))) || read(join(root, 'CLAUDE.md'));
@@ -55,7 +66,7 @@ try {
   const invCount = cfg ? (cfg.match(/^[ \t]*INV-\d+\s*\|/gm) || []).length : 0;
   if (invCount) out.push(`\nInvariant library: ${invCount} invariants (see ${hasCfg ? '.cycle/config.md' : 'CLAUDE.md'}). Carry these forward; re-derive audit findings with fresh eyes.`);
 
-  out.push('\nSubstrate above carries forward; a new audit uses fresh eyes. Run /cycle-status for the full picture, /cycle-resume to continue in-progress work.');
+  out.push('\nThese are facts, not the implementer\'s notes: what was done, what is pending and where the last session left off are in .cycle/STATE.md — run /cycle-status to see them, /cycle-resume to continue. A new audit or a verification starts with fresh eyes.');
   out.push('=== END WORKFLOW CONTEXT ===');
   process.stdout.write(out.join('\n') + '\n');
 } catch {
