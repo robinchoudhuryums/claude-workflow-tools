@@ -13,8 +13,8 @@ Workflow Config.
 
 Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
 Cycle Workflow Config) before starting. Do not make any changes to any
-files during this session, other than the optional CYCLE OPEN and
-FOLLOW-ON REVIEW steps below.
+files during this session, other than the optional CYCLE OPEN,
+FOLLOW-ON REVIEW and SAVE REPORT steps below.
 
 This session's scope: $ARGUMENTS
 
@@ -29,8 +29,8 @@ Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is one of the session's two permitted file writes
-(the other is FOLLOW-ON REVIEW, below).
+a new cycle, and this is one of the session's three permitted file writes
+(the others are FOLLOW-ON REVIEW and SAVE REPORT, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -68,6 +68,22 @@ change a confirmed item's disposition to "confirmed as <finding
 ID> (Cycle <N>)" — it stays open until the session that implements that
 finding removes it. Items with any other disposition are not this audit's
 to close. Skip this step if .cycle/STATE.md does not exist.
+
+SAVE REPORT (optional — only if .cycle/STATE.md exists): when your output
+is complete, write all of it VERBATIM to .cycle/blocks/ — the third of the
+session's permitted file writes. Name the file by the command that ran:
+<cycle>-scan.md for /broad-scan, <cycle>-audit-<subsystem>.md for /audit,
+<cycle>-targeted-audit-<subsystem>.md for /targeted-audit — <cycle> from
+STATE.md's Cycle field after CYCLE OPEN, <subsystem> in lower case with
+every run of other characters turned into one hyphen. If that name is
+taken (a re-run in the same round), add -2 (then -3, …) before .md; never
+overwrite a block. The saved report is what later sessions read: an
+implement session takes a batch, a finding or a handoff block from it,
+Health Synthesis reads a Tier 1 cycle's FINAL REPORT and batch plan from
+it, and the synthesis pack checks the batch plan against what shipped.
+Write it in full, security findings included; whether .cycle/blocks/ is
+committed to a public repository is the operator's decision. Skip this
+step if .cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from

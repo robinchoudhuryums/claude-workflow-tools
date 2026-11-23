@@ -5,6 +5,44 @@ All notable changes to the Claude Workflow Tools templates. Bump `VERSION`
 config schema, or the tooling. `/sync-commands` reports this version so
 consuming projects know what they are syncing to.
 
+## 1.56.0 — 2026-11-23
+
+ROADMAP R24 — the audit's report is saved, not left in chat (batches R24-1 to
+R24-3). **Command bodies changed — run `/sync-commands` in consuming projects
+(`/broad-scan`, `/audit`, `/targeted-audit`, `/broad-implement`, `/plan`,
+`/targeted-implement`, `/health-synthesis`, `/verify`).** A project with a
+public repository should decide whether `.cycle/blocks/` is committed: the
+reports are saved in full, security findings included.
+
+- **Every audit saves its report** (R24-1, INV-96). `/broad-scan`, `/audit`
+  and `/targeted-audit` carry one SAVE REPORT step, the same text in all
+  three and gated on `.cycle/STATE.md`, that writes the whole output verbatim
+  to `.cycle/blocks/` as `<cycle>-scan.md`, `<cycle>-audit-<subsystem>.md` or
+  `<cycle>-targeted-audit-<subsystem>.md` (`-2`, `-3` on a re-run, never
+  overwriting). The opening rule and CYCLE OPEN now count three permitted
+  writes.
+- **The commands that need the report read it back.** `/broad-implement
+  Batch 2` (or a finding ID) in a fresh session reads the saved scan instead
+  of asking for a paste; `/plan` and `/targeted-implement` read the handoff
+  from the saved `/audit` or `/targeted-audit` report; `/health-synthesis`
+  reads a Tier 1 cycle's FINAL REPORT and batch plan in place of the Session
+  Handoff Block. `/verify` leaves the report out: it is the audit's judgment,
+  and the verification re-derives from the code.
+- **The packs know the reports** (R24-2; INV-52 and INV-93 widened).
+  `verification-pack.mjs` keeps a saved report out of the §4v INPUT BLOCKS and
+  names it (`isAuditReport`, `splitReports`). `synthesis-pack.mjs` reads it as
+  a `report`, not a release, and names a cycle whose `/broad-implement`,
+  `/targeted-implement` or `/implement` releases have no saved audit report.
+- **The batch plan is checked against what shipped** (R24-3, INV-97). From
+  the newest saved scan, the synthesis pack reads each fix and expansion
+  batch and the IDs set aside under Deferred / Not batched, takes an item as
+  shipped when a release block's CHANGES line opens with its ID, and names
+  the batch never run, the item neither shipped nor dropped, and the item
+  shipped although set aside, twice, or outside the plan. Reported, not
+  failed. `/health-synthesis` step 6 takes it from the pack.
+- Library 84 → 86 invariants; mutation cases +13. ROADMAP R24 marked done; the
+  bet is now R27, then R25 / R26.
+
 ## 1.55.0 — 2026-11-23
 
 ROADMAP R22 — the Health Synthesis inputs are derived, not added up by eye

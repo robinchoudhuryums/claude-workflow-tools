@@ -8,7 +8,7 @@
 // Silent Prompt Degradation on DECLINE and Guard / Test Coverage Quality as a
 // PERSISTENT LAGGARD. Every assertion names what it would mean if it failed.
 
-import { parseNet, blockKind, reconcile, parseHistory, triggers, triggerThresholds, synthesisGaps, axisBNames, policyConfig, consistency } from '../scripts/synthesis-pack.mjs';
+import { parseNet, blockKind, reconcile, parseHistory, triggers, triggerThresholds, synthesisGaps, axisBNames, policyConfig, consistency, parsePlan, shippedIds, planCoverage, newestScan } from '../scripts/synthesis-pack.mjs';
 
 let failures = 0;
 const log = [];
@@ -165,6 +165,87 @@ const SYN = HEADER + '2026-11-20,8,all,synthesis,,,,40%,Guard / Test Coverage Qu
   const none = consistency({ healthMd: '# Project Health\n\n## Current Standing\nLast synthesis: none yet\n\n## Score History\n', metricsCsv: HEADER, cfg: CFG });
   if (none.skipped && !none.problems.length) ok('a project that has never synthesized is skipped, not failed');
   else bad('R22-3 consistency did not skip a project with no synthesis');
+}
+
+// ── R24-2: saved audit reports are recognised, and a cycle with none is named ──
+{
+  const k = ['09-scan.md', '09-scan-2.md', '09-audit-storage-layer.md', '09-targeted-audit-auth-security.md', '09-audit-implement.md', '09-1.60.0-broad-implement.md'].map(blockKind);
+  if (eq(k, ['report', 'report', 'report', 'report', 'other', 'release'])) ok('blockKind reads the three audits\' saved reports as reports, and a scope block ending in its command is not one');
+  else bad(`R24-2 blockKind misread a saved report: ${JSON.stringify(k)}`);
+  const rel = n => ({ name: `09-${n}-broad-implement.md`, text: 'NET SCORE: 1 − 0 = 1' });
+  const without = reconcile({ blocks: [rel('1.60.0')], metricsCsv: '', cycle: 9 });
+  if (without.findings.some(f => f.kind === 'no-report' && /no saved scan report/.test(f.text))) ok('a cycle with /broad-implement releases and no saved scan report is named');
+  else bad('R24-2 reconcile did not flag a Tier 1 cycle with no saved scan report');
+  const withIt = reconcile({ blocks: [{ name: '09-scan.md', text: 'x' }, rel('1.60.0')], metricsCsv: '', cycle: 9 });
+  if (!withIt.findings.some(f => f.kind === 'no-report') && eq(withIt.reports, ['09-scan.md']) && withIt.releases.length === 1) ok('with the scan report saved there is no such finding, and the report is not counted as a release');
+  else bad(`R24-2 reconcile flagged or miscounted a cycle that saved its report: ${JSON.stringify(withIt.findings)}`);
+  const t2 = reconcile({ blocks: [{ name: '09-1.60.0-targeted-implement.md', text: 'NET SCORE: 1 − 0 = 1' }], metricsCsv: '', cycle: 9 });
+  if (t2.findings.some(f => f.kind === 'no-report' && /targeted-audit report/.test(f.text)) && !t2.findings.some(f => /\/implement release/.test(f.text))) ok('a /targeted-implement release asks for the targeted-audit report, not the /audit one');
+  else bad(`R24-2 reconcile misattributed a /targeted-implement release: ${JSON.stringify(t2.findings)}`);
+}
+
+// ── R24-3: the batch plan against what shipped ──
+{
+  const SCAN = [
+    'FINAL TOP 5 …', '',
+    'IMPLEMENTATION BATCH PLAN (every finding, in suggested implementation order):',
+    'Batch 1 — console | est. 6h',
+    '  F2 | High | fix it | S ≈ 1h | —',
+    '  F5 | Medium | fix it | S ≈ 1h | —',
+    '  F9 | Low | fix it | S ≈ 1h | —',
+    'Batch 2 — guard | est. 3h',
+    '  F3 | High | fix | M | —',
+    'Batch 3 — docs | est. 2h',
+    '  F7 | Low | fix | S | —',
+    'Deferred (not batched): F4 — needs a decision',
+    '  F8 — blocked on F3',
+    '',
+    'EXPANSION PLAN (new capability — NOT fixes):',
+    'Expansion E1 — packs | est. 4h',
+    '  GAP: G1 | a thing | M | depends on: Batch 2',
+    '  STRATEGIC: ST2 | another | S | —',
+    'Not batched: G2 — product decision',
+    '',
+    'After I review the audit, I will tell you which findings to implement.',
+  ].join('\n');
+  const plan = parsePlan(SCAN);
+  const want = { batches: [{ name: 'Batch 1', items: ['F2', 'F5', 'F9'] }, { name: 'Batch 2', items: ['F3'] }, { name: 'Batch 3', items: ['F7'] }, { name: 'E1', items: ['G1', 'ST2'] }], setAside: ['F4', 'F8', 'G2'] };
+  if (eq(plan, want)) ok('parsePlan reads every batch\'s items, the expansion batches, and the IDs set aside under Deferred / Not batched (not the IDs their reasons mention)');
+  else bad(`R24-3 parsePlan misread the plan: ${JSON.stringify(plan)}`);
+  const blk = (v, changes, extra = '') => ({ name: `09-${v}-broad-implement.md`, text: `Findings implemented: …\n\nCHANGES:\n${changes}\n\nTEST RESULTS: passed\n${extra}NET SCORE: 1 − 0 = 1` });
+  const blocks = [
+    { name: '09-scan.md', text: 'an older run' },
+    { name: '09-scan-2.md', text: SCAN },
+    blk('1.60.0', 'F2 | a.js | x\nF5, F9 | b.js | y'),
+    blk('1.61.0', 'F3 | c.js | z\nF2 | a.js | again\nF4 | d.js | shipped though deferred\nF11 | e.js | not in the plan'),
+    blk('1.62.0', 'G1 | p.mjs | new', 'FOLLOW-ON ITEMS:\n- ST2 dropped: superseded by G1\n'),
+  ];
+  if (newestScan(blocks).name === '09-scan-2.md') ok('the newest saved scan (a re-run\'s -2) is the plan read');
+  else bad('R24-3 newestScan picked the older scan report');
+  const sh = shippedIds(blocks[3].text);
+  if (eq([...sh.shipped].sort(), ['F11', 'F2', 'F3', 'F4'])) ok('shippedIds reads the IDs a CHANGES line opens with, a comma list included');
+  else bad(`R24-3 shippedIds misread CHANGES: ${JSON.stringify([...sh.shipped])}`);
+  const cov = planCoverage({ blocks });
+  const b = Object.fromEntries((cov.batches || []).map(x => [x.name, x]));
+  const none = { shipped: [], dropped: [], missing: [] };
+  for (const k of ['Batch 1', 'E1']) b[k] = b[k] || none;
+  const safe = f => { try { return f(); } catch { return false; } };
+  const checks = [
+    ['Batch 1 fully shipped', safe(() => eq(b['Batch 1'].shipped, ['F2', 'F5', 'F9']) && !b['Batch 1'].missing.length)],
+    ['Batch 3 named as never run', safe(() => eq(cov.neverRun, ['Batch 3']))],
+    ['ST2 counted as dropped, not missing', safe(() => eq(b.E1.dropped, ['ST2']) && eq(b.E1.shipped, ['G1']))],
+    ['F4 shipped although the plan deferred it', safe(() => eq(cov.setAsideShipped, ['F4']))],
+    ['F2 shipped by two releases', safe(() => eq(cov.multiple.map(m => m.id), ['F2']))],
+    ['F11 shipped outside the plan', safe(() => eq(cov.unplanned, ['F11']))],
+  ];
+  const failed = checks.filter(([, c]) => !c).map(([l]) => l);
+  if (!failed.length) ok('planCoverage names the batch never run, what was dropped, what shipped although set aside, twice, or outside the plan');
+  else bad(`R24-3 planCoverage got wrong: ${failed.join(', ')} — ${JSON.stringify(cov)}`);
+  const partial = planCoverage({ blocks: [{ name: '09-scan.md', text: SCAN }, blk('1.60.0', 'F2 | a.js | x')] });
+  if (eq(partial.missing, ['F5', 'F9'])) ok('an item missing from a batch that did run is named');
+  else bad(`R24-3 planCoverage did not name the items a run batch left out: ${JSON.stringify(partial.missing)}`);
+  if (planCoverage({ blocks: [blk('1.60.0', 'F2 | a.js | x')] }).scan === null && planCoverage({ blocks: [{ name: '09-scan.md', text: 'no plan' }] }).plan === null) ok('no saved scan, or a scan with no plan, reports nothing to check rather than inventing coverage');
+  else bad('R24-3 planCoverage invented coverage without a plan');
 }
 
 console.log('Synthesis pack regression test (scripts/synthesis-pack.mjs, ROADMAP R22):\n');

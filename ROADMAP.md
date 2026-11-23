@@ -57,7 +57,7 @@ the console are closed as dropped, not left open.
   priority", and the Score History entry. INV-71 guarded those *labels* in
   v1.32.0; nothing checks the *values* match.
 
-- **R24 — Persist the scan report.** `effort: S (~1.5h)`
+- **R24 — Persist the scan report.** `effort: S (~1.5h)` — ✅ DONE (v1.56.0: all three audits save their report to `.cycle/blocks/` under a fixed name and the commands that need it read it back; the packs keep it out of §4v and check the scan's batch plan against what shipped — R24-1 to R24-3).
   *(Cycle-8 scan, G3.)* `/broad-scan` writes no file, so its report — the
   findings, the ratings, the batch and expansion plans — lives only in the
   chat it ran in. `/broad-implement Batch 2` in a fresh session needs it, and
@@ -305,7 +305,9 @@ the console are closed as dropped, not left open.
   file write would contradict it. §6a still takes the handoff block by paste.
   *(Since v1.48.0 `/health-synthesis` reads the cycle's blocks from
   `.cycle/blocks/` itself; what it still cannot read is an audit handoff or
-  a scan report, because neither is saved — R24.)*
+  a scan report, because neither is saved — R24.)* *(Reversed in v1.56.0 by
+  R24: every audit now saves its whole report, and its opening rule names
+  that write among the permitted ones.)*
 
 - **R23 — The whole cycle from chat.** `effort: M` — ✅ DONE (v1.47.0–v1.48.0).
   Not on this list when it shipped; recorded because it changed the direction
@@ -426,7 +428,7 @@ the console are closed as dropped, not left open.
 
 ## The one strategic bet
 
-**Current bet:** R24, then R27, and R25 / R26, in that order (operator, 2026-11-23; the first item of the order shipped in v1.55.0).
+**Current bet:** R27, then R25 / R26, in that order (operator, 2026-11-23; the first two items of the order shipped in v1.55.0 and v1.56.0).
 
 This is the operator's decision; the order above was chosen on 2026-11-23,
 starting with R22's derived half (the cycle's numbers checked rather than
@@ -439,19 +441,15 @@ this roadmap more than any planning session did.
 
 What is open, for whoever picks the next one:
 
-- **R22's derived half** — sum the cycle's net-score lines against the reflect
-  row and check that a synthesis's three artifacts agree. Small, and it closes
-  the last place the cycle's numbers are carried by hand. *(Proposed as the
-  next bet by the Cycle-8 implementer; a proposal, not a decision.)*
 - **R9's standalone library** — the one item here that is a product beyond
   this workflow rather than an improvement to it.
 - **R12 multi-operator state** — only worth it if the workflow spreads to a
   team.
 - R11 stays held until Dynamic Workflows leaves preview.
 
-- **R24–R27** — what is left of the Cycle-8 scan's expansion plan: scan
-  persistence, the interface lens in `/pr-review`, `allowed-tools`, a
-  mechanical mutation sweep. Each fits one session.
+- **R25–R27** — what is left of the Cycle-8 scan's expansion plan: the
+  interface lens in `/pr-review`, `allowed-tools`, a mechanical mutation
+  sweep. Each fits one session.
 
 The guard reads the **Current bet:** line above. Name an item there by its ID
 (`R22`), or leave it as "none chosen"; an item marked done or dropped is

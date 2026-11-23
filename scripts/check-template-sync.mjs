@@ -1294,6 +1294,32 @@ try {
     if (/<cycle>-<letter>-verification\.md/.test(v)) problems.push('/verify still names its block with a letter — a parallel /reflect can take the same one');
     report('verification inputs', 'INV-92', problems, '/verify and /health-synthesis stop and ask when the cycle has no reflect block, and /verify writes <cycle>-verification.md under a fixed name', 'v1.54.0');
   }
+  // INV-96 — every audit saves its report under a fixed name, and the commands that need it read it back (R24)
+  {
+    const problems = [];
+    const audits = [...bodies].filter(([, b]) => /CYCLE OPEN \(optional/.test(b)).map(([n]) => n);
+    const steps = audits.map(n => [n, (bodies.get(n).match(/SAVE REPORT \(optional — only if \.cycle\/STATE\.md exists\)[\s\S]*?Skip this step if \.cycle\/STATE\.md does not exist\./) || [null])[0]]);
+    const none = steps.filter(([, s]) => !s).map(([n]) => n);
+    if (audits.length < 3) problems.push(`only ${audits.length} audit(s) found — the check would be vacuous`);
+    if (none.length) problems.push(`audit(s) that do not save their report: ${none.join(', ')}`);
+    if (new Set(steps.map(([, s]) => s).filter(Boolean)).size > 1) problems.push(`the SAVE REPORT step differs between ${steps.filter(([, s]) => s).map(([n]) => n).join(', ')} — one step, one text`);
+    const PARTS = ['write all of it VERBATIM to .cycle/blocks/', '<cycle>-scan.md for /broad-scan', '<cycle>-audit-<subsystem>.md for /audit', '<cycle>-targeted-audit-<subsystem>.md for /targeted-audit', 'add -2 (then -3, …) before .md; never overwrite a block', 'security findings included', 'public repository'];
+    for (const [n, s] of steps) if (s) { const lacks = PARTS.filter(p => !s.includes(p)); if (lacks.length) problems.push(`${n}'s SAVE REPORT lacks ${lacks.map(p => JSON.stringify(p)).join(', ')}`); }
+    for (const n of audits) {
+      const b = bodies.get(n);
+      if (!b.includes('FOLLOW-ON REVIEW and SAVE REPORT steps below')) problems.push(`${n}'s opening rule does not permit the SAVE REPORT write`);
+      if (!b.includes("one of the session's three permitted file writes (the others are FOLLOW-ON REVIEW and SAVE REPORT, below)")) problems.push(`${n}'s CYCLE OPEN does not count SAVE REPORT among the permitted writes`);
+    }
+    const READERS = [
+      ['broad-implement', '.cycle/blocks/<cycle>-scan.md', 'a batch from the saved scan report'],
+      ['plan', '.cycle/blocks/<cycle>-audit-<subsystem>.md', 'the handoff from the saved /audit report'],
+      ['targeted-implement', '.cycle/blocks/<cycle>-targeted-audit-<subsystem>.md', 'the handoff from the saved /targeted-audit report'],
+      ['health-synthesis', '…-scan.md for a Tier 1 cycle (its FINAL REPORT and batch plan stand in for the Session Handoff Block)', 'the saved audit report'],
+    ];
+    for (const [n, p, what] of READERS) if (!(bodies.get(n) || '').includes(p)) problems.push(`/${n} does not read ${what}`);
+    if (!(bodies.get('verify') || '').includes("The audit's saved report (…-scan.md, …-audit-<subsystem>.md, …-targeted-audit-<subsystem>.md) is not an input either")) problems.push('/verify does not leave the saved audit report out of its inputs');
+    report('saved audit report', 'INV-96', problems, `the three audits save their report verbatim under a fixed name, and /broad-implement, /plan, /targeted-implement and /health-synthesis read it back — ${audits.length} audits`, 'v1.56.0');
+  }
 
 }
 

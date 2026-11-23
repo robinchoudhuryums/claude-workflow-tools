@@ -9,7 +9,7 @@
 //
 // Usage: node tests/verification-pack.test.mjs
 
-import { selectProbes, selectProbesConsole, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack, pendingCloseOut } from '../scripts/verification-pack.mjs';
+import { selectProbes, selectProbesConsole, readInvariants, readBlocks, blockCycle, cycleTotals, buildPack, pendingCloseOut, isAuditReport, splitReports } from '../scripts/verification-pack.mjs';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 
@@ -371,6 +371,22 @@ else bad('readBlocks threw on a missing directory');
   rmSync(join(proj, '..'), { recursive: true, force: true });
   if (!problems.length) ok('a pack built without --cycle names an earlier reflected-but-unsynthesized cycle, on stderr and in the pack; --cycle is silent (Cycle-8 F4)');
   else bad('Cycle-8 F4: ' + problems.join('; '));
+}
+
+// R24-2 (v1.56.0): the audits' saved reports are the audit's judgment, not a §4v
+// input. The pack keeps them out of INPUT BLOCKS and names them.
+{
+  const names = ['09-scan.md', '09-scan-2.md', '09-audit-storage-layer.md', '09-targeted-audit-auth.md', '09-1.60.0-broad-implement.md', '09-a-reflect.md', '09-verification.md', '09-audit-implement.md'];
+  const got = names.map(isAuditReport);
+  if (JSON.stringify(got) === JSON.stringify([true, true, true, true, false, false, false, false])) ok('isAuditReport tells the three audits\' saved reports from release, reflect and verification blocks (and from a scope block ending in its command)');
+  else bad('R24-2 isAuditReport misclassified: ' + JSON.stringify(got));
+  const blocks = Object.assign(names.slice(0, 6).map(n => ({ name: n, text: n.includes('scan') ? 'SEVERITY CALLS THE VERIFIER MUST NOT SEE' : 'NET SCORE: 1 − 0 = 1' })), { excluded: ['08-a-reflect.md'] });
+  const split = splitReports(blocks);
+  if (split.length === 2 && split.reports.length === 4 && JSON.stringify(split.excluded) === '["08-a-reflect.md"]') ok('splitReports keeps the inputs, lists the reports, and carries the other-cycle exclusions');
+  else bad('R24-2 splitReports: ' + JSON.stringify({ inputs: split.map(b => b.name), reports: split.reports, excluded: split.excluded }));
+  const pack = buildPack({ body: BODY, invariants: parsed, blocks: split, totals: { rows: 0, corrections: [] }, cycle: 9, seed: 's', project: 'p' });
+  if (!pack.includes('SEVERITY CALLS THE VERIFIER MUST NOT SEE') && /4 saved audit report\(s\) for this cycle left out[^\n]*09-scan\.md/.test(pack)) ok('the pack leaves the saved audit reports out of the verifier\'s inputs and names them');
+  else bad('R24-2 the pack handed the verifier a saved audit report, or did not name the ones it left out');
 }
 
 console.log('§4v verification-pack regression test (scripts/verification-pack.mjs):\n');

@@ -285,20 +285,20 @@ expectFail('detects a command description that names a scripts/ helper (Cycle-8 
   };
   const line = r => (r.out.split('\n').find(l => /roadmap currency|the roadmap does not contradict/.test(l)) || '(no roadmap line)').trim();
   const cycle = Number((readFileSync(join(repo, '.cycle', 'STATE.md'), 'utf8').match(/^Cycle:\s*(\d+)/m) || [])[1]);
-  const openItem = /^(- \*\*R24 — [^\n]*)$/m, bet = /^\*\*Current bet:\*\*[^\n]*$/m;
+  const openItem = /^(- \*\*R27 — [^\n]*)$/m, bet = /^\*\*Current bet:\*\*[^\n]*$/m;
   const problems = [];
   try {
     const live = withRoadmap(null);
     if (live.code !== 0 || !/✓ the roadmap does not contradict the cycle/.test(live.out)) problems.push(`the live ROADMAP.md fails — ${line(live)}`);
     const stale = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle - 1})`));
-    if (stale.code === 0 || !new RegExp(`R24 is still "queued for Cycle ${cycle - 1}" and the project is on Cycle ${cycle}`).test(stale.out)) problems.push(`an open item queued for a cycle that has run is not flagged — ${line(stale)}`);
+    if (stale.code === 0 || !new RegExp(`R27 is still "queued for Cycle ${cycle - 1}" and the project is on Cycle ${cycle}`).test(stale.out)) problems.push(`an open item queued for a cycle that has run is not flagged — ${line(stale)}`);
     const current = withRoadmap(t => t.replace(openItem, `$1 (queued for Cycle ${cycle})`));
     if (current.code !== 0) problems.push(`an item queued for the CURRENT cycle is rejected — ${line(current)}`);
     const history = withRoadmap(t => t.replace(openItem, `$1 (it was queued for Cycle ${cycle - 1} and slipped)`));
     if (history.code !== 0) problems.push(`a past-tense "was queued for" is read as a live status — ${line(history)}`);
     const spent = withRoadmap(t => t.replace(bet, '**Current bet:** R1, then R6.'));
     if (spent.code === 0 || !/the strategic bet names R1, which is marked done or dropped/.test(spent.out)) problems.push(`a bet naming a finished item is not flagged — ${line(spent)}`);
-    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R24 (persist the scan report).'));
+    const open = withRoadmap(t => t.replace(bet, '**Current bet:** R27 (mechanical mutation sweep).'));
     if (open.code !== 0) problems.push(`a bet naming an open item is rejected — ${line(open)}`);
     const unstated = withRoadmap(t => t.replace(bet, 'The bet is discussed below.'));
     if (unstated.code === 0 || !/has no "\*\*Current bet:\*\*" line/.test(unstated.out)) problems.push(`a roadmap that states no bet is not flagged — ${line(unstated)}`);

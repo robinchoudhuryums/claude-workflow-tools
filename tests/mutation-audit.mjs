@@ -215,8 +215,8 @@ const CASES = {
   'INV-22': [['scripts/check-template-sync.mjs', 'const cmdMissing = tableCmds.filter', 'const cmdMissing = [] || tableCmds.filter', /README command lacking/i]],
   'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i],
              // Cycle-8 follow-on to F9: the roadmap contradicts the cycle. guard.test reads the LIVE ROADMAP.md.
-             ['ROADMAP.md', '**Current bet:** R24, then R27, and R25 / R26, in that order (operator, 2026-11-23; the first item of the order shipped in v1.55.0).', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
-             ['ROADMAP.md', '- **R24 — Persist the scan report.** `effort: S (~1.5h)`', '- **R24 — Persist the scan report.** `effort: S (~1.5h)` — queued for Cycle 7', /the live ROADMAP\.md fails — [^\n]*R24 is still "queued for Cycle 7"/],
+             ['ROADMAP.md', '**Current bet:** R27, then R25 / R26, in that order (operator, 2026-11-23; the first two items of the order shipped in v1.55.0 and v1.56.0).', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
+             ['ROADMAP.md', '- **R27 — Mechanical mutation sweep.** `effort: M (~1 day)`', '- **R27 — Mechanical mutation sweep.** `effort: M (~1 day)` — queued for Cycle 7', /the live ROADMAP\.md fails — [^\n]*R27 is still "queued for Cycle 7"/],
              // the check stops telling a finished item from an open one
              ['scripts/check-template-sync.mjs', 'closed: /✅ DONE|✗ DROPPED/.test(l) });', 'closed: false });', /a bet naming a finished item is not flagged/]],
   'INV-43': [['scripts/check-template-sync.mjs', 'const WORKFLOW_BLOCKS = BLOCKS.map(b => b.name.toLowerCase());', "const WORKFLOW_BLOCKS = ['session handoff block'];", /registry block with no console representation/i]],
@@ -291,6 +291,8 @@ const CASES = {
              ['.claude/commands/verify.md', '.cycle/blocks/<cycle>-verification.md — a fixed name, taking no letter', '.cycle/blocks/<cycle>-<letter>-verification.md — the next unused letter', /verification inputs \(v1\.54\.0, INV-92\): [^\n]*\/verify does not write its block under the fixed name/]],
   // INV-93/94/95 (v1.55.0, ROADMAP R22) — the synthesis pack reconciles, recomputes and cross-checks.
   'INV-93': [['scripts/synthesis-pack.mjs', 'nfm: s.nfm + r.score.nfm', 'nfm: s.nfm', /R22-1 reconciliation sum wrong/],
+             ['scripts/synthesis-pack.mjs', "findings.push({ kind: 'no-report',", "findings.push({ kind: 'info',", /R24-2 reconcile did not flag a Tier 1 cycle with no saved scan report/],
+             ['scripts/synthesis-pack.mjs', "  if (isAuditReport(name)) return 'report';\n", '', /R24-2 (?:blockKind misread a saved report|reconcile flagged or miscounted)/],
              ['scripts/synthesis-pack.mjs', 'if (afterReflect.length) findings.push(', 'if (false && afterReflect.length) findings.push(', /R22-1 reconciliation did not name the releases shipped after the reflection/],
              ['scripts/synthesis-pack.mjs', "if (!verif) findings.push({ kind: 'no-verification'", "if (!verif) findings.push({ kind: 'info'", /R22-1 reconciliation did not flag a cycle with no Verification Block/],
              ['scripts/synthesis-pack.mjs', 'totals.corrections.length ? `the reflect row records a CORRECTION', 'false ? `the reflect row records a CORRECTION', /R22-1 reconciliation did not report the reflect row disagreeing with its recorded CORRECTION/]],
@@ -302,6 +304,18 @@ const CASES = {
              ['.cycle/metrics.csv', ',40%,Guard', ',30%,Guard', /synthesis consistency \(R22-3, INV-95\): Category D: the metrics row says 30%/],
              ['PROJECT_HEALTH.md', 'Policy responses triggered: Guard / Test Coverage Quality (persistent laggard); Silent Prompt Degradation (decline)', 'Policy responses triggered: Guard / Test Coverage Quality (persistent laggard)', /synthesis consistency \(R22-3, INV-95\): recomputed from the Score History, Silent Prompt Degradation fires \(decline\)/],
              ['PROJECT_HEALTH.md', 'Overall (weighted avg): 8.9/10\nOne-line', 'Overall (weighted avg): 9.1/10\nOne-line', /synthesis consistency \(R22-3, INV-95\): Overall: Current Standing says 9\.1/]],
+  // INV-96 (v1.56.0, ROADMAP R24-1) — the audits save their report; the commands that need it read it back.
+  'INV-96': [['.claude/commands/audit.md', 'SAVE REPORT (optional — only if .cycle/STATE.md exists)', 'SAVE (optional — only if .cycle/STATE.md exists)', /saved audit report \(v1\.56\.0, INV-96\): [^\n]*audit\(s\) that do not save their report: audit\b/],
+             ['.claude/commands/broad-scan.md', 'Write it in full, security findings included;', 'Write it in full;', /saved audit report \(v1\.56\.0, INV-96\): [^\n]*broad-scan's SAVE REPORT lacks/],
+             ['.claude/commands/targeted-audit.md', 'FOLLOW-ON REVIEW and SAVE REPORT steps below', 'FOLLOW-ON REVIEW steps below', /saved audit report \(v1\.56\.0, INV-96\): [^\n]*targeted-audit's opening rule does not permit the SAVE REPORT write/],
+             ['.claude/commands/broad-implement.md', '.cycle/blocks/<cycle>-scan.md', '.cycle/blocks/scan.md', /saved audit report \(v1\.56\.0, INV-96\): [^\n]*\/broad-implement does not read a batch from the saved scan report/],
+             ['.claude/commands/plan.md', '.cycle/blocks/<cycle>-audit-<subsystem>.md', '.cycle/blocks/<cycle>-handoff.md', /saved audit report \(v1\.56\.0, INV-96\): [^\n]*\/plan does not read the handoff/]],
+  // INV-97 (v1.56.0, ROADMAP R24-3) — the batch plan against what shipped.
+  'INV-97': [['scripts/synthesis-pack.mjs', "if (aside) { for (const x of l.matchAll(", "if (false) { for (const x of l.matchAll(", /R24-3 parsePlan misread the plan/],
+             ['scripts/synthesis-pack.mjs', 'neverRun: batches.filter(b => b.items.length && !b.shipped.length && !b.dropped.length)', 'neverRun: batches.filter(b => false)', /R24-3 planCoverage got wrong: [^\n]*Batch 3 named as never run/],
+             ['scripts/synthesis-pack.mjs', 'dropped: b.items.filter(id => !where.has(id) && droppedBy.has(id)),', 'dropped: [],', /R24-3 planCoverage got wrong: [^\n]*ST2 counted as dropped/],
+             ['scripts/synthesis-pack.mjs', "return scans.sort((a, b) => n(a) - n(b)).pop() || null;", "return scans.sort((a, b) => n(a) - n(b))[0] || null;", /R24-3 newestScan picked the older scan report/],
+             ['scripts/synthesis-pack.mjs', 'missing: batches.flatMap(b => b.shipped.length || b.dropped.length ? b.missing : []),', 'missing: [],', /R24-3 planCoverage did not name the items a run batch left out/]],
   // INV-90 (v1.52.0) — follow-on items tracked to a disposition (structural check 22).
   // Every case breaks ONE copy and is caught by that copy's CONTENT, not only by
   // the copies disagreeing — the property Cycle-8 §4v found missing for F4–F6.
@@ -384,6 +398,8 @@ const CASES = {
              ['scripts/verification-pack.mjs', '() => library)', 'library)', /Cycle-8 F3: /],
              // Cycle-8 follow-on A: process.exit() after writing stdout — a piped pack is cut short.
              ['scripts/verification-pack.mjs', 'process.exitCode = main(process.argv.slice(2));', 'process.exit(main(process.argv.slice(2)));', /Cycle-8 follow-on A: /],
+             // R24-2 (v1.56.0): a saved audit report handed to the verifier as an input.
+             ['scripts/verification-pack.mjs', "const inputs = blocks.filter(b => !isAuditReport(b.name));", "const inputs = blocks.slice();", /R24-2 (?:splitReports|the pack handed the verifier)/],
              // Cycle-8 Batch 3 (F4): a pack built without --cycle says nothing about the earlier cycle still owed §4v.
              ['scripts/verification-pack.mjs', 'const owed = explicitCycle ? null : pendingCloseOut(metrics, cycle);', 'const owed = null;', /Cycle-8 F4: /]],
   // INV-70 — reintroduce the disclosure/use split: select with a truncated

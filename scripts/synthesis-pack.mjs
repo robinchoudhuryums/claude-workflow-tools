@@ -37,7 +37,7 @@
 import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readBlocks, cycleTotals, metricsRows, pendingCloseOut, sameCycle } from './verification-pack.mjs';
+import { readBlocks, cycleTotals, metricsRows, pendingCloseOut, sameCycle, isAuditReport } from './verification-pack.mjs';
 import { HEALTH_FIELDS, HEALTH_SECTION } from './health-fields.mjs';
 
 const read = p => { try { return readFileSync(p, 'utf8'); } catch { return null; } };
@@ -55,6 +55,7 @@ export function parseNet(text) {
 
 // What a block is, from its name alone (the blocks directory's naming rules).
 export function blockKind(name) {
+  if (isAuditReport(name)) return 'report';
   if (/^0*\d+-\d+\.\d+\.\d+(?:-\d+)?-[a-z-]+\.md$/.test(name)) return 'release';
   if (/-reflect\.md$/.test(name)) return 'reflect';
   if (/-verification(?:-\d+)?\.md$/.test(name)) return 'verification';
@@ -123,7 +124,95 @@ export function reconcile({ blocks, metricsCsv, cycle }) {
     }
     if (afterVerif.length) findings.push({ kind: 'after-verification', text: `${afterVerif.length} release(s) shipped after the verification (newest it mentions: v${verifMax}) — no independent check covers them: ${afterVerif.map(r => r.version).join(', ')}` });
   }
-  return { releases, covered, sum, reflect: totals, reflectMax, verification: verif ? { name: verif.name, score: verifScore, regressions: verifRegressions == null ? null : Number(verifRegressions), max: verifMax } : null, afterReflect, afterVerif, findings };
+  // R24-2: an implement command whose audit saved no report. The report is
+  // §6a's Session Handoff Block (for Tier 1, the FINAL REPORT and batch plan),
+  // and without it the batch plan cannot be checked against what shipped.
+  const reports = blocks.filter(b => blockKind(b.name) === 'report').map(b => b.name);
+  for (const [cmd, want, label] of TIERS) {
+    const by = releases.filter(r => new RegExp(`-${cmd}\\.md$`).test(r.name) && !(cmd === 'implement' && /-(?:broad|targeted)-implement\.md$/.test(r.name)));
+    if (by.length && !reports.some(n => want.test(n))) findings.push({ kind: 'no-report', text: `${by.length} /${cmd} release(s) and no saved ${label} for this cycle — §6a has no ${cmd === 'broad-implement' ? 'FINAL REPORT or batch plan' : 'Session Handoff Block'} from the blocks, and nothing to check what shipped against (audits save it from v1.56.0)` });
+  }
+  return { reports, releases, covered, sum, reflect: totals, reflectMax, verification: verif ? { name: verif.name, score: verifScore, regressions: verifRegressions == null ? null : Number(verifRegressions), max: verifMax } : null, afterReflect, afterVerif, findings };
+}
+
+const TIERS = [
+  ['broad-implement', /^0*\d+-scan(?:-\d+)?\.md$/, 'scan report (<cycle>-scan.md)'],
+  ['targeted-implement', /^0*\d+-targeted-audit-/, 'targeted-audit report (<cycle>-targeted-audit-<subsystem>.md)'],
+  ['implement', /^0*\d+-audit-/, 'audit report (<cycle>-audit-<subsystem>.md)'],
+];
+
+// ── R24-3: the scan's batch plan against what shipped ───────
+
+// The newest saved scan report of the cycle (a re-run adds -2, -3).
+export function newestScan(blocks) {
+  const scans = blocks.filter(b => /^0*\d+-scan(?:-\d+)?\.md$/.test(b.name));
+  const n = b => Number((b.name.match(/-scan-(\d+)\.md$/) || [0, 1])[1]);
+  return scans.sort((a, b) => n(a) - n(b)).pop() || null;
+}
+const PLAN_ID = String.raw`(?:F|G|ST)\d+`;
+// Parse the IMPLEMENTATION BATCH PLAN and the EXPANSION PLAN of a /broad-scan
+// report: each batch's items, and the items set aside under "Deferred" / "Not
+// batched". An item line is indented and opens with its ID (or "GAP: G1" /
+// "STRATEGIC: ST2") followed by a pipe; a set-aside line names each ID before
+// an em dash, on the label line or on indented lines under it.
+export function parsePlan(text) {
+  const L = String(text || '').split('\n');
+  const start = L.findIndex(l => /IMPLEMENTATION BATCH PLAN/.test(l));
+  const plan = { batches: [], setAside: [] };
+  if (start === -1) return null;
+  let cur = null, aside = false;
+  for (const l of L.slice(start + 1)) {
+    if (/^(?:After I review|FOLLOW-ON REVIEW)/.test(l)) break;
+    let m;
+    if ((m = l.match(/^\s*(Batch\s+\d+|Expansion\s+E\d+)\b/))) { cur = { name: m[1].replace(/\s+/, ' ').replace(/^Expansion /, ''), items: [] }; plan.batches.push(cur); aside = false; continue; }
+    if (/^\s*(?:Deferred|Not batched)\b[^:]*:/.test(l)) { aside = true; cur = null; }
+    else if (aside && !/^\s+/.test(l)) aside = false;
+    if (aside) { for (const x of l.matchAll(new RegExp(`(?:^|[:;,]|\\s)\\s*(${PLAN_ID})\\s*—`, 'g'))) plan.setAside.push(x[1]); continue; }
+    if (cur && (m = l.match(new RegExp(`^\\s+(?:(?:GAP|STRATEGIC):\\s*)?(${PLAN_ID})\\s*\\|`)))) cur.items.push(m[1]);
+  }
+  return plan;
+}
+// The plan IDs a release block shipped: the CHANGES lines that open with
+// them ("F16 | file | what", "F3, F4 | …"). Lines that say "dropped" give the
+// IDs the release dropped on purpose.
+export function shippedIds(text) {
+  const L = String(text || '').split('\n');
+  const a = L.findIndex(l => /^CHANGES/.test(l));
+  const shipped = new Set(), dropped = new Set();
+  if (a !== -1) for (const l of L.slice(a + 1)) {
+    if (/^(?:TEST RESULTS|REGRESSION RISKS)/.test(l)) break;
+    const m = l.match(new RegExp(`^(${PLAN_ID}(?:\\s*[,+&/]\\s*${PLAN_ID})*)\\s*\\|`));
+    if (m) for (const id of m[1].match(new RegExp(PLAN_ID, 'g'))) shipped.add(id);
+  }
+  for (const l of L) if (/\bdropped\b/i.test(l)) for (const id of l.match(new RegExp(`\\b${PLAN_ID}\\b`, 'g')) || []) if (!shipped.has(id)) dropped.add(id);
+  return { shipped, dropped };
+}
+export function planCoverage({ blocks }) {
+  const scan = newestScan(blocks);
+  if (!scan) return { scan: null };
+  const plan = parsePlan(scan.text);
+  if (!plan) return { scan: scan.name, plan: null };
+  const releases = blocks.filter(b => blockKind(b.name) === 'release');
+  const where = new Map(), droppedBy = new Map();
+  for (const r of releases) {
+    const { shipped, dropped } = shippedIds(r.text);
+    for (const id of shipped) where.set(id, [...(where.get(id) || []), r.name]);
+    for (const id of dropped) droppedBy.set(id, [...(droppedBy.get(id) || []), r.name]);
+  }
+  const planned = new Set(plan.batches.flatMap(b => b.items));
+  const batches = plan.batches.map(b => ({ ...b,
+    shipped: b.items.filter(id => where.has(id)),
+    dropped: b.items.filter(id => !where.has(id) && droppedBy.has(id)),
+    missing: b.items.filter(id => !where.has(id) && !droppedBy.has(id)) }));
+  return {
+    scan: scan.name, plan,
+    batches,
+    neverRun: batches.filter(b => b.items.length && !b.shipped.length && !b.dropped.length).map(b => b.name),
+    missing: batches.flatMap(b => b.shipped.length || b.dropped.length ? b.missing : []),
+    setAsideShipped: plan.setAside.filter(id => where.has(id)),
+    multiple: [...where].filter(([, rs]) => rs.length > 1).map(([id, rs]) => ({ id, releases: rs })),
+    unplanned: [...where.keys()].filter(id => !planned.has(id) && !plan.setAside.includes(id)),
+  };
 }
 
 // ── R22-2: prior scores and policy triggers ─────────────────
@@ -277,7 +366,7 @@ export function consistency({ healthMd, metricsCsv, cfg }) {
 
 // ── CLI ─────────────────────────────────────────────────────
 
-function render({ cycle, rec, series, thresholds, cfgPolicy, excluded, chosenWhy }) {
+function render({ cycle, rec, cov, series, thresholds, cfgPolicy, excluded, chosenWhy }) {
   const L = [];
   L.push(`# Synthesis pack — Cycle ${cycle}`, '', chosenWhy, '');
   L.push('## Net-score reconciliation (derived from the blocks — R22-1)', '');
@@ -288,6 +377,21 @@ function render({ cycle, rec, series, thresholds, cfgPolicy, excluded, chosenWhy
   L.push(`- Verification: ${rec.verification ? `${rec.verification.name} — ${rec.verification.score ? `**${rec.verification.score.fixes} − ${rec.verification.score.nfm} = ${rec.verification.score.net}**` : 'no Net score line'}` : 'none'}`);
   L.push('', rec.findings.length ? 'Disagreements and gaps (reported, not failed — the operator settles them):' : 'No disagreement between the blocks, the reflect row and the verification.');
   for (const f of rec.findings) L.push(`- ${f.text}`);
+  L.push('', '## Batch plan against what shipped (R24-3)', '');
+  if (!cov.scan) L.push('No saved scan report for this cycle — there is no batch plan to check (a Tier 1 audit saves it as <cycle>-scan.md from v1.56.0).');
+  else if (!cov.plan) L.push(`${cov.scan} has no IMPLEMENTATION BATCH PLAN — nothing to check.`);
+  else {
+    L.push(`From ${cov.scan}. An item counts as shipped when a release block's CHANGES line opens with its ID.`, '');
+    L.push('| Batch | Items | Shipped | Dropped | Not shipped |', '|---|---|---|---|---|');
+    for (const b of cov.batches) L.push(`| ${b.name} | ${b.items.length} | ${b.shipped.join(', ') || '—'} | ${b.dropped.join(', ') || '—'} | ${b.missing.join(', ') || '—'} |`);
+    const notes = [];
+    if (cov.neverRun.length) notes.push(`Batches with nothing shipped or dropped (not run yet): ${cov.neverRun.join(', ')}`);
+    if (cov.missing.length) notes.push(`Items missing from a batch that did run — neither shipped nor recorded as dropped: ${cov.missing.join(', ')}`);
+    if (cov.plan.setAside.length) notes.push(`Set aside by the plan (Deferred / Not batched): ${cov.plan.setAside.join(', ')}${cov.setAsideShipped.length ? `; shipped anyway: ${cov.setAsideShipped.join(', ')}` : ''}`);
+    if (cov.multiple.length) notes.push(`Shipped by more than one release: ${cov.multiple.map(m => `${m.id} (${m.releases.join(', ')})`).join('; ')}`);
+    if (cov.unplanned.length) notes.push(`Shipped but not in the plan: ${cov.unplanned.join(', ')}`);
+    L.push('', ...(notes.length ? notes.map(n => `- ${n}`) : ['Every batch that ran shipped or dropped each of its items, and nothing shipped outside the plan.']));
+  }
   L.push('', '## Prior scores (Score History, oldest → newest — R22-2)', '');
   if (!series.length) L.push('No synthesis recorded yet: this is the first measurement for every category.');
   else {
@@ -301,6 +405,7 @@ function render({ cycle, rec, series, thresholds, cfgPolicy, excluded, chosenWhy
   L.push('', `## Where each policy clause fires this cycle (threshold ${cfgPolicy.threshold}/10, ${cfgPolicy.consecutive} consecutive cycles)`, '');
   L.push('| Category | Prior | Decline | Sharp drop | Persistent laggard | Absolute floor |', '|---|---|---|---|---|---|');
   for (const t of thresholds) L.push(t.prior == null ? `| ${t.name} | — | ${t.note} | | | |` : `| ${t.name} | ${t.prior} | ${t.decline || 'cannot fire'} | ${t.sharpDrop} | ${t.laggard || 'cannot fire'} | ${t.floor} |`);
+  if (rec.reports.length) L.push('', `(Saved audit report(s) read for the batch plan: ${rec.reports.join(', ')}.)`);
   if (excluded.length) L.push('', `(${excluded.length} block(s) from other cycles excluded.)`);
   return L.join('\n') + '\n';
 }
@@ -333,7 +438,8 @@ function main(argv) {
   const series = parseHistory(healthMd).filter(e => e.cycle < Number(cycle)).sort((a, b) => a.cycle - b.cycle);
   const cfgPolicy = policyConfig(cfg);
   const thresholds = triggerThresholds(series, cfgPolicy, axisBNames(cfg));
-  const out = render({ cycle, rec, series, thresholds, cfgPolicy, excluded: blocks.excluded, chosenWhy });
+  const cov = planCoverage({ blocks });
+  const out = render({ cycle, rec, cov, series, thresholds, cfgPolicy, excluded: blocks.excluded, chosenWhy });
   const file = opt('--out');
   if (file) { writeFileSync(file, out); console.log(`Wrote ${file}`); } else process.stdout.write(out);
   return 0;

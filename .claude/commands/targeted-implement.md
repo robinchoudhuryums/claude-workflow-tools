@@ -4,7 +4,9 @@ argument-hint: "[paste the TIER 2 HANDOFF BLOCK first if it is not in this sessi
 ---
 
 If $ARGUMENTS is empty or missing AND no TIER 2 HANDOFF BLOCK exists
-earlier in this session, respond with exactly this and stop:
+earlier in this session or in an audit report file
+(.cycle/blocks/<cycle>-targeted-audit-<subsystem>.md) for the current
+cycle, respond with exactly this and stop:
 
 Usage (same session): /targeted-implement — run after /targeted-audit
 Usage (new session): Paste the TIER 2 HANDOFF BLOCK first, then run
@@ -13,7 +15,11 @@ Usage (new session): Paste the TIER 2 HANDOFF BLOCK first, then run
 
 Read CLAUDE.md (especially Common Gotchas) before starting.
 
-You are implementing the actions from the TIER 2 HANDOFF BLOCK above.
+You are implementing the actions from the TIER 2 HANDOFF BLOCK above. If
+it is not in this session, read it from the newest report file
+.cycle/blocks/<cycle>-targeted-audit-<subsystem>.md for the subsystem
+$ARGUMENTS names (or the only one this cycle), and say which file you
+used.
 
 Rules:
 - Implement ONLY the actions in the handoff block, in order

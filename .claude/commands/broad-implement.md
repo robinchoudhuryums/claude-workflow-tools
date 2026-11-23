@@ -24,8 +24,10 @@ Read CLAUDE.md (especially Common Gotchas) before starting.
 Rules:
 - Implement ONLY the findings specified above — nothing else
 - A batch name ("Batch 2", "E1") means every item the scan's plan lists
-  under it. Read the list from the scan report; if the report is not in
-  this session, ask for it rather than guessing what the batch held
+  under it. Read the list from the scan report — this session's, or the
+  scan's report file .cycle/blocks/<cycle>-scan.md (the newest, if a
+  re-run has a -2); if neither is in reach, ask for it rather than
+  guessing what the batch held. A finding named by ID is read the same way
 - G (completeness gap) and ST (strategic suggestion) items from the
   scan's EXPANSION PLAN are in scope only when named above, by ID or by
   their E-batch. They are new capability, not fixes — see REFLECT

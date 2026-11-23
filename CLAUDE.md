@@ -271,6 +271,14 @@ Two optional helpers operate on this state (both fail-safe and additive):
   FRESH session with none of the implementation context, so a block that exists
   only in a chat transcript cannot reach them; `STATE.md` carries prose *about*
   the work, not the block. Optional like the rest of `.cycle/`.
+  Since v1.56.0 the three audits save their whole report here too
+  (`<cycle>-scan.md`, `<cycle>-audit-<subsystem>.md`,
+  `<cycle>-targeted-audit-<subsystem>.md`), so `/broad-implement Batch 2`, `/plan`
+  and `/targeted-implement` in a fresh session read the batch or handoff from
+  it, and Health Synthesis reads a Tier 1 cycle's FINAL REPORT and batch plan.
+  A report is saved in full, security findings included: in a public
+  repository, deciding whether `.cycle/blocks/` is committed is the operator's
+  call.
 
 And two helpers operate on the invariant library:
 - `scripts/invariant-check.mjs` — the executable invariant runner. Reads
@@ -313,7 +321,9 @@ And one assembles the independent-verification input:
   canonical body via the same `sectionBody()` the lock uses (no fourth copy),
   the live invariant library, the CURRENT cycle's blocks from `.cycle/blocks/`
   (by `<cycle>-` filename prefix — blocks from other cycles are named as
-  excluded, never silently dropped, since the directory accumulates), and the
+  excluded, never silently dropped, since the directory accumulates; an audit's
+  saved report is left out and named the same way — it is the audit's judgment,
+  not a verification input), and the
   **rotation probes seeded from the commit sha** so they are reproducible rather
   than chosen by the implementer — the prompt's "do NOT substitute your own
   picks" rule has no force if the implementer picks them. The pack DERIVES its
@@ -343,7 +353,11 @@ And one derives the Health Synthesis inputs (ROADMAP R22):
   regressions the self-reports missed) — reported, not failed; reads
   `PROJECT_HEALTH.md`'s Score History into a series per Axis B category,
   names the cycles never synthesized, and states the score at which each
-  policy clause would fire this cycle. `--check` confirms the newest
+  policy clause would fire this cycle. For a Tier 1 cycle it reads the
+  saved scan report's batch plan and names the batch never run, the item
+  neither shipped nor dropped, and the item shipped though set aside, twice
+  or outside the plan; it names a cycle whose audit saved no report.
+  `--check` confirms the newest
   synthesis agrees with itself in value: one cycle number, one lowest Axis B
   category and score, one Category D and one Overall across the metrics row,
   Current Standing and the Score History entry, and a "Policy responses
@@ -663,14 +677,14 @@ For any Medium or Low, explain what you'd need to verify.
 
 ```
 Do not make any changes to any files during the audit phase, other than
-the optional CYCLE OPEN and FOLLOW-ON REVIEW steps below.
+the optional CYCLE OPEN, FOLLOW-ON REVIEW and SAVE REPORT steps below.
 
 Read CLAUDE.md (especially Common Gotchas and Key Design Decisions),
 README, and the roadmap carefully before doing anything else.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is one of the session's two permitted file writes
-(the other is FOLLOW-ON REVIEW, below).
+a new cycle, and this is one of the session's three permitted file writes
+(the others are FOLLOW-ON REVIEW and SAVE REPORT, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -708,6 +722,22 @@ change a confirmed item's disposition to "confirmed as <finding
 ID> (Cycle <N>)" — it stays open until the session that implements that
 finding removes it. Items with any other disposition are not this audit's
 to close. Skip this step if .cycle/STATE.md does not exist.
+
+SAVE REPORT (optional — only if .cycle/STATE.md exists): when your output
+is complete, write all of it VERBATIM to .cycle/blocks/ — the third of the
+session's permitted file writes. Name the file by the command that ran:
+<cycle>-scan.md for /broad-scan, <cycle>-audit-<subsystem>.md for /audit,
+<cycle>-targeted-audit-<subsystem>.md for /targeted-audit — <cycle> from
+STATE.md's Cycle field after CYCLE OPEN, <subsystem> in lower case with
+every run of other characters turned into one hyphen. If that name is
+taken (a re-run in the same round), add -2 (then -3, …) before .md; never
+overwrite a block. The saved report is what later sessions read: an
+implement session takes a batch, a finding or a handoff block from it,
+Health Synthesis reads a Tier 1 cycle's FINAL REPORT and batch plan from
+it, and the synthesis pack checks the batch plan against what shipped.
+Write it in full, security findings included; whether .cycle/blocks/ is
+committed to a public repository is the operator's decision. Skip this
+step if .cycle/STATE.md does not exist.
 
 This audit runs in three stages within this session. Complete each stage fully before starting the next.
 
@@ -954,8 +984,10 @@ Read CLAUDE.md (especially Common Gotchas) before starting.
 Rules:
 - Implement ONLY the findings specified above — nothing else
 - A batch name ("Batch 2", "E1") means every item the scan's plan lists
-  under it. Read the list from the scan report; if the report is not in
-  this session, ask for it rather than guessing what the batch held
+  under it. Read the list from the scan report — this session's, or the
+  scan's report file .cycle/blocks/<cycle>-scan.md (the newest, if a
+  re-run has a -2); if neither is in reach, ask for it rather than
+  guessing what the batch held. A finding named by ID is read the same way
 - G (completeness gap) and ST (strategic suggestion) items from the
   scan's EXPANSION PLAN are in scope only when named above, by ID or by
   their E-batch. They are new capability, not fixes — see REFLECT
@@ -1121,16 +1153,16 @@ Example: /targeted-audit Security & Compliance
 
 Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and
 the Cycle Workflow Config) before starting. Do not make any changes
-to any files during this session, other than the optional CYCLE OPEN
-and FOLLOW-ON REVIEW steps below.
+to any files during this session, other than the optional CYCLE OPEN,
+FOLLOW-ON REVIEW and SAVE REPORT steps below.
 
 This session's scope: $ARGUMENTS
 Use the Subsystems section of CLAUDE.md's Cycle Workflow Config to
 identify the relevant files for this subsystem.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is one of the session's two permitted file writes
-(the other is FOLLOW-ON REVIEW, below).
+a new cycle, and this is one of the session's three permitted file writes
+(the others are FOLLOW-ON REVIEW and SAVE REPORT, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -1168,6 +1200,22 @@ change a confirmed item's disposition to "confirmed as <finding
 ID> (Cycle <N>)" — it stays open until the session that implements that
 finding removes it. Items with any other disposition are not this audit's
 to close. Skip this step if .cycle/STATE.md does not exist.
+
+SAVE REPORT (optional — only if .cycle/STATE.md exists): when your output
+is complete, write all of it VERBATIM to .cycle/blocks/ — the third of the
+session's permitted file writes. Name the file by the command that ran:
+<cycle>-scan.md for /broad-scan, <cycle>-audit-<subsystem>.md for /audit,
+<cycle>-targeted-audit-<subsystem>.md for /targeted-audit — <cycle> from
+STATE.md's Cycle field after CYCLE OPEN, <subsystem> in lower case with
+every run of other characters turned into one hyphen. If that name is
+taken (a re-run in the same round), add -2 (then -3, …) before .md; never
+overwrite a block. The saved report is what later sessions read: an
+implement session takes a batch, a finding or a handoff block from it,
+Health Synthesis reads a Tier 1 cycle's FINAL REPORT and batch plan from
+it, and the synthesis pack checks the batch plan against what shipped.
+Write it in full, security findings included; whether .cycle/blocks/ is
+committed to a public repository is the operator's decision. Skip this
+step if .cycle/STATE.md does not exist.
 
 If $ARGUMENTS names a subsystem listed in `Frozen Subsystems`:
 print this banner at the top of your output before continuing, then
@@ -1252,7 +1300,9 @@ DO NOT TOUCH:
 
 ```
 If $ARGUMENTS is empty or missing AND no TIER 2 HANDOFF BLOCK exists
-earlier in this session, respond with exactly this and stop:
+earlier in this session or in an audit report file
+(.cycle/blocks/<cycle>-targeted-audit-<subsystem>.md) for the current
+cycle, respond with exactly this and stop:
 
 Usage (same session): /targeted-implement — run after /targeted-audit
 Usage (new session): Paste the TIER 2 HANDOFF BLOCK first, then run
@@ -1261,7 +1311,11 @@ Usage (new session): Paste the TIER 2 HANDOFF BLOCK first, then run
 
 Read CLAUDE.md (especially Common Gotchas) before starting.
 
-You are implementing the actions from the TIER 2 HANDOFF BLOCK above.
+You are implementing the actions from the TIER 2 HANDOFF BLOCK above. If
+it is not in this session, read it from the newest report file
+.cycle/blocks/<cycle>-targeted-audit-<subsystem>.md for the subsystem
+$ARGUMENTS names (or the only one this cycle), and say which file you
+used.
 
 Rules:
 - Implement ONLY the actions in the handoff block, in order
@@ -1383,8 +1437,8 @@ Workflow Config.
 
 Read CLAUDE.md (especially Common Gotchas, Key Design Decisions, and the
 Cycle Workflow Config) before starting. Do not make any changes to any
-files during this session, other than the optional CYCLE OPEN and
-FOLLOW-ON REVIEW steps below.
+files during this session, other than the optional CYCLE OPEN,
+FOLLOW-ON REVIEW and SAVE REPORT steps below.
 
 This session's scope: $ARGUMENTS
 
@@ -1399,8 +1453,8 @@ Config, print the FROZEN SUBSYSTEM banner (see /targeted-audit) before
 continuing, then proceed.
 
 CYCLE OPEN (optional — only if .cycle/STATE.md exists): this audit opens
-a new cycle, and this is one of the session's two permitted file writes
-(the other is FOLLOW-ON REVIEW, below).
+a new cycle, and this is one of the session's three permitted file writes
+(the others are FOLLOW-ON REVIEW and SAVE REPORT, below).
 Increment STATE.md's Cycle field by 1 (treat a missing or non-numeric
 value as 0, so a project's first audit is Cycle 1) and set Phase: audit,
 Scope to this audit's scope, and Updated to today's date — unless this
@@ -1438,6 +1492,22 @@ change a confirmed item's disposition to "confirmed as <finding
 ID> (Cycle <N>)" — it stays open until the session that implements that
 finding removes it. Items with any other disposition are not this audit's
 to close. Skip this step if .cycle/STATE.md does not exist.
+
+SAVE REPORT (optional — only if .cycle/STATE.md exists): when your output
+is complete, write all of it VERBATIM to .cycle/blocks/ — the third of the
+session's permitted file writes. Name the file by the command that ran:
+<cycle>-scan.md for /broad-scan, <cycle>-audit-<subsystem>.md for /audit,
+<cycle>-targeted-audit-<subsystem>.md for /targeted-audit — <cycle> from
+STATE.md's Cycle field after CYCLE OPEN, <subsystem> in lower case with
+every run of other characters turned into one hyphen. If that name is
+taken (a re-run in the same round), add -2 (then -3, …) before .md; never
+overwrite a block. The saved report is what later sessions read: an
+implement session takes a batch, a finding or a handoff block from it,
+Health Synthesis reads a Tier 1 cycle's FINAL REPORT and batch plan from
+it, and the synthesis pack checks the batch plan against what shipped.
+Write it in full, security findings included; whether .cycle/blocks/ is
+committed to a public repository is the operator's decision. Skip this
+step if .cycle/STATE.md does not exist.
 
 Seams cadence check: read the Seams Audit Cadence (N) from the Cycle
 Workflow Config and "Subsystem cycles since last Seams audit" (K) from
@@ -1516,7 +1586,8 @@ RECOMMENDED PLANNING STARTING POINT: [one sentence]
 
 ```
 If $ARGUMENTS is empty AND no SESSION HANDOFF BLOCK exists earlier in
-this session, respond with exactly this and stop:
+this session or in a report file (.cycle/blocks/<cycle>-audit-<subsystem>.md)
+for the current cycle, respond with exactly this and stop:
 
 Usage (same session): /plan — run after /audit
 Usage (new session): paste the SESSION HANDOFF BLOCK first, then run
@@ -1528,6 +1599,11 @@ Do not make any changes to any files during this session.
 
 [PASTE SESSION HANDOFF BLOCK HERE IF FRESH SESSION]
 [PASTE SYSTEMS MAP SUMMARY HERE]
+
+If the SESSION HANDOFF BLOCK is not in this session, read it from the
+newest report file .cycle/blocks/<cycle>-audit-<subsystem>.md for the
+scope $ARGUMENTS names (or the only one this cycle), and say which file
+you used.
 
 Produce a prioritized action plan for the scope in the handoff block.
 
@@ -2453,7 +2529,10 @@ before reading on.
 2. INPUT BLOCKS — read every file under .cycle/blocks/ whose name starts
    with that cycle's number (zero-padded or not). They are the inputs the
    prompt asks you to paste. Name any other cycle's files as excluded; do
-   not read them as inputs. If metrics.csv's notes for this cycle mention
+   not read them as inputs. The audit's saved report (…-scan.md,
+   …-audit-<subsystem>.md, …-targeted-audit-<subsystem>.md) is not an
+   input either: it is the audit's judgment, and the verification
+   re-derives from the code. Name it as left out. If metrics.csv's notes for this cycle mention
    a CORRECTION, the implementer already corrected its own counts once —
    re-derive every count from the code.
    NO REFLECT BLOCK — if none of that cycle's files is a …-reflect.md
@@ -2563,7 +2642,10 @@ before reading on.
    with that cycle's number: each implementation summary, the Cycle
    Summary Block (…-reflect.md), the Verification Block
    (…-verification.md), a Seams block (…-seams.md) if one ran, and the
-   audit's handoff if one was saved. If there is no Verification Block,
+   audit's saved report: …-scan.md for a Tier 1 cycle (its FINAL REPORT
+   and batch plan stand in for the Session Handoff Block), or
+   …-audit-<subsystem>.md / …-targeted-audit-<subsystem>.md. If an audit
+   saved none, say so. If there is no Verification Block,
    say so at the top and follow the prompt's rule for a missing one — do
    not verify the cycle yourself in this session. If there are several
    (…-verification.md, …-verification-2.md), the newest is the input and
@@ -2588,8 +2670,9 @@ before reading on.
    for the cycle (node scripts/synthesis-pack.mjs --cycle N). Take the
    net-score reconciliation, the missing-verification flag, the releases
    no reflection or verification covers, the prior-score series, the
-   cycles with no synthesis and the score at which each policy clause
-   fires from it — do not add them up by eye. Where your judgment departs
+   cycles with no synthesis, the score at which each policy clause fires
+   and, for a Tier 1 cycle, the batch plan against what shipped from it —
+   do not add them up by eye. Where your judgment departs
    from a figure it derived, say so and why. Without the script, derive
    the same figures from the blocks, metrics.csv and PROJECT_HEALTH.md.
 

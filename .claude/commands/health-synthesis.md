@@ -20,7 +20,10 @@ before reading on.
    with that cycle's number: each implementation summary, the Cycle
    Summary Block (…-reflect.md), the Verification Block
    (…-verification.md), a Seams block (…-seams.md) if one ran, and the
-   audit's handoff if one was saved. If there is no Verification Block,
+   audit's saved report: …-scan.md for a Tier 1 cycle (its FINAL REPORT
+   and batch plan stand in for the Session Handoff Block), or
+   …-audit-<subsystem>.md / …-targeted-audit-<subsystem>.md. If an audit
+   saved none, say so. If there is no Verification Block,
    say so at the top and follow the prompt's rule for a missing one — do
    not verify the cycle yourself in this session. If there are several
    (…-verification.md, …-verification-2.md), the newest is the input and
@@ -45,8 +48,9 @@ before reading on.
    for the cycle (node scripts/synthesis-pack.mjs --cycle N). Take the
    net-score reconciliation, the missing-verification flag, the releases
    no reflection or verification covers, the prior-score series, the
-   cycles with no synthesis and the score at which each policy clause
-   fires from it — do not add them up by eye. Where your judgment departs
+   cycles with no synthesis, the score at which each policy clause fires
+   and, for a Tier 1 cycle, the batch plan against what shipped from it —
+   do not add them up by eye. Where your judgment departs
    from a figure it derived, say so and why. Without the script, derive
    the same figures from the blocks, metrics.csv and PROJECT_HEALTH.md.
 

@@ -28,7 +28,10 @@ before reading on.
 2. INPUT BLOCKS — read every file under .cycle/blocks/ whose name starts
    with that cycle's number (zero-padded or not). They are the inputs the
    prompt asks you to paste. Name any other cycle's files as excluded; do
-   not read them as inputs. If metrics.csv's notes for this cycle mention
+   not read them as inputs. The audit's saved report (…-scan.md,
+   …-audit-<subsystem>.md, …-targeted-audit-<subsystem>.md) is not an
+   input either: it is the audit's judgment, and the verification
+   re-derives from the code. Name it as left out. If metrics.csv's notes for this cycle mention
    a CORRECTION, the implementer already corrected its own counts once —
    re-derive every count from the code.
    NO REFLECT BLOCK — if none of that cycle's files is a …-reflect.md

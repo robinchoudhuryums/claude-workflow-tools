@@ -122,9 +122,15 @@ Updated: 2026-11-23
   clause fires, and --check holds the newest synthesis to itself in value (INV-93, 94, 95; Test Command 15 → 17
   stages). /health-synthesis step 6 uses it and runs --check after writing. Roadmap bet now R24 → R27 → R25/R26.
 
+- v1.56.0 | R24-1 to R24-3 (ROADMAP R24) | the three audits save their whole report to .cycle/blocks/
+  (<cycle>-scan.md, -audit-<subsystem>, -targeted-audit-<subsystem>; one SAVE REPORT step, gated, security findings
+  included); /broad-implement, /plan, /targeted-implement and /health-synthesis read it back; /verify and the §4v
+  pack leave it out; the synthesis pack names a cycle whose audit saved none and checks the scan's batch plan
+  against what shipped. INV-96, INV-97; INV-52 and INV-93 widened. Library 84 → 86. Roadmap bet now R27 → R25/R26.
+
 ## Pending / not yet done
-- Expansion (optional): E3 G3 scan persistence + G5 interface lens in /pr-review + ST1 allowed-tools;
-  E4 ST3 mechanical mutation sweep. (ROADMAP R24, R25, R26, R27.)
+- Expansion (optional): E3 G5 interface lens in /pr-review + ST1 allowed-tools; E4 ST3 mechanical mutation
+  sweep. (ROADMAP R25, R26, R27; G3 scan persistence shipped as R24 in v1.56.0.)
 - DROPPED with the console freeze (2026-11-20, operator decision — known defects on the hosted page, none
   rated High; the scan's wording survives only in the session transcript):
   Batch 4 F20 F22 F23 F24 F25 F26 F27 F28 · Batch 5 F32 F33 F34 F35 F36 · Batch 6 F31 F37 F38 F39 ·
@@ -172,6 +178,12 @@ Updated: 2026-11-23
   from an FO item to the action that fixes it is the implementer's to make | → next audit
 - FO-8-26 | /test-sync, /pr-review — both defer items (a Category D bug, a PR nit) with no FO ID, so what they
   defer is still untracked; they are not reporters under check 22 | → next audit
+- FO-8-32 | scripts/synthesis-pack.mjs blockKind — a release block is recognised only by a VERSIONED name; one
+  named by scope (<cycle>-<scope>-implement.md, which the implement commands allow) reads as "other", so its NET
+  SCORE is in no sum and its findings count toward no batch | → next audit
+- FO-8-33 | scripts/synthesis-pack.mjs shippedIds — "dropped" is any release-block line with that word and an
+  ID ("F3 is not dropped" counts), and drops recorded only in STATE.md (as Cycle 8's were) are not seen; the
+  coverage can name an item missing that the operator dropped elsewhere | → next audit
 
 ## Decisions made (so the next session doesn't re-litigate)
 - The console lock is RETIRED (operator, 2026-11-23; v1.53.0). From v1.29.0 to v1.52.0 every console prompt
@@ -239,6 +251,6 @@ Updated: 2026-11-23
   guard: it would go red when an audit's CYCLE OPEN moved the cycle on, in a session that may write nothing else.
 
 ## Where I left off
-Cycle 8, after its synthesis; v1.52.0–v1.55.0 are on branch claude/fervent-edison-tdej8d (not merged). R22 is done;
-the roadmap bet is now R24, then R27, then R25/R26. FO-8-30 asks how a synthesized cycle with later releases
-closes. Cycle 7 still owes /verify 7 and /health-synthesis 7. Consuming projects re-pull v1.47.0–v1.55.0.
+Cycle 8, after its synthesis; v1.52.0–v1.56.0 are on branch claude/fervent-edison-tdej8d (not merged). R22 and R24
+are done; the roadmap bet is now R27, then R25/R26. FO-8-30 asks how a synthesized cycle with later releases
+closes. Cycle 7 still owes /verify 7 and /health-synthesis 7. Consuming projects re-pull v1.47.0–v1.56.0.
