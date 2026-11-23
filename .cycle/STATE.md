@@ -144,7 +144,8 @@ Updated: 2026-11-23
 - Two Cycle-7 candidates are HELD, not declined — numbers reserved, text in 07-a-reflect.md: INV-79 (hostile
   fixture; contradicted by F40) and INV-82 (import shape validation; contradicted by F28). Both findings were
   dropped with the freeze, so both stay held until the console is unfrozen — or the operator declines them.
-  The next new candidate is INV-83.
+  INV-83–INV-85 were promoted by /sync-docs on 2026-11-23; the library's highest is INV-97, so the next new
+  candidate is INV-98.
 - Cycle 8's two policy responses are BUILT (v1.53.0): content checks INV-86–88 (Guard / Test Coverage) and INV-73
   (Silent Prompt Degradation); the rest of the latter — /verify and /health-synthesis stop with no reflect block,
   and a fixed verification block name — shipped in v1.54.0 (FO-8-28). No operator decisions are open.
@@ -155,7 +156,7 @@ Updated: 2026-11-23
   ("args") would avoid the shell but could not be exercised here | → next audit
 - FO-8-8 | /cycle-close — the lifecycle is instruction text plus a text-derived guard; team-tools has a
   scripted close-out (scripts/cycle-closeout.mjs: dry run, --check for CI, --close) that could be
-  upstreamed here | → roadmap
+  upstreamed here (carried as ROADMAP R28 since 2026-11-23) | → roadmap
 - FO-8-11 | check-template-sync check 19(a) — recognises a phase writer by the one phrase "set Phase:
   <value>"; a step that sets a phase in other words reads as no writer (loud, not silent) | → next audit
 - FO-8-13 | tests/mutation-audit.mjs — the generic-signal check is four probe strings: /failed/ is

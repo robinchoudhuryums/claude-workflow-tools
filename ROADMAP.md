@@ -90,6 +90,15 @@ the console are closed as dropped, not left open.
   the sweep's first target would be the scripts' own gates. The audit runs
   cases in parallel since v1.49.0, which is what makes a sweep affordable.
 
+- **R28 — A scripted cycle close-out.** `effort: M (~½ day)`
+  *(FO-8-8.)* `/cycle-close` is instruction text with a guard derived from
+  that text. A consuming project (team-tools) wrote
+  `scripts/cycle-closeout.mjs` — a dry run, `--check` for CI and `--close` —
+  that does the same steps as code. Upstreaming it would make the close-out
+  checkable the way the packs made §4v and §6a checkable. It touches the
+  open decision FO-8-30 (how a synthesized cycle with later releases closes),
+  so that decision should come first.
+
 - **R21 — Dead/superseded-artifact lens in `/broad-scan`.** `effort: S (~30 min)` — ✅ DONE (v1.34.0, applied verbatim before the Cycle-7 scan). The `/audit` focus-area-2 / `/targeted-audit` asymmetry below was decided on 2026-11-23 — one lens, the same text in all three audits — and closed in v1.53.0.
   The Stage 1 flag list reads *"Dead code, unused exports, stale TODOs only if
   they create confusion"* — all **code** nouns. Nothing names styles, classes,
@@ -450,6 +459,8 @@ What is open, for whoever picks the next one:
 - **R25–R27** — what is left of the Cycle-8 scan's expansion plan: the
   interface lens in `/pr-review`, `allowed-tools`, a mechanical mutation
   sweep. Each fits one session.
+- **R28** — a scripted `/cycle-close`, upstreamed from a consuming project
+  (FO-8-8); waits on the FO-8-30 decision.
 
 The guard reads the **Current bet:** line above. Name an item there by its ID
 (`R22`), or leave it as "none chosen"; an item marked done or dropped is

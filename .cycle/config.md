@@ -120,6 +120,9 @@ INV-77 | The console's §4v rotation probes are reproducible by a tool: verifica
 INV-78 | A CI stage counts only when its step's run: is the BARE stage command and nothing can skip or swallow it — no if:, no continue-on-error, no chained, piped or `|| true` command. The workflow is read as structure, not text: INV-74 proves every stage is listed in order, this proves a listed stage can actually fail the job (Cycle-7 F31; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Tooling & Sync Infrastructure | Verify: node scripts/check-template-sync.mjs (structural check 14, via ciStages)
 INV-80 | The Operator State Checklist's re-pull paragraph classifies EVERY release since v1.19.0 exactly once — "vX changed /cmd" or inside the "changed none" list — and the newest release's classification agrees with its own CHANGELOG entry. The v1.33.0 change to /setup-cycle sat in neither list for nine releases, so consuming projects were never told to re-pull it (Cycle-7 follow-on to F05; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 18)
 INV-81 | Deleting a project removes every ccg:<id>:* key and its Dashboard entries, and nothing else: the keys of a surviving project whose id extends the deleted one (ccg:<id>:two:*) and every ccg:secret:* key are kept — so a project re-created under the same derived id starts clean and no other project loses data (Cycle-7 follow-on A; candidate from 07-a-reflect, promoted 2026-11-20) | Subsystem: Interactive Console (HTML) | Verify: node scripts/check-html.mjs
+INV-83 | Every command file opens with FRONTMATTER whose description is its Command Index row, carries an argument hint exactly when its body reads $ARGUMENTS, has no other key and shares no description with another command, and the README's command table gives the same words. Split out of INV-13 (Cycle-8 reflect candidate; promoted by /sync-docs 2026-11-23): the rule was checked and mutation-proven under INV-13, whose sentence does not describe it | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 20)
+INV-84 | ROADMAP.md does not contradict the cycle: no open item is still "queued for" a cycle that has already run, and the "**Current bet:**" line names only open items, or none. Split out of INV-23 (Cycle-8 reflect candidate; promoted by /sync-docs 2026-11-23) | Subsystem: Canonical Templates & Docs | Verify: node tests/guard.test.mjs (structural check 21)
+INV-85 | The cycle LIFECYCLE is closed: every Phase value the STATE template offers has a step that sets it, the three audits share one CYCLE OPEN text, every block-writing CHECKPOINT rolls STATE and never overwrites a block, and invariant candidates have an owning command. Split out of INV-65 (Cycle-8 reflect candidate; promoted by /sync-docs 2026-11-23) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 19)
 INV-86 | The CYCLE OPEN step's CONTENT carries each of its rules in every audit that has one: the same-round exemption only while Phase is "audit" and Updated is within the last 7 days; an older "Phase: audit" does not hold the number; the Scope line is marked when the step increments over another cycle's sections; and a cycle left reflected but unsynthesized is reported, with its inputs requested by number (Cycle-8 F4/F5). Check 19 proves the step is one TEXT across the audits, not what it says — Cycle-8 §4v deleted these rules from every copy and only the console --assert lock noticed (candidate from 08-b-verification, promoted 2026-11-23) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 23)
 INV-87 | Health Synthesis step 8 (the §6a body and /health-synthesis, which includes it) sets Phase: idle ONLY when STATE.md's Cycle is the cycle it synthesized, and leaves a later cycle's Phase alone. v1.47.0 made it unconditional on the branch — it would have idled Cycle 8 mid-implement when Cycle 7's owed synthesis ran — and v1.48.0's fix had no guard but the console mirror (candidate from 08-b-verification, promoted 2026-11-23) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 23)
 INV-88 | New invariant candidates are numbered above the highest INV-N in the library AND in unpromoted candidates under .cycle/blocks/ — in /reflect and /seams-audit — so a candidate keeps its number and two sessions never mint the same one (Cycle-8 F6: the Cycle-8 /reflect would have re-issued INV-76). Unguarded except by the console mirror until v1.53.0 (candidate from 08-b-verification, promoted 2026-11-23) | Subsystem: Canonical Templates & Docs | Verify: node scripts/check-template-sync.mjs (structural check 23)
@@ -569,6 +572,23 @@ Cycle Workflow Config.
   either: write what the command does, never when the model should run it
   unasked. `disable-model-invocation` exists as a frontmatter key and is not
   used here; check 20 would refuse it until someone decides.
+- **The F44 sentence scan reads a write verb before a `.cycle/` path as a
+  write, wherever the sentence sits.** v1.56.0's reader sentences ("read it
+  from the newest saved report .cycle/blocks/…") failed the gating check,
+  because "saved" is one of its verbs. The fix is the wording ("the report
+  file"), not a looser scan: a sentence that only READS a cycle file should
+  name it without save / add / set / mark / record / update.
+- **An assertion log printed at the end is lost if a later line throws.** A
+  test that collects ✓/✗ lines and prints them last prints nothing when a
+  mutation leaves a fixture undefined and a LATER assertion throws — so the
+  mutation audit reports WRONG CHECK although the right assertion failed
+  first. Guard each assertion's input (default the missing value, or wrap
+  the comparison) so a mutation fails on its own message.
+- **A mutation case's find string and its signal move together.** Moving a
+  case to a new target (v1.56.0 moved INV-23's open-item case from R24 to
+  R27) and leaving the signal naming the old one makes the audit report
+  WRONG CHECK for a rule that is still enforced. When you edit a case's find
+  or replace text, re-read its signal regex.
 
 ## Key Design Decisions
 

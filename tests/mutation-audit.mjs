@@ -148,8 +148,9 @@ const CASES = {
              // Cycle-7 Batch 8 (F19): the exact-match systems-map test back — §1 and §4 lose the bank.
              [HTML, "const isSysMap=n=>n.startsWith('PASTE SYSTEMS MAP SUMMARY HERE');", "const isSysMap=n=>n==='PASTE SYSTEMS MAP SUMMARY HERE';", /F19/]],
   'INV-64': [[HTML, "hash32(seed+'|'+String(inv.id))", "hash32(String(inv.id)+'|'+seed)", /F14/]],
-  'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/],
-             // Cycle-8 Batch 3 — the lifecycle half of the rule (structural check 19).
+  'INV-65': [['.cycle/STATE.md', '## Where I left off', '## Scratch\n\n## Where I left off', /F15/]],
+  // INV-85 (split from INV-65 by /sync-docs, 2026-11-23) — the cycle lifecycle (structural check 19).
+  'INV-85': [// Cycle-8 Batch 3 — the lifecycle half of the rule (structural check 19).
              // F1: the template offers a phase no step sets.
              ['CLAUDE.md', 'Phase: [audit | implement | reflect | idle —', 'Phase: [audit | plan | implement | reflect | idle —', /cycle lifecycle \(Cycle-8 F1\): [^\n]*no step sets: plan/],
              // F1: a phase loses its only writer. (Until v1.48.0 this case removed §6a's idle write;
@@ -182,8 +183,9 @@ const CASES = {
              ['.claude/commands/implement.md', '- Check Common Gotchas before each action', '- Update .cycle/STATE.md after each action\n- Check Common Gotchas before each action', /writes cycle state outside a gated step \(Cycle-8 F44\): implement\.md/],
              // F44: a verb the old seven-verb list did not hold, and a file name with no ".cycle/" in front.
              ['.claude/commands/targeted-implement.md', '- Check Common Gotchas before each action', '- Save your progress to STATE.md as you go\n- Check Common Gotchas before each action', /writes cycle state outside a gated step \(Cycle-8 F44\): targeted-implement\.md/]],
-  'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i],
-             // Cycle-8 Batch 9 (F8): the picker entry. gen --check agrees with a generator that drops the
+  'INV-13': [[CFG, '### /pr-review\n', '### /pr-review-moved-out-of-claude-md\n', /without a CLAUDE.md template/i]],
+  // INV-83 (split from INV-13 by /sync-docs, 2026-11-23) — command frontmatter (structural check 20).
+  'INV-83': [// Cycle-8 Batch 9 (F8): the picker entry. gen --check agrees with a generator that drops the
              // block, so each of these is read by check 20's own parse of the table and the files.
              ['.claude/commands/audit.md', '---\ndescription: "Deep subsystem audit (produces a Session Handoff Block)"\nargument-hint: "<subsystem-name>"\n---\n\n', '', /command descriptions \(Cycle-8 F8\): [^\n]*audit\.md has no frontmatter description/],
              ['.claude/commands/reflect.md', 'description: "Post-cycle honest assessment"', 'description: "Reflect"', /reflect\.md is described as "Reflect" but its Command Index row says/],
@@ -213,8 +215,9 @@ const CASES = {
 
   // ── node tests/guard.test.mjs ───────────────────────────────────────────────
   'INV-22': [['scripts/check-template-sync.mjs', 'const cmdMissing = tableCmds.filter', 'const cmdMissing = [] || tableCmds.filter', /README command lacking/i]],
-  'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i],
-             // Cycle-8 follow-on to F9: the roadmap contradicts the cycle. guard.test reads the LIVE ROADMAP.md.
+  'INV-23': [['scripts/check-template-sync.mjs', 'does not match the newest CHANGELOG entry', 'matches the newest CHANGELOG entry (never printed)', /VERSION disagreeing/i]],
+  // INV-84 (split from INV-23 by /sync-docs, 2026-11-23) — the roadmap does not contradict the cycle (structural check 21).
+  'INV-84': [// Cycle-8 follow-on to F9: the roadmap contradicts the cycle. guard.test reads the LIVE ROADMAP.md.
              ['ROADMAP.md', '**Current bet:** R27, then R25 / R26, in that order (operator, 2026-11-23; the first two items of the order shipped in v1.55.0 and v1.56.0).', '**Current bet:** R1, then R6.', /the live ROADMAP\.md fails — [^\n]*the strategic bet names R1, which is marked done or dropped/],
              ['ROADMAP.md', '- **R27 — Mechanical mutation sweep.** `effort: M (~1 day)`', '- **R27 — Mechanical mutation sweep.** `effort: M (~1 day)` — queued for Cycle 7', /the live ROADMAP\.md fails — [^\n]*R27 is still "queued for Cycle 7"/],
              // the check stops telling a finished item from an open one
