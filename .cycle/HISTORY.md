@@ -31,6 +31,7 @@ free-text items became FO-8-1 … FO-8-22; seven stay open there (FO-8-1, 5, 8,
 - FO-8-17 | won't do — .cycle/HISTORY.md is read by nothing: reference prose by design (.cycle/config.md, Subsystems).
 - FO-8-18 | won't do — the roadmap guard (check 21) reads two mechanical things only: its scope is a recorded design decision; /sync-docs covers the rest.
 - FO-8-19 | won't do — check 21 is written for this repo's ROADMAP.md shape: consuming projects do not run this repo's guard.
+- FO-8-22 | won't do — no LICENSE file: the operator decided on 2026-11-23 that the repo is for their own use.
 - FO-8-21 | won't do — a project on a /sync-commands older than v1.50.0 needs two runs: documented in the Operator State Checklist.
 
 ## Cycle 7 — /broad-scan (50 findings) → 8 fix batches + follow-ons, v1.35.0 → v1.43.0 — REFLECTED, NOT VERIFIED

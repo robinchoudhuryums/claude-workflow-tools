@@ -124,15 +124,17 @@ Updated: 2026-11-20
   fixture; contradicted by F40) and INV-82 (import shape validation; contradicted by F28). Both findings were
   dropped with the freeze, so both stay held until the console is unfrozen — or the operator declines them.
   The next new candidate is INV-83.
-- OPEN DECISIONS (operator, not work): INV-73 (§1s hardcodes the five default Axis B categories); §4v
-  independence vs the SessionStart hook; R21's /audit vs /targeted-audit dead-code asymmetry; whether the
-  console lock should keep costing a builder mirror on every command-body change now that the console is frozen;
-  the next "one strategic bet" in ROADMAP.md (R1 then R6 are finished; R22's derived half is proposed, not chosen).
+- DECIDED 2026-11-23, not yet built: retire the console lock (FO-8-1); the §1s body reads each project's own
+  Axis B categories (INV-73 — the Silent Prompt Degradation policy response).
+- OPEN DECISIONS (operator, not work), recommendations given 2026-11-23: §4v independence vs the SessionStart
+  hook; R21's /audit vs /targeted-audit dead-code asymmetry (operator leans: treat them the same); the next
+  "one strategic bet" in ROADMAP.md.
 
 ## Open follow-on items
 - FO-8-1 | console lock — the console is frozen but still locked: check-html and gen-html-prompts --assert
   stay in the Test Command, and every command-body edit is mirrored into its builders. 08-b-verification
-  found three Cycle-8 fixes guarded ONLY by that lock | → decision
+  found three Cycle-8 fixes guarded ONLY by that lock. DECIDED 2026-11-23: retire it — after content checks
+  replace it for F4, F5, F6 and the conditional idle (Cycle 8's Guard policy response) | → this cycle
 - FO-8-5 | .claude/settings.json, CLAUDE.md hook snippet — the hook command is POSIX shell syntax and fails
   where hooks run under PowerShell; counted as regression R3 by 08-b-verification. The exec form
   ("args") would avoid the shell but could not be exercised here | → next audit
@@ -145,7 +147,6 @@ Updated: 2026-11-20
   rejected, /wrong/ would not be; could be derived instead of listed | → next audit
 - FO-8-20 | /roadmap — its v1.51.0 closing step (propose the roadmap-file update, apply on approval) has
   never been run end to end | → next audit
-- FO-8-22 | repository — no LICENSE file; the licence is the owner's choice | → decision
 - FO-8-23 | check-template-sync check 21 — ties CI to STATE.md's Cycle field: an open roadmap item that says
   "queued for Cycle N" turns CI red as soon as the next audit's CYCLE OPEN moves Cycle past N, in a
   session whose only cycle writes are STATE.md. None does today (08-b-verification) | → next audit
@@ -213,6 +214,7 @@ Updated: 2026-11-20
 - An argument hint goes on every command whose body reads $ARGUMENTS, including the three that read it only
   to detect an empty call (/plan, /implement, /targeted-implement).
 - A description is a label: it may describe a write to .cycle/ (two do) and may not name a scripts/ helper.
+- No LICENSE (operator, 2026-11-23): the repo is for the owner's own use (FO-8-22, closed).
 - A follow-on is a lead, never a finding: it gets an ID and one disposition, and each disposition has an owner
   (v1.52.0). Assigning it to a named batch was rejected — the scan's batch plan lives only in chat (R24).
 - /roadmap writes the roadmap file only on approval; its bet is a proposal. No "last reviewed N cycles ago"
